@@ -11,16 +11,32 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed-sources": "node --env-file=.env scripts/seed-sources.mjs",
+    "ingest": "node --import tsx --env-file=.env scripts/ingest.ts",
+    "ingest:only": "node --import tsx --env-file=.env scripts/ingest.ts --no-score",
+    "score": "node --import tsx --env-file=.env scripts/score.ts",
+    "summarize": "node --import tsx --env-file=.env scripts/summarize.ts",
+    "inspect:articles": "node --env-file=.env scripts/inspect-articles.mjs",
+    "inspect:rejected": "node --env-file=.env scripts/inspect-rejected.mjs",
+    "pipeline:dry": "node --env-file=.env scripts/pipeline-cli.mjs --dry-run",
+    "pipeline:run": "node --env-file=.env scripts/pipeline-cli.mjs",
+    "pipeline:smoke": "node --env-file=.env scripts/pipeline-smoke.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.3",
+    "@mozilla/readability": "^0.5.0",
     "@prisma/client": "^5.18.0",
+    "jsdom": "^24.1.0",
     "next": "14.2.5",
+    "openai": "^4.55.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "resend": "^4.0.1"
+    "resend": "^4.0.1",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -28,6 +44,7 @@
     "postcss": "^8.4.39",
     "prisma": "^5.18.0",
     "tailwindcss": "^3.4.6",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.3"
   }
 }

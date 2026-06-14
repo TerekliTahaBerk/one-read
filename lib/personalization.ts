@@ -67,11 +67,13 @@ export interface ScoreBreakdown {
 /* Quality thresholds                                                      */
 /* ----------------------------------------------------------------------- */
 
-/** Below this quality, an article is never a TopicDailyPick. */
-export const MIN_TOPIC_PICK_QUALITY = 0.6;
-
-/** Below this personalized score, we'd rather skip than send a meh email. */
-export const MIN_DELIVERY_SCORE = 0.45;
+// The actual numeric thresholds live in `lib/thresholds.ts` so they can be
+// tuned via env. We re-export them here for callers who already import
+// from this module — keeps the API stable for existing code.
+export {
+  MIN_ARTICLE_SCORE as MIN_TOPIC_PICK_QUALITY,
+  MIN_DELIVERY_SCORE,
+} from "./thresholds";
 
 /** Weights — exposed for the admin preview. */
 export const WEIGHTS = Object.freeze({

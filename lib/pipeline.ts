@@ -2,17 +2,19 @@
  * One Read — daily editorial pipeline.
  *
  * High-level flow (one calendar day, UTC):
- *   1. Ingest candidate articles.
- *   2. For each (topic, sourceLanguage), select the single best article
- *      that clears the quality threshold → write a `TopicDailyPick`.
- *   3. For each ACTIVE subscriber, score every relevant pick and choose
+ *   1. Ingest candidate articles from RSS / Atom sources.
+ *   2. Extract clean body text + LLM-score every PENDING article.
+ *   3. For each (topic, sourceLanguage), select the single best article
+ *      that clears the editorial threshold → write a `TopicDailyPick`.
+ *   4. For each ACTIVE subscriber, score every relevant pick and choose
  *      the best one → write a `DailySend`.
- *   4. Generate (or reuse) the summary in their summary language.
- *   5. Send via Resend, mark `DailySend.status = "SENT"`.
+ *   5. Generate (or reuse) the structured summary in their summary
+ *      language. Skip the send if `summary.status === "REJECTED"`.
+ *   6. Send via Resend, mark `DailySend.status = "SENT"`.
  *
- * Steps 1-3 are pure orchestration over Prisma, fully testable from a
- * cron handler. Step 4 lives behind the `SummaryProvider` interface so we
- * can swap in an LLM later without touching this file.
+ * Steps 1-4 are pure orchestration over Prisma. Steps 2 and 5 live
+ * behind the `LlmProvider` interface so we can swap providers without
+ * touching this file.
  *
  * Idempotency: every step is keyed by `(date, …)` unique constraints, so
  * the cron can safely retry without duplicating sends.
@@ -21,16 +23,21 @@
 import { prisma } from "./prisma";
 import { ALL_TOPIC_SLUGS, type TopicSlug } from "./topics";
 import {
-  MIN_DELIVERY_SCORE,
-  MIN_TOPIC_PICK_QUALITY,
   matchedTopicFor,
   scorePick,
   type ScoreBreakdown,
   type SubscriberContext,
 } from "./personalization";
-import { getOrCreateSummary, heuristicSummaryProvider, type SummaryProvider } from "./summarizer";
+import {
+  defaultSummaryProvider,
+  getOrCreateSummary,
+  type SummaryProvider,
+} from "./summarizer";
 import { renderDailyEmail } from "./email-template";
 import { ingestCandidates, type IngestionSource } from "./ingest";
+import { rssSource } from "./rss-source";
+import { extractAndScorePendingArticles } from "./scorer";
+import { MIN_ARTICLE_SCORE, MIN_DELIVERY_SCORE } from "./thresholds";
 import type {
   Article,
   DailySend,
@@ -45,12 +52,14 @@ import type {
 export interface DailyPipelineOptions {
   /** Defaults to today UTC. */
   date?: Date;
-  /** Optional ingestion sources. Defaults to no-op. */
+  /** Optional ingestion sources. Defaults to the configured RSS source. */
   ingestionSources?: readonly IngestionSource[];
-  /** Optional LLM/heuristic summary provider. Defaults to heuristic. */
+  /** Optional LLM/heuristic summary provider. Defaults to the env-configured provider. */
   summaryProvider?: SummaryProvider;
   /** If true, generate sends but do not actually email. */
   dryRun?: boolean;
+  /** If true, skip the ingest + extract + score stages (rerun rendering only). */
+  skipIngest?: boolean;
   /** Hook used by the email step. */
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
 }
@@ -65,8 +74,23 @@ export interface SendArgs {
 export interface PipelineResult {
   date: string;
   ingested: number;
+  /** Per-source observability: how many feeds we tried, how many failed. */
+  sources: {
+    attempted: number;
+    failed: number;
+    /** First-N error rows for the admin log. */
+    errors: { slug: string; error: string }[];
+  };
+  extraction: { total: number; scored: number; rejected: number; failed: number };
   picks: number;
+  /**
+   * Per-stage summary counters. `summariesReady` includes cached READY
+   * rows; `summariesRejected` covers low-confidence + LLM failures.
+   */
+  summaries: { ready: number; rejected: number };
   sends: { total: number; sent: number; skipped: number; failed: number };
+  /** Wall-clock duration in ms. */
+  durationMs: number;
 }
 
 /**
@@ -75,28 +99,96 @@ export interface PipelineResult {
 export async function runDailyPipeline(
   opts: DailyPipelineOptions = {},
 ): Promise<PipelineResult> {
+  const t0 = Date.now();
   const date = atUtcMidnight(opts.date ?? new Date());
-  const ingestionSources = opts.ingestionSources ?? [];
+  const ingestionSources = opts.ingestionSources ?? [rssSource];
+
+  console.log(
+    `[pipeline] ▶ start  date=${toIsoDate(date)}  dryRun=${opts.dryRun ?? false}  skipIngest=${opts.skipIngest ?? false}`,
+  );
 
   // 1. Ingest
-  const ingested = await ingestCandidates(date, ingestionSources);
+  const ingested = opts.skipIngest
+    ? []
+    : await ingestCandidates(date, ingestionSources);
+  console.log(`[pipeline] · ingested ${ingested.length} new article(s)`);
 
-  // 2. Topic picks
+  // 2. Extract + score every PENDING article (incl. those from prior runs).
+  const extraction = opts.skipIngest
+    ? { total: 0, scored: 0, rejected: 0, failed: 0 }
+    : await extractAndScorePendingArticles();
+  console.log(
+    `[pipeline] · extract+score  total=${extraction.total} scored=${extraction.scored} rejected=${extraction.rejected} failed=${extraction.failed}`,
+  );
+
+  // 3. Topic picks
   const picks = await selectTopicDailyPicks(date);
+  console.log(`[pipeline] · created ${picks.length} TopicDailyPick(s)`);
 
-  // 3-5. Fan-out + send
+  // 4-6. Fan-out + send
   const sends = await fanOutAndSend(date, {
-    summaryProvider: opts.summaryProvider ?? heuristicSummaryProvider,
+    summaryProvider: opts.summaryProvider ?? defaultSummaryProvider(),
     dryRun: opts.dryRun ?? false,
     send: opts.send,
   });
 
-  return {
+  // Source observability — fetch the rows we just touched.
+  const sourceRows = await prisma.source.findMany({
+    where: { active: true },
+    select: { slug: true, lastError: true, lastFetchedAt: true },
+  });
+  const sourceErrors = sourceRows
+    .filter((s) => !!s.lastError)
+    .map((s) => ({ slug: s.slug, error: s.lastError as string }));
+
+  // Summary counts for today.
+  const todaysSummaries = await prisma.summary.findMany({
+    where: { pick: { date } },
+    select: { status: true },
+  });
+  const summaries = {
+    ready: todaysSummaries.filter((s) => s.status === "READY").length,
+    rejected: todaysSummaries.filter((s) => s.status === "REJECTED").length,
+  };
+
+  const result: PipelineResult = {
     date: toIsoDate(date),
     ingested: ingested.length,
+    sources: {
+      attempted: sourceRows.length,
+      failed: sourceErrors.length,
+      errors: sourceErrors.slice(0, 10),
+    },
+    extraction,
     picks: picks.length,
+    summaries,
     sends,
+    durationMs: Date.now() - t0,
   };
+
+  printPipelineSummary(result);
+  return result;
+}
+
+function printPipelineSummary(r: PipelineResult): void {
+  const lines = [
+    "",
+    `[pipeline] ──────── summary  date=${r.date}  ${r.durationMs}ms ────────`,
+    `[pipeline]  sources        attempted=${r.sources.attempted}  failed=${r.sources.failed}`,
+    `[pipeline]  ingest         new articles=${r.ingested}`,
+    `[pipeline]  extract+score  total=${r.extraction.total}  scored=${r.extraction.scored}  rejected=${r.extraction.rejected}  failed=${r.extraction.failed}`,
+    `[pipeline]  picks          created=${r.picks}`,
+    `[pipeline]  summaries      ready=${r.summaries.ready}  rejected=${r.summaries.rejected}`,
+    `[pipeline]  sends          total=${r.sends.total}  sent=${r.sends.sent}  skipped=${r.sends.skipped}  failed=${r.sends.failed}`,
+  ];
+  if (r.sources.errors.length > 0) {
+    lines.push(`[pipeline]  source errors:`);
+    for (const e of r.sources.errors) {
+      lines.push(`[pipeline]    · ${e.slug}: ${e.error.slice(0, 140)}`);
+    }
+  }
+  lines.push(`[pipeline] ─────────────────────────────────────────────`);
+  console.log(lines.join("\n"));
 }
 
 /* ----------------------------------------------------------------------- */
@@ -127,12 +219,13 @@ export async function selectTopicDailyPicks(
     existing.map((p) => `${p.topic}::${p.sourceLanguage}`),
   );
 
-  // Candidate window: ingested in the last 48h.
+  // Candidate window: ingested in the last 48h, scored, above the bar.
   const since = new Date(day.getTime() - 48 * 60 * 60 * 1000);
   const candidates = await prisma.article.findMany({
     where: {
       ingestedAt: { gte: since },
-      qualityScore: { gte: MIN_TOPIC_PICK_QUALITY },
+      scoringStatus: "SCORED",
+      qualityScore: { gte: MIN_ARTICLE_SCORE },
     },
   });
 
@@ -201,6 +294,7 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
 
   const picks = await prisma.topicDailyPick.findMany({
     where: { date: day, status: { in: ["READY", "SENT"] } },
+    include: { article: true },
   });
   if (picks.length === 0) return [];
 
@@ -229,18 +323,21 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
       ...ctx.secondaryInterests,
     ]);
 
-    const candidates: TopicDailyPick[] = [];
+    type PickWithArticle = TopicDailyPick & { article: Article };
+    const candidates: PickWithArticle[] = [];
     for (const t of userTopics) {
-      const arr = picksByTopic.get(t);
+      const arr = picksByTopic.get(t) as PickWithArticle[] | undefined;
       if (arr) candidates.push(...arr);
     }
     // Subtopic crossover.
-    for (const p of picks) {
+    for (const p of picks as PickWithArticle[]) {
       if (candidates.includes(p)) continue;
       if (p.subtopics.some((s) => userTopics.has(s))) candidates.push(p);
     }
 
-    // Score every candidate.
+    // Score every candidate using the *real* underlying article scores so
+    // personalization weights apply correctly (article quality vs.
+    // usefulness vs. morning-fit are weighted differently downstream).
     const scored = candidates
       .map((pick) => ({
         pick,
@@ -250,9 +347,9 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
             subtopics: pick.subtopics,
             sourceLanguage: pick.sourceLanguage,
             sourceName: pick.sourceName,
-            qualityScore: pick.score, // pick.score already encodes article quality
-            usefulnessScore: pick.score,
-            morningReadScore: pick.score,
+            qualityScore: pick.article.qualityScore,
+            usefulnessScore: pick.article.usefulnessScore,
+            morningReadScore: pick.article.morningReadScore,
           },
           ctx,
         ),
@@ -271,9 +368,9 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
         subtopics: winner.pick.subtopics,
         sourceLanguage: winner.pick.sourceLanguage,
         sourceName: winner.pick.sourceName,
-        qualityScore: winner.pick.score,
-        usefulnessScore: winner.pick.score,
-        morningReadScore: winner.pick.score,
+        qualityScore: winner.pick.article.qualityScore,
+        usefulnessScore: winner.pick.article.usefulnessScore,
+        morningReadScore: winner.pick.article.morningReadScore,
       },
       ctx,
     );
@@ -342,6 +439,7 @@ async function fanOutAndSend(
             title: pick.article.title,
             url: pick.article.url,
             rawExcerpt: pick.article.rawExcerpt,
+            cleanedText: pick.article.cleanedText,
             sourceLanguage: pick.article.sourceLanguage,
             sourceName: pick.article.sourceName,
           },
@@ -351,6 +449,21 @@ async function fanOutAndSend(
         },
         opts.summaryProvider,
       );
+
+      // Editorial bar: never send a low-confidence summary. Mark the
+      // DailySend as SKIPPED with the rejection reason so we can debug.
+      if (summary.status !== "READY") {
+        await prisma.dailySend.update({
+          where: { id: send.id },
+          data: {
+            status: "SKIPPED",
+            error:
+              summary.rejectionReason ?? "summary not READY",
+          },
+        });
+        skipped++;
+        continue;
+      }
 
       const ctx = subscriberToContext(sub);
       const interestCount =
@@ -368,7 +481,11 @@ async function fanOutAndSend(
           url: pick.article.url,
           sourceName: pick.sourceName,
         },
-        summary,
+        summary: {
+          bodyText: summary.bodyText,
+          bodyHtml: summary.bodyHtml,
+          structured: summary.structured,
+        },
         links,
       });
 

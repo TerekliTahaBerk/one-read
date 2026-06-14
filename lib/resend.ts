@@ -8,11 +8,61 @@ const apiKey = process.env.RESEND_API_KEY;
 const resend = apiKey ? new Resend(apiKey) : null;
 
 /**
- * The "from" address. Configure RESEND_FROM in production with a verified
- * sender on a verified domain. Falls back to Resend's onboarding sender,
- * which is fine for development but only delivers to the account owner.
+ * The "from" address.
+ *
+ * In production set either `FROM_EMAIL` (preferred, generic name) or
+ * `RESEND_FROM` (legacy alias). Both are accepted so existing deployments
+ * keep working.
+ *
+ * Falls back to Resend's onboarding sender, which is fine for development
+ * but only delivers to the Resend account owner's email — never use it in
+ * production.
  */
-const FROM = process.env.RESEND_FROM ?? "One Read <onboarding@resend.dev>";
+const FROM_FALLBACK = "One Read <onboarding@resend.dev>";
+const FROM =
+  process.env.FROM_EMAIL?.trim() ||
+  process.env.RESEND_FROM?.trim() ||
+  FROM_FALLBACK;
+
+/**
+ * One-shot production warnings. We log on the first call rather than at
+ * module-import time so the warning surfaces in cron / pipeline logs (where
+ * it's actually useful) instead of disappearing during cold-start.
+ */
+let warnedNoKey = false;
+let warnedNoFrom = false;
+
+function warnIfMisconfigured(): void {
+  const isProd = process.env.NODE_ENV === "production";
+  if (!apiKey && !warnedNoKey) {
+    warnedNoKey = true;
+    if (isProd) {
+      console.error(
+        "[resend] RESEND_API_KEY is not set in production — daily emails will be skipped.",
+      );
+    } else {
+      console.warn(
+        "[resend] RESEND_API_KEY is not set — emails will be skipped (dev mode).",
+      );
+    }
+  }
+  if (
+    !process.env.FROM_EMAIL &&
+    !process.env.RESEND_FROM &&
+    !warnedNoFrom
+  ) {
+    warnedNoFrom = true;
+    if (isProd) {
+      console.error(
+        "[resend] Neither FROM_EMAIL nor RESEND_FROM is set in production — using onboarding@resend.dev which only delivers to the account owner. Configure a verified sender.",
+      );
+    } else {
+      console.warn(
+        `[resend] Using fallback sender "${FROM_FALLBACK}" — set FROM_EMAIL for production.`,
+      );
+    }
+  }
+}
 
 const WELCOME_SUBJECT = "Welcome to One Read";
 const WELCOME_TEXT = `Hi,
@@ -41,6 +91,7 @@ const WELCOME_HTML = `
  * but must not block the user-facing success state.
  */
 export async function sendWelcomeEmail(to: string): Promise<void> {
+  warnIfMisconfigured();
   if (!resend) {
     console.warn(
       "[resend] RESEND_API_KEY is not set; skipping welcome email for",
@@ -79,6 +130,7 @@ export async function sendDailyEmail(args: {
   text: string;
   html: string;
 }): Promise<{ messageId?: string }> {
+  warnIfMisconfigured();
   if (!resend) {
     console.warn(
       "[resend] RESEND_API_KEY is not set; skipping daily email for",
@@ -98,4 +150,20 @@ export async function sendDailyEmail(args: {
     throw new Error(`[resend] ${error.name}: ${error.message}`);
   }
   return { messageId: data?.id };
+}
+
+/**
+ * Returns the resolved sender + whether Resend is configured. Used by the
+ * admin page to surface configuration without leaking secrets.
+ */
+export function getResendStatus(): {
+  hasApiKey: boolean;
+  from: string;
+  usingFallbackSender: boolean;
+} {
+  return {
+    hasApiKey: !!apiKey,
+    from: FROM,
+    usingFallbackSender: FROM === FROM_FALLBACK,
+  };
 }

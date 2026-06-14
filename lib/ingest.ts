@@ -11,8 +11,10 @@
  * multiple sources) by exporting a different `defaultIngestionPipeline`.
  */
 
+import { createHash } from "node:crypto";
 import type { Article } from "@prisma/client";
 import { prisma } from "./prisma";
+import { canonicalizeUrl } from "./url-canonical";
 
 export interface CandidateInput {
   url: string;
@@ -73,24 +75,73 @@ export async function ingestCandidates(
 
   if (collected.length === 0) return [];
 
-  // Dedupe by URL — first occurrence wins.
-  const seen = new Set<string>();
-  const unique: CandidateInput[] = [];
+  // Normalize each candidate to a canonical URL + title hash. These are
+  // the three dedupe keys: exact url, canonical url, and normalized title.
+  type Normalized = CandidateInput & { canonicalUrl: string; titleHash: string };
+  const normalized: Normalized[] = [];
   for (const c of collected) {
-    if (!c.url || seen.has(c.url)) continue;
-    seen.add(c.url);
+    if (!c.url) continue;
+    const canonicalUrl = canonicalizeUrl(c.url) ?? c.url;
+    normalized.push({ ...c, canonicalUrl, titleHash: titleHash(c.title) });
+  }
+
+  // In-batch dedupe — first occurrence wins across canonical url + title.
+  const seenCanonical = new Set<string>();
+  const seenTitle = new Set<string>();
+  const unique: Normalized[] = [];
+  for (const c of normalized) {
+    if (seenCanonical.has(c.canonicalUrl) || seenTitle.has(c.titleHash)) continue;
+    seenCanonical.add(c.canonicalUrl);
+    seenTitle.add(c.titleHash);
     unique.push(c);
+  }
+
+  // Cross-run dedupe — drop candidates that already exist in the DB by
+  // url, canonical url, or a recent identical title. "Duplicate article
+  // already exists" is a rejection rule we apply before persisting so we
+  // never create near-duplicate rows.
+  const existingUrls = new Set<string>();
+  const existingTitles = new Set<string>();
+  try {
+    const since = new Date(Date.now() - DEDUPE_TITLE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const urls = unique.map((c) => c.canonicalUrl);
+    const existing = await prisma.article.findMany({
+      where: {
+        OR: [
+          { url: { in: urls } },
+          { canonicalUrl: { in: urls } },
+          { ingestedAt: { gte: since } },
+        ],
+      },
+      select: { url: true, canonicalUrl: true, title: true, ingestedAt: true },
+    });
+    for (const e of existing) {
+      existingUrls.add(e.url);
+      if (e.canonicalUrl) existingUrls.add(e.canonicalUrl);
+      if (e.ingestedAt >= since) existingTitles.add(titleHash(e.title));
+    }
+  } catch (err) {
+    // If the lookup fails we fall back to the unique-constraint upsert
+    // below rather than aborting the whole ingest.
+    console.warn(
+      "[ingest] dedupe pre-check failed, relying on unique constraints:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
   // Upsert each one. We intentionally leave existing rows alone so we
   // don't overwrite editorial scores set elsewhere.
   const persisted: Article[] = [];
   for (const c of unique) {
+    if (existingUrls.has(c.canonicalUrl) || existingTitles.has(c.titleHash)) {
+      continue; // already ingested under a different surface — skip.
+    }
     const article = await prisma.article.upsert({
       where: { url: c.url },
       update: {},
       create: {
         url: c.url,
+        canonicalUrl: c.canonicalUrl,
         title: c.title,
         sourceName: c.sourceName,
         sourceLanguage: c.sourceLanguage,
@@ -110,6 +161,24 @@ export async function ingestCandidates(
   }
 
   return persisted;
+}
+
+/** Articles ingested within this window are dedupe-checked by title. */
+const DEDUPE_TITLE_WINDOW_DAYS = 14;
+
+/**
+ * Stable hash of a normalized title. Lowercased, punctuation-stripped,
+ * whitespace-collapsed so trivially different titles ("Foo — Bar" vs.
+ * "foo bar") collapse to the same key.
+ */
+function titleHash(title: string): string {
+  const normalized = title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return createHash("sha1").update(normalized).digest("hex");
 }
 
 function clamp01(n: number): number {

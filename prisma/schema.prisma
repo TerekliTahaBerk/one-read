@@ -46,8 +46,9 @@ model Subscriber {
   feedbackProfile Json?
 
   lastSentAt      DateTime?
+  unsubscribedAt  DateTime?
 
-  /// "PENDING_PREFERENCES" | "ACTIVE" | "PAUSED"
+  /// "PENDING_PREFERENCES" | "ACTIVE" | "PAUSED" | "UNSUBSCRIBED"
   status          String   @default("PENDING_PREFERENCES")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -59,15 +60,44 @@ model Subscriber {
   @@index([summaryLanguage, status])
 }
 
+/// A configured RSS / Atom source, persisted from the seed list in
+/// lib/sources.ts. Useful for observability and runtime overrides.
+model Source {
+  id            String   @id @default(cuid())
+  /// Stable slug, e.g. "openai-blog".
+  slug          String   @unique
+  name          String
+  feedUrl       String   @unique
+  homepage      String?
+  /// Default top-level topic slug for items from this source.
+  defaultTopic  String
+  /// Optional default subtopics.
+  defaultSubtopics String[]
+  /// "English" | "Turkish" | …
+  language      String   @default("English")
+  /// True if the feed is enabled in the daily run.
+  active        Boolean  @default(true)
+  /// Free-form notes (why we chose it, throttling, etc.).
+  notes         String?
+  lastFetchedAt DateTime?
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 /// A candidate article ingested from any source.
 model Article {
   id            String   @id @default(cuid())
   url           String   @unique
+  /// Normalized URL used for stronger dedupe across slightly different
+  /// surface forms (utm params stripped, trailing slash removed, etc.).
+  canonicalUrl  String?  @unique
   title         String
   sourceName    String
   sourceLanguage String
   topic         String
   subtopics     String[]
+  detectedInterests String[]
   tags          String[]
   publishedAt   DateTime?
   ingestedAt    DateTime  @default(now())
@@ -75,16 +105,29 @@ model Article {
   qualityScore     Float @default(0)
   usefulnessScore  Float @default(0)
   morningReadScore Float @default(0)
+  originalityScore Float @default(0)
+  readabilityScore Float @default(0)
 
   difficulty   String  @default("mixed")
 
+  /// Original RSS excerpt (always kept).
   rawExcerpt        String? @db.Text
+  /// Cleaned full text from readability extraction (may be null).
+  cleanedText       String? @db.Text
+  /// 0..1 — how confident we are in `cleanedText` quality.
+  extractionConfidence Float?
+
   reasonForSelection String? @db.Text
+  rejectionReason    String? @db.Text
+
+  /// "PENDING" | "SCORED" | "REJECTED"
+  scoringStatus String @default("PENDING")
 
   picks  TopicDailyPick[]
 
   @@index([topic, sourceLanguage])
   @@index([ingestedAt])
+  @@index([scoringStatus])
 }
 
 /// One best article per (date, topic, sourceLanguage).
@@ -125,8 +168,21 @@ model Summary {
   primaryTopic     String
   difficulty       String   @default("mixed")
 
+  /// Compact plain text summary used as the email body.
   bodyText         String   @db.Text
   bodyHtml         String?  @db.Text
+
+  /// Full structured LLM output (subject, threeSentenceSummary, etc.).
+  /// Null for heuristic summaries.
+  structuredJson   Json?
+  /// LLM-reported confidence in [0, 100].
+  confidence       Float?
+  /// "DRAFT" | "READY" | "REJECTED"
+  status           String   @default("READY")
+  /// Provider id ("openai/gpt-4o-mini") for observability.
+  generator        String?
+  rejectionReason  String?  @db.Text
+
   createdAt        DateTime @default(now())
 
   @@unique([topicDailyPickId, summaryLanguage, primaryTopic, difficulty])

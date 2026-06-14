@@ -8,9 +8,15 @@
  *   single interest  → "Picked for your interest in {Topic}."
  *   multiple         → "Picked from your {Topic} track today."
  *   Turkish          → "Yapay zekâ ilgin için seçildi." / "Bugün {Konu} hattından."
+ *
+ * When the LLM produced a structured summary we prefer its `subject`,
+ * `displayTitle`, `oneLineHook`, and `whyThisArticle` over the raw RSS
+ * title — that's how a Turkish subscriber whose source language is
+ * English actually gets a Turkish email.
  */
 
 import { topicBySlug } from "./topics";
+import type { StructuredSummary } from "./llm/types";
 
 export interface DailyEmailContext {
   /** ISO date string the email is for, e.g. "2026-06-14". */
@@ -29,6 +35,8 @@ export interface DailyEmailContext {
   summary: {
     bodyText: string;
     bodyHtml?: string;
+    /** Optional structured fields from the LLM. */
+    structured?: StructuredSummary;
   };
   /** Per-subscriber URLs; kept opaque here. */
   links: {
@@ -50,11 +58,25 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
   const lang = ctx.summaryLanguage;
   const topic = topicBySlug(ctx.matchedTopic);
   const topicLabel = topic?.label ?? humanizeSlug(ctx.matchedTopic);
+  const structured = ctx.summary.structured;
 
-  const subject =
-    lang === "Turkish"
-      ? `One Read · ${topicLabel} — ${ctx.article.title}`
-      : `One Read · ${topicLabel} — ${ctx.article.title}`;
+  // Display title: prefer the LLM's translated/edited title, fall back to
+  // the raw RSS title. This is how Turkish subscribers reading English
+  // sources see a Turkish headline above the article.
+  const displayTitle =
+    structured?.displayTitle?.trim() || ctx.article.title;
+
+  // Subject: prefer the LLM's editorial subject. Otherwise use a calm
+  // composed fallback.
+  const llmSubject = structured?.subject?.trim();
+  const subject = llmSubject
+    ? `One Read · ${llmSubject}`
+    : `One Read · ${topicLabel} — ${displayTitle}`;
+
+  // Optional hook + why-this lines (only present from real LLM summaries).
+  const hook = structured?.oneLineHook?.trim() ?? "";
+  const whyThis = structured?.whyThisArticle?.trim() ?? "";
+  const readingTime = structured?.readingTime?.trim() ?? "";
 
   const personalizationLine =
     lang === "Turkish"
@@ -77,18 +99,26 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
     lang === "Turkish"
       ? "Bir makale. Her sabah. Sana göre seçilmiş."
       : "One article. Every morning. Curated for you.";
+  const originalTitleLabel =
+    lang === "Turkish" ? "Orijinal başlık" : "Original title";
 
   /* ------------------------------------------ Plain text version */
   const text = [
     "One · Read",
     "",
     formatDate(ctx.date, lang),
+    readingTime ? `· ${readingTime}` : "",
     "",
     `— ${ctx.article.sourceName}`,
     personalizationLine,
     "",
-    ctx.article.title,
+    displayTitle,
+    displayTitle !== ctx.article.title
+      ? `(${originalTitleLabel}: ${ctx.article.title})`
+      : "",
     "",
+    whyThis,
+    whyThis ? "" : "",
     ctx.summary.bodyText,
     "",
     `${readLabel}: ${ctx.article.url}`,
@@ -102,12 +132,29 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
     tagline,
     "",
     `${unsubscribeLabel}: ${ctx.links.unsubscribe}`,
-  ].join("\n");
+  ]
+    .filter((line) => line !== "")
+    .join("\n")
+    // re-introduce blank-line breathing room between paragraphs.
+    .replace(/(\n)(— |[A-ZÇĞİÖŞÜ])/g, "\n\n$2");
 
   /* ------------------------------------------ HTML version */
   const summaryHtml =
     ctx.summary.bodyHtml ??
     `<p style="margin:0;color:#1B1612;font-size:15.5px;line-height:1.65;">${escapeHtml(ctx.summary.bodyText)}</p>`;
+
+  const whyThisBlock = whyThis
+    ? `<div style="margin:0 0 16px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px;color:#6B5F50;line-height:1.55;">${escapeHtml(whyThis)}</div>`
+    : "";
+
+  const originalTitleBlock =
+    displayTitle !== ctx.article.title
+      ? `<div style="margin:6px 0 18px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;color:#9C8F7E;">${escapeHtml(originalTitleLabel)}: <span style="color:#6B5F50;">${escapeHtml(ctx.article.title)}</span></div>`
+      : "";
+
+  const readingTimeBlock = readingTime
+    ? `<span style="margin-left:10px;color:#9C8F7E;">· ${escapeHtml(readingTime)}</span>`
+    : "";
 
   const html = `
 <!doctype html>
@@ -119,7 +166,7 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
       One&nbsp;·&nbsp;Read
     </div>
     <div style="text-align:center;margin-top:6px;font-size:12px;color:#9C8F7E;font-family:ui-sans-serif,system-ui,sans-serif;">
-      ${escapeHtml(formatDate(ctx.date, lang))}
+      ${escapeHtml(formatDate(ctx.date, lang))}${readingTimeBlock}
     </div>
 
     <hr style="border:none;border-top:1px solid #E6DCC8;margin:28px 0;" />
@@ -131,9 +178,17 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
       ${escapeHtml(personalizationLine)}
     </div>
 
-    <h1 style="font-size:26px;line-height:1.18;margin:14px 0 20px 0;font-weight:500;letter-spacing:-0.012em;color:#1B1612;">
-      ${escapeHtml(ctx.article.title)}
+    <h1 style="font-size:26px;line-height:1.18;margin:14px 0 14px 0;font-weight:500;letter-spacing:-0.012em;color:#1B1612;">
+      ${escapeHtml(displayTitle)}
     </h1>
+    ${originalTitleBlock}
+    ${whyThisBlock}
+
+    ${
+      hook && !ctx.summary.bodyHtml
+        ? `<div style="margin:0 0 18px 0;font-family:ui-serif,Georgia,Cambria,serif;font-style:italic;color:#6B5F50;font-size:15px;line-height:1.5;">${escapeHtml(hook)}</div>`
+        : ""
+    }
 
     <div>${summaryHtml}</div>
 

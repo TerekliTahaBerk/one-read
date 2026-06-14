@@ -11,8 +11,10 @@ export const dynamic = "force-dynamic";
  * Triggered from one-click reaction links inside daily emails.
  *
  * Query params:
- *   send  — DailySend.id, identifies subscriber + article context
- *   r     — reaction: loved | liked | meh | disliked
+ *   send     — DailySend.id, identifies subscriber + article context
+ *   r        — reaction: loved | liked | meh | disliked
+ *   preview  — "1" for /api/admin/test-email previews; renders the
+ *              thank-you page without mutating anything.
  *
  * The endpoint is idempotent-friendly: hitting it twice for the same
  * (sendId, reaction) only stores one feedback entry per click but is
@@ -24,8 +26,26 @@ async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const sendId = url.searchParams.get("send");
   const r = url.searchParams.get("r") as Reaction | null;
+  const isPreview = url.searchParams.get("preview") === "1";
 
-  if (!sendId || !r || !REACTIONS.includes(r)) {
+  if (!r || !REACTIONS.includes(r)) {
+    return htmlResponse(
+      thankYouPage("Thanks — but that link looks malformed."),
+      400,
+    );
+  }
+
+  // Preview links (from the admin test email) must not mutate real data —
+  // there's no DailySend behind them. Render the friendly page only.
+  if (isPreview) {
+    const message =
+      r === "loved" || r === "liked"
+        ? "Thanks — we'll keep finding more like that. (preview)"
+        : "Thanks — we'll do better tomorrow. (preview)";
+    return htmlResponse(thankYouPage(message), 200);
+  }
+
+  if (!sendId) {
     return htmlResponse(
       thankYouPage("Thanks — but that link looks malformed."),
       400,
