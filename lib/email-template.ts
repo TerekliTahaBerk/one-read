@@ -1,0 +1,209 @@
+/**
+ * One Read — daily email template.
+ *
+ * Two outputs: a plain-text version for deliverability and a small,
+ * editorial HTML version that mirrors the website's quiet aesthetic.
+ *
+ * The personalization line is intentionally subtle:
+ *   single interest  → "Picked for your interest in {Topic}."
+ *   multiple         → "Picked from your {Topic} track today."
+ *   Turkish          → "Yapay zekâ ilgin için seçildi." / "Bugün {Konu} hattından."
+ */
+
+import { topicBySlug } from "./topics";
+
+export interface DailyEmailContext {
+  /** ISO date string the email is for, e.g. "2026-06-14". */
+  date: string;
+  /** Recipient's primary topic slug, used to frame the personalization line. */
+  matchedTopic: string;
+  /** True if the subscriber has more than one selected interest. */
+  hasMultipleInterests: boolean;
+  /** "English" | "Turkish" — drives every translation. */
+  summaryLanguage: string;
+  article: {
+    title: string;
+    url: string;
+    sourceName: string;
+  };
+  summary: {
+    bodyText: string;
+    bodyHtml?: string;
+  };
+  /** Per-subscriber URLs; kept opaque here. */
+  links: {
+    feedbackLoved: string;
+    feedbackLiked: string;
+    feedbackMeh: string;
+    feedbackDisliked: string;
+    unsubscribe: string;
+  };
+}
+
+export interface RenderedEmail {
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
+  const lang = ctx.summaryLanguage;
+  const topic = topicBySlug(ctx.matchedTopic);
+  const topicLabel = topic?.label ?? humanizeSlug(ctx.matchedTopic);
+
+  const subject =
+    lang === "Turkish"
+      ? `One Read · ${topicLabel} — ${ctx.article.title}`
+      : `One Read · ${topicLabel} — ${ctx.article.title}`;
+
+  const personalizationLine =
+    lang === "Turkish"
+      ? ctx.hasMultipleInterests
+        ? `Bugün ${topicLabel} hattından.`
+        : `${topicLabel} ilgin için seçildi.`
+      : ctx.hasMultipleInterests
+        ? `Picked from your ${topicLabel} track today.`
+        : `Picked for your interest in ${topicLabel}.`;
+
+  const readLabel = lang === "Turkish" ? "Tam yazıyı oku" : "Read the full article";
+  const reactionPrompt =
+    lang === "Turkish" ? "Bu yazıyı beğendin mi?" : "How was this read?";
+  const reactionLoved = lang === "Turkish" ? "Çok iyiydi" : "Loved it";
+  const reactionLiked = lang === "Turkish" ? "İyiydi" : "Liked it";
+  const reactionMeh = lang === "Turkish" ? "İdare eder" : "Meh";
+  const reactionDisliked = lang === "Turkish" ? "Olmadı" : "Not for me";
+  const unsubscribeLabel = lang === "Turkish" ? "Aboneliği bırak" : "Unsubscribe";
+  const tagline =
+    lang === "Turkish"
+      ? "Bir makale. Her sabah. Sana göre seçilmiş."
+      : "One article. Every morning. Curated for you.";
+
+  /* ------------------------------------------ Plain text version */
+  const text = [
+    "One · Read",
+    "",
+    formatDate(ctx.date, lang),
+    "",
+    `— ${ctx.article.sourceName}`,
+    personalizationLine,
+    "",
+    ctx.article.title,
+    "",
+    ctx.summary.bodyText,
+    "",
+    `${readLabel}: ${ctx.article.url}`,
+    "",
+    `${reactionPrompt}`,
+    `  ${reactionLoved}: ${ctx.links.feedbackLoved}`,
+    `  ${reactionLiked}: ${ctx.links.feedbackLiked}`,
+    `  ${reactionMeh}: ${ctx.links.feedbackMeh}`,
+    `  ${reactionDisliked}: ${ctx.links.feedbackDisliked}`,
+    "",
+    tagline,
+    "",
+    `${unsubscribeLabel}: ${ctx.links.unsubscribe}`,
+  ].join("\n");
+
+  /* ------------------------------------------ HTML version */
+  const summaryHtml =
+    ctx.summary.bodyHtml ??
+    `<p style="margin:0;color:#1B1612;font-size:15.5px;line-height:1.65;">${escapeHtml(ctx.summary.bodyText)}</p>`;
+
+  const html = `
+<!doctype html>
+<html lang="${lang === "Turkish" ? "tr" : "en"}">
+<head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:0;background:#F6F1E6;">
+  <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:ui-serif,Georgia,Cambria,serif;color:#1B1612;">
+    <div style="text-align:center;font-size:12.5px;letter-spacing:0.22em;text-transform:uppercase;font-style:italic;color:#6B5F50;">
+      One&nbsp;·&nbsp;Read
+    </div>
+    <div style="text-align:center;margin-top:6px;font-size:12px;color:#9C8F7E;font-family:ui-sans-serif,system-ui,sans-serif;">
+      ${escapeHtml(formatDate(ctx.date, lang))}
+    </div>
+
+    <hr style="border:none;border-top:1px solid #E6DCC8;margin:28px 0;" />
+
+    <div style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px;color:#9C8F7E;letter-spacing:0.06em;text-transform:uppercase;">
+      ${escapeHtml(ctx.article.sourceName)}
+    </div>
+    <div style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:#C97A2C;font-style:italic;margin-top:4px;">
+      ${escapeHtml(personalizationLine)}
+    </div>
+
+    <h1 style="font-size:26px;line-height:1.18;margin:14px 0 20px 0;font-weight:500;letter-spacing:-0.012em;color:#1B1612;">
+      ${escapeHtml(ctx.article.title)}
+    </h1>
+
+    <div>${summaryHtml}</div>
+
+    <div style="margin-top:28px;">
+      <a href="${escapeAttr(ctx.article.url)}" style="display:inline-block;background:#1B1612;color:#FDFBF5;text-decoration:none;padding:12px 18px;border-radius:10px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;">
+        ${escapeHtml(readLabel)} →
+      </a>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #E6DCC8;margin:32px 0 22px 0;" />
+
+    <div style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:#6B5F50;text-align:center;">
+      ${escapeHtml(reactionPrompt)}
+    </div>
+    <div style="text-align:center;margin-top:10px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;">
+      <a href="${escapeAttr(ctx.links.feedbackLoved)}" style="color:#1B1612;text-decoration:none;margin:0 6px;">${escapeHtml(reactionLoved)}</a>
+      <span style="color:#D4C8B0;">·</span>
+      <a href="${escapeAttr(ctx.links.feedbackLiked)}" style="color:#1B1612;text-decoration:none;margin:0 6px;">${escapeHtml(reactionLiked)}</a>
+      <span style="color:#D4C8B0;">·</span>
+      <a href="${escapeAttr(ctx.links.feedbackMeh)}" style="color:#6B5F50;text-decoration:none;margin:0 6px;">${escapeHtml(reactionMeh)}</a>
+      <span style="color:#D4C8B0;">·</span>
+      <a href="${escapeAttr(ctx.links.feedbackDisliked)}" style="color:#6B5F50;text-decoration:none;margin:0 6px;">${escapeHtml(reactionDisliked)}</a>
+    </div>
+
+    <div style="margin-top:36px;text-align:center;font-family:ui-serif,Georgia,Cambria,serif;font-style:italic;color:#9C8F7E;font-size:13px;">
+      ${escapeHtml(tagline)}
+    </div>
+    <div style="margin-top:8px;text-align:center;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;color:#9C8F7E;">
+      <a href="${escapeAttr(ctx.links.unsubscribe)}" style="color:#9C8F7E;">${escapeHtml(unsubscribeLabel)}</a>
+    </div>
+  </div>
+</body>
+</html>
+`.trim();
+
+  return { subject, text, html };
+}
+
+/* ----------------------------------------------------------------------- */
+/* Helpers                                                                 */
+/* ----------------------------------------------------------------------- */
+
+function formatDate(iso: string, lang: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return iso;
+  const locale = lang === "Turkish" ? "tr-TR" : "en-US";
+  return d.toLocaleDateString(locale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function humanizeSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttr(s: string): string {
+  return escapeHtml(s);
+}

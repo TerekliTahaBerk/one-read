@@ -65,3 +65,37 @@ export async function sendWelcomeEmail(to: string): Promise<void> {
     console.error("[resend] unexpected send failure:", err);
   }
 }
+
+/**
+ * Send a daily article email. Used by the editorial pipeline. Returns the
+ * Resend message id on success, or undefined if no key is configured.
+ *
+ * Unlike `sendWelcomeEmail`, errors here propagate to the caller so the
+ * pipeline can mark the DailySend row as FAILED and retry later.
+ */
+export async function sendDailyEmail(args: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<{ messageId?: string }> {
+  if (!resend) {
+    console.warn(
+      "[resend] RESEND_API_KEY is not set; skipping daily email for",
+      args.to,
+    );
+    return {};
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: FROM,
+    to: args.to,
+    subject: args.subject,
+    text: args.text,
+    html: args.html,
+  });
+  if (error) {
+    throw new Error(`[resend] ${error.name}: ${error.message}`);
+  }
+  return { messageId: data?.id };
+}

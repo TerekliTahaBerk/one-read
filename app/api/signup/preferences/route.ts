@@ -6,6 +6,7 @@ import {
   parseSourceLanguage,
   parseSummaryLanguage,
 } from "@/lib/options";
+import { interestLabelsToSlugs } from "@/lib/topics";
 import { sendWelcomeEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -67,12 +68,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Resolve canonical topic slugs from the user-facing labels.
+    const slugs = interestLabelsToSlugs(interests);
+    const primaryInterest = slugs[0] ?? null;
+    const secondaryInterests = slugs.slice(1);
+
     // Upsert handles the edge case where someone hits step 2 directly
     // (e.g. resumed flow) without an existing record.
     await prisma.subscriber.upsert({
       where: { email },
       update: {
         interests,
+        primaryInterest,
+        secondaryInterests,
         sourceLanguage,
         summaryLanguage,
         status: "ACTIVE",
@@ -80,6 +88,8 @@ export async function POST(request: Request) {
       create: {
         email,
         interests,
+        primaryInterest,
+        secondaryInterests,
         sourceLanguage,
         summaryLanguage,
         status: "ACTIVE",

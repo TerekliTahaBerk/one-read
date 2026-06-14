@@ -11,17 +11,166 @@ datasource db {
 }
 
 /// A subscriber to the One Read morning newsletter.
-/// Created on email submit, completed when preferences are saved.
 model Subscriber {
   id              String   @id @default(cuid())
   email           String   @unique
+
+  /// Display labels the user picked in the signup form (kept verbatim).
   interests       String[]
+
+  /// Canonical topic slug used by the personalization engine.
+  primaryInterest    String?
+
+  /// Canonical topic slugs of remaining selected interests.
+  secondaryInterests String[]
+
+  /// "English" | "Turkish" | "Any"
   sourceLanguage  String?
+  /// "English" | "Turkish"
   summaryLanguage String?
-  /// PENDING_PREFERENCES | ACTIVE
+
+  /// IANA timezone, used to determine local 7 AM.
+  timezone        String?  @default("Europe/Istanbul")
+  /// Local hour-of-day delivery target.
+  deliveryHour    Int      @default(7)
+
+  /// "beginner" | "intermediate" | "advanced" | "mixed"
+  preferredDifficulty String @default("mixed")
+
+  /// Last N topic slugs sent, most recent first. Used for novelty + rotation.
+  recentlySentTopics     String[]
+  /// Last N article ids sent, most recent first.
+  recentlySentArticleIds String[]
+
+  /// Lightweight feedback profile JSON.
+  feedbackProfile Json?
+
+  lastSentAt      DateTime?
+
+  /// "PENDING_PREFERENCES" | "ACTIVE" | "PAUSED"
   status          String   @default("PENDING_PREFERENCES")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  feedbacks  Feedback[]
+  sends      DailySend[]
+
   @@index([status])
+  @@index([summaryLanguage, status])
+}
+
+/// A candidate article ingested from any source.
+model Article {
+  id            String   @id @default(cuid())
+  url           String   @unique
+  title         String
+  sourceName    String
+  sourceLanguage String
+  topic         String
+  subtopics     String[]
+  tags          String[]
+  publishedAt   DateTime?
+  ingestedAt    DateTime  @default(now())
+
+  qualityScore     Float @default(0)
+  usefulnessScore  Float @default(0)
+  morningReadScore Float @default(0)
+
+  difficulty   String  @default("mixed")
+
+  rawExcerpt        String? @db.Text
+  reasonForSelection String? @db.Text
+
+  picks  TopicDailyPick[]
+
+  @@index([topic, sourceLanguage])
+  @@index([ingestedAt])
+}
+
+/// One best article per (date, topic, sourceLanguage).
+model TopicDailyPick {
+  id                 String   @id @default(cuid())
+  date               DateTime @db.Date
+  topic              String
+  subtopics          String[]
+  sourceLanguage     String
+
+  articleId          String
+  article            Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleTitle       String
+  sourceName         String
+
+  score              Float
+  reasonForSelection String?  @db.Text
+
+  /// "DRAFT" | "READY" | "REJECTED" | "SENT"
+  status             String   @default("DRAFT")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  summaries Summary[]
+  sends     DailySend[]
+
+  @@unique([date, topic, sourceLanguage])
+  @@index([date, status])
+}
+
+/// Cached summary for a TopicDailyPick.
+model Summary {
+  id               String   @id @default(cuid())
+  topicDailyPickId String
+  pick             TopicDailyPick @relation(fields: [topicDailyPickId], references: [id], onDelete: Cascade)
+
+  summaryLanguage  String
+  primaryTopic     String
+  difficulty       String   @default("mixed")
+
+  bodyText         String   @db.Text
+  bodyHtml         String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  @@unique([topicDailyPickId, summaryLanguage, primaryTopic, difficulty])
+}
+
+/// The single article a subscriber receives on a given day.
+model DailySend {
+  id                String   @id @default(cuid())
+  date              DateTime @db.Date
+
+  subscriberId      String
+  subscriber        Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  topicDailyPickId  String
+  pick              TopicDailyPick @relation(fields: [topicDailyPickId], references: [id], onDelete: Cascade)
+
+  summaryLanguage   String
+  matchedTopic      String
+  personalizedScore Float
+
+  /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
+  status            String   @default("QUEUED")
+  emailMessageId    String?
+  error             String?
+  sentAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  @@unique([date, subscriberId])
+  @@index([date, status])
+}
+
+/// User reaction to a delivered article.
+model Feedback {
+  id           String   @id @default(cuid())
+  subscriberId String
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  articleId    String?
+  topic        String?
+  sourceName   String?
+
+  /// "loved" | "liked" | "meh" | "disliked"
+  reaction     String
+  createdAt    DateTime @default(now())
+
+  @@index([subscriberId, createdAt])
 }
