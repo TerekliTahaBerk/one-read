@@ -109,8 +109,17 @@ export function createLlmSummaryProvider(llm: LlmProvider): SummaryProvider {
   };
 }
 
+/** Stable id for the dev-only heuristic provider. Surfaced in the admin
+ * so heuristic output is never mistaken for real LLM output. */
+export const HEURISTIC_GENERATOR_ID = "heuristic-dev";
+
+/** True when a generator id denotes the dev heuristic (not a real LLM). */
+export function isHeuristicGenerator(generator: string | null | undefined): boolean {
+  return !!generator && generator.startsWith("heuristic");
+}
+
 export const heuristicSummaryProvider: SummaryProvider = {
-  id: "heuristic/excerpt",
+  id: HEURISTIC_GENERATOR_ID,
   async generate(req): Promise<SummaryResult> {
     const isProd = process.env.NODE_ENV === "production";
     if (isProd) {
@@ -127,7 +136,7 @@ export const heuristicSummaryProvider: SummaryProvider = {
         status: "REJECTED",
         rejectionReason:
           "heuristic provider used in production (AI_PROVIDER missing or invalid)",
-        generator: "heuristic/excerpt",
+        generator: HEURISTIC_GENERATOR_ID,
       };
     }
     return {

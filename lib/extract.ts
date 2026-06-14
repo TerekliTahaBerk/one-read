@@ -129,6 +129,15 @@ function clamp(text: string): string {
     : collapsed;
 }
 
+/**
+ * Confidence heuristic for a block of already-clean text. Exported so the
+ * scorer can assess manually-supplied / demo article bodies (which never
+ * go through the network fetch) on the same scale as extracted text.
+ */
+export function assessTextConfidence(text: string): number {
+  return scoreConfidence(text);
+}
+
 function scoreConfidence(text: string): number {
   // Length contribution: tops out at ~6000 chars.
   const lengthScore = Math.min(1, text.length / 6000);

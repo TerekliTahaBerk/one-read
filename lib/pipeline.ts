@@ -82,6 +82,8 @@ export interface PipelineResult {
     errors: { slug: string; error: string }[];
   };
   extraction: { total: number; scored: number; rejected: number; failed: number };
+  /** Demo + manually-entered candidate articles in the pool (testing aids). */
+  manualOrDemoArticles: number;
   picks: number;
   /**
    * Per-stage summary counters. `summariesReady` includes cached READY
@@ -89,6 +91,16 @@ export interface PipelineResult {
    */
   summaries: { ready: number; rejected: number };
   sends: { total: number; sent: number; skipped: number; failed: number };
+  /**
+   * Subscriber delivery mapping. `mapped` = DailySend rows created today;
+   * `skipped` = ACTIVE subscribers with no send, plus a coarse reason each.
+   */
+  subscribers: {
+    active: number;
+    mapped: number;
+    skipped: number;
+    skippedReasons: { email: string; reason: string }[];
+  };
   /** Wall-clock duration in ms. */
   durationMs: number;
 }
@@ -151,6 +163,14 @@ export async function runDailyPipeline(
     rejected: todaysSummaries.filter((s) => s.status === "REJECTED").length,
   };
 
+  // Testing aids: how many demo/manual candidates are in the pool.
+  const manualOrDemoArticles = await prisma.article.count({
+    where: { tags: { hasSome: ["demo", "manual"] } },
+  });
+
+  // Subscriber delivery diagnostics — who got mapped, who was skipped & why.
+  const subscribers = await computeSubscriberDiagnostics(date, picks.length);
+
   const result: PipelineResult = {
     date: toIsoDate(date),
     ingested: ingested.length,
@@ -160,9 +180,11 @@ export async function runDailyPipeline(
       errors: sourceErrors.slice(0, 10),
     },
     extraction,
+    manualOrDemoArticles,
     picks: picks.length,
     summaries,
     sends,
+    subscribers,
     durationMs: Date.now() - t0,
   };
 
@@ -170,21 +192,66 @@ export async function runDailyPipeline(
   return result;
 }
 
+/**
+ * Coarse per-subscriber delivery diagnostics for the dry-run output.
+ * ACTIVE subscribers without a DailySend today are reported as skipped with
+ * a best-effort reason. Unsubscribed/paused users are excluded by design.
+ */
+async function computeSubscriberDiagnostics(
+  date: Date,
+  pickCount: number,
+): Promise<PipelineResult["subscribers"]> {
+  const day = atUtcMidnight(date);
+  const active = await prisma.subscriber.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, email: true },
+  });
+  const sends = await prisma.dailySend.findMany({
+    where: { date: day },
+    select: { subscriberId: true },
+  });
+  const mappedIds = new Set(sends.map((s) => s.subscriberId));
+
+  const skippedReasons: { email: string; reason: string }[] = [];
+  for (const sub of active) {
+    if (mappedIds.has(sub.id)) continue;
+    const reason =
+      pickCount === 0
+        ? "no topic picks available today"
+        : "no pick matched interests or cleared the delivery threshold";
+    skippedReasons.push({ email: sub.email, reason });
+  }
+
+  return {
+    active: active.length,
+    mapped: active.filter((s) => mappedIds.has(s.id)).length,
+    skipped: skippedReasons.length,
+    skippedReasons: skippedReasons.slice(0, 20),
+  };
+}
+
 function printPipelineSummary(r: PipelineResult): void {
   const lines = [
     "",
     `[pipeline] ──────── summary  date=${r.date}  ${r.durationMs}ms ────────`,
     `[pipeline]  sources        attempted=${r.sources.attempted}  failed=${r.sources.failed}`,
-    `[pipeline]  ingest         new articles=${r.ingested}`,
+    `[pipeline]  ingest         new articles=${r.ingested}  (demo/manual in pool=${r.manualOrDemoArticles})`,
     `[pipeline]  extract+score  total=${r.extraction.total}  scored=${r.extraction.scored}  rejected=${r.extraction.rejected}  failed=${r.extraction.failed}`,
     `[pipeline]  picks          created=${r.picks}`,
     `[pipeline]  summaries      ready=${r.summaries.ready}  rejected=${r.summaries.rejected}`,
+    `[pipeline]  subscribers    active=${r.subscribers.active}  mapped=${r.subscribers.mapped}  skipped=${r.subscribers.skipped}`,
     `[pipeline]  sends          total=${r.sends.total}  sent=${r.sends.sent}  skipped=${r.sends.skipped}  failed=${r.sends.failed}`,
   ];
   if (r.sources.errors.length > 0) {
     lines.push(`[pipeline]  source errors:`);
     for (const e of r.sources.errors) {
       lines.push(`[pipeline]    · ${e.slug}: ${e.error.slice(0, 140)}`);
+    }
+  }
+  if (r.subscribers.skippedReasons.length > 0) {
+    lines.push(`[pipeline]  skipped subscribers:`);
+    for (const s of r.subscribers.skippedReasons) {
+      lines.push(`[pipeline]    · ${s.email}: ${s.reason}`);
     }
   }
   lines.push(`[pipeline] ─────────────────────────────────────────────`);

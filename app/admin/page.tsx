@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { topicBySlug } from "@/lib/topics";
 import { getLlmStatus } from "@/lib/llm";
 import { getResendStatus } from "@/lib/resend";
+import { getLaunchReadiness, type ReadinessStatus } from "@/lib/launch-readiness";
+import { isHeuristicGenerator } from "@/lib/summarizer";
+import { renderDailyEmail } from "@/lib/email-template";
+import type { StructuredSummary } from "@/lib/llm";
 import {
   MIN_ARTICLE_SCORE,
   MIN_DELIVERY_SCORE,
@@ -66,7 +70,7 @@ export default async function AdminPage({
       }),
       prisma.summary.findMany({
         where: { pick: { date: targetDate } },
-        include: { pick: true },
+        include: { pick: { include: { article: true } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.feedback.groupBy({
@@ -74,6 +78,45 @@ export default async function AdminPage({
         _count: { _all: true },
       }),
     ]);
+
+  const readiness = getLaunchReadiness();
+
+  // Build email previews for READY summaries (rendering only — never sends).
+  const emailPreviews = summaries
+    .filter((s) => s.status === "READY")
+    .slice(0, 8)
+    .map((s) => {
+      const structured =
+        (s.structuredJson as unknown as StructuredSummary | null) ?? undefined;
+      const rendered = renderDailyEmail({
+        date: isoDate,
+        matchedTopic: s.primaryTopic,
+        hasMultipleInterests: false,
+        summaryLanguage: s.summaryLanguage,
+        article: {
+          title: s.pick.articleTitle,
+          url: s.pick.article.url,
+          sourceName: s.pick.sourceName,
+        },
+        summary: {
+          bodyText: s.bodyText,
+          bodyHtml: s.bodyHtml ?? undefined,
+          structured,
+        },
+        links: previewLinks(),
+      });
+      return {
+        id: s.id,
+        summaryLanguage: s.summaryLanguage,
+        primaryTopic: s.primaryTopic,
+        sourceName: s.pick.sourceName,
+        confidence: s.confidence,
+        generator: s.generator,
+        preheader: structured?.preheader ?? "",
+        articleUrl: s.pick.article.url,
+        rendered,
+      };
+    });
 
   // Feedback totals (all-time) for the QA panel.
   const feedbackByReaction: Record<string, number> = {};
@@ -133,11 +176,37 @@ export default async function AdminPage({
           Editorial preview
         </h1>
         <div className="flex items-center gap-3 text-[12px] text-fog font-sans">
+          <a
+            href={`/admin/manual-article?token=${encodeURIComponent(token)}`}
+            className="text-ink underline underline-offset-2 hover:text-graphite"
+          >
+            + Add article
+          </a>
+          <span>·</span>
           <span>{isoDate}</span>
           <span>·</span>
           <span>{totalSubs} active subscribers</span>
         </div>
       </div>
+
+      {/* Launch readiness */}
+      <Section
+        title="Launch readiness"
+        subtitle={`${readiness.filter((c) => c.status === "pass").length}/${readiness.length} pass`}
+      >
+        <Table
+          head={["Variable", "Status", "Explanation"]}
+          rows={readiness.map((c) => [
+            <span key="k" className="font-mono text-[11.5px] text-ash">
+              {c.key}
+            </span>,
+            <ReadinessBadge key="s" status={c.status} />,
+            <span key="e" className="text-[12.5px] text-ink/80">
+              {c.explanation}
+            </span>,
+          ])}
+        />
+      </Section>
 
       {/* Section 0 — System status */}
       <Section title="System" subtitle="Provider + threshold configuration">
@@ -220,6 +289,13 @@ export default async function AdminPage({
         title="Summaries"
         subtitle={`${summaries.length} for this date · ${summaries.filter((s) => s.status === "READY").length} ready`}
       >
+        {summaries.some((s) => isHeuristicGenerator(s.generator)) && (
+          <div className="px-4 py-3 bg-cream/60 border-b border-line text-[12.5px] text-dawn font-sans">
+            ⚠ Some summaries below were produced by the dev heuristic
+            (<code>heuristic-dev</code>), not a real LLM. This is development
+            output and is not production-ready quality.
+          </div>
+        )}
         {summaries.length === 0 ? (
           <Empty>No summaries generated for this date yet.</Empty>
         ) : (
@@ -252,13 +328,95 @@ export default async function AdminPage({
                 s.confidence != null ? s.confidence.toFixed(0) : "—",
                 <span key="g" className="font-mono text-[11.5px] text-ash">
                   {s.generator ?? "—"}
+                  {isHeuristicGenerator(s.generator) ? (
+                    <span className="ml-1 text-dawn not-italic">· dev</span>
+                  ) : null}
                 </span>,
                 <span key="n" className="text-[11.5px] text-ash">
+                  {isHeuristicGenerator(s.generator)
+                    ? "Development summary, not real LLM output. "
+                    : ""}
                   {s.rejectionReason ?? structured?.editorNotes ?? "—"}
                 </span>,
               ];
             })}
           />
+        )}
+      </Section>
+
+      {/* Section 2b — Email preview (rendering only, never sends) */}
+      <Section
+        title="Email preview"
+        subtitle={`${emailPreviews.length} READY summaries · rendering only, no send`}
+      >
+        {emailPreviews.length === 0 ? (
+          <Empty>
+            No READY summaries to preview. Seed demo articles, run scoring, then
+            the pipeline.
+          </Empty>
+        ) : (
+          <div className="divide-y divide-line">
+            {emailPreviews.map((p) => (
+              <div key={p.id} className="p-4">
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-3 text-[12.5px]">
+                  <span className="font-serif text-ink text-[15px]">
+                    {p.rendered.subject}
+                  </span>
+                  <span className="text-fog">
+                    {topicBySlug(p.primaryTopic)?.label ?? p.primaryTopic} ·{" "}
+                    {p.summaryLanguage} · {p.sourceName}
+                  </span>
+                  <span className="text-ash">
+                    confidence {p.confidence ?? "—"}
+                  </span>
+                  <span className="font-mono text-[11px] text-ash">
+                    {p.generator ?? "—"}
+                    {isHeuristicGenerator(p.generator) ? (
+                      <span className="text-dawn"> · dev</span>
+                    ) : null}
+                  </span>
+                </div>
+                {p.preheader ? (
+                  <div className="mb-2 text-[12px] text-fog font-sans">
+                    Preheader: {p.preheader}
+                  </div>
+                ) : null}
+                <div className="mb-2 text-[12px] font-sans">
+                  <a
+                    href={p.articleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink underline underline-offset-2"
+                  >
+                    Original article ↗
+                  </a>
+                </div>
+                <iframe
+                  title={`email-${p.id}`}
+                  srcDoc={p.rendered.html}
+                  className="w-full h-[460px] rounded-lg border border-line bg-white"
+                />
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[12px] text-fog font-sans">
+                    Plain-text version
+                  </summary>
+                  <pre className="mt-2 p-3 bg-paper/70 rounded-lg border border-line text-[11.5px] text-ink/80 whitespace-pre-wrap font-mono overflow-x-auto">
+                    {p.rendered.text}
+                  </pre>
+                </details>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[12px] text-fog font-sans">
+                    Email links (preview)
+                  </summary>
+                  <ul className="mt-2 text-[11.5px] text-ash font-mono break-all space-y-1">
+                    <li>loved: {previewLinks().feedbackLoved}</li>
+                    <li>not for me: {previewLinks().feedbackDisliked}</li>
+                    <li>unsubscribe: {previewLinks().unsubscribe}</li>
+                  </ul>
+                </details>
+              </div>
+            ))}
+          </div>
         )}
       </Section>
 
@@ -504,4 +662,35 @@ function todayUtc(): Date {
   const d = new Date();
   d.setUTCHours(0, 0, 0, 0);
   return d;
+}
+
+/** Non-functional placeholder links for the email preview (no real send). */
+function previewLinks() {
+  const base =
+    process.env.PUBLIC_BASE_URL ??
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    "https://oneread.app";
+  return {
+    feedbackLoved: `${base}/api/feedback?preview=1&r=loved`,
+    feedbackLiked: `${base}/api/feedback?preview=1&r=liked`,
+    feedbackMeh: `${base}/api/feedback?preview=1&r=meh`,
+    feedbackDisliked: `${base}/api/feedback?preview=1&r=disliked`,
+    unsubscribe: `${base}/unsubscribe?preview=1`,
+  };
+}
+
+function ReadinessBadge({ status }: { status: ReadinessStatus }) {
+  const map: Record<ReadinessStatus, string> = {
+    pass: "bg-cream/80 text-ink border-line-strong",
+    warn: "bg-paper text-dawn border-line",
+    missing: "bg-paper text-dawn border-line-strong",
+  };
+  const label = status === "pass" ? "PASS" : status === "warn" ? "WARN" : "MISSING";
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] uppercase tracking-eyebrow ${map[status]}`}
+    >
+      {label}
+    </span>
+  );
 }

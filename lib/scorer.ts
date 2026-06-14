@@ -12,7 +12,7 @@
  */
 
 import { prisma } from "./prisma";
-import { extractArticle } from "./extract";
+import { extractArticle, assessTextConfidence } from "./extract";
 import { getLlmProvider } from "./llm";
 import {
   MAX_CLEANED_TEXT_LENGTH,
@@ -64,8 +64,30 @@ export async function extractAndScorePendingArticles(opts: {
 
   for (const article of pending) {
     try {
-      // 1. Extract.
-      const extracted = await extractArticle(article.url);
+      // 1. Extract. If the article was created with a body already attached
+      // (manual admin input or demo seed), trust it and skip the network
+      // fetch — re-extracting a non-fetchable demo URL would wipe the body
+      // and reject it. RSS articles have no cleanedText yet, so they still
+      // go through readability.
+      const supplied =
+        article.cleanedText &&
+        article.cleanedText.trim().length >= MIN_CLEANED_TEXT_LENGTH
+          ? article.cleanedText.trim()
+          : null;
+
+      // Supplied bodies are human-curated (manual/demo), so there is no
+      // *extraction* uncertainty — we always trust them past the extraction
+      // gate, while still letting richer prose score higher. (The text
+      // heuristic's length penalty must not reject short curated pieces.)
+      const extracted = supplied
+        ? {
+            title: article.title,
+            cleanedText: supplied,
+            excerpt: article.rawExcerpt,
+            confidence: Math.max(0.7, assessTextConfidence(supplied)),
+            reason: undefined as string | undefined,
+          }
+        : await extractArticle(article.url);
 
       const cleanedText =
         extracted.cleanedText &&

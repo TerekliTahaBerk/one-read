@@ -21,7 +21,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { renderDailyEmail } from "@/lib/email-template";
 import { getOrCreateSummary } from "@/lib/summarizer";
-import { sendDailyEmail } from "@/lib/resend";
+import { sendDailyEmail, getResendStatus } from "@/lib/resend";
 import { subscriberToContext } from "@/lib/pipeline";
 import {
   parseSummaryLanguage,
@@ -168,6 +168,44 @@ export async function POST(req: Request) {
     links,
   });
 
+  const summaryMeta = {
+    confidence: summary.confidence,
+    generator: summary.generator,
+    status: summary.status,
+  };
+  const pickMeta = {
+    id: pick.id,
+    topic: pick.topic,
+    article: { title: pick.articleTitle, url: pick.article.url },
+  };
+  const overridesMeta = {
+    summaryLanguage: overrideLang,
+    topic: overrideTopic,
+    difficulty: overrideDifficulty,
+  };
+
+  // Safe mock-send: if Resend isn't configured, don't attempt a real send.
+  // Return the rendered HTML/text so formatting can be QA'd. No DailySend
+  // row is touched and no subscriber is marked sent.
+  if (!getResendStatus().hasApiKey) {
+    console.log(
+      `[admin/test-email] RESEND_API_KEY missing — rendering only for ${to} (no email sent).`,
+    );
+    return NextResponse.json({
+      ok: true,
+      mode: "render-only",
+      reason: "RESEND_API_KEY not configured — email was rendered but not sent.",
+      rendered: {
+        subject: `[Test] ${rendered.subject}`,
+        text: rendered.text,
+        html: rendered.html,
+      },
+      summary: summaryMeta,
+      pick: pickMeta,
+      overrides: overridesMeta,
+    });
+  }
+
   try {
     const { messageId } = await sendDailyEmail({
       to,
@@ -177,22 +215,11 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({
       ok: true,
+      mode: "sent",
       messageId,
-      summary: {
-        confidence: summary.confidence,
-        generator: summary.generator,
-        status: summary.status,
-      },
-      pick: {
-        id: pick.id,
-        topic: pick.topic,
-        article: { title: pick.articleTitle, url: pick.article.url },
-      },
-      overrides: {
-        summaryLanguage: overrideLang,
-        topic: overrideTopic,
-        difficulty: overrideDifficulty,
-      },
+      summary: summaryMeta,
+      pick: pickMeta,
+      overrides: overridesMeta,
     });
   } catch (err) {
     return NextResponse.json(
