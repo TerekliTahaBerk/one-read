@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ivory text-ink font-sans antialiased;
+    /* Subtle paper grain via layered radial gradients (no images) */
+    background-image:
+      radial-gradient(1200px 600px at 50% -10%, rgba(242, 216, 168, 0.32), transparent 60%),
+      radial-gradient(900px 600px at 50% 110%, rgba(229, 178, 116, 0.18), transparent 65%);
+    background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(201, 122, 44, 0.22);
+    color: #1B1612;
+  }
+}
+
+@layer utilities {
+  /* Improve focus rings to feel calm and editorial */
+  .focus-ring {
+    @apply outline-none ring-0 transition-shadow duration-200;
+  }
+
+  .focus-ring:focus-visible {
+    box-shadow:
+      0 0 0 2px #F6F1E6,
+      0 0 0 3px rgba(27, 22, 18, 0.55);
+  }
+
+  /* Soft, hairline underline for inline links */
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    transition: background-size 250ms ease;
+  }
+
+  .link-underline:hover {
+    background-size: 0% 1px;
+    background-position: 100% 100%;
+  }
+}
