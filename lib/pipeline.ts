@@ -37,7 +37,13 @@ import { renderDailyEmail } from "./email-template";
 import { ingestCandidates, type IngestionSource } from "./ingest";
 import { rssSource } from "./rss-source";
 import { extractAndScorePendingArticles } from "./scorer";
-import { MIN_ARTICLE_SCORE, MIN_DELIVERY_SCORE } from "./thresholds";
+import {
+  MIN_ARTICLE_SCORE,
+  MIN_DELIVERY_SCORE,
+  MIN_SUMMARY_CONFIDENCE,
+  getEffectiveThresholds,
+  isDemoModeEnabled,
+} from "./thresholds";
 import type {
   Article,
   DailySend,
@@ -60,6 +66,12 @@ export interface DailyPipelineOptions {
   dryRun?: boolean;
   /** If true, skip the ingest + extract + score stages (rerun rendering only). */
   skipIngest?: boolean;
+  /**
+   * Development-only demo mode. When true (and NODE_ENV !== "production"),
+   * relaxed DEMO_* thresholds are used so demo/manual articles can flow
+   * through the full pipeline for preview. Ignored in production.
+   */
+  demo?: boolean;
   /** Hook used by the email step. */
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
 }
@@ -84,6 +96,8 @@ export interface PipelineResult {
   extraction: { total: number; scored: number; rejected: number; failed: number };
   /** Demo + manually-entered candidate articles in the pool (testing aids). */
   manualOrDemoArticles: number;
+  /** TopicDailyPick rows for this date backed by demo/manual articles. */
+  manualOrDemoPicks: number;
   picks: number;
   /**
    * Per-stage summary counters. `summariesReady` includes cached READY
@@ -101,6 +115,16 @@ export interface PipelineResult {
     skipped: number;
     skippedReasons: { email: string; reason: string }[];
   };
+  /**
+   * Demo-mode reporting. `enabled` is true only when relaxed thresholds were
+   * actually applied (dev + demo). Production thresholds are always echoed so
+   * it's clear they were not changed.
+   */
+  demo: {
+    enabled: boolean;
+    thresholdsUsed: { minArticleScore: number; minDeliveryScore: number; minSummaryConfidence: number };
+    productionThresholds: { minArticleScore: number; minDeliveryScore: number; minSummaryConfidence: number };
+  };
   /** Wall-clock duration in ms. */
   durationMs: number;
 }
@@ -115,9 +139,17 @@ export async function runDailyPipeline(
   const date = atUtcMidnight(opts.date ?? new Date());
   const ingestionSources = opts.ingestionSources ?? [rssSource];
 
+  // Resolve effective thresholds. Demo mode is hard-disabled in production.
+  const thresholds = getEffectiveThresholds(opts.demo);
+
   console.log(
-    `[pipeline] ▶ start  date=${toIsoDate(date)}  dryRun=${opts.dryRun ?? false}  skipIngest=${opts.skipIngest ?? false}`,
+    `[pipeline] ▶ start  date=${toIsoDate(date)}  dryRun=${opts.dryRun ?? false}  skipIngest=${opts.skipIngest ?? false}  demo=${thresholds.demo}`,
   );
+  if (thresholds.demo) {
+    console.log(
+      `[pipeline] ⚠ DEMO MODE — relaxed preview thresholds (article≥${thresholds.minArticleScore} delivery≥${thresholds.minDeliveryScore} summary≥${thresholds.minSummaryConfidence}). Production thresholds unchanged. Not production-ready output.`,
+    );
+  }
 
   // 1. Ingest
   const ingested = opts.skipIngest
@@ -134,13 +166,19 @@ export async function runDailyPipeline(
   );
 
   // 3. Topic picks
-  const picks = await selectTopicDailyPicks(date);
+  const picks = await selectTopicDailyPicks(date, thresholds.minArticleScore);
   console.log(`[pipeline] · created ${picks.length} TopicDailyPick(s)`);
 
   // 4-6. Fan-out + send
+  if (opts.dryRun) {
+    await resetDryRunSends(date);
+  }
   const sends = await fanOutAndSend(date, {
-    summaryProvider: opts.summaryProvider ?? defaultSummaryProvider(),
+    summaryProvider:
+      opts.summaryProvider ??
+      defaultSummaryProvider({ minConfidence: thresholds.minSummaryConfidence }),
     dryRun: opts.dryRun ?? false,
+    minDeliveryScore: thresholds.minDeliveryScore,
     send: opts.send,
   });
 
@@ -167,6 +205,17 @@ export async function runDailyPipeline(
   const manualOrDemoArticles = await prisma.article.count({
     where: { tags: { hasSome: ["demo", "manual"] } },
   });
+  const manualOrDemoPicks = await prisma.topicDailyPick.count({
+    where: {
+      date,
+      article: {
+        OR: [
+          { sourceName: "One Read Demo" },
+          { tags: { hasSome: ["demo", "manual"] } },
+        ],
+      },
+    },
+  });
 
   // Subscriber delivery diagnostics — who got mapped, who was skipped & why.
   const subscribers = await computeSubscriberDiagnostics(date, picks.length);
@@ -181,15 +230,43 @@ export async function runDailyPipeline(
     },
     extraction,
     manualOrDemoArticles,
+    manualOrDemoPicks,
     picks: picks.length,
     summaries,
     sends,
     subscribers,
+    demo: {
+      enabled: thresholds.demo,
+      thresholdsUsed: {
+        minArticleScore: thresholds.minArticleScore,
+        minDeliveryScore: thresholds.minDeliveryScore,
+        minSummaryConfidence: thresholds.minSummaryConfidence,
+      },
+      productionThresholds: {
+        minArticleScore: MIN_ARTICLE_SCORE,
+        minDeliveryScore: MIN_DELIVERY_SCORE,
+        minSummaryConfidence: MIN_SUMMARY_CONFIDENCE,
+      },
+    },
     durationMs: Date.now() - t0,
   };
 
   printPipelineSummary(result);
   return result;
+}
+
+async function resetDryRunSends(date: Date): Promise<void> {
+  await prisma.dailySend.updateMany({
+    where: {
+      date,
+      status: "SKIPPED",
+      error: "dry-run",
+    },
+    data: {
+      status: "QUEUED",
+      error: null,
+    },
+  });
 }
 
 /**
@@ -234,10 +311,13 @@ function printPipelineSummary(r: PipelineResult): void {
   const lines = [
     "",
     `[pipeline] ──────── summary  date=${r.date}  ${r.durationMs}ms ────────`,
+    r.demo.enabled
+      ? `[pipeline]  mode           DEMO (preview thresholds article≥${r.demo.thresholdsUsed.minArticleScore} delivery≥${r.demo.thresholdsUsed.minDeliveryScore} summary≥${r.demo.thresholdsUsed.minSummaryConfidence}) · production thresholds UNCHANGED (article≥${r.demo.productionThresholds.minArticleScore} delivery≥${r.demo.productionThresholds.minDeliveryScore} summary≥${r.demo.productionThresholds.minSummaryConfidence})`
+      : `[pipeline]  mode           production thresholds (article≥${r.demo.productionThresholds.minArticleScore} delivery≥${r.demo.productionThresholds.minDeliveryScore} summary≥${r.demo.productionThresholds.minSummaryConfidence})`,
     `[pipeline]  sources        attempted=${r.sources.attempted}  failed=${r.sources.failed}`,
     `[pipeline]  ingest         new articles=${r.ingested}  (demo/manual in pool=${r.manualOrDemoArticles})`,
     `[pipeline]  extract+score  total=${r.extraction.total}  scored=${r.extraction.scored}  rejected=${r.extraction.rejected}  failed=${r.extraction.failed}`,
-    `[pipeline]  picks          created=${r.picks}`,
+    `[pipeline]  picks          created=${r.picks}  demo/manual today=${r.manualOrDemoPicks}`,
     `[pipeline]  summaries      ready=${r.summaries.ready}  rejected=${r.summaries.rejected}`,
     `[pipeline]  subscribers    active=${r.subscribers.active}  mapped=${r.subscribers.mapped}  skipped=${r.subscribers.skipped}`,
     `[pipeline]  sends          total=${r.sends.total}  sent=${r.sends.sent}  skipped=${r.sends.skipped}  failed=${r.sends.failed}`,
@@ -274,6 +354,7 @@ function printPipelineSummary(r: PipelineResult): void {
  */
 export async function selectTopicDailyPicks(
   date: Date,
+  minArticleScore: number = MIN_ARTICLE_SCORE,
 ): Promise<TopicDailyPick[]> {
   const day = atUtcMidnight(date);
 
@@ -292,7 +373,7 @@ export async function selectTopicDailyPicks(
     where: {
       ingestedAt: { gte: since },
       scoringStatus: "SCORED",
-      qualityScore: { gte: MIN_ARTICLE_SCORE },
+      qualityScore: { gte: minArticleScore },
     },
   });
 
@@ -337,6 +418,86 @@ export async function selectTopicDailyPicks(
 }
 
 /**
+ * Force-create a preview TopicDailyPick for a single article — a safe,
+ * development-only way to render the full email for a demo/manual article
+ * that may not clear the production quality bar.
+ *
+ * Guarded: returns null in production or when demo mode is off. Never sends
+ * email. Idempotent per (date, topic, sourceLanguage) slot.
+ */
+export async function createPreviewPick(
+  articleId: string,
+  opts: { demo?: boolean } = {},
+): Promise<{ pick: TopicDailyPick | null; reason?: string }> {
+  if (process.env.NODE_ENV === "production") {
+    return { pick: null, reason: "preview picks are disabled in production" };
+  }
+  // Allow when explicitly dev (NODE_ENV !== production) — demo flag optional.
+  if (opts.demo === false && !isDemoModeEnabled()) {
+    // Still allowed in plain dev; demo flag just relaxes thresholds elsewhere.
+  }
+
+  const article = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!article) return { pick: null, reason: "article not found" };
+  const isPreviewArticle =
+    article.sourceName === "One Read Demo" ||
+    article.tags.includes("demo") ||
+    article.tags.includes("manual");
+  if (!isPreviewArticle) {
+    return {
+      pick: null,
+      reason: "preview picks are only allowed for demo/manual articles",
+    };
+  }
+
+  const day = atUtcMidnight(new Date());
+
+  const existing = await prisma.topicDailyPick.findUnique({
+    where: {
+      date_topic_sourceLanguage: {
+        date: day,
+        topic: article.topic,
+        sourceLanguage: article.sourceLanguage,
+      },
+    },
+  });
+  if (existing) {
+    // Repoint the slot to this article so the admin can preview it.
+    const pick = await prisma.topicDailyPick.update({
+      where: { id: existing.id },
+      data: {
+        articleId: article.id,
+        articleTitle: article.title,
+        sourceName: article.sourceName,
+        subtopics: article.subtopics,
+        score: round3(articleRank(article)),
+        reasonForSelection:
+          article.reasonForSelection ?? "Preview pick (dev/demo).",
+        status: "READY",
+      },
+    });
+    return { pick };
+  }
+
+  const pick = await prisma.topicDailyPick.create({
+    data: {
+      date: day,
+      topic: article.topic,
+      subtopics: article.subtopics,
+      sourceLanguage: article.sourceLanguage,
+      articleId: article.id,
+      articleTitle: article.title,
+      sourceName: article.sourceName,
+      score: round3(articleRank(article)),
+      reasonForSelection:
+        article.reasonForSelection ?? "Preview pick (dev/demo).",
+      status: "READY",
+    },
+  });
+  return { pick };
+}
+
+/**
  * Combined ranking of an Article used during picking. Equally weights
  * quality, usefulness, and morning-read suitability.
  */
@@ -356,7 +517,10 @@ function articleRank(a: Article): number {
  * For every ACTIVE subscriber, choose the best `TopicDailyPick` and write
  * a `DailySend`. Idempotent on (date, subscriberId).
  */
-export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
+export async function selectSubscriberSends(
+  date: Date,
+  minDeliveryScore: number = MIN_DELIVERY_SCORE,
+): Promise<DailySend[]> {
   const day = atUtcMidnight(date);
 
   const picks = await prisma.topicDailyPick.findMany({
@@ -425,7 +589,7 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
 
     // Quality gate: don't send below threshold.
     const winner = scored[0];
-    if (!winner || winner.breakdown.total < MIN_DELIVERY_SCORE) {
+    if (!winner || winner.breakdown.total < minDeliveryScore) {
       continue; // skip — better silence than mediocre.
     }
 
@@ -466,6 +630,7 @@ export async function selectSubscriberSends(date: Date): Promise<DailySend[]> {
 interface FanOutOpts {
   summaryProvider: SummaryProvider;
   dryRun: boolean;
+  minDeliveryScore?: number;
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
 }
 
@@ -474,7 +639,7 @@ async function fanOutAndSend(
   opts: FanOutOpts,
 ): Promise<{ total: number; sent: number; skipped: number; failed: number }> {
   // Make sure DailySend rows exist before sending.
-  await selectSubscriberSends(date);
+  await selectSubscriberSends(date, opts.minDeliveryScore);
 
   const day = atUtcMidnight(date);
   const queued = await prisma.dailySend.findMany({

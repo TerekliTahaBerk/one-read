@@ -63,7 +63,10 @@ export interface SummaryProvider {
   generate(req: SummaryRequest): Promise<SummaryResult>;
 }
 
-export function createLlmSummaryProvider(llm: LlmProvider): SummaryProvider {
+export function createLlmSummaryProvider(
+  llm: LlmProvider,
+  minConfidence: number = MIN_SUMMARY_CONFIDENCE,
+): SummaryProvider {
   return {
     id: llm.id,
     async generate(req: SummaryRequest): Promise<SummaryResult> {
@@ -89,10 +92,10 @@ export function createLlmSummaryProvider(llm: LlmProvider): SummaryProvider {
       }
 
       const status: "READY" | "REJECTED" =
-        structured.confidence >= MIN_SUMMARY_CONFIDENCE ? "READY" : "REJECTED";
+        structured.confidence >= minConfidence ? "READY" : "REJECTED";
       const rejectionReason =
         status === "REJECTED"
-          ? `confidence ${structured.confidence} < ${MIN_SUMMARY_CONFIDENCE}`
+          ? `confidence ${structured.confidence} < ${minConfidence}`
           : undefined;
 
       const { bodyText, bodyHtml } = renderStructured(structured);
@@ -142,7 +145,7 @@ export const heuristicSummaryProvider: SummaryProvider = {
     return {
       ...heuristicResult(req),
       status: "READY",
-      generator: "heuristic/excerpt",
+      generator: HEURISTIC_GENERATOR_ID,
     };
   },
 };
@@ -298,9 +301,13 @@ export async function getOrCreateSummary(
   return generated;
 }
 
-export function defaultSummaryProvider(): SummaryProvider {
+export function defaultSummaryProvider(
+  opts: { minConfidence?: number } = {},
+): SummaryProvider {
   const llm = getLlmProvider();
-  return llm ? createLlmSummaryProvider(llm) : heuristicSummaryProvider;
+  return llm
+    ? createLlmSummaryProvider(llm, opts.minConfidence)
+    : heuristicSummaryProvider;
 }
 
 function escapeHtml(s: string): string {

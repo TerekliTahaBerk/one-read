@@ -227,3 +227,19 @@ DATABASE_URL=$(grep PRISMA_DATABASE_URL .env.production.local | cut -d '=' -f2-)
 
 - `PENDING_PREFERENCES` — set after step 1.
 - `ACTIVE` — set after step 2 (preferences saved). The morning job will read from this set.
+
+## Development Demo Preview
+
+Use this before real LLM or Resend production delivery is configured:
+
+```bash
+npm run seed:demo-articles
+npm run score
+npm run dry-run -- --skip-ingest --demo
+npm run summarize -- --lang Turkish --twice
+npm run demo:preview
+```
+
+`npm run demo:preview` seeds demo articles, scores them, creates development preview picks for demo articles, generates heuristic summaries, runs a dry-run mapping, and prints the `/admin?token=<ADMIN_TOKEN>` preview instruction.
+
+Demo mode is development-only. `DEMO_MODE=true` or `--demo` can relax preview thresholds only when `NODE_ENV !== "production"`; production thresholds remain unchanged. Demo output is labeled as `heuristic-dev`, demo/manual, and render-only, and no real email is sent by demo preview or dry-run commands.

@@ -156,7 +156,16 @@ const DEMO: DemoArticle[] = [
   },
 ];
 
-async function main() {
+/**
+ * Upsert all demo articles (idempotent). Returns counts. Exported so the
+ * demo-preview orchestrator can reuse it without a fragile side-effect
+ * import. Does NOT disconnect Prisma — the caller owns the lifecycle.
+ */
+export async function seedDemoArticles(): Promise<{
+  created: number;
+  updated: number;
+  total: number;
+}> {
   let created = 0;
   let updated = 0;
 
@@ -203,6 +212,12 @@ async function main() {
   const total = await prisma.article.count({
     where: { sourceName: DEMO_SOURCE_NAME },
   });
+  return { created, updated, total };
+}
+
+/** CLI entrypoint — only runs when invoked directly, not when imported. */
+async function main() {
+  const { created, updated, total } = await seedDemoArticles();
   console.log(
     `[seed:demo-articles] created=${created} updated=${updated} demoTotal=${total}`,
   );
@@ -211,9 +226,16 @@ async function main() {
   );
 }
 
-main()
-  .catch((err) => {
-    console.error("[seed:demo-articles] failed:", err);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+// Run main() only when this file is the entrypoint (not when imported).
+const isEntrypoint =
+  typeof process.argv[1] === "string" &&
+  process.argv[1].endsWith("seed-demo-articles.ts");
+
+if (isEntrypoint) {
+  main()
+    .catch((err) => {
+      console.error("[seed:demo-articles] failed:", err);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

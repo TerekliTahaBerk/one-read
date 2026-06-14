@@ -14,6 +14,7 @@
     "db:studio": "prisma studio",
     "db:seed-sources": "node --env-file=.env scripts/seed-sources.mjs",
     "seed:demo-articles": "node --import tsx --env-file=.env scripts/seed-demo-articles.ts",
+    "demo:preview": "node --import tsx --env-file=.env scripts/demo-preview.ts",
     "ingest": "node --import tsx --env-file=.env scripts/ingest.ts",
     "ingest:only": "node --import tsx --env-file=.env scripts/ingest.ts --no-score",
     "score": "node --import tsx --env-file=.env scripts/score.ts",

@@ -7,6 +7,8 @@ import { getLaunchReadiness, type ReadinessStatus } from "@/lib/launch-readiness
 import { isHeuristicGenerator } from "@/lib/summarizer";
 import { renderDailyEmail } from "@/lib/email-template";
 import type { StructuredSummary } from "@/lib/llm";
+import { PreviewPickButton } from "@/components/PreviewPickButton";
+import { isDemoModeEnabled } from "@/lib/thresholds";
 import {
   MIN_ARTICLE_SCORE,
   MIN_DELIVERY_SCORE,
@@ -53,6 +55,7 @@ export default async function AdminPage({
     await Promise.all([
       prisma.topicDailyPick.findMany({
         where: { date: targetDate },
+        include: { article: true },
         orderBy: [{ topic: "asc" }, { sourceLanguage: "asc" }],
       }),
       prisma.dailySend.findMany({
@@ -80,6 +83,12 @@ export default async function AdminPage({
     ]);
 
   const readiness = getLaunchReadiness();
+
+  // Identify demo / manual articles for labeling + preview actions.
+  const isDemoOrManual = (a: { sourceName: string; tags: string[] }): boolean =>
+    a.sourceName === "One Read Demo" ||
+    a.tags.includes("demo") ||
+    a.tags.includes("manual");
 
   // Build email previews for READY summaries (rendering only — never sends).
   const emailPreviews = summaries
@@ -114,6 +123,7 @@ export default async function AdminPage({
         generator: s.generator,
         preheader: structured?.preheader ?? "",
         articleUrl: s.pick.article.url,
+        demo: isDemoOrManual(s.pick.article),
         rendered,
       };
     });
@@ -127,6 +137,7 @@ export default async function AdminPage({
 
   const llmStatus = getLlmStatus();
   const resendStatus = getResendStatus();
+  const demoActive = isDemoModeEnabled();
 
   // Group sends into segments: (matchedTopic, summaryLanguage, articleId).
   const segmentMap = new Map<
@@ -188,6 +199,23 @@ export default async function AdminPage({
           <span>{totalSubs} active subscribers</span>
         </div>
       </div>
+
+      {/* Development preview banner */}
+      {(!llmStatus.configured || !resendStatus.hasApiKey || demoActive) && (
+        <div className="mb-8 rounded-xl border border-line-strong bg-cream/60 px-5 py-4 text-[13px] text-ink font-sans">
+          <span className="font-medium">Development preview.</span>{" "}
+          {!llmStatus.configured
+            ? "Real LLM is not configured (summaries use heuristic-dev). "
+            : ""}
+          {!resendStatus.hasApiKey
+            ? "Resend is not configured (emails are render-only, nothing is sent). "
+            : ""}
+          {demoActive
+            ? "DEMO MODE is enabled — relaxed preview thresholds are in use; production thresholds are unchanged. "
+            : ""}
+          Output here is for testing and is not production-ready quality.
+        </div>
+      )}
 
       {/* Launch readiness */}
       <Section
@@ -270,7 +298,7 @@ export default async function AdminPage({
           <Empty>No picks for this date yet. Run the daily pipeline.</Empty>
         ) : (
           <Table
-            head={["Topic", "Source lang", "Article", "Source", "Score", "Status", "Reason"]}
+            head={["Topic", "Source lang", "Article", "Source", "Score", "Status", "Labels", "Reason"]}
             rows={picks.map((p) => [
               topicBySlug(p.topic)?.label ?? p.topic,
               p.sourceLanguage,
@@ -278,6 +306,15 @@ export default async function AdminPage({
               p.sourceName,
               p.score.toFixed(2),
               <StatusBadge key="s" value={p.status} />,
+              <span key="labels" className="inline-flex flex-wrap gap-1">
+                {isDemoOrManual(p.article) ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-dawn">
+                    {p.article.sourceName === "One Read Demo" ? "demo-mode pick" : "manual pick"}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </span>,
               p.reasonForSelection ?? "—",
             ])}
           />
@@ -374,6 +411,14 @@ export default async function AdminPage({
                     {isHeuristicGenerator(p.generator) ? (
                       <span className="text-dawn"> · dev</span>
                     ) : null}
+                  </span>
+                  {p.demo ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-dawn">
+                      demo-mode pick
+                    </span>
+                  ) : null}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-fog">
+                    render-only · not sent
                   </span>
                 </div>
                 {p.preheader ? (
@@ -517,17 +562,24 @@ export default async function AdminPage({
               "Quality",
               "Extract",
               "Reason",
+              "Preview",
             ]}
             rows={recentArticles.map((a) => [
-              <a
-                key="t"
-                href={a.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-ink hover:underline"
-              >
-                {a.title}
-              </a>,
+              <span key="t">
+                <a
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink hover:underline"
+                >
+                  {a.title}
+                </a>
+                {isDemoOrManual(a) ? (
+                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-dawn align-middle">
+                    {a.sourceName === "One Read Demo" ? "demo" : "manual"}
+                  </span>
+                ) : null}
+              </span>,
               a.sourceName,
               topicBySlug(a.topic)?.label ?? a.topic,
               <StatusBadge key="s" value={a.scoringStatus} />,
@@ -538,6 +590,11 @@ export default async function AdminPage({
               <span key="r" className="text-[11.5px] text-ash">
                 {a.rejectionReason ?? a.reasonForSelection ?? "—"}
               </span>,
+              isDemoOrManual(a) && a.scoringStatus === "SCORED" ? (
+                <PreviewPickButton key="pp" articleId={a.id} token={token} />
+              ) : (
+                "—"
+              ),
             ])}
           />
         )}
