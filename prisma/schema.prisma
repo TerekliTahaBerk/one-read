@@ -1,0 +1,27 @@
+// One Read — database schema
+// Reference: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PRISMA_DATABASE_URL")
+}
+
+/// A subscriber to the One Read morning newsletter.
+/// Created on email submit, completed when preferences are saved.
+model Subscriber {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  interests       String[]
+  sourceLanguage  String?
+  summaryLanguage String?
+  /// PENDING_PREFERENCES | ACTIVE
+  status          String   @default("PENDING_PREFERENCES")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+}

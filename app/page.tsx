@@ -3,13 +3,33 @@
 import { useState } from "react";
 import { Wordmark } from "@/components/Wordmark";
 import { MorningIcon } from "@/components/MorningIcon";
-import { SignupForm } from "@/components/SignupForm";
+import { SignupForm, type SignupPhase } from "@/components/SignupForm";
 import { SuccessState } from "@/components/SuccessState";
 import { Footer } from "@/components/Footer";
 
+type Phase = SignupPhase | "success";
+
+const COPY: Record<
+  Exclude<Phase, "success">,
+  { headline: string; support: string }
+> = {
+  email: {
+    headline: "Start your morning with one article worth reading.",
+    support:
+      "Choose your interests and language preferences. Every morning at 7\u00A0AM, One\u00A0Read sends you one curated article summary in your inbox.",
+  },
+  preferences: {
+    headline: "Tell us what to read.",
+    support:
+      "Pick the topics you care about and your languages. We'll match each morning's article to you.",
+  },
+};
+
 export default function HomePage() {
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-  const isSubmitted = submittedEmail !== null;
+  const [phase, setPhase] = useState<Phase>("email");
+  const [email, setEmail] = useState("");
+
+  const copy = phase !== "success" ? COPY[phase] : null;
 
   return (
     <main
@@ -39,8 +59,9 @@ export default function HomePage() {
           <MorningIcon className="mx-auto" />
         </div>
 
-        {!isSubmitted ? (
-          <>
+        {phase !== "success" && copy && (
+          // Re-mount on phase change so the rise animations replay smoothly.
+          <div key={phase} className="contents">
             <h1
               className="
                 font-serif font-medium
@@ -53,7 +74,7 @@ export default function HomePage() {
                 animate-rise-delayed
               "
             >
-              Start your morning with one article worth reading.
+              {copy.headline}
             </h1>
 
             <p
@@ -66,19 +87,23 @@ export default function HomePage() {
                 animate-rise-delayed-2
               "
             >
-              Choose your interests and language preferences. Every morning at
-              7&nbsp;AM, One&nbsp;Read sends you one curated article summary in
-              your inbox.
+              {copy.support}
             </p>
 
             <SignupForm
               className="mt-9 sm:mt-10"
-              onSubmitted={({ email }) => setSubmittedEmail(email)}
+              phase={phase}
+              email={email}
+              onEmailChange={setEmail}
+              onEmailSaved={() => setPhase("preferences")}
+              onCompleted={() => setPhase("success")}
             />
-          </>
-        ) : (
+          </div>
+        )}
+
+        {phase === "success" && (
           <div className="mt-8 w-full">
-            <SuccessState email={submittedEmail ?? undefined} />
+            <SuccessState email={email || undefined} />
           </div>
         )}
       </section>
