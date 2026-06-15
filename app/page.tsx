@@ -51,9 +51,9 @@ export default function HomePage() {
       <section
         className="
           flex-1 w-full
-          flex flex-col items-center justify-start
+          flex flex-col items-center justify-center
           max-w-[38rem] mx-auto
-          pt-[6vh] sm:pt-[9vh] pb-4
+          py-6 sm:py-8
         "
       >
         {phase !== "success" && copy && (

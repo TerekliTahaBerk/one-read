@@ -13,8 +13,9 @@ export default function PrivacyPage() {
       <p>
         One Read is built around a simple idea: one good read each morning, and
         nothing more. That restraint extends to your data. We collect only what
-        we need to deliver your daily email, and we never sell it. This policy
-        explains what we collect, why, and the choices you have.
+        we need to deliver your daily email, we never sell it, and we don&apos;t
+        track you around the web. This policy explains what we collect, why, and
+        the choices you have.
       </p>
 
       <h2>Information we collect</h2>
@@ -35,8 +36,9 @@ export default function PrivacyPage() {
       </ul>
       <p>
         We also process a limited amount of technical data needed to deliver
-        email reliably — for example, delivery and bounce status. We do not run
-        advertising trackers or build profiles of you across the web.
+        email reliably — for example, delivery, open, and bounce status from our
+        email provider. We do not run advertising trackers or build profiles of
+        you across the web.
       </p>
 
       <h2>How we use your information</h2>
@@ -48,12 +50,20 @@ export default function PrivacyPage() {
           contact us.
         </li>
       </ul>
+      <p>
+        We rely on your consent when you sign up, and on our legitimate interest
+        in running and improving One Read. We do not use your information for
+        automated decisions that produce legal or similarly significant effects.
+      </p>
 
       <h2>Email delivery</h2>
       <p>
         We use a third-party email provider (Resend) to deliver your daily
         email. They process your email address solely to send messages on our
-        behalf and are not permitted to use it for any other purpose.
+        behalf and are not permitted to use it for any other purpose. Your data
+        may be processed on their infrastructure, which can be located outside
+        your country; where that happens, we rely on appropriate safeguards for
+        the transfer.
       </p>
 
       <h2>Data retention</h2>
@@ -64,15 +74,27 @@ export default function PrivacyPage() {
         period.
       </p>
 
-      <h2>Your choices</h2>
+      <h2>Security</h2>
+      <p>
+        We use reasonable technical and organizational measures to protect your
+        information against loss, misuse, and unauthorized access. No method of
+        transmission or storage is completely secure, but we work to keep the
+        data we hold safe and to limit it to what we actually need.
+      </p>
+
+      <h2>Your choices and rights</h2>
       <ul>
         <li>
           <strong>Unsubscribe anytime</strong> — every email includes a
           one-click unsubscribe link, and it takes effect immediately.
         </li>
         <li>
-          <strong>Access or delete your data</strong> — you can ask us to show
-          or delete the information we hold about you.
+          <strong>Access, correct, or delete your data</strong> — you can ask us
+          to show, fix, or delete the information we hold about you.
+        </li>
+        <li>
+          <strong>Object or withdraw consent</strong> — you can ask us to stop
+          processing your information at any time.
         </li>
       </ul>
 
@@ -84,6 +106,13 @@ export default function PrivacyPage() {
         by law.
       </p>
 
+      <h2>Children&apos;s privacy</h2>
+      <p>
+        One Read is not directed to children under 13 (or the minimum age in
+        your country), and we do not knowingly collect their information. If you
+        believe a child has signed up, contact us and we&apos;ll remove the data.
+      </p>
+
       <h2>Changes to this policy</h2>
       <p>
         If we make material changes, we will update the date above and, where
@@ -92,8 +121,9 @@ export default function PrivacyPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions about your privacy? Reply to any One Read email and we&apos;ll
-        get back to you.
+        Questions about your privacy, or want to exercise a right above? Email us
+        at <a href="mailto:hello@oneread.com">hello@oneread.com</a>, or simply
+        reply to any One Read email.
       </p>
     </LegalLayout>
   );
