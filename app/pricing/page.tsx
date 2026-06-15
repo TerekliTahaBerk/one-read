@@ -27,10 +27,11 @@ export default function PricingPage() {
 
       <section
         className="
-          flex-1 w-full
-          flex flex-col items-center justify-center
+          w-full
+          flex flex-col items-center
           max-w-[34rem] mx-auto
           py-8 sm:py-10
+          my-auto
         "
       >
         <h1
