@@ -10,17 +10,15 @@ type Phase = SignupPhase | "success";
 
 const COPY: Record<
   Exclude<Phase, "success">,
-  { eyebrow: string; lead: string; accent: string; support: string }
+  { lead: string; accent: string; support: string }
 > = {
   email: {
-    eyebrow: "Your morning, curated",
     lead: "Start your morning with one article ",
     accent: "worth reading.",
     support:
       "Choose your interests and language preferences. Every morning at 7\u00A0AM, One\u00A0Read sends you one curated article summary in your inbox.",
   },
   preferences: {
-    eyebrow: "Tailored to you",
     lead: "Tell us ",
     accent: "what to read.",
     support:
@@ -53,35 +51,23 @@ export default function HomePage() {
       <section
         className="
           flex-1 w-full
-          flex flex-col items-center justify-center
-          max-w-[36rem] mx-auto
-          py-3 sm:py-5
+          flex flex-col items-center justify-start
+          max-w-[38rem] mx-auto
+          pt-[6vh] sm:pt-[9vh] pb-4
         "
       >
         {phase !== "success" && copy && (
           // Re-mount on phase change so the rise animations replay smoothly.
           <div key={phase} className="contents">
-            <p
-              className="
-                font-sans text-[11px] sm:text-[11.5px]
-                uppercase tracking-eyebrow
-                text-fog text-center
-                animate-rise-delayed
-              "
-            >
-              {copy.eyebrow}
-            </p>
-
             <h1
               className="
                 font-serif font-medium
-                text-[2.05rem] leading-[1.04]
-                sm:text-[2.65rem] sm:leading-[1.02]
-                tracking-[-0.02em]
+                text-[2.5rem] leading-[1.02]
+                sm:text-[3.6rem] sm:leading-[0.98]
+                tracking-[-0.028em]
                 text-ink text-center text-balance
-                mt-3 sm:mt-4
                 max-w-[15ch]
-                animate-rise-delayed-2
+                animate-rise-delayed
               "
             >
               {copy.lead}
@@ -93,18 +79,18 @@ export default function HomePage() {
             <p
               className="
                 font-sans
-                text-[15px] sm:text-[15.5px] leading-[1.65]
+                text-[15px] sm:text-[16px] leading-[1.65]
                 text-ash text-center text-pretty
-                mt-4
+                mt-5 sm:mt-6
                 max-w-[42ch]
-                animate-rise-delayed-3
+                animate-rise-delayed-2
               "
             >
               {copy.support}
             </p>
 
             <SignupForm
-              className="mt-6 sm:mt-7"
+              className="mt-7 sm:mt-8"
               phase={phase}
               email={email}
               onEmailChange={setEmail}

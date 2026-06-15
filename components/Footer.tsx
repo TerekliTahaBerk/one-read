@@ -17,19 +17,19 @@ export function Footer({ showPricing = false, showBackHome = false }: Props) {
         aria-label="Footer"
         className="mt-3 flex items-center gap-3 text-[12px] text-fog font-sans"
       >
-        <a
-          href="#"
+        <Link
+          href="/privacy"
           className="link-underline transition-colors duration-200 hover:text-ink"
         >
           Privacy
-        </a>
+        </Link>
         <span aria-hidden="true" className="text-line-strong">·</span>
-        <a
-          href="#"
+        <Link
+          href="/terms"
           className="link-underline transition-colors duration-200 hover:text-ink"
         >
           Terms
-        </a>
+        </Link>
         <span aria-hidden="true" className="text-line-strong">·</span>
         <a
           href="#"
