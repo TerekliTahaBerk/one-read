@@ -26,34 +26,12 @@ export function PricingCard() {
   return (
     <div
       className="
-        group relative w-full max-w-[25rem] mt-9 sm:mt-10
+        group relative w-full max-w-[25rem] mt-8 sm:mt-9
         animate-rise-delayed-3
       "
     >
-      {/* Soft ambient halo behind the card */}
-      <div
-        aria-hidden="true"
-        className="
-          pointer-events-none absolute -inset-px -z-10
-          rounded-[1.6rem]
-          bg-gradient-to-b from-line/70 via-line/30 to-transparent
-        "
-      />
-
-      <div
-        className="
-          relative overflow-hidden
-          rounded-[1.5rem] border border-line bg-paper
-          shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_-12px_rgba(0,0,0,0.10)]
-        "
-      >
-        {/* Hairline accent rule along the very top of the card */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-line-strong to-transparent"
-        />
-
-        <div className="px-6 py-7 sm:px-8 sm:py-9 text-center">
+      <div className="relative">
+        <div className="px-1 py-0 text-center">
           {/* Toggle */}
           <div className="flex justify-center">
             <BillingToggle
