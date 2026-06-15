@@ -54,17 +54,8 @@ export function PricingCard() {
         />
 
         <div className="px-6 py-7 sm:px-8 sm:py-9 text-center">
-          {/* Eyebrow */}
-          <div className="flex items-center justify-center gap-2.5">
-            <span className="h-px w-5 bg-line-strong" aria-hidden="true" />
-            <p className="text-[11px] font-sans uppercase tracking-eyebrow text-fog">
-              One Read Membership
-            </p>
-            <span className="h-px w-5 bg-line-strong" aria-hidden="true" />
-          </div>
-
           {/* Toggle */}
-          <div className="mt-5 flex justify-center">
+          <div className="flex justify-center">
             <BillingToggle
               value={interval}
               onChange={setInterval}
