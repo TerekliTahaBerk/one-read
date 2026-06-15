@@ -39,11 +39,20 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
   },
 };
 
+// Where the back arrow returns to from each step. Steps not listed have no
+// back affordance (email is the entry point; success/canceled are terminal).
+const BACK_TO: Partial<Record<Phase, Phase>> = {
+  preferences: "email",
+  payment: "preferences",
+  manage: "email",
+};
+
 export default function HomePage() {
   const [phase, setPhase] = useState<Phase>("email");
   const [email, setEmail] = useState("");
   const [preferences, setPreferences] = useState<Preferences | null>(null);
 
+  const backTo = BACK_TO[phase];
 
   return (
     <main
@@ -55,8 +64,33 @@ export default function HomePage() {
         pb-5 sm:pb-6
       "
     >
-      {/* Logo */}
-      <header className="w-full flex justify-center animate-rise">
+      {/* Logo + back arrow */}
+      <header className="relative w-full flex justify-center animate-rise">
+        {backTo && (
+          <button
+            type="button"
+            onClick={() => setPhase(backTo)}
+            aria-label="Go back"
+            className="
+              focus-ring
+              absolute left-0 top-1/2 -translate-y-1/2
+              inline-flex h-10 w-10 items-center justify-center
+              rounded-full text-ash
+              transition-colors duration-200
+              hover:text-ink hover:bg-cream/70
+            "
+          >
+            <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path
+                d="M12 7H2M6 3L2 7l4 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
         <Logo />
       </header>
 
@@ -112,7 +146,10 @@ export default function HomePage() {
                 setPreferences(prefs);
                 setPhase(subscribed ? "manage" : "preferences");
               }}
-              onPreferencesSaved={() => setPhase("payment")}
+              onPreferencesSaved={(prefs) => {
+                setPreferences(prefs);
+                setPhase("payment");
+              }}
               onCompleted={() => setPhase("success")}
               onCanceled={() => setPhase("canceled")}
             />

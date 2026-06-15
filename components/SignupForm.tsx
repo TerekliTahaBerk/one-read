@@ -33,7 +33,7 @@ type Props = {
     subscribed: boolean;
     preferences: Preferences | null;
   }) => void;
-  onPreferencesSaved: () => void;
+  onPreferencesSaved: (preferences: Preferences) => void;
   onCompleted: () => void;
   onCanceled: () => void;
   className?: string;
@@ -72,6 +72,7 @@ export function SignupForm({
     return (
       <PreferencesStep
         email={email}
+        initialPreferences={initialPreferences ?? null}
         onSaved={onPreferencesSaved}
         className={className}
       />
@@ -214,8 +215,11 @@ function EmailStep({
             {error}
           </p>
         )}
-        <p className="mt-3 text-center text-[12px] text-fog font-sans">
+        <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
           One email a day. Cancel in one click.
+          <br />
+          Already a member? Enter your email to change your preferences or
+          cancel.
         </p>
       </div>
     </form>
@@ -228,14 +232,16 @@ function EmailStep({
 
 function PreferencesStep({
   email,
+  initialPreferences,
   onSaved,
   className = "",
 }: {
   email: string;
-  onSaved: () => void;
+  initialPreferences: Preferences | null;
+  onSaved: (preferences: Preferences) => void;
   className?: string;
 }) {
-  const prefs = usePreferencesState(null);
+  const prefs = usePreferencesState(initialPreferences);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,7 +254,11 @@ function PreferencesStep({
     setError(null);
     try {
       await savePreferences(email, prefs);
-      onSaved();
+      onSaved({
+        interests: Array.from(prefs.interests),
+        sourceLanguage: prefs.sourceLanguage,
+        summaryLanguage: prefs.summaryLanguage,
+      });
     } catch (err) {
       setError(
         err instanceof Error
