@@ -14,19 +14,14 @@
 
   body {
     @apply bg-white text-ink font-sans antialiased;
-    /* Clean white canvas with the faintest warm wash near the top so the
-       page reads premium rather than clinical. Stays effectively pure white. */
-    background-image:
-      radial-gradient(1100px 520px at 50% -12%, rgba(242, 216, 168, 0.07), transparent 62%);
-    background-attachment: fixed;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background-color: rgba(201, 122, 44, 0.22);
-    color: #1B1612;
+    background-color: rgba(26, 26, 26, 0.12);
+    color: #1A1A1A;
   }
 }
 

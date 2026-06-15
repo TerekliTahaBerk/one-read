@@ -9,20 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Surfaces
-        ivory: "#F6F1E6",
-        cream: "#FBEFD8",
-        paper: "#FDFBF5",
-        // Text
-        ink: "#1B1612",
-        graphite: "#3A322A",
-        ash: "#6B5F50",
-        fog: "#9C8F7E",
-        // Lines
-        line: "#E6DCC8",
-        "line-strong": "#D4C8B0",
-        // Warm accent (sun / dawn)
-        dawn: "#C97A2C",
+        // Surfaces — clean white / neutral
+        ivory: "#FFFFFF",
+        cream: "#F4F4F5",
+        paper: "#FFFFFF",
+        // Text — neutral grayscale
+        ink: "#1A1A1A",
+        graphite: "#3F3F46",
+        ash: "#52525B",
+        fog: "#A1A1AA",
+        // Lines — neutral hairlines
+        line: "#E4E4E7",
+        "line-strong": "#D4D4D8",
+        // Accent reserved for error/alert states only
+        dawn: "#C0362C",
         "dawn-soft": "#E5B274",
         glow: "#F2D8A8",
       },

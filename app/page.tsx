@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
-import { MorningIcon } from "@/components/MorningIcon";
 import { SignupForm, type SignupPhase } from "@/components/SignupForm";
 import { SuccessState } from "@/components/SuccessState";
 import { Footer } from "@/components/Footer";
@@ -55,10 +54,6 @@ export default function HomePage() {
           py-8 sm:py-10
         "
       >
-        <div className="animate-rise-delayed">
-          <MorningIcon className="mx-auto" />
-        </div>
-
         {phase !== "success" && copy && (
           // Re-mount on phase change so the rise animations replay smoothly.
           <div key={phase} className="contents">

@@ -18,7 +18,7 @@ export function SuccessState({ email }: { email?: string }) {
         >
           <path
             d="M5 12.5l4.2 4.2L19 7"
-            stroke="#1B1612"
+            stroke="#1A1A1A"
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"

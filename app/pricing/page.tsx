@@ -91,7 +91,7 @@ export default function PricingPage() {
           <p className="mt-2 font-sans text-[13.5px] text-ash">
             or <span className="text-ink">$18 / year</span>
           </p>
-          <p className="mt-1 font-serif italic text-[13px] text-dawn">
+          <p className="mt-1 font-serif italic text-[13px] text-ash">
             Save 25% with annual billing.
           </p>
 
@@ -111,7 +111,7 @@ export default function PricingPage() {
                 >
                   <path
                     d="M5 12.5l4.2 4.2L19 7"
-                    stroke="#C97A2C"
+                    stroke="#1A1A1A"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
