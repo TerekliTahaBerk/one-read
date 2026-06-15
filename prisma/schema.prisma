@@ -48,6 +48,11 @@ model Subscriber {
   lastSentAt      DateTime?
   unsubscribedAt  DateTime?
 
+  /// Set when the user completes (simulated) payment. Non-null + status != UNSUBSCRIBED ⇒ subscribed.
+  subscribedAt    DateTime?
+  /// "monthly" | "annual"
+  billingInterval String?
+
   /// "PENDING_PREFERENCES" | "ACTIVE" | "PAUSED" | "UNSUBSCRIBED"
   status          String   @default("PENDING_PREFERENCES")
   createdAt       DateTime @default(now())

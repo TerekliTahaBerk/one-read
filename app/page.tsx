@@ -2,21 +2,22 @@
 
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
-import { SignupForm, type SignupPhase } from "@/components/SignupForm";
+import {
+  SignupForm,
+  type SignupPhase,
+  type Preferences,
+} from "@/components/SignupForm";
 import { SuccessState } from "@/components/SuccessState";
 import { Footer } from "@/components/Footer";
 
-type Phase = SignupPhase | "success";
+type Phase = SignupPhase | "success" | "canceled";
 
-const COPY: Record<
-  Exclude<Phase, "success">,
-  { lead: string; accent: string; support: string }
-> = {
+const COPY: Record<SignupPhase, { lead: string; accent: string; support: string }> = {
   email: {
     lead: "Start your morning with one article ",
     accent: "worth reading.",
     support:
-      "Choose your interests and language preferences. Every morning at 7\u00A0AM, One\u00A0Read sends you one curated article summary in your inbox.",
+      "Choose your interests and language preferences. Every morning at 7 AM, One Read sends you one curated article summary in your inbox.",
   },
   preferences: {
     lead: "Tell us ",
@@ -24,13 +25,25 @@ const COPY: Record<
     support:
       "Pick the topics you care about and your languages. We'll match each morning's article to you.",
   },
+  payment: {
+    lead: "One last step to ",
+    accent: "secure your spot.",
+    support:
+      "Choose a plan and complete your subscription. Cancel anytime in one click — no questions asked.",
+  },
+  manage: {
+    lead: "Welcome back — ",
+    accent: "update your reading.",
+    support:
+      "Adjust your interests and languages, or cancel your subscription. Changes apply to tomorrow's One Read.",
+  },
 };
 
 export default function HomePage() {
   const [phase, setPhase] = useState<Phase>("email");
   const [email, setEmail] = useState("");
+  const [preferences, setPreferences] = useState<Preferences | null>(null);
 
-  const copy = phase !== "success" ? COPY[phase] : null;
 
   return (
     <main
@@ -56,7 +69,7 @@ export default function HomePage() {
           py-6 sm:py-8
         "
       >
-        {phase !== "success" && copy && (
+        {phase !== "success" && phase !== "canceled" && (
           // Re-mount on phase change so the rise animations replay smoothly.
           <div key={phase} className="contents">
             <h1
@@ -70,9 +83,9 @@ export default function HomePage() {
                 animate-rise-delayed
               "
             >
-              {copy.lead}
+              {COPY[phase].lead}
               <em className="font-serif italic font-normal text-ink">
-                {copy.accent}
+                {COPY[phase].accent}
               </em>
             </h1>
 
@@ -86,16 +99,22 @@ export default function HomePage() {
                 animate-rise-delayed-2
               "
             >
-              {copy.support}
+              {COPY[phase].support}
             </p>
 
             <SignupForm
               className="mt-7 sm:mt-8"
               phase={phase}
               email={email}
+              initialPreferences={preferences}
               onEmailChange={setEmail}
-              onEmailSaved={() => setPhase("preferences")}
+              onEmailSaved={({ subscribed, preferences: prefs }) => {
+                setPreferences(prefs);
+                setPhase(subscribed ? "manage" : "preferences");
+              }}
+              onPreferencesSaved={() => setPhase("payment")}
               onCompleted={() => setPhase("success")}
+              onCanceled={() => setPhase("canceled")}
             />
           </div>
         )}
@@ -103,6 +122,12 @@ export default function HomePage() {
         {phase === "success" && (
           <div className="mt-8 w-full">
             <SuccessState email={email || undefined} />
+          </div>
+        )}
+
+        {phase === "canceled" && (
+          <div className="mt-8 w-full">
+            <SuccessState email={email || undefined} variant="canceled" />
           </div>
         )}
       </section>

@@ -1,21 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Footer } from "@/components/Footer";
+import { PricingCard } from "@/components/PricingCard";
 
 export const metadata: Metadata = {
   title: "Pricing — One Read",
   description:
     "Simple pricing for a calmer morning. One carefully selected article summary in your inbox every day — $2/month or $18/year.",
 };
-
-const FEATURES = [
-  "One curated article every morning",
-  "Personalized by your interests",
-  "English and Turkish summaries",
-  "Source language preferences",
-  "One-click unsubscribe",
-];
 
 export default function PricingPage() {
   return (
@@ -68,83 +60,7 @@ export default function PricingPage() {
         </p>
 
         {/* Pricing card */}
-        <div
-          className="
-            w-full max-w-[24rem] mt-9 sm:mt-10
-            rounded-2xl border border-line bg-paper/60
-            px-6 py-7 sm:px-7 sm:py-8
-            text-center
-            animate-rise-delayed-3
-          "
-        >
-          <p className="text-[11px] font-sans uppercase tracking-eyebrow text-fog">
-            One Read
-          </p>
-
-          <div className="mt-3 flex items-baseline justify-center gap-1">
-            <span className="font-serif font-medium text-[2.5rem] leading-none text-ink">
-              $2
-            </span>
-            <span className="font-sans text-[14px] text-ash">/ month</span>
-          </div>
-
-          <p className="mt-2 font-sans text-[13.5px] text-ash">
-            or <span className="text-ink">$18 / year</span>
-          </p>
-          <p className="mt-1 font-serif italic text-[13px] text-ash">
-            Save 25% with annual billing.
-          </p>
-
-          <ul className="mt-6 space-y-2.5 text-left">
-            {FEATURES.map((feature) => (
-              <li
-                key={feature}
-                className="flex items-start gap-2.5 font-sans text-[14px] text-graphite"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  aria-hidden="true"
-                  className="mt-0.5 shrink-0"
-                >
-                  <path
-                    d="M5 12.5l4.2 4.2L19 7"
-                    stroke="#1A1A1A"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href="/"
-            className="
-              focus-ring
-              mt-7 inline-flex w-full h-12 items-center justify-center gap-2
-              rounded-xl bg-ink text-paper
-              font-sans text-[15px] tracking-tight
-              transition-[transform,background-color] duration-200
-              hover:bg-graphite active:scale-[0.99]
-            "
-          >
-            Start with One Read
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path
-                d="M2 7h10M8 3l4 4-4 4"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        </div>
+        <PricingCard />
       </section>
 
       <Footer showBackHome />
