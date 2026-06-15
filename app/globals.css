@@ -13,11 +13,11 @@
   }
 
   body {
-    @apply bg-ivory text-ink font-sans antialiased;
-    /* Subtle paper grain via layered radial gradients (no images) */
+    @apply bg-white text-ink font-sans antialiased;
+    /* Clean white canvas with the faintest warm wash near the top so the
+       page reads premium rather than clinical. Stays effectively pure white. */
     background-image:
-      radial-gradient(1200px 600px at 50% -10%, rgba(242, 216, 168, 0.32), transparent 60%),
-      radial-gradient(900px 600px at 50% 110%, rgba(229, 178, 116, 0.18), transparent 65%);
+      radial-gradient(1100px 520px at 50% -12%, rgba(242, 216, 168, 0.07), transparent 62%);
     background-attachment: fixed;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -38,7 +38,7 @@
 
   .focus-ring:focus-visible {
     box-shadow:
-      0 0 0 2px #F6F1E6,
+      0 0 0 2px #FFFFFF,
       0 0 0 3px rgba(27, 22, 18, 0.55);
   }
 

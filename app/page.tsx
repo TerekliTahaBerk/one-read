@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Wordmark } from "@/components/Wordmark";
+import { Logo } from "@/components/Logo";
 import { MorningIcon } from "@/components/MorningIcon";
 import { SignupForm, type SignupPhase } from "@/components/SignupForm";
 import { SuccessState } from "@/components/SuccessState";
@@ -41,9 +41,9 @@ export default function HomePage() {
         pb-6 sm:pb-8
       "
     >
-      {/* Wordmark */}
+      {/* Logo */}
       <header className="w-full flex justify-center animate-rise">
-        <Wordmark />
+        <Logo />
       </header>
 
       {/* Hero + form */}
@@ -108,7 +108,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <Footer />
+      <Footer showPricing />
     </main>
   );
 }
