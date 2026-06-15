@@ -28,8 +28,12 @@ export function SuccessState({ email }: { email?: string }) {
         </svg>
       </div>
 
-      <h2 className="font-serif font-medium text-3xl sm:text-[40px] leading-[1.1] tracking-[-0.01em] text-ink mt-6 max-w-[18ch]">
-        You’re in.
+      <p className="font-sans text-[11px] sm:text-[11.5px] uppercase tracking-eyebrow text-fog mt-6">
+        Welcome to One Read
+      </p>
+
+      <h2 className="font-serif font-medium text-[2.1rem] sm:text-[3rem] leading-[1.04] tracking-[-0.02em] text-ink mt-3 max-w-[14ch] text-balance">
+        You’re <em className="italic font-normal">in.</em>
       </h2>
 
       <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-4 max-w-[34ch]">

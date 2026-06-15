@@ -9,7 +9,7 @@ type Props = {
 
 export function Footer({ showPricing = false, showBackHome = false }: Props) {
   return (
-    <footer className="w-full pt-8 pb-2 sm:pb-4 flex flex-col items-center text-center animate-rise-delayed-4">
+    <footer className="w-full pt-6 pb-1 sm:pb-2 flex flex-col items-center text-center animate-rise-delayed-4">
       <p className="font-serif italic text-[13.5px] sm:text-[14px] text-ash">
         No feeds. No noise. Just one good read.
       </p>
