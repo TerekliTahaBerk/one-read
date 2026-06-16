@@ -36,6 +36,8 @@ export function toEligibilityInput(sub: SubscriptionWithPrefs): EligibilityInput
   return {
     status: sub.status,
     emailDeliveryStatus: sub.emailDeliveryStatus,
+    paymentProvider: sub.paymentProvider,
+    adminOverride: sub.adminOverride,
     trialEndsAt: sub.trialEndsAt,
     currentPeriodEnd: sub.currentPeriodEnd,
     pastDueAt: sub.pastDueAt,
@@ -159,6 +161,12 @@ export interface SubscribeLookupResult {
 const dayDiffCeil = (from: Date, to: Date): number =>
   Math.max(0, Math.ceil((to.getTime() - from.getTime()) / DAY_MS));
 
+function providerConfirmsSubscription(sub: SubscriptionWithPrefs): boolean {
+  if (sub.adminOverride) return true;
+  if (sub.paymentProvider === "polar") return true;
+  return sub.paymentProvider === "mock" && process.env.NODE_ENV !== "production";
+}
+
 /**
  * Resolves the subscribe-flow state for an email. Read-only; never mutates and
  * never exposes provider/billing identifiers. Email must be pre-parsed.
@@ -171,6 +179,7 @@ export async function resolveSubscribeState(
   if (!sub) return { state: "new" };
 
   if (sub.emailDeliveryStatus === "SUPPRESSED") return { state: "suppressed" };
+  const providerConfirmed = providerConfirmsSubscription(sub);
 
   switch (sub.status) {
     case "PENDING_PREFERENCES":
@@ -180,6 +189,7 @@ export async function resolveSubscribeState(
       return { state: "checkout_needed" };
 
     case "TRIALING":
+      if (!providerConfirmed) return { state: "checkout_needed" };
       if (sub.trialEndsAt && now < sub.trialEndsAt) {
         return { state: "trialing", daysLeft: dayDiffCeil(now, sub.trialEndsAt) };
       }
@@ -189,6 +199,14 @@ export async function resolveSubscribeState(
       return { state: "trial_expired" };
 
     case "ACTIVE_PAID":
+      if (!providerConfirmed) return { state: "checkout_needed" };
+      return {
+        state:
+          sub.emailDeliveryStatus === "SUBSCRIBED"
+            ? "active_paid"
+            : "active_email_paused",
+      };
+
     case "ADMIN_OVERRIDE":
       return {
         state:
@@ -198,9 +216,11 @@ export async function resolveSubscribeState(
       };
 
     case "PAST_DUE":
+      if (!providerConfirmed) return { state: "checkout_needed" };
       return { state: "past_due" };
 
     case "CANCELED":
+      if (!providerConfirmed) return { state: "checkout_needed" };
       if (sub.currentPeriodEnd && now < sub.currentPeriodEnd) {
         return {
           state: "canceled_active",

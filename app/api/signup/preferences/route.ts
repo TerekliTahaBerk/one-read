@@ -26,8 +26,9 @@ export const dynamic = "force-dynamic";
  *   summaryLanguage: "English" | "Turkish"
  * }
  *
- * Updates the subscriber's preferences and marks them ACTIVE. Sends a
- * welcome email via Resend, but never blocks success on email delivery.
+ * Updates the subscriber's preferences and marks the product subscription
+ * ready for Polar checkout. Sends a setup email via Resend, but never blocks
+ * success on email delivery.
  */
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;

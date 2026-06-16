@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseEmail, isAlwaysSubscribed } from "@/lib/options";
-import { ensureOneArticleSubscription } from "@/lib/subscriptions";
+import { hasValidAccess } from "@/lib/billing/access";
+import { ensureOneArticleSubscription, toEligibilityInput } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,8 +57,6 @@ export async function POST(request: Request) {
         subscribedAt: forceSubscribed ? new Date() : null,
       },
       select: {
-        status: true,
-        subscribedAt: true,
         interests: true,
         sourceLanguage: true,
         summaryLanguage: true,
@@ -68,11 +67,8 @@ export async function POST(request: Request) {
     // exist so the /article/subscribe email lookup can resolve this person.
     // No trial is started here. Polar checkout/webhooks are the source of
     // truth for trial/paid access after preferences complete.
-    await ensureOneArticleSubscription(email);
-
-    const subscribed =
-      forceSubscribed ||
-      (subscriber.subscribedAt != null && subscriber.status !== "UNSUBSCRIBED");
+    const productSubscription = await ensureOneArticleSubscription(email);
+    const subscribed = hasValidAccess(toEligibilityInput(productSubscription)).allowed;
 
     const hasPrefs = subscriber.interests.length > 0;
     const preferences = hasPrefs

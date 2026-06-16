@@ -25,14 +25,16 @@ type Fixture = {
 const fixtures: Fixture[] = [
   { label: "no record", email: `${PREFIX}none@example.com`, expect: "new", noSub: true },
   { label: "incomplete", email: `${PREFIX}pending@example.com`, expect: "incomplete", data: { status: "PENDING_PREFERENCES" }, prefs: false },
-  { label: "trial active", email: `${PREFIX}trialing@example.com`, expect: "trialing", data: { status: "TRIALING", trialEndsAt: future }, prefs: true },
-  { label: "trial expired (TRIALING+past)", email: `${PREFIX}trialexp@example.com`, expect: "trial_expired", data: { status: "TRIALING", trialEndsAt: past }, prefs: true },
-  { label: "active paid", email: `${PREFIX}paid@example.com`, expect: "active_paid", data: { status: "ACTIVE_PAID" }, prefs: true },
-  { label: "canceled, period active", email: `${PREFIX}cancel@example.com`, expect: "canceled_active", data: { status: "CANCELED", currentPeriodEnd: future }, prefs: true },
+  { label: "checkout needed", email: `${PREFIX}checkout@example.com`, expect: "checkout_needed", data: { status: "PENDING_CHECKOUT" }, prefs: true },
+  { label: "local trial not confirmed", email: `${PREFIX}localtrial@example.com`, expect: "checkout_needed", data: { status: "TRIALING", trialEndsAt: future }, prefs: true },
+  { label: "trial active", email: `${PREFIX}trialing@example.com`, expect: "trialing", data: { status: "TRIALING", paymentProvider: "polar", trialEndsAt: future }, prefs: true },
+  { label: "trial expired (TRIALING+past)", email: `${PREFIX}trialexp@example.com`, expect: "trial_expired", data: { status: "TRIALING", paymentProvider: "polar", trialEndsAt: past }, prefs: true },
+  { label: "active paid", email: `${PREFIX}paid@example.com`, expect: "active_paid", data: { status: "ACTIVE_PAID", paymentProvider: "polar" }, prefs: true },
+  { label: "canceled, period active", email: `${PREFIX}cancel@example.com`, expect: "canceled_active", data: { status: "CANCELED", paymentProvider: "polar", currentPeriodEnd: future }, prefs: true },
   { label: "expired", email: `${PREFIX}expired@example.com`, expect: "expired", data: { status: "EXPIRED" }, prefs: true },
-  { label: "past due", email: `${PREFIX}pastdue@example.com`, expect: "past_due", data: { status: "PAST_DUE", pastDueAt: now }, prefs: true },
-  { label: "email paused (paid)", email: `${PREFIX}paused@example.com`, expect: "active_email_paused", data: { status: "ACTIVE_PAID", emailDeliveryStatus: "UNSUBSCRIBED" }, prefs: true },
-  { label: "suppressed", email: `${PREFIX}suppressed@example.com`, expect: "suppressed", data: { status: "ACTIVE_PAID", emailDeliveryStatus: "SUPPRESSED" }, prefs: true },
+  { label: "past due", email: `${PREFIX}pastdue@example.com`, expect: "past_due", data: { status: "PAST_DUE", paymentProvider: "polar", pastDueAt: now }, prefs: true },
+  { label: "email paused (paid)", email: `${PREFIX}paused@example.com`, expect: "active_email_paused", data: { status: "ACTIVE_PAID", paymentProvider: "polar", emailDeliveryStatus: "UNSUBSCRIBED" }, prefs: true },
+  { label: "suppressed", email: `${PREFIX}suppressed@example.com`, expect: "suppressed", data: { status: "ACTIVE_PAID", paymentProvider: "polar", emailDeliveryStatus: "SUPPRESSED" }, prefs: true },
 ];
 
 async function cleanup() {

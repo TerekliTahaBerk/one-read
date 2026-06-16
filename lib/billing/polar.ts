@@ -36,12 +36,24 @@ export function getPolarProductId(): string {
   );
 }
 
+function getMissingPolarConfig(): string[] {
+  const missing: string[] = [];
+  if (!has(process.env.POLAR_ACCESS_TOKEN)) missing.push("POLAR_ACCESS_TOKEN");
+  if (!has(process.env.POLAR_SUCCESS_URL) && !has(process.env.PUBLIC_BASE_URL)) {
+    missing.push("POLAR_SUCCESS_URL or PUBLIC_BASE_URL");
+  }
+  return missing;
+}
+
 export function isPolarConfigured(): boolean {
-  return (
-    has(process.env.POLAR_ACCESS_TOKEN) &&
-    has(process.env.POLAR_SUCCESS_URL) &&
-    has(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)
-  );
+  return getMissingPolarConfig().length === 0;
+}
+
+function assertPolarConfigured(context: string): void {
+  const missing = getMissingPolarConfig();
+  if (missing.length > 0) {
+    throw new Error(`${context} is not configured. Missing: ${missing.join(", ")}.`);
+  }
 }
 
 export function getPolarClient(): Polar {
@@ -95,9 +107,7 @@ export async function createPolarCheckoutForSubscription(
   sub: SubscriptionWithPrefs,
   email: string,
 ): Promise<string> {
-  if (!isPolarConfigured()) {
-    throw new Error("Polar checkout is not configured.");
-  }
+  assertPolarConfigured("Polar checkout");
 
   const checkout = await getPolarClient().checkouts.create({
     products: [getPolarProductId()],
@@ -133,9 +143,7 @@ export async function createPolarCheckoutForSubscription(
 export async function createPolarCustomerPortalUrl(
   sub: SubscriptionWithPrefs,
 ): Promise<string> {
-  if (!isPolarConfigured()) {
-    throw new Error("Polar customer portal is not configured.");
-  }
+  assertPolarConfigured("Polar customer portal");
   const returnUrl = checkoutReturnUrl();
   const session = await getPolarClient().customerSessions.create(
     sub.providerCustomerId

@@ -14,6 +14,8 @@ const DAY = 86400000;
 const base: EligibilityInput = {
   status: "TRIALING",
   emailDeliveryStatus: "SUBSCRIBED",
+  paymentProvider: "polar",
+  adminOverride: false,
   trialEndsAt: future,
   currentPeriodEnd: null,
   pastDueAt: null,
@@ -31,6 +33,8 @@ const cases: { name: string; input: EligibilityInput; expectAllowed: boolean }[]
   { name: "PAST_DUE beyond grace", input: { ...base, status: "PAST_DUE", trialEndsAt: null, pastDueAt: new Date(now.getTime() - 10 * DAY) }, expectAllowed: false },
   { name: "EXPIRED", input: { ...base, status: "EXPIRED", trialEndsAt: null }, expectAllowed: false },
   { name: "ADMIN_OVERRIDE", input: { ...base, status: "ADMIN_OVERRIDE", trialEndsAt: null }, expectAllowed: true },
+  { name: "TRIALING without provider", input: { ...base, paymentProvider: null }, expectAllowed: false },
+  { name: "ACTIVE_PAID without provider", input: { ...base, status: "ACTIVE_PAID", trialEndsAt: null, paymentProvider: null }, expectAllowed: false },
   { name: "email UNSUBSCRIBED (paid)", input: { ...base, status: "ACTIVE_PAID", trialEndsAt: null, emailDeliveryStatus: "UNSUBSCRIBED" }, expectAllowed: false },
   { name: "email SUPPRESSED", input: { ...base, status: "ACTIVE_PAID", trialEndsAt: null, emailDeliveryStatus: "SUPPRESSED" }, expectAllowed: false },
   { name: "incomplete preferences (trialing)", input: { ...base, hasCompletePreferences: false }, expectAllowed: false },

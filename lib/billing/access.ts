@@ -28,6 +28,8 @@ export type EmailDeliveryStatus = "SUBSCRIBED" | "UNSUBSCRIBED" | "SUPPRESSED";
 export interface EligibilityInput {
   status: string;
   emailDeliveryStatus: string;
+  paymentProvider: string | null;
+  adminOverride: boolean;
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   pastDueAt: Date | null;
@@ -41,7 +43,8 @@ export type EligibilityReason =
   | "email_unsubscribed"
   | "email_suppressed"
   | "pending_preferences"
-  | "pending_checkout"
+  | "checkout_required"
+  | "subscription_not_confirmed"
   | "trial_expired"
   | "past_due_grace_ended"
   | "canceled_expired"
@@ -55,6 +58,14 @@ export interface EligibilityResult {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function providerConfirmsAccess(
+  sub: Pick<EligibilityInput, "paymentProvider" | "adminOverride">,
+): boolean {
+  if (sub.adminOverride) return true;
+  if (sub.paymentProvider === "polar") return true;
+  return sub.paymentProvider === "mock" && process.env.NODE_ENV !== "production";
+}
+
 /**
  * Returns whether the access status alone grants a valid window right now,
  * ignoring email-delivery and preference checks. Split out so admin/UI can ask
@@ -63,7 +74,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function hasValidAccess(
   sub: Pick<
     EligibilityInput,
-    "status" | "trialEndsAt" | "currentPeriodEnd" | "pastDueAt"
+    | "status"
+    | "paymentProvider"
+    | "adminOverride"
+    | "trialEndsAt"
+    | "currentPeriodEnd"
+    | "pastDueAt"
   >,
   now: Date = new Date(),
 ): EligibilityResult {
@@ -71,17 +87,29 @@ export function hasValidAccess(
     case "ADMIN_OVERRIDE":
       return { allowed: true, reason: "ok" };
     case "ACTIVE_PAID":
+      if (!providerConfirmsAccess(sub)) {
+        return { allowed: false, reason: "subscription_not_confirmed" };
+      }
       return { allowed: true, reason: "ok" };
     case "TRIALING":
+      if (!providerConfirmsAccess(sub)) {
+        return { allowed: false, reason: "subscription_not_confirmed" };
+      }
       return sub.trialEndsAt && now < sub.trialEndsAt
         ? { allowed: true, reason: "ok" }
         : { allowed: false, reason: "trial_expired" };
     case "CANCELED":
+      if (!providerConfirmsAccess(sub)) {
+        return { allowed: false, reason: "subscription_not_confirmed" };
+      }
       // Canceled but still inside the paid period keeps access until it ends.
       return sub.currentPeriodEnd && now < sub.currentPeriodEnd
         ? { allowed: true, reason: "ok" }
         : { allowed: false, reason: "canceled_expired" };
     case "PAST_DUE": {
+      if (!providerConfirmsAccess(sub)) {
+        return { allowed: false, reason: "subscription_not_confirmed" };
+      }
       // Grace window measured from when the payment first failed.
       const graceEnd = sub.pastDueAt
         ? new Date(sub.pastDueAt.getTime() + PAST_DUE_GRACE_DAYS * DAY_MS)
@@ -93,7 +121,7 @@ export function hasValidAccess(
     case "PENDING_PREFERENCES":
       return { allowed: false, reason: "pending_preferences" };
     case "PENDING_CHECKOUT":
-      return { allowed: false, reason: "pending_checkout" };
+      return { allowed: false, reason: "checkout_required" };
     case "TRIAL_EXPIRED":
       return { allowed: false, reason: "trial_expired" };
     case "EXPIRED":

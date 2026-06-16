@@ -25,7 +25,7 @@ type Fix = {
 };
 
 const FIXTURES: Fix[] = [
-  { slug: "trialing", data: { status: "TRIALING", trialStartedAt: now, trialEndsAt: future }, prefs: true },
+  { slug: "trialing", data: { status: "TRIALING", paymentProvider: "mock", trialStartedAt: now, trialEndsAt: future }, prefs: true },
   { slug: "trial-expired", data: { status: "TRIAL_EXPIRED", trialStartedAt: past, trialEndsAt: past }, prefs: true },
   {
     slug: "paid-monthly",

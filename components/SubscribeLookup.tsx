@@ -42,23 +42,23 @@ function present(
       return {
         title: "Start your setup first.",
         body: "We don’t have a OneArticle setup for this email yet. Save your preferences first, then start the 7-day trial through Polar.",
-        ctas: [{ kind: "link", label: "Start setup", href: `/article`, primary: true }],
+        ctas: [{ kind: "link", label: "Set up One Article", href: `/article`, primary: true }],
       };
     case "incomplete":
       return {
-        title: "Finish your setup to start your trial.",
+        title: "Finish your setup.",
         body: "Your email is registered, but your preferences aren’t finished. Complete setup, then start the 7-day trial in checkout.",
         ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
       };
     case "checkout_needed":
       return {
         title: "Start your 7-day free trial.",
-        body: "Your preferences are saved. Polar handles the trial and subscription, so emails begin after checkout is confirmed.",
+        body: "Your preferences are saved. Complete checkout with Polar to start receiving One Article.",
         ctas: [buy("Start 7-day free trial", "monthly", true)],
       };
     case "trialing":
       return {
-        title: `You’re in your free trial${
+        title: `Your One Article subscription is active${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
         body: "Your Polar-confirmed trial is active and your daily emails are on.",
@@ -72,7 +72,7 @@ function present(
       };
     case "active_paid":
       return {
-        title: "You’re already subscribed.",
+        title: "Your One Article subscription is active.",
         body: "Your subscription is active and your daily emails are on.",
         ctas: [manage("Manage billing", true), { kind: "link", label: "Go to One Article", href: `/article` }],
       };

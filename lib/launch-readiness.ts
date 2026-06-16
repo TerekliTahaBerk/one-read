@@ -113,13 +113,13 @@ export function getLaunchReadiness(): ReadinessCheck[] {
   const isProd = process.env.NODE_ENV === "production";
   const mockPreview = process.env.MOCK_BILLING_PREVIEW === "true";
   const polarServer = (process.env.POLAR_SERVER || "sandbox").toLowerCase();
-  const polarRequired = [
-    ["POLAR_ACCESS_TOKEN", process.env.POLAR_ACCESS_TOKEN],
-    ["POLAR_SUCCESS_URL", process.env.POLAR_SUCCESS_URL],
-    ["POLAR_WEBHOOK_SECRET", process.env.POLAR_WEBHOOK_SECRET],
-    ["POLAR_ONE_ARTICLE_PRODUCT_ID", process.env.POLAR_ONE_ARTICLE_PRODUCT_ID],
-  ] as const;
-  const missingPolar = polarRequired.filter(([, value]) => !has(value)).map(([key]) => key);
+  const missingPolar = [
+    !has(process.env.POLAR_ACCESS_TOKEN) ? "POLAR_ACCESS_TOKEN" : null,
+    !has(process.env.POLAR_SUCCESS_URL) && !has(process.env.PUBLIC_BASE_URL)
+      ? "POLAR_SUCCESS_URL or PUBLIC_BASE_URL"
+      : null,
+    !has(process.env.POLAR_WEBHOOK_SECRET) ? "POLAR_WEBHOOK_SECRET" : null,
+  ].filter((key): key is string => Boolean(key));
   let billingStatus: ReadinessStatus;
   let billingExplanation: string;
   if (!billingProvider) {
@@ -161,15 +161,41 @@ export function getLaunchReadiness(): ReadinessCheck[] {
   checks.push({ key: "BILLING_PROVIDER", status: billingStatus, explanation: billingExplanation });
 
   const polarSelected = billingProvider === "polar";
-  for (const [key, value] of polarRequired) {
+  const polarChecks = [
+    {
+      key: "POLAR_ACCESS_TOKEN",
+      ok: has(process.env.POLAR_ACCESS_TOKEN),
+      explanation: "Polar API access token",
+    },
+    {
+      key: "POLAR_SUCCESS_URL / PUBLIC_BASE_URL",
+      ok: has(process.env.POLAR_SUCCESS_URL) || has(process.env.PUBLIC_BASE_URL),
+      explanation: "checkout success URL source",
+    },
+    {
+      key: "POLAR_WEBHOOK_SECRET",
+      ok: has(process.env.POLAR_WEBHOOK_SECRET),
+      explanation: "Polar webhook signing secret",
+    },
+    {
+      key: "POLAR_ONE_ARTICLE_PRODUCT_ID",
+      ok: has(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID),
+      explanation: "explicit Polar product id",
+      optional: true,
+    },
+  ];
+  for (const item of polarChecks) {
+    const required = polarSelected || isProd;
     checks.push({
-      key,
-      status: has(value) ? "pass" : polarSelected || isProd ? "missing" : "warn",
-      explanation: has(value)
-        ? `${key} is configured.`
-        : polarSelected || isProd
-          ? `Missing — Polar payments cannot launch without ${key}.`
-          : "Missing — only required when Polar billing is selected.",
+      key: item.key,
+      status: item.ok ? "pass" : item.optional ? "warn" : required ? "missing" : "warn",
+      explanation: item.ok
+        ? `${item.explanation} is configured.`
+        : item.optional
+          ? "Missing — using the built-in OneArticle product id fallback."
+          : required
+            ? `Missing — Polar payments cannot launch without ${item.key}.`
+            : "Missing — only required when Polar billing is selected.",
     });
   }
   checks.push({

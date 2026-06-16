@@ -21,6 +21,7 @@
     "dry-run": "node --import tsx --env-file=.env scripts/dry-run.ts",
     "inspect:eligibility": "node --import tsx --env-file=.env scripts/inspect-eligibility.ts",
     "inspect:billing": "node --import tsx --env-file=.env scripts/inspect-billing.ts",
+    "fix:local-trials": "node --import tsx --env-file=.env scripts/fix-local-trials-to-pending-checkout.ts",
     "mock:billing-fixtures": "node --import tsx --env-file=.env scripts/mock-billing-fixtures.ts",
     "summarize": "node --import tsx --env-file=.env scripts/summarize.ts",
     "inspect:articles": "node --env-file=.env scripts/inspect-articles.mjs",

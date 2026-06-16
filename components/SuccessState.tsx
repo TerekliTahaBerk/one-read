@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 type Variant = "subscribed" | "canceled";
 
 export function SuccessState({
@@ -39,7 +41,7 @@ export function SuccessState({
       </div>
 
       <p className="font-sans text-[11px] sm:text-[11.5px] uppercase tracking-eyebrow text-fog mt-6">
-        {isCanceled ? "OneArticle" : "Welcome to OneArticle"}
+        {isCanceled ? "OneArticle" : "Setup saved"}
       </p>
 
       {isCanceled ? (
@@ -64,11 +66,11 @@ export function SuccessState({
       ) : (
         <>
           <h2 className="font-serif font-medium text-[2.1rem] sm:text-[3rem] leading-[1.04] tracking-[-0.02em] text-ink mt-3 max-w-[14ch] text-balance">
-            You’re <em className="italic font-normal">all set.</em>
+            You’re <em className="italic font-normal">almost there.</em>
           </h2>
           <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-4 max-w-[34ch]">
-            Your preferences are saved. Start your 7-day trial through checkout
-            to receive OneArticle every morning
+            Your preferences are saved. Start your 7-day free trial to receive
+            OneArticle every morning
             {email ? (
               <>
                 {" "}
@@ -77,8 +79,14 @@ export function SuccessState({
             ) : null}
             .
           </p>
-          <p className="font-serif italic text-[13.5px] text-fog mt-8">
-            Polar handles the trial and subscription.
+          <Link
+            href={`/article/subscribe${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+            className="mt-7 inline-flex h-12 items-center justify-center rounded-xl bg-[var(--theme-accent)] px-5 font-sans text-[15px] text-white"
+          >
+            Start 7-day free trial
+          </Link>
+          <p className="font-serif italic text-[13.5px] text-fog mt-5">
+            Trial and billing are handled securely by Polar.
           </p>
         </>
       )}
