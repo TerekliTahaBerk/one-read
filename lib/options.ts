@@ -8,7 +8,19 @@ import { UI_INTEREST_LABELS, type UIInterestLabel } from "./topics";
 export const INTERESTS = UI_INTEREST_LABELS;
 export type Interest = UIInterestLabel;
 
-export const SOURCE_LANGUAGES = ["English", "Turkish", "Any"] as const;
+/**
+ * Languages a subscriber can prefer their *source* articles in. "Any" means
+ * no preference. We only list languages we actually have curated feeds for
+ * (see `lib/sources.ts`); otherwise the preference would never be satisfiable.
+ */
+export const SOURCE_LANGUAGES = [
+  "English",
+  "Turkish",
+  "Spanish",
+  "French",
+  "German",
+  "Any",
+] as const;
 export type SourceLanguage = (typeof SOURCE_LANGUAGES)[number];
 
 /**

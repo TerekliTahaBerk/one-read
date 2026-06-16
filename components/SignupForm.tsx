@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import {
   INTERESTS,
   SOURCE_LANGUAGES,
@@ -220,6 +221,23 @@ function EmailStep({
           <br />
           Already a member? Enter your email to change your preferences or
           cancel.
+        </p>
+        <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
+          By continuing, you agree to the{" "}
+          <Link
+            href="/terms"
+            className="link-underline transition-colors duration-200 hover:text-ink"
+          >
+            Terms
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link
+            href="/privacy"
+            className="link-underline transition-colors duration-200 hover:text-ink"
+          >
+            Privacy Policy
+          </Link>
+          .
         </p>
       </div>
     </form>

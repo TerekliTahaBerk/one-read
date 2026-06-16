@@ -791,8 +791,7 @@ export function subscriberToContext(s: Subscriber): SubscriberContext {
   return {
     primaryInterest: (s.primaryInterest as TopicSlug | null) ?? null,
     secondaryInterests: (s.secondaryInterests as TopicSlug[]) ?? [],
-    sourceLanguage:
-      (s.sourceLanguage as "English" | "Turkish" | "Any" | null) ?? null,
+    sourceLanguage: s.sourceLanguage ?? null,
     recentlySentTopics: (s.recentlySentTopics as TopicSlug[]) ?? [],
     feedbackProfile: (s.feedbackProfile as unknown as
       | SubscriberContext["feedbackProfile"]

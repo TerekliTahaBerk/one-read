@@ -99,7 +99,7 @@ async function loadEnabledSources(): Promise<readonly SourceConfig[]> {
         homepage: r.homepage ?? undefined,
         defaultTopic: r.defaultTopic,
         defaultSubtopics: r.defaultSubtopics,
-        language: (r.language as "English" | "Turkish") ?? "English",
+        language: (r.language as SourceConfig["language"]) ?? "English",
         active: r.active,
         notes: r.notes ?? undefined,
       }));

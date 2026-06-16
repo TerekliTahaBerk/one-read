@@ -7,13 +7,18 @@
  *
  * The final personalizedScore is a weighted sum (weights sum to 1.0):
  *
- *   0.30 * topicInterestMatch
- * + 0.20 * articleQualityScore
- * + 0.15 * usefulnessScore
- * + 0.10 * noveltyScore
+ *   0.28 * topicInterestMatch
+ * + 0.17 * articleQualityScore
+ * + 0.13 * usefulnessScore
+ * + 0.09 * noveltyScore
  * + 0.10 * feedbackAffinityScore
- * + 0.10 * languageMatchScore
+ * + 0.18 * languageMatchScore
  * + 0.05 * morningReadScore
+ *
+ * languageMatch carries real weight (0.18) now that we curate native-language
+ * feeds: a subscriber who asks for French articles should actually get French
+ * ones when they exist, while topicInterest (0.28) still dominates so we never
+ * sacrifice relevance for language.
  *
  * Every component is normalized to [0, 1].
  */
@@ -27,7 +32,8 @@ import type { TopicSlug } from "./topics";
 export interface SubscriberContext {
   primaryInterest: TopicSlug | null;
   secondaryInterests: readonly TopicSlug[];
-  sourceLanguage: "English" | "Turkish" | "Any" | null;
+  /** Preferred source language name, "Any", or null (no preference). */
+  sourceLanguage: string | null;
   /** Last N topic slugs sent, *most recent first*. */
   recentlySentTopics: readonly TopicSlug[];
   /** topicAffinity[slug] in [-1, 1]. Optional. */
@@ -77,12 +83,12 @@ export {
 
 /** Weights — exposed for the admin preview. */
 export const WEIGHTS = Object.freeze({
-  topicInterestMatch: 0.3,
-  articleQuality: 0.2,
-  usefulness: 0.15,
-  novelty: 0.1,
+  topicInterestMatch: 0.28,
+  articleQuality: 0.17,
+  usefulness: 0.13,
+  novelty: 0.09,
   feedbackAffinity: 0.1,
-  languageMatch: 0.1,
+  languageMatch: 0.18,
   morningRead: 0.05,
 });
 
@@ -182,8 +188,11 @@ export function feedbackAffinityScore(
  * Language match.
  * - sourceLanguage is "Any"        → 1.0
  * - exact match                    → 1.0
- * - "Any" pick + concrete user pref → 0.7 (flexible, but slight nudge)
- * - mismatch                       → 0.4
+ * - "Any" pick + concrete user pref → 0.6 (flexible, but a real nudge)
+ * - mismatch                       → 0.25
+ *
+ * The mismatch floor is intentionally low (combined with the 0.18 weight) so
+ * that, among similarly relevant articles, a native-language one clearly wins.
  */
 export function languageMatchScore(
   pick: PickCandidate,
@@ -192,8 +201,8 @@ export function languageMatchScore(
   const userLang = ctx.sourceLanguage;
   if (!userLang || userLang === "Any") return 1.0;
   if (pick.sourceLanguage === userLang) return 1.0;
-  if (pick.sourceLanguage === "Any") return 0.7;
-  return 0.4;
+  if (pick.sourceLanguage === "Any") return 0.6;
+  return 0.25;
 }
 
 /* ----------------------------------------------------------------------- */

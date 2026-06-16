@@ -24,7 +24,8 @@ export interface SourceConfig {
   homepage?: string;
   defaultTopic: string;
   defaultSubtopics?: readonly string[];
-  language?: "English" | "Turkish";
+  /** Content language of the feed. Defaults to "English" when omitted. */
+  language?: "English" | "Turkish" | "Spanish" | "French" | "German";
   active?: boolean;
   notes?: string;
 }
@@ -282,6 +283,144 @@ export const SEED_SOURCES: readonly SourceConfig[] = [
     defaultSubtopics: ["decision-making", "behavior", "cognitive-bias"],
     active: false,
     notes: "Feed returns HTTP 403 to bots (verified 2026-06-14); blocked at the edge — leave disabled.",
+  },
+
+  /* =================================================================== */
+  /* Non-English sources                                                  */
+  /*                                                                     */
+  /* Curated for subscribers whose source-language preference is not     */
+  /* English. The LLM still summarizes into each subscriber's chosen     */
+  /* summary language, so these feed the "native source" experience.     */
+  /* Aim for breadth (tech + science + culture) per language so most     */
+  /* interests can be satisfied without falling back to English.         */
+  /* =================================================================== */
+
+  /* ----------------------------- Turkish ----------------------------- */
+  {
+    slug: "webrazzi",
+    name: "Webrazzi",
+    feedUrl: "https://webrazzi.com/feed/",
+    homepage: "https://webrazzi.com",
+    defaultTopic: "technology",
+    defaultSubtopics: ["consumer-tech", "platforms"],
+    language: "Turkish",
+    notes: "TR tech/startup ecosystem. Verified 2026-06-16 (RSS, 20 items).",
+  },
+  {
+    slug: "sarkac",
+    name: "Sarkaç",
+    feedUrl: "https://sarkac.org/feed/",
+    homepage: "https://sarkac.org",
+    defaultTopic: "science",
+    defaultSubtopics: ["research", "discoveries"],
+    language: "Turkish",
+    notes: "TR science, written by academics. Verified 2026-06-16 (RSS, 50 items).",
+  },
+  {
+    slug: "fikir-turu",
+    name: "Fikir Turu",
+    feedUrl: "https://fikirturu.com/feed/",
+    homepage: "https://fikirturu.com",
+    defaultTopic: "culture",
+    defaultSubtopics: ["society"],
+    language: "Turkish",
+    notes: "TR ideas/society/economics essays. Verified 2026-06-16 (RSS, 10 items).",
+  },
+
+  /* ----------------------------- Spanish ----------------------------- */
+  {
+    slug: "xataka",
+    name: "Xataka",
+    feedUrl: "https://www.xataka.com/index.xml",
+    homepage: "https://www.xataka.com",
+    defaultTopic: "technology",
+    defaultSubtopics: ["consumer-tech", "platforms"],
+    language: "Spanish",
+    notes: "ES technology. Verified 2026-06-16 (RSS, 26 items).",
+  },
+  {
+    slug: "hipertextual",
+    name: "Hipertextual",
+    feedUrl: "https://hipertextual.com/feed",
+    homepage: "https://hipertextual.com",
+    defaultTopic: "technology",
+    defaultSubtopics: ["consumer-tech"],
+    language: "Spanish",
+    notes: "ES tech/science/culture. Verified 2026-06-16 (RSS, 15 items).",
+  },
+  {
+    slug: "elpais-ciencia",
+    name: "El País — Ciencia",
+    feedUrl: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/ciencia/portada",
+    homepage: "https://elpais.com/ciencia/",
+    defaultTopic: "science",
+    defaultSubtopics: ["research", "discoveries"],
+    language: "Spanish",
+    notes: "ES science. Verified 2026-06-16 (RSS, 40 items).",
+  },
+
+  /* ----------------------------- French ------------------------------ */
+  {
+    slug: "numerama",
+    name: "Numerama",
+    feedUrl: "https://www.numerama.com/feed/",
+    homepage: "https://www.numerama.com",
+    defaultTopic: "technology",
+    defaultSubtopics: ["consumer-tech", "platforms"],
+    language: "French",
+    notes: "FR technology. Verified 2026-06-16 (RSS, 40 items).",
+  },
+  {
+    slug: "korben",
+    name: "Korben",
+    feedUrl: "https://korben.info/feed",
+    homepage: "https://korben.info",
+    defaultTopic: "software-engineering",
+    defaultSubtopics: ["developer-tools", "open-source"],
+    language: "French",
+    notes: "FR dev/tools/tech. Verified 2026-06-16 (RSS, 20 items).",
+  },
+  {
+    slug: "futura-sciences",
+    name: "Futura Sciences",
+    feedUrl: "https://www.futura-sciences.com/rss/actualites.xml",
+    homepage: "https://www.futura-sciences.com",
+    defaultTopic: "science",
+    defaultSubtopics: ["research", "discoveries"],
+    language: "French",
+    notes: "FR science. Verified 2026-06-16 (RSS, 50 items).",
+  },
+
+  /* ----------------------------- German ------------------------------ */
+  {
+    slug: "heise",
+    name: "heise online",
+    feedUrl: "https://www.heise.de/rss/heise-atom.xml",
+    homepage: "https://www.heise.de",
+    defaultTopic: "technology",
+    defaultSubtopics: ["consumer-tech", "cybersecurity"],
+    language: "German",
+    notes: "DE technology. Verified 2026-06-16 (Atom, 155 items).",
+  },
+  {
+    slug: "t3n",
+    name: "t3n",
+    feedUrl: "https://t3n.de/rss.xml",
+    homepage: "https://t3n.de",
+    defaultTopic: "technology",
+    defaultSubtopics: ["platforms", "developer-tools"],
+    language: "German",
+    notes: "DE digital business/tech. Verified 2026-06-16 (RSS, 20 items).",
+  },
+  {
+    slug: "spektrum",
+    name: "Spektrum der Wissenschaft",
+    feedUrl: "https://www.spektrum.de/alias/rss/spektrum-de-rss-feed/996406",
+    homepage: "https://www.spektrum.de",
+    defaultTopic: "science",
+    defaultSubtopics: ["research", "physics", "biology"],
+    language: "German",
+    notes: "DE science. Verified 2026-06-16 (RSS, 20 items).",
   },
 ];
 
