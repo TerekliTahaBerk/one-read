@@ -64,65 +64,12 @@ function warnIfMisconfigured(): void {
   }
 }
 
-const WELCOME_SUBJECT = "Finish setting up OneArticle";
-const WELCOME_TEXT = `Hi,
-
-You're almost there.
-
-Your preferences are saved. Start your 7-day free trial with Polar to receive OneArticle every morning.
-
-Trial and billing are handled securely by Polar.
-
-— OneRead
-`;
-
-const WELCOME_HTML = `
-  <div style="font-family: ui-serif, Georgia, Cambria, serif; color: #1B1612; line-height: 1.6; font-size: 16px; max-width: 480px; margin: 0 auto; padding: 24px;">
-    <p style="margin: 0 0 16px 0;">Hi,</p>
-    <p style="margin: 0 0 16px 0;"><strong>You're almost there.</strong></p>
-    <p style="margin: 0 0 24px 0;">Your preferences are saved. Start your 7-day free trial with Polar to receive OneArticle every morning.</p>
-    <p style="margin: 0 0 24px 0; font-style: italic; color: #6B5F50;">Trial and billing are handled securely by Polar.</p>
-    <p style="margin: 0; color: #9C8F7E; font-size: 14px;">— OneRead</p>
-  </div>
-`.trim();
-
-/**
- * Send the post-signup welcome email. Never throws — failures are logged
- * but must not block the user-facing success state.
- */
-export async function sendWelcomeEmail(to: string): Promise<void> {
-  warnIfMisconfigured();
-  if (!resend) {
-    console.warn(
-      "[resend] RESEND_API_KEY is not set; skipping welcome email for",
-      to,
-    );
-    return;
-  }
-
-  try {
-    const { error } = await resend.emails.send({
-      from: FROM,
-      to,
-      subject: WELCOME_SUBJECT,
-      text: WELCOME_TEXT,
-      html: WELCOME_HTML,
-    });
-    if (error) {
-      // Log but don't throw — signup should still succeed.
-      console.error("[resend] send error:", error.name, error.message);
-    }
-  } catch (err) {
-    console.error("[resend] unexpected send failure:", err);
-  }
-}
-
 /**
  * Send a daily article email. Used by the editorial pipeline. Returns the
  * Resend message id on success, or undefined if no key is configured.
  *
- * Unlike `sendWelcomeEmail`, errors here propagate to the caller so the
- * pipeline can mark the DailySend row as FAILED and retry later.
+ * Errors here propagate to the caller so the pipeline can mark the DailySend
+ * row as FAILED and retry later.
  */
 export async function sendDailyEmail(args: {
   to: string;

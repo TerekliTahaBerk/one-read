@@ -202,8 +202,28 @@ export class PolarBillingProvider implements BillingProvider {
     };
   }
 
-  async cancelSubscription(): Promise<void> {
-    throw new Error("Use the Polar customer portal to cancel subscriptions.");
+  async cancelSubscription(email: string): Promise<void> {
+    const sub = await findOneArticleSubscription(email);
+    if (!sub) throw new Error("No subscription found.");
+    if (sub.paymentProvider !== PROVIDER || !sub.providerSubscriptionId) {
+      throw new Error("No active Polar subscription is available to cancel.");
+    }
+
+    const canceled = await getPolarClient().subscriptions.update({
+      id: sub.providerSubscriptionId,
+      subscriptionUpdate: { cancelAtPeriodEnd: true },
+    });
+
+    await prisma.productSubscription.update({
+      where: { id: sub.id },
+      data: {
+        status: mapPolarSubscriptionStatus(String(canceled.status)),
+        cancelAtPeriodEnd: canceled.cancelAtPeriodEnd,
+        canceledAt: canceled.canceledAt ?? new Date(),
+        currentPeriodStart: canceled.currentPeriodStart ?? sub.currentPeriodStart,
+        currentPeriodEnd: canceled.currentPeriodEnd ?? sub.currentPeriodEnd,
+      },
+    });
   }
 
   async resumeSubscription(): Promise<void> {

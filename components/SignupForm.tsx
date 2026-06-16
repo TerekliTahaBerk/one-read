@@ -506,7 +506,7 @@ function ManageStep({
     setCanceling(true);
     setError(null);
     try {
-      const res = await fetch("/api/subscribe/portal", {
+      const res = await fetch("/api/signup/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -514,11 +514,10 @@ function ManageStep({
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         action?: string;
-        url?: string;
         error?: string;
       };
-      if (res.ok && data.ok && data.action === "redirect" && data.url) {
-        window.location.href = data.url;
+      if (res.ok && data.ok && data.action === "canceled") {
+        onCanceled();
         return;
       }
       if (data.action === "needs_setup_first") {
@@ -529,16 +528,16 @@ function ManageStep({
         window.location.href = `/article?email=${encodeURIComponent(email)}`;
         return;
       }
-      if (data.action === "needs_checkout") {
+      if (data.action === "needs_checkout" || data.action === "no_active_subscription") {
         window.location.href = `/article/subscribe?email=${encodeURIComponent(email)}`;
         return;
       }
-      throw new Error(data.error ?? "Couldn't open billing.");
+      throw new Error(data.error ?? "Couldn't cancel your subscription.");
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Couldn't open billing. Please try again.",
+          : "Couldn't cancel your subscription. Please try again.",
       );
       setCanceling(false);
     }
@@ -582,12 +581,12 @@ function ManageStep({
               onClick={() => setConfirmingCancel(true)}
               className="focus-ring rounded text-[13px] font-sans text-fog underline underline-offset-4 hover:text-ash transition-colors"
             >
-              Cancel or manage subscription
+              Cancel subscription
             </button>
           ) : (
             <div className="animate-fade-in">
               <p className="text-[13px] font-sans text-ash">
-                Open Polar billing to cancel or manage your subscription.
+                Cancel your subscription? You’ll keep access until the paid period ends.
               </p>
               <div className="mt-3 flex items-center justify-center gap-3">
                 <button
@@ -605,7 +604,7 @@ function ManageStep({
                   aria-busy={canceling}
                   className="focus-ring h-9 px-4 rounded-full border border-dawn text-[13px] font-sans text-dawn hover:bg-dawn hover:text-paper transition-colors disabled:opacity-40"
                 >
-                  {canceling ? "Opening..." : "Open billing"}
+                  {canceling ? "Canceling..." : "Yes, cancel"}
                 </button>
               </div>
             </div>

@@ -7,7 +7,6 @@ import {
   parseSummaryLanguage,
 } from "@/lib/options";
 import { interestLabelsToSlugs } from "@/lib/topics";
-import { sendWelcomeEmail } from "@/lib/resend";
 import {
   ensureOneArticleSubscription,
   upsertArticlePreferences,
@@ -27,8 +26,8 @@ export const dynamic = "force-dynamic";
  * }
  *
  * Updates the subscriber's preferences and marks the product subscription
- * ready for Polar checkout. Sends a setup email via Resend, but never blocks
- * success on email delivery.
+ * ready for Polar checkout. Does not send email or grant access; Polar
+ * checkout/webhooks are the source of truth for trial/paid access.
  */
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
@@ -90,7 +89,7 @@ export async function POST(request: Request) {
         secondaryInterests,
         sourceLanguage,
         summaryLanguage,
-        status: "ACTIVE",
+        status: "PENDING_CHECKOUT",
       },
       create: {
         email,
@@ -99,7 +98,7 @@ export async function POST(request: Request) {
         secondaryInterests,
         sourceLanguage,
         summaryLanguage,
-        status: "ACTIVE",
+        status: "PENDING_CHECKOUT",
       },
     });
 
@@ -121,10 +120,6 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-
-  // Fire-and-await, but never propagate failures to the client.
-  // sendWelcomeEmail catches its own errors internally.
-  await sendWelcomeEmail(email);
 
   return NextResponse.json({ ok: true });
 }
