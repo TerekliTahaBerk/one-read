@@ -16,6 +16,7 @@
  */
 
 import { topicBySlug } from "./topics";
+import { getEmailStrings, localeFor, htmlLangFor } from "./i18n";
 import type { StructuredSummary } from "./llm/types";
 
 export interface DailyEmailContext {
@@ -25,7 +26,8 @@ export interface DailyEmailContext {
   matchedTopic: string;
   /** True if the subscriber has more than one selected interest. */
   hasMultipleInterests: boolean;
-  /** "English" | "Turkish" — drives every translation. */
+  /** Summary language name (e.g. "English", "Turkish", "Spanish", "French",
+   *  "German") — drives every chrome translation via `lib/i18n.ts`. */
   summaryLanguage: string;
   article: {
     title: string;
@@ -78,29 +80,22 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
   const whyThis = structured?.whyThisArticle?.trim() ?? "";
   const readingTime = structured?.readingTime?.trim() ?? "";
 
-  const personalizationLine =
-    lang === "Turkish"
-      ? ctx.hasMultipleInterests
-        ? `Bugün ${topicLabel} hattından.`
-        : `${topicLabel} ilgin için seçildi.`
-      : ctx.hasMultipleInterests
-        ? `Picked from your ${topicLabel} track today.`
-        : `Picked for your interest in ${topicLabel}.`;
+  const t = getEmailStrings(lang);
 
-  const readLabel = lang === "Turkish" ? "Tam yazıyı oku" : "Read the full article";
-  const reactionPrompt =
-    lang === "Turkish" ? "Bu yazıyı beğendin mi?" : "How was this read?";
-  const reactionLoved = lang === "Turkish" ? "Çok iyiydi" : "Loved it";
-  const reactionLiked = lang === "Turkish" ? "İyiydi" : "Liked it";
-  const reactionMeh = lang === "Turkish" ? "İdare eder" : "Meh";
-  const reactionDisliked = lang === "Turkish" ? "Olmadı" : "Not for me";
-  const unsubscribeLabel = lang === "Turkish" ? "Aboneliği bırak" : "Unsubscribe";
-  const tagline =
-    lang === "Turkish"
-      ? "Bir makale. Her sabah. Sana göre seçilmiş."
-      : "One article. Every morning. Curated for you.";
-  const originalTitleLabel =
-    lang === "Turkish" ? "Orijinal başlık" : "Original title";
+  const personalizationLine = t.personalizationLine(
+    topicLabel,
+    ctx.hasMultipleInterests,
+  );
+
+  const readLabel = t.readLabel;
+  const reactionPrompt = t.reactionPrompt;
+  const reactionLoved = t.reactionLoved;
+  const reactionLiked = t.reactionLiked;
+  const reactionMeh = t.reactionMeh;
+  const reactionDisliked = t.reactionDisliked;
+  const unsubscribeLabel = t.unsubscribeLabel;
+  const tagline = t.tagline;
+  const originalTitleLabel = t.originalTitleLabel;
 
   /* ------------------------------------------ Plain text version */
   const text = [
@@ -158,7 +153,7 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
 
   const html = `
 <!doctype html>
-<html lang="${lang === "Turkish" ? "tr" : "en"}">
+<html lang="${htmlLangFor(lang)}">
 <head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background:#F6F1E6;">
   <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:ui-serif,Georgia,Cambria,serif;color:#1B1612;">
@@ -234,7 +229,7 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
 function formatDate(iso: string, lang: string): string {
   const d = new Date(iso + "T00:00:00Z");
   if (Number.isNaN(d.getTime())) return iso;
-  const locale = lang === "Turkish" ? "tr-TR" : "en-US";
+  const locale = localeFor(lang);
   return d.toLocaleDateString(locale, {
     weekday: "long",
     month: "long",

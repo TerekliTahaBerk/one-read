@@ -1,22 +1,28 @@
-export const INTERESTS = [
-  "Artificial Intelligence",
-  "Startups",
-  "Business",
-  "Technology",
-  "Psychology",
-  "Science",
-  "Design",
-  "Finance",
-  "Productivity",
-  "Culture",
-] as const;
+import { UI_INTEREST_LABELS, type UIInterestLabel } from "./topics";
 
-export type Interest = (typeof INTERESTS)[number];
+/**
+ * Interests shown in the signup form. Single source of truth is the topic
+ * catalog (`lib/topics.ts`) — re-exported here so existing imports keep
+ * working and the form, validators, and backend can never drift apart.
+ */
+export const INTERESTS = UI_INTEREST_LABELS;
+export type Interest = UIInterestLabel;
 
 export const SOURCE_LANGUAGES = ["English", "Turkish", "Any"] as const;
 export type SourceLanguage = (typeof SOURCE_LANGUAGES)[number];
 
-export const SUMMARY_LANGUAGES = ["English", "Turkish"] as const;
+/**
+ * Languages a subscriber can receive their summary in. The LLM translates
+ * from the (English) source into any of these — see `lib/i18n.ts` for the
+ * matching email/UI chrome strings.
+ */
+export const SUMMARY_LANGUAGES = [
+  "English",
+  "Turkish",
+  "Spanish",
+  "French",
+  "German",
+] as const;
 export type SummaryLanguage = (typeof SUMMARY_LANGUAGES)[number];
 
 export const BILLING_INTERVALS = ["monthly", "annual"] as const;

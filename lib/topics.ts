@@ -347,40 +347,12 @@ export const ALL_TOPIC_SLUGS: readonly TopicSlug[] = TOPIC_CATALOG.map(
 /* ----------------------------------------------------------------------- */
 
 /**
- * The labels we expose in the signup form. Keep this short; the backend
- * supports the full `TOPIC_CATALOG` regardless of what we render here.
- *
- * Order matches the original v1 form so the DOM and the data stay stable.
+ * The labels we expose in the signup form. Derived directly from the
+ * canonical catalog so the form always offers the full taxonomy and the
+ * two lists can never drift out of sync. Catalog order is preserved.
  */
-export const UI_INTEREST_LABELS = [
-  "Artificial Intelligence",
-  "Startups",
-  "Business",
-  "Technology",
-  "Psychology",
-  "Science",
-  "Design",
-  "Finance",
-  "Productivity",
-  "Culture",
-] as const;
+export type UIInterestLabel = CanonicalTopic["label"];
 
-export type UIInterestLabel = (typeof UI_INTEREST_LABELS)[number];
-
-/** Compile-time safety: every UI label must exist in the canonical catalog. */
-type EnsureLabelsExist = {
-  [K in UIInterestLabel]: K extends CanonicalTopic["label"] ? true : never;
-};
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _checkUiLabels: EnsureLabelsExist = {
-  "Artificial Intelligence": true,
-  Startups: true,
-  Business: true,
-  Technology: true,
-  Psychology: true,
-  Science: true,
-  Design: true,
-  Finance: true,
-  Productivity: true,
-  Culture: true,
-};
+export const UI_INTEREST_LABELS: readonly UIInterestLabel[] = TOPIC_CATALOG.map(
+  (t) => t.label,
+);

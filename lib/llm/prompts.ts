@@ -30,11 +30,11 @@ Hard rules:
 - bestFor MUST be exactly 3 short reader personas (e.g. "Engineers shipping LLM features").
 - All summary fields must be in the requested target language.
 - This is a SUMMARY, never a full translation: distill, don't translate the article. Never copy long passages verbatim — paraphrase in your own words.
-- Banned openings/filler: do NOT start sentences with "In this article", "This piece", "This post", "The author argues/explains", "Bu yazıda", "Bu makale". Get straight to the substance.
-- No generic AI/marketing language: avoid "In today's fast-paced world", "It's important to note", "Moreover/Furthermore" padding, "delve", "leverage" as filler, and empty hype.
-- English tone: calm, sharp, editorial, premium — like a thoughtful human editor, not a chatbot.
-- Turkish tone: natural, fluent, editorial Turkish — NOT a literal/robotic word-for-word translation. Established technical terms may stay in English when that is how professionals actually write them.
-- Translations preserve meaning and nuance, not literal word order.
+- Banned openings/filler: do NOT start sentences with "In this article", "This piece", "This post", "The author argues/explains" (or their equivalents in the target language). Get straight to the substance.
+- No generic AI/marketing language: avoid "In today's fast-paced world", "It's important to note", "Moreover/Furthermore" padding, "delve", "leverage" as filler, and empty hype — in any language.
+- Tone: calm, sharp, editorial, premium — like a thoughtful human editor, not a chatbot.
+- Write natural, fluent, idiomatic prose in the target language — NEVER a literal, robotic, word-for-word translation. Preserve meaning and nuance, not source word order.
+- Established technical terms may stay in English when professionals writing in the target language normally keep them that way.
 - If the article does not have enough substance for a meaningful summary, set confidence below 60 and explain in editorNotes — do not invent content.
 - Never insert calls to action, signatures, or sign-offs.`;
 

@@ -21,6 +21,7 @@
 
 import { prisma } from "./prisma";
 import { topicBySlug } from "./topics";
+import { getEmailStrings } from "./i18n";
 import {
   getLlmProvider,
   type LlmProvider,
@@ -156,19 +157,14 @@ function heuristicResult(req: SummaryRequest): {
 } {
   const excerpt = (req.article.rawExcerpt ?? "").trim();
   const topic = topicBySlug(req.primaryTopic);
-  const lang = req.summaryLanguage;
+  const t = getEmailStrings(req.summaryLanguage);
 
-  const intro =
-    lang === "Turkish"
-      ? `${req.article.sourceName} kaynagindan, ${topic?.label ?? "secili konuda"} alaninda bir yazi:`
-      : `From ${req.article.sourceName}, on ${topic?.label ?? "your selected topic"}:`;
+  const intro = t.heuristicIntro(
+    req.article.sourceName,
+    topic?.label ?? req.primaryTopic,
+  );
 
-  const fallback =
-    lang === "Turkish"
-      ? "Yazinin ozetini sabah okumak icin size bir rehber: ana fikri kisaca aktarir, gerekirse tam metne yonlendirir."
-      : "A short read to start your morning: the main idea, distilled — follow the link for the full piece.";
-
-  const body = excerpt.length > 0 ? excerpt : fallback;
+  const body = excerpt.length > 0 ? excerpt : t.heuristicFallback;
 
   const text = `${intro}\n\n${body}`;
   const html = `
@@ -183,18 +179,17 @@ export function renderStructured(s: StructuredSummary): {
   bodyText: string;
   bodyHtml: string;
 } {
+  const strings = getEmailStrings(s.summaryLanguage);
   const text = [
     s.oneLineHook && `"${s.oneLineHook}"`,
     "",
     s.threeSentenceSummary.filter(Boolean).join(" "),
     "",
-    s.summaryLanguage === "Turkish" ? "Ozetler:" : "Key takeaways:",
+    `${strings.keyTakeawaysLabel}:`,
     ...s.keyTakeaways.filter(Boolean).map((t) => `- ${t}`),
     "",
     s.oneThingToRemember &&
-      (s.summaryLanguage === "Turkish"
-        ? `Aklinda kalsin: ${s.oneThingToRemember}`
-        : `Remember: ${s.oneThingToRemember}`),
+      `${strings.rememberLabel}: ${s.oneThingToRemember}`,
   ]
     .filter((line) => line !== null && line !== undefined)
     .join("\n");
@@ -215,11 +210,11 @@ export function renderStructured(s: StructuredSummary): {
     .map((p) => `<p style="margin:0 0 8px 0;">${escapeHtml(p)}</p>`)
     .join("")}
 </div>
-<div style="margin:0 0 8px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9C8F7E;">${escapeHtml(s.summaryLanguage === "Turkish" ? "One cikanlar" : "Key takeaways")}</div>
+<div style="margin:0 0 8px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9C8F7E;">${escapeHtml(strings.keyTakeawaysLabel)}</div>
 <ul style="margin:0 0 22px 18px;padding:0;">${takeawaysHtml}</ul>
 ${
   s.oneThingToRemember
-    ? `<div style="margin:0 0 4px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9C8F7E;">${escapeHtml(s.summaryLanguage === "Turkish" ? "Aklinda kalsin" : "Remember")}</div>
+    ? `<div style="margin:0 0 4px 0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;letter-spacing:0.14em;text-transform:uppercase;color:#9C8F7E;">${escapeHtml(strings.rememberLabel)}</div>
 <div style="margin:0;font-family:ui-serif,Georgia,Cambria,serif;color:#1B1612;font-size:15.5px;line-height:1.55;">${escapeHtml(s.oneThingToRemember)}</div>`
     : ""
 }
