@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
@@ -10,6 +11,7 @@ import {
   type SignupPhase,
 } from "@/components/SignupForm";
 import { SuccessState } from "@/components/SuccessState";
+import { productThemes } from "@/lib/product-themes";
 
 type Phase = SignupPhase | "success" | "canceled";
 
@@ -54,6 +56,7 @@ export function ArticleLanding() {
   const [preferences, setPreferences] = useState<Preferences | null>(null);
 
   const backTo = BACK_TO[phase];
+  const theme = productThemes.article;
 
   return (
     <main
@@ -64,6 +67,16 @@ export function ArticleLanding() {
         pt-5 sm:pt-6
         pb-4 sm:pb-5
       "
+      style={
+        {
+          backgroundColor: theme.background,
+          "--theme-accent": theme.accent,
+          "--theme-border": theme.border,
+          "--theme-surface": theme.surface,
+          "--theme-page": theme.background,
+          "--theme-focus": theme.accent,
+        } as CSSProperties
+      }
     >
       <header className="relative w-full flex justify-center animate-rise">
         {backTo ? (
@@ -77,7 +90,7 @@ export function ArticleLanding() {
               inline-flex h-10 w-10 items-center justify-center
               rounded-full text-ash
               transition-colors duration-200
-              hover:text-ink hover:bg-cream/70
+              hover:text-ink hover:bg-[var(--theme-surface)]
             "
           >
             <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -100,7 +113,7 @@ export function ArticleLanding() {
               inline-flex h-10 w-10 items-center justify-center
               rounded-full text-ash
               transition-colors duration-200
-              hover:text-ink hover:bg-cream/70
+              hover:text-ink hover:bg-[var(--theme-surface)]
             "
           >
             <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">

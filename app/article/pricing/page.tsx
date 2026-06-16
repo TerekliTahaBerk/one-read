@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { PricingCard } from "@/components/PricingCard";
+import { productThemes } from "@/lib/product-themes";
 
 export const metadata: Metadata = {
   title: "Pricing — One Article",
@@ -10,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function ArticlePricingPage() {
+  const theme = productThemes.article;
+
   return (
     <main
       className="
@@ -19,6 +23,16 @@ export default function ArticlePricingPage() {
         pt-7 sm:pt-9
         pb-6 sm:pb-8
       "
+      style={
+        {
+          backgroundColor: theme.background,
+          "--theme-accent": theme.accent,
+          "--theme-border": theme.border,
+          "--theme-surface": theme.surface,
+          "--theme-page": theme.background,
+          "--theme-focus": theme.accent,
+        } as CSSProperties
+      }
     >
       <header className="w-full flex justify-center animate-rise">
         <Logo label="One Article" href="/" ariaLabel="One Article — One Read home" />

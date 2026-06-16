@@ -68,7 +68,7 @@ export function PricingCard() {
           </div>
 
           {/* Divider */}
-          <div className="mt-7 h-px w-full bg-line" aria-hidden="true" />
+          <div className="mt-7 h-px w-full bg-[var(--theme-border)]" aria-hidden="true" />
 
           {/* Feature list */}
           <ul className="mt-6 space-y-3 text-left">
@@ -81,13 +81,13 @@ export function PricingCard() {
                   aria-hidden="true"
                   className="
                     mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center
-                    rounded-full bg-ink/[0.06]
+                    rounded-full bg-[var(--theme-surface)] text-[var(--theme-accent)]
                   "
                 >
                   <svg viewBox="0 0 24 24" width="11" height="11" fill="none">
                     <path
                       d="M5 12.5l4.2 4.2L19 7"
-                      stroke="#1A1A1A"
+                      stroke="currentColor"
                       strokeWidth="2.4"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -105,11 +105,11 @@ export function PricingCard() {
             className="
               focus-ring group/cta
               mt-8 inline-flex w-full h-12 items-center justify-center gap-2
-              rounded-xl bg-ink text-paper
+              rounded-xl bg-[var(--theme-accent)] text-paper
               font-sans text-[15px] tracking-tight
               shadow-[0_6px_20px_-8px_rgba(0,0,0,0.5)]
               transition-[transform,background-color,box-shadow] duration-200
-              hover:bg-graphite hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.55)]
+              hover:brightness-95 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)]
               active:scale-[0.99]
             "
           >

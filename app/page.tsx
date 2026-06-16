@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 
 const PRODUCTS = [
   {
@@ -9,6 +10,7 @@ const PRODUCTS = [
     status: "Available",
     cta: "Open One Article",
     href: "/article",
+    theme: "article",
   },
   {
     name: "One Lingo",
@@ -16,6 +18,7 @@ const PRODUCTS = [
     status: "Coming soon",
     cta: "Coming soon",
     href: null,
+    theme: "lingo",
   },
   {
     name: "One Goal",
@@ -23,6 +26,7 @@ const PRODUCTS = [
     status: "Coming soon",
     cta: "Coming soon",
     href: null,
+    theme: "goal",
   },
 ] as const;
 
@@ -101,6 +105,8 @@ function ProductRow({
 }: {
   product: (typeof PRODUCTS)[number];
 }) {
+  const theme = productThemes[product.theme as ProductThemeKey];
+
   const content = (
     <>
       <div className="min-w-0">
@@ -109,10 +115,12 @@ function ProductRow({
             {product.name}
           </h2>
           <span
-            className="
-              rounded-full border border-line px-2 py-0.5
-              font-sans text-[11px] leading-none text-fog
-            "
+            className="rounded-full border px-2 py-0.5 font-sans text-[11px] leading-none"
+            style={{
+              borderColor: theme.border,
+              color: theme.accent,
+              backgroundColor: theme.background,
+            }}
           >
             {product.status}
           </span>
@@ -125,8 +133,9 @@ function ProductRow({
       <span
         className={`
           shrink-0 font-sans text-[12.5px]
-          ${product.href ? "text-ink link-underline" : "text-fog"}
+          ${product.href ? "link-underline" : ""}
         `}
+        style={{ color: product.href ? theme.accent : theme.mutedText }}
       >
         {product.cta}
       </span>
@@ -135,20 +144,34 @@ function ProductRow({
 
   const className = `
     group flex items-center justify-between gap-5
-    py-3 sm:py-3.5
-    transition-colors duration-200
+    my-1 rounded-lg border px-3 py-3 sm:py-3.5
+    transition-[background-color,border-color,transform] duration-200
   `;
 
   if (!product.href) {
     return (
-      <div className={className} aria-disabled="true">
+      <div
+        className={className}
+        aria-disabled="true"
+        style={{
+          backgroundColor: theme.background,
+          borderColor: theme.border,
+        }}
+      >
         {content}
       </div>
     );
   }
 
   return (
-    <Link href={product.href} className={`${className} focus-ring rounded-sm`}>
+    <Link
+      href={product.href}
+      className={`${className} focus-ring hover:-translate-y-px`}
+      style={{
+        backgroundColor: theme.background,
+        borderColor: theme.border,
+      }}
+    >
       {content}
     </Link>
   );

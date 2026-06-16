@@ -33,8 +33,8 @@ export function InterestChip({
         "transition-[color,background-color,border-color,transform] duration-200 ease-out",
         "border",
         selected
-          ? "bg-ink text-paper border-ink shadow-[0_1px_0_rgba(27,22,18,0.5)]"
-          : "bg-paper/70 text-ash border-line hover:text-ink hover:border-line-strong hover:bg-paper",
+          ? "bg-[var(--theme-accent)] text-paper border-[var(--theme-accent)] shadow-[0_1px_0_rgba(27,22,18,0.18)]"
+          : "bg-white/65 text-ash border-[var(--theme-border)] hover:text-ink hover:border-[var(--theme-accent)] hover:bg-white/85",
         "active:scale-[0.98]",
         className,
       ].join(" ")}

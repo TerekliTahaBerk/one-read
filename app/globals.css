@@ -60,7 +60,7 @@
   .focus-ring:focus-visible {
     box-shadow:
       0 0 0 2px #FFFFFF,
-      0 0 0 3px rgba(27, 22, 18, 0.55);
+      0 0 0 3px var(--theme-focus, rgba(27, 22, 18, 0.55));
   }
 
   /* Soft, hairline underline for inline links */

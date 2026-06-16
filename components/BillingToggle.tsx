@@ -54,7 +54,7 @@ export function BillingToggle({
       aria-label="Billing interval"
       className={[
         "relative inline-flex max-w-full p-1",
-        "rounded-full border border-line bg-cream/60",
+        "rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)]",
         className,
       ].join(" ")}
     >
@@ -63,7 +63,7 @@ export function BillingToggle({
         aria-hidden="true"
         className="
           absolute top-1 bottom-1 left-0
-          rounded-full bg-ink
+          rounded-full bg-[var(--theme-accent)]
           transition-[transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
         "
         style={{
@@ -101,7 +101,7 @@ export function BillingToggle({
                   "rounded-full px-1.5 py-0.5 text-[10px] leading-none",
                   selected
                     ? "bg-paper/20 text-paper"
-                    : "bg-ink/5 text-ash",
+                    : "bg-white/60 text-ash",
                 ].join(" ")}
               >
                 {annualBadge}

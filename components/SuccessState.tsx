@@ -18,7 +18,7 @@ export function SuccessState({
       className="w-full flex flex-col items-center text-center animate-fade-in"
     >
       {/* Drawn check inside a soft circle */}
-      <div className="relative h-14 w-14 rounded-full bg-cream/80 border border-line flex items-center justify-center">
+      <div className="relative h-14 w-14 rounded-full bg-[var(--theme-surface)] border border-[var(--theme-border)] flex items-center justify-center">
         <svg
           viewBox="0 0 24 24"
           width="22"
@@ -28,7 +28,7 @@ export function SuccessState({
         >
           <path
             d="M5 12.5l4.2 4.2L19 7"
-            stroke="#1A1A1A"
+            stroke="var(--theme-accent)"
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"

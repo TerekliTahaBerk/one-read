@@ -185,12 +185,12 @@ function EmailStep({
             block w-full
             h-12 px-4
             rounded-xl
-            bg-paper/80
-            border border-line
+            bg-white/75
+            border border-[var(--theme-border)]
             text-[16px] sm:text-[15.5px] text-ink placeholder:text-fog
             transition-colors duration-200
-            hover:border-line-strong
-            focus:border-ink focus:bg-paper
+            hover:border-[var(--theme-accent)]
+            focus:border-[var(--theme-accent)] focus:bg-white
           "
           aria-invalid={touched && email.length > 0 && !emailValid}
         />
@@ -577,7 +577,7 @@ function ManageStep({
         )}
 
         {/* Cancel subscription — low emphasis with inline confirm */}
-        <div className="mt-6 pt-5 border-t border-line text-center">
+        <div className="mt-6 pt-5 border-t border-[var(--theme-border)] text-center">
           {!confirmingCancel ? (
             <button
               type="button"
@@ -596,7 +596,7 @@ function ManageStep({
                   type="button"
                   onClick={() => setConfirmingCancel(false)}
                   disabled={canceling}
-                  className="focus-ring h-9 px-4 rounded-full border border-line text-[13px] font-sans text-ash hover:text-ink hover:border-line-strong transition-colors disabled:opacity-40"
+                  className="focus-ring h-9 px-4 rounded-full border border-[var(--theme-border)] text-[13px] font-sans text-ash hover:text-ink hover:border-[var(--theme-accent)] transition-colors disabled:opacity-40"
                 >
                   Keep it
                 </button>
@@ -797,12 +797,12 @@ function CardInput({
           focus-ring
           block w-full h-11 px-3.5
           rounded-xl
-          bg-paper/80
-          border border-line
+          bg-white/75
+          border border-[var(--theme-border)]
           text-[16px] sm:text-[15px] text-ink placeholder:text-fog
           transition-colors duration-200
-          hover:border-line-strong
-          focus:border-ink focus:bg-paper
+          hover:border-[var(--theme-accent)]
+          focus:border-[var(--theme-accent)] focus:bg-white
         "
       />
     </label>
@@ -828,12 +828,12 @@ function PrimaryButton({
       className="
         focus-ring
         relative w-full h-12 rounded-xl
-        bg-ink text-paper
+        bg-[var(--theme-accent)] text-paper
         font-sans text-[15px] tracking-tight
         transition-[transform,background-color,opacity] duration-200
-        hover:bg-graphite
+        hover:brightness-95
         active:scale-[0.99]
-        disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-ink
+        disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100
       "
     >
       <span
