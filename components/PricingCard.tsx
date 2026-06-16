@@ -20,9 +20,6 @@ export function PricingCard() {
   const isAnnual = interval === "annual";
   const price = isAnnual ? PRICING.annual : PRICING.monthly;
   const period = isAnnual ? "per year" : "per month";
-  // The effective monthly cost, used to show the annual saving honestly.
-  const monthlyEquivalent = (PRICING.annual / 12).toFixed(2);
-
   return (
     <div
       className="
@@ -57,13 +54,7 @@ export function PricingCard() {
 
             <p className="mt-3 font-serif italic text-[13.5px] leading-snug text-ash">
               {isAnnual ? (
-                <>
-                  Just{" "}
-                  <span className="text-ink not-italic font-sans font-medium tabular-nums">
-                    ${monthlyEquivalent}
-                  </span>{" "}
-                  a month, billed yearly.
-                </>
+                <>Save {PRICING.annualSavingsPct}% with annual billing.</>
               ) : (
                 <>
                   Go annual for{" "}
@@ -110,7 +101,7 @@ export function PricingCard() {
 
           {/* CTA */}
           <Link
-            href="/"
+            href="/article"
             className="
               focus-ring group/cta
               mt-8 inline-flex w-full h-12 items-center justify-center gap-2
@@ -122,7 +113,7 @@ export function PricingCard() {
               active:scale-[0.99]
             "
           >
-            Start with One Read
+            Start with One Article
             <svg
               width="14"
               height="14"

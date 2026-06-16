@@ -564,7 +564,7 @@ function ManageStep({
         />
         {saved && (
           <p className="mt-3 text-center text-[12.5px] text-ash font-sans animate-fade-in">
-            Saved. Your next One Read will reflect this.
+            Saved. Your next One Article will reflect this.
           </p>
         )}
         {error && (

@@ -39,7 +39,7 @@ export function SuccessState({
       </div>
 
       <p className="font-sans text-[11px] sm:text-[11.5px] uppercase tracking-eyebrow text-fog mt-6">
-        {isCanceled ? "One Read" : "Welcome to One Read"}
+        {isCanceled ? "One Article" : "Welcome to One Article"}
       </p>
 
       {isCanceled ? (
@@ -67,7 +67,7 @@ export function SuccessState({
             You’re <em className="italic font-normal">all set.</em>
           </h2>
           <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-4 max-w-[34ch]">
-            Your first One Read arrives tomorrow at 7&nbsp;AM
+            Your first One Article arrives tomorrow at 7&nbsp;AM
             {email ? (
               <>
                 {" "}

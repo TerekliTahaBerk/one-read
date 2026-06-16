@@ -3,15 +3,28 @@ import Link from "next/link";
 type Props = {
   /** Show the Pricing link (homepage). Pricing page hides it. */
   showPricing?: boolean;
-  /** Show a quiet "Back to One Read" link (pricing page). */
+  pricingHref?: string;
+  tagline?: string;
+  xAriaLabel?: string;
+  /** Show a quiet back link (pricing/legal pages). */
   showBackHome?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
-export function Footer({ showPricing = false, showBackHome = false }: Props) {
+export function Footer({
+  showPricing = false,
+  pricingHref = "/pricing",
+  tagline = "No feeds. No noise. Just one good read.",
+  xAriaLabel = "One Read on X",
+  showBackHome = false,
+  backHref = "/",
+  backLabel = "Back to One Read",
+}: Props) {
   return (
     <footer className="w-full pt-6 pb-1 sm:pb-2 flex flex-col items-center text-center animate-rise-delayed-4">
       <p className="font-serif italic text-[13.5px] sm:text-[14px] text-ash">
-        No feeds. No noise. Just one good read.
+        {tagline}
       </p>
       <nav
         aria-label="Footer"
@@ -34,7 +47,7 @@ export function Footer({ showPricing = false, showBackHome = false }: Props) {
         <a
           href="#"
           className="link-underline transition-colors duration-200 hover:text-ink"
-          aria-label="One Read on X"
+          aria-label={xAriaLabel}
         >
           X
         </a>
@@ -42,7 +55,7 @@ export function Footer({ showPricing = false, showBackHome = false }: Props) {
           <>
             <span aria-hidden="true" className="text-line-strong">·</span>
             <Link
-              href="/pricing"
+              href={pricingHref}
               className="link-underline transition-colors duration-200 hover:text-ink"
             >
               Pricing
@@ -52,10 +65,10 @@ export function Footer({ showPricing = false, showBackHome = false }: Props) {
       </nav>
       {showBackHome && (
         <Link
-          href="/"
+          href={backHref}
           className="mt-4 link-underline text-[12px] text-fog font-sans transition-colors duration-200 hover:text-ink"
         >
-          Back to One Read
+          {backLabel}
         </Link>
       )}
     </footer>

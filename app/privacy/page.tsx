@@ -4,7 +4,7 @@ import { LegalLayout } from "@/components/LegalLayout";
 export const metadata: Metadata = {
   title: "Privacy Policy — One Read",
   description:
-    "How One Read collects, uses, and protects your information. We collect only what we need to send you one curated article each morning.",
+    "How One Read collects, uses, and protects your information for One Article. We collect only what we need to send you one curated article each morning.",
 };
 
 /*
@@ -20,24 +20,25 @@ export default function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="June 16, 2026">
       <p>
-        One Read is built around a simple idea: one good read each morning, and
-        nothing more. That restraint extends to your data. We collect only what
-        we need to deliver your daily email, we never sell it, and we don&apos;t
-        track you around the web. This policy explains what we collect, why, and
-        the choices you have.
+        One Article, a One Read product, is built around a simple idea: one good
+        read each morning, and nothing more. That restraint extends to your data.
+        We collect only what we need to deliver your daily email, we never sell
+        it, and we don&apos;t track you around the web. This policy explains
+        what we collect, why, and the choices you have.
       </p>
 
       <h2>Who we are</h2>
       <p>
-        One Read is the service that sends you one curated article summary each
-        morning. The data controller responsible for your information is{" "}
+        One Article is the service that sends you one curated article summary
+        each morning. It is a One Read product. The data controller responsible
+        for your information is{" "}
         <strong>[Insert legal entity / data controller before launch]</strong>.
         You can reach us any time at{" "}
         <a href="mailto:hello@oneread.com">hello@oneread.com</a>.
       </p>
 
       <h2>Information we collect</h2>
-      <p>When you sign up and use One Read, we process:</p>
+      <p>When you sign up and use One Article, we process:</p>
       <ul>
         <li>
           <strong>Your email address</strong> — so we can send your one daily
@@ -90,7 +91,7 @@ export default function PrivacyPage() {
         Where data-protection law requires a legal basis, we rely on your{" "}
         <strong>consent</strong> to send you the subscription email; on our{" "}
         <strong>legitimate interest</strong> in operating, securing, and
-        improving One Read; and on <strong>compliance with legal obligations</strong>{" "}
+        improving One Article; and on <strong>compliance with legal obligations</strong>{" "}
         where that applies. We do not use your information for automated
         decisions that produce legal or similarly significant effects.
       </p>
@@ -170,7 +171,7 @@ export default function PrivacyPage() {
 
       <h2>Children&apos;s privacy</h2>
       <p>
-        One Read is not directed to children under 13 (or the minimum age in
+        One Article is not directed to children under 13 (or the minimum age in
         your country), and we do not knowingly collect their information. If you
         believe a child has signed up, contact us and we&apos;ll remove the data.
       </p>
@@ -185,7 +186,7 @@ export default function PrivacyPage() {
       <p>
         Questions about your privacy, or want to exercise a right above? Email us
         at <a href="mailto:hello@oneread.com">hello@oneread.com</a>, or simply
-        reply to any One Read email.
+        reply to any One Article email.
       </p>
     </LegalLayout>
   );

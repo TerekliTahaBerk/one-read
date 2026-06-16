@@ -3,6 +3,8 @@ import Link from "next/link";
 type Props = {
   /** When false, renders the logo without a link wrapper. */
   href?: string | null;
+  label?: string;
+  ariaLabel?: string;
   className?: string;
 };
 
@@ -17,7 +19,12 @@ type Props = {
  * Defaults to linking home so it can double as the (intentionally minimal)
  * site navigation. Pass `href={null}` to render a non-interactive logo.
  */
-export function Logo({ href = "/", className = "" }: Props) {
+export function Logo({
+  href = "/",
+  label = "One Read",
+  ariaLabel,
+  className = "",
+}: Props) {
   const wordmark = (
     <span
       aria-hidden="true"
@@ -29,7 +36,7 @@ export function Logo({ href = "/", className = "" }: Props) {
         [font-optical-sizing:auto]
       "
     >
-      One&nbsp;Read
+      {label}
     </span>
   );
 
@@ -37,7 +44,7 @@ export function Logo({ href = "/", className = "" }: Props) {
     return (
       <span className={`inline-flex items-center justify-center ${className}`}>
         {wordmark}
-        <span className="sr-only">One Read</span>
+        <span className="sr-only">{ariaLabel ?? label}</span>
       </span>
     );
   }
@@ -45,7 +52,7 @@ export function Logo({ href = "/", className = "" }: Props) {
   return (
     <Link
       href={href}
-      aria-label="One Read — home"
+      aria-label={ariaLabel ?? `${label} — home`}
       className={`focus-ring inline-flex items-center justify-center rounded-full px-2 py-1 ${className}`}
     >
       {wordmark}
