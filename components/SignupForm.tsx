@@ -348,6 +348,9 @@ function PaymentStep({
     if (!canSubmit) return;
     setLoading(true);
     setError(null);
+    const checkoutWindow = window.open("about:blank", "_blank");
+    if (checkoutWindow) checkoutWindow.opener = null;
+    let redirected = false;
     try {
       const res = await fetch("/api/subscribe/checkout", {
         method: "POST",
@@ -364,7 +367,12 @@ function PaymentStep({
         throw new Error(data.error ?? "Checkout couldn't be started.");
       }
       if ((data.action === "redirect" || data.action === "already_active") && data.url) {
-        window.location.href = data.url;
+        redirected = true;
+        if (checkoutWindow) {
+          checkoutWindow.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
         return;
       }
       if (data.action === "needs_setup" || data.action === "needs_setup_first") {
@@ -372,12 +380,14 @@ function PaymentStep({
       }
       onCompleted();
     } catch (err) {
+      checkoutWindow?.close();
       setError(
         err instanceof Error
           ? err.message
           : "Checkout couldn't be started. Please try again.",
       );
     } finally {
+      if (!redirected) checkoutWindow?.close();
       setLoading(false);
     }
   };

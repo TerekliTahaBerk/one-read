@@ -164,6 +164,9 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
   async function onCheckout(plan: BillingInterval) {
     setLoading(true);
     setError(null);
+    const checkoutWindow = window.open("about:blank", "_blank");
+    if (checkoutWindow) checkoutWindow.opener = null;
+    let redirected = false;
     try {
       const res = await fetch("/api/subscribe/checkout", {
         method: "POST",
@@ -174,15 +177,22 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       if (!res.ok || !data.ok) {
         setError(data.error ?? "Could not start checkout.");
       } else if (data.action === "redirect" || data.action === "already_active") {
-        window.location.href = data.url;
+        redirected = true;
+        if (checkoutWindow) {
+          checkoutWindow.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
       } else if (data.action === "needs_setup_first") {
         window.location.href = "/article";
       } else if (data.action === "needs_setup") {
         window.location.href = `/article?email=${encodeURIComponent(email)}`;
       }
     } catch {
+      checkoutWindow?.close();
       setError("Could not start checkout.");
     } finally {
+      if (!redirected) checkoutWindow?.close();
       setLoading(false);
     }
   }
