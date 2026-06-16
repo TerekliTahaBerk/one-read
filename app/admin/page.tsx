@@ -8,6 +8,8 @@ import { isHeuristicGenerator } from "@/lib/summarizer";
 import { renderDailyEmail } from "@/lib/email-template";
 import type { StructuredSummary } from "@/lib/llm";
 import { PreviewPickButton } from "@/components/PreviewPickButton";
+import { evaluateEligibility } from "@/lib/subscriptions";
+import { ONE_ARTICLE_PRODUCT_KEY } from "@/lib/options";
 import { isDemoModeEnabled } from "@/lib/thresholds";
 import {
   MIN_ARTICLE_SCORE,
@@ -51,8 +53,16 @@ export default async function AdminPage({
     : todayUtc();
   const isoDate = targetDate.toISOString().slice(0, 10);
 
-  const [picks, sends, totalSubs, sources, recentArticles, summaries, feedbackRows] =
-    await Promise.all([
+  const [
+    picks,
+    sends,
+    totalSubs,
+    sources,
+    recentArticles,
+    summaries,
+    feedbackRows,
+    productSubscriptions,
+  ] = await Promise.all([
       prisma.topicDailyPick.findMany({
         where: { date: targetDate },
         include: { article: true },
@@ -80,7 +90,39 @@ export default async function AdminPage({
         by: ["reaction"],
         _count: { _all: true },
       }),
+      prisma.productSubscription.findMany({
+        where: { productKey: ONE_ARTICLE_PRODUCT_KEY },
+        include: { contact: { select: { email: true } }, preferences: true },
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
+
+  // One Article subscription overview (trial / access / email-delivery), with
+  // the central eligibility verdict per row. Read-only.
+  const subStatusCounts: Record<string, number> = {};
+  const emailStatusCounts: Record<string, number> = {};
+  const subRows = productSubscriptions.map((s) => {
+    subStatusCounts[s.status] = (subStatusCounts[s.status] ?? 0) + 1;
+    emailStatusCounts[s.emailDeliveryStatus] =
+      (emailStatusCounts[s.emailDeliveryStatus] ?? 0) + 1;
+    const elig = evaluateEligibility(s);
+    const d = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : "—");
+    return {
+      email: s.contact.email,
+      status: s.status,
+      emailDeliveryStatus: s.emailDeliveryStatus,
+      provider: s.paymentProvider ?? "—",
+      plan: s.plan ?? "—",
+      trialEndsAt: d(s.trialEndsAt),
+      periodEnd: d(s.currentPeriodEnd),
+      cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+      pastDueAt: d(s.pastDueAt),
+      paidAt: d(s.paidAt),
+      eligible: elig.allowed,
+      reason: elig.reason,
+    };
+  });
+  const eligibleCount = subRows.filter((r) => r.eligible).length;
 
   const readiness = getLaunchReadiness();
 
@@ -231,6 +273,80 @@ export default async function AdminPage({
             <ReadinessBadge key="s" status={c.status} />,
             <span key="e" className="text-[12.5px] text-ink/80">
               {c.explanation}
+            </span>,
+          ])}
+        />
+      </Section>
+
+      {/* Subscriptions — trial / access / email-delivery overview */}
+      <Section
+        title="Subscriptions"
+        subtitle={`${eligibleCount}/${subRows.length} eligible to receive email · ${
+          subStatusCounts["TRIALING"] ?? 0
+        } trialing`}
+      >
+        <p className="mb-3 text-[12.5px] text-ash font-sans">
+          Access:{" "}
+          {Object.entries(subStatusCounts)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(" · ") || "none"}
+          {"  ·  Email: "}
+          {Object.entries(emailStatusCounts)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(" · ") || "none"}
+        </p>
+        <Table
+          head={[
+            "Email",
+            "Access",
+            "Email",
+            "Provider",
+            "Plan",
+            "Trial ends",
+            "Period ends",
+            "Cancel@end",
+            "Past due",
+            "Paid",
+            "Eligible",
+            "Reason",
+          ]}
+          rows={subRows.map((r) => [
+            <span key="e" className="text-[12px] text-ink">
+              {r.email}
+            </span>,
+            <StatusBadge key="s" value={r.status} />,
+            <span key="d" className="text-[11.5px] text-ash">
+              {r.emailDeliveryStatus}
+            </span>,
+            <span key="pv" className="text-[11.5px] text-ash">
+              {r.provider}
+            </span>,
+            <span key="pl" className="text-[11.5px] text-ash">
+              {r.plan}
+            </span>,
+            <span key="t" className="text-[11.5px] text-ash">
+              {r.trialEndsAt}
+            </span>,
+            <span key="pe" className="text-[11.5px] text-ash">
+              {r.periodEnd}
+            </span>,
+            <span key="ce" className="text-[11.5px] text-ash">
+              {r.cancelAtPeriodEnd ? "yes" : "—"}
+            </span>,
+            <span key="pd" className="text-[11.5px] text-ash">
+              {r.pastDueAt}
+            </span>,
+            <span key="pa" className="text-[11.5px] text-ash">
+              {r.paidAt}
+            </span>,
+            <span
+              key="el"
+              className={`text-[11.5px] ${r.eligible ? "text-emerald-700" : "text-fog"}`}
+            >
+              {r.eligible ? "yes" : "no"}
+            </span>,
+            <span key="rs" className="font-mono text-[11px] text-fog">
+              {r.reason}
             </span>,
           ])}
         />

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { isLikelyEmail } from "@/lib/options";
+import { isLikelyEmail, type BillingInterval } from "@/lib/options";
 import type { SubscribeState } from "@/lib/subscriptions";
 
 interface LookupResult {
@@ -13,18 +13,30 @@ interface LookupResult {
 
 type Cta =
   | { kind: "link"; label: string; href: string; primary?: boolean }
-  | { kind: "action"; label: string; action: "resume-emails"; primary?: boolean };
+  | { kind: "resume-emails"; label: string; primary?: boolean }
+  | { kind: "checkout"; label: string; plan: BillingInterval; primary?: boolean }
+  | { kind: "portal"; label: string; primary?: boolean };
 
 /**
  * Copy + CTAs for each resolved lifecycle state (cases A–J in the plan).
- * Checkout / billing-portal CTAs route to the pricing page for now — the real
- * provider integration (Phase 5/6) will swap these hrefs for live sessions.
+ *
+ * When billing is available (mock in dev, real provider later) the checkout /
+ * portal CTAs call the billing endpoints. When it isn't, they degrade to a
+ * link to the pricing page so the page never dead-ends.
  */
 function present(
   r: LookupResult,
   email: string,
+  billingEnabled: boolean,
 ): { title: string; body: string; ctas: Cta[] } {
   const q = `?email=${encodeURIComponent(email)}`;
+  const pricing = `/article/pricing${q}`;
+  // A checkout CTA when billing is on; otherwise a link to pricing.
+  const buy = (label: string, plan: BillingInterval, primary?: boolean): Cta =>
+    billingEnabled ? { kind: "checkout", label, plan, primary } : { kind: "link", label, href: pricing, primary };
+  const manage = (label: string, primary?: boolean): Cta =>
+    billingEnabled ? { kind: "portal", label, primary } : { kind: "link", label, href: pricing, primary };
+
   switch (r.state) {
     case "new":
       return {
@@ -43,26 +55,20 @@ function present(
         title: `You’re in your free trial${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
-        body: "Keep enjoying One Article. Subscribe now and you won’t be charged until your trial ends.",
-        ctas: [
-          { kind: "link", label: "Subscribe now", href: `/article/pricing${q}`, primary: true },
-          { kind: "link", label: "Continue trial", href: `/article` },
-        ],
+        body: "Subscribe now and you won’t be charged until your trial ends — your free days are honored.",
+        ctas: [buy("Subscribe now", "monthly", true), { kind: "link", label: "Continue trial", href: `/article` }],
       };
     case "trial_expired":
       return {
         title: "Your free trial has ended.",
         body: "Subscribe to keep receiving One Article — $2/month or $18/year.",
-        ctas: [{ kind: "link", label: "Subscribe", href: `/article/pricing${q}`, primary: true }],
+        ctas: [buy("Subscribe $2/mo", "monthly", true), buy("Subscribe $18/yr", "annual")],
       };
     case "active_paid":
       return {
         title: "You’re already subscribed.",
         body: "Your subscription is active and your daily emails are on.",
-        ctas: [
-          { kind: "link", label: "Manage billing", href: `/article/pricing${q}`, primary: true },
-          { kind: "link", label: "Go to One Article", href: `/article` },
-        ],
+        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to One Article", href: `/article` }],
       };
     case "canceled_active":
       return {
@@ -70,31 +76,25 @@ function present(
           ? `Your subscription is active until ${new Date(r.periodEndsAt).toLocaleDateString()}.`
           : "Your subscription is active until the end of the period.",
         body: "You’ve canceled, but you’ll keep receiving One Article until your paid period ends.",
-        ctas: [
-          { kind: "link", label: "Resume subscription", href: `/article/pricing${q}`, primary: true },
-          { kind: "link", label: "Manage billing", href: `/article/pricing${q}` },
-        ],
+        ctas: [manage("Resume subscription", true), manage("Manage billing")],
       };
     case "expired":
       return {
         title: "Your subscription has ended.",
         body: "Subscribe again any time to start receiving One Article.",
-        ctas: [{ kind: "link", label: "Subscribe again", href: `/article/pricing${q}`, primary: true }],
+        ctas: [buy("Subscribe again", "monthly", true)],
       };
     case "past_due":
       return {
         title: "Payment needs attention.",
         body: "We couldn’t process your latest payment. Update your payment method to keep your subscription active.",
-        ctas: [{ kind: "link", label: "Update payment", href: `/article/pricing${q}`, primary: true }],
+        ctas: [manage("Update payment", true)],
       };
     case "active_email_paused":
       return {
         title: "Your subscription is active, but emails are paused.",
         body: "Billing is fine — you just unsubscribed from the daily email. Turn it back on whenever you like.",
-        ctas: [
-          { kind: "action", label: "Resume emails", action: "resume-emails", primary: true },
-          { kind: "link", label: "Manage billing", href: `/article/pricing${q}` },
-        ],
+        ctas: [{ kind: "resume-emails", label: "Resume emails", primary: true }, manage("Manage billing")],
       };
     case "suppressed":
       return {
@@ -105,7 +105,7 @@ function present(
   }
 }
 
-export function SubscribeLookup() {
+export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: boolean }) {
   const [email, setEmail] = useState("");
   const [result, setResult] = useState<LookupResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -155,7 +155,93 @@ export function SubscribeLookup() {
     }
   }
 
-  const view = result ? present(result, email) : null;
+  async function onCheckout(plan: BillingInterval) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/subscribe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, plan }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setError(data.error ?? "Could not start checkout.");
+      } else if (data.action === "redirect" || data.action === "already_active") {
+        window.location.href = data.url;
+      } else if (data.action === "needs_trial") {
+        window.location.href = "/article";
+      } else if (data.action === "needs_setup") {
+        window.location.href = `/article?email=${encodeURIComponent(email)}`;
+      }
+    } catch {
+      setError("Could not start checkout.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onPortal() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/subscribe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok && data.action === "redirect") {
+        window.location.href = data.url;
+      } else if (data.action === "needs_trial") {
+        window.location.href = "/article";
+      } else {
+        setError(data.error ?? "Could not open billing.");
+      }
+    } catch {
+      setError("Could not open billing.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const view = result ? present(result, email, billingEnabled) : null;
+  const emailsResumed = resumed && result?.state === "active_email_paused";
+
+  const primaryBtn =
+    "rounded-xl px-5 py-2.5 font-sans text-[14.5px] font-medium bg-[var(--theme-accent)] text-white disabled:opacity-40";
+  const secondaryBtn =
+    "rounded-xl px-5 py-2.5 font-sans text-[14.5px] font-medium border border-[var(--theme-border)] text-ink disabled:opacity-40";
+
+  function renderCta(cta: Cta) {
+    const cls = cta.primary ? primaryBtn : secondaryBtn;
+    switch (cta.kind) {
+      case "link":
+        return (
+          <Link key={cta.label} href={cta.href} className={cls}>
+            {cta.label}
+          </Link>
+        );
+      case "resume-emails":
+        return (
+          <button key={cta.label} onClick={onResumeEmails} disabled={loading} className={cls}>
+            {cta.label}
+          </button>
+        );
+      case "checkout":
+        return (
+          <button key={cta.label} onClick={() => onCheckout(cta.plan)} disabled={loading} className={cls}>
+            {cta.label}
+          </button>
+        );
+      case "portal":
+        return (
+          <button key={cta.label} onClick={onPortal} disabled={loading} className={cls}>
+            {cta.label}
+          </button>
+        );
+    }
+  }
 
   return (
     <div className="w-full max-w-[34rem] mx-auto mt-8">
@@ -167,75 +253,29 @@ export function SubscribeLookup() {
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="
-            flex-1 rounded-xl border border-[var(--theme-border)] bg-white
-            px-4 py-3 font-sans text-[15px] text-ink
-            outline-none focus:border-[var(--theme-focus)]
-          "
+          className="flex-1 rounded-xl border border-[var(--theme-border)] bg-white px-4 py-3 font-sans text-[15px] text-ink outline-none focus:border-[var(--theme-focus)]"
           aria-label="Your email"
         />
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="
-            rounded-xl px-5 py-3 font-sans text-[15px] font-medium
-            bg-[var(--theme-accent)] text-white
-            disabled:opacity-40
-          "
-        >
+        <button type="submit" disabled={!canSubmit} className={primaryBtn}>
           {loading ? "Checking…" : "Check status"}
         </button>
       </form>
 
-      {error ? (
-        <p className="font-sans text-[14px] text-red-600 mt-4">{error}</p>
-      ) : null}
+      {error ? <p className="font-sans text-[14px] text-red-600 mt-4">{error}</p> : null}
 
       {view ? (
         <div
           role="status"
           aria-live="polite"
-          className="
-            mt-7 rounded-2xl border border-[var(--theme-border)]
-            bg-[var(--theme-surface)] p-6 sm:p-7 animate-fade-in
-          "
+          className="mt-7 rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6 sm:p-7 animate-fade-in"
         >
-          <h2 className="font-serif font-medium text-[1.4rem] leading-[1.2] text-ink">
-            {view.title}
-          </h2>
+          <h2 className="font-serif font-medium text-[1.4rem] leading-[1.2] text-ink">{view.title}</h2>
           <p className="font-sans text-[15px] leading-[1.6] text-ash mt-3">
-            {resumed && result?.state === "active_email_paused"
-              ? "Done — your daily emails are back on."
-              : view.body}
+            {emailsResumed ? "Done — your daily emails are back on." : view.body}
           </p>
 
-          {!(resumed && result?.state === "active_email_paused") ? (
-            <div className="flex flex-wrap gap-3 mt-6">
-              {view.ctas.map((cta) =>
-                cta.kind === "link" ? (
-                  <Link
-                    key={cta.label}
-                    href={cta.href}
-                    className={
-                      cta.primary
-                        ? "rounded-xl px-5 py-2.5 font-sans text-[14.5px] font-medium bg-[var(--theme-accent)] text-white"
-                        : "rounded-xl px-5 py-2.5 font-sans text-[14.5px] font-medium border border-[var(--theme-border)] text-ink"
-                    }
-                  >
-                    {cta.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={cta.label}
-                    onClick={onResumeEmails}
-                    disabled={loading}
-                    className="rounded-xl px-5 py-2.5 font-sans text-[14.5px] font-medium bg-[var(--theme-accent)] text-white disabled:opacity-40"
-                  >
-                    {cta.label}
-                  </button>
-                ),
-              )}
-            </div>
+          {!emailsResumed ? (
+            <div className="flex flex-wrap gap-3 mt-6">{view.ctas.map(renderCta)}</div>
           ) : null}
         </div>
       ) : null}

@@ -107,6 +107,42 @@ export function getLaunchReadiness(): ReadinessCheck[] {
         : "Missing — no LLM key. Real summaries disabled until a provider + key are set.",
   });
 
+  // Billing provider. Mock is fine for local/dev but must not silently power
+  // production. Real providers (Stripe) land in Phase 6.
+  const billingProvider = (process.env.BILLING_PROVIDER || "").toLowerCase();
+  const isProd = process.env.NODE_ENV === "production";
+  const mockPreview = process.env.MOCK_BILLING_PREVIEW === "true";
+  let billingStatus: ReadinessStatus;
+  let billingExplanation: string;
+  if (!billingProvider) {
+    billingStatus = isProd ? "missing" : "warn";
+    billingExplanation = isProd
+      ? "Missing — no payment provider configured. Paid subscriptions cannot be charged."
+      : "Not set — defaults to the dev mock provider locally.";
+  } else if (billingProvider === "mock") {
+    billingStatus = isProd && !mockPreview ? "missing" : isProd ? "warn" : "pass";
+    billingExplanation =
+      isProd && !mockPreview
+        ? "Mock billing is enabled in production — fake paid access is blocked. Set a real provider (Stripe)."
+        : isProd
+          ? "Mock billing in production via MOCK_BILLING_PREVIEW (staging/preview only)."
+          : "Dev mock provider — simulates the paid lifecycle, no real charges.";
+  } else if (billingProvider === "stripe") {
+    const stripeReady =
+      has(process.env.STRIPE_SECRET_KEY) &&
+      has(process.env.STRIPE_WEBHOOK_SECRET) &&
+      has(process.env.STRIPE_ONE_ARTICLE_MONTHLY_PRICE_ID) &&
+      has(process.env.STRIPE_ONE_ARTICLE_ANNUAL_PRICE_ID);
+    billingStatus = stripeReady ? "pass" : "missing";
+    billingExplanation = stripeReady
+      ? "Stripe configured."
+      : "Stripe selected but one or more Stripe env vars are missing (not yet implemented until Phase 6).";
+  } else {
+    billingStatus = "warn";
+    billingExplanation = `Unknown provider "${billingProvider}" — falling back to mock.`;
+  }
+  checks.push({ key: "BILLING_PROVIDER", status: billingStatus, explanation: billingExplanation });
+
   const model = process.env.AI_MODEL;
   checks.push({
     key: "AI_MODEL",

@@ -4,6 +4,8 @@ import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { SubscribeLookup } from "@/components/SubscribeLookup";
 import { productThemes } from "@/lib/product-themes";
+import { isMockAllowed } from "@/lib/billing/mock";
+import { isBillingConfigured } from "@/lib/billing/provider";
 
 export const metadata: Metadata = {
   title: "Subscribe — OneArticle",
@@ -13,6 +15,10 @@ export const metadata: Metadata = {
 
 export default function ArticleSubscribePage() {
   const theme = productThemes.article;
+  // Billing CTAs are live when a provider is usable: mock in dev (or an
+  // explicit prod preview), or any configured provider. Otherwise CTAs degrade
+  // to a pricing-page link.
+  const billingEnabled = isMockAllowed() || isBillingConfigured();
 
   return (
     <main
@@ -74,7 +80,7 @@ export default function ArticleSubscribePage() {
           Enter your email and we’ll show you exactly what to do next.
         </p>
 
-        <SubscribeLookup />
+        <SubscribeLookup billingEnabled={billingEnabled} />
       </section>
 
       <Footer showBackHome backHref="/article" backLabel="Back to OneArticle" />

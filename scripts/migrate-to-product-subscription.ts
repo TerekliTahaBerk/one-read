@@ -117,9 +117,46 @@ async function main() {
           productKey: ONE_ARTICLE_PRODUCT_KEY,
         },
       },
+      include: { preferences: true },
     });
     if (existing) {
+      // Already migrated (or created by dual-write). Preserve its status — it
+      // may have progressed since — but fill any gaps: backfill missing
+      // ArticlePreferences from the legacy row, and re-link existing sends /
+      // feedback. This rescues e.g. the founder, whose ADMIN_OVERRIDE row was
+      // created by signup/start before it ever had preferences.
       skipped += 1;
+
+      if (!existing.preferences && s.interests.length > 0) {
+        await prisma.articlePreferences.create({
+          data: {
+            productSubscriptionId: existing.id,
+            interests: s.interests,
+            primaryInterest: s.primaryInterest,
+            secondaryInterests: s.secondaryInterests,
+            sourceLanguage: s.sourceLanguage,
+            summaryLanguage: s.summaryLanguage,
+            timezone: s.timezone,
+            deliveryHour: s.deliveryHour,
+            preferredDifficulty: s.preferredDifficulty,
+            recentlySentTopics: s.recentlySentTopics,
+            recentlySentArticleIds: s.recentlySentArticleIds,
+            feedbackProfile: s.feedbackProfile ?? undefined,
+          },
+        });
+        prefsCreated += 1;
+      }
+
+      const linkedSends = await prisma.dailySend.updateMany({
+        where: { subscriberId: s.id, productSubscriptionId: null },
+        data: { productSubscriptionId: existing.id },
+      });
+      sendsLinked += linkedSends.count;
+      const linkedFb = await prisma.feedback.updateMany({
+        where: { subscriberId: s.id, productSubscriptionId: null },
+        data: { productSubscriptionId: existing.id },
+      });
+      feedbacksLinked += linkedFb.count;
       continue;
     }
 
