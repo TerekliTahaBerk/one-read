@@ -1,5 +1,5 @@
 /**
- * One Read — manual summary generator (no dev server, no email).
+ * OneRead — manual summary generator (no dev server, no email).
  *
  * Generates a structured summary for one article in English and/or Turkish,
  * exercising the real LLM summarizer + the Summary cache. Reports cache

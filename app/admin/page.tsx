@@ -86,7 +86,7 @@ export default async function AdminPage({
 
   // Identify demo / manual articles for labeling + preview actions.
   const isDemoOrManual = (a: { sourceName: string; tags: string[] }): boolean =>
-    a.sourceName === "One Read Demo" ||
+    a.sourceName === "OneRead Demo" ||
     a.tags.includes("demo") ||
     a.tags.includes("manual");
 
@@ -309,7 +309,7 @@ export default async function AdminPage({
               <span key="labels" className="inline-flex flex-wrap gap-1">
                 {isDemoOrManual(p.article) ? (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-dawn">
-                    {p.article.sourceName === "One Read Demo" ? "demo-mode pick" : "manual pick"}
+                    {p.article.sourceName === "OneRead Demo" ? "demo-mode pick" : "manual pick"}
                   </span>
                 ) : (
                   "—"
@@ -576,7 +576,7 @@ export default async function AdminPage({
                 </a>
                 {isDemoOrManual(a) ? (
                   <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-dawn align-middle">
-                    {a.sourceName === "One Read Demo" ? "demo" : "manual"}
+                    {a.sourceName === "OneRead Demo" ? "demo" : "manual"}
                   </span>
                 ) : null}
               </span>,
@@ -613,7 +613,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 text-center">
           <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">
-            One&nbsp;·&nbsp;Read · admin
+            OneRead · admin
           </span>
         </div>
         {children}

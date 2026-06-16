@@ -1,5 +1,5 @@
 /**
- * One Read — LLM provider contract.
+ * OneRead — LLM provider contract.
  *
  * Both OpenAI and Anthropic implementations conform to `LlmProvider`.
  * Outputs are strict JSON schemas — the providers parse + validate the
@@ -32,7 +32,7 @@ export interface StructuredSummary {
   readingTime: string;
   /** Single short hook (~12 words). */
   oneLineHook: string;
-  /** Why a One Read subscriber would care about this — 1-2 sentences. */
+  /** Why a OneRead subscriber would care about this — 1-2 sentences. */
   whyThisArticle: string;
   /** EXACTLY 3 sentences. Faithful to the article — no invention. */
   threeSentenceSummary: [string, string, string];

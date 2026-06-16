@@ -1,5 +1,5 @@
 /**
- * One Read — demo / sample article seed.
+ * OneRead — demo / sample article seed.
  *
  * Inserts a small set of SAFE, ORIGINAL demo articles so the editorial
  * pipeline (scoring → picks → summaries → email preview) can be tested
@@ -7,7 +7,7 @@
  *
  * These are NOT scraped or copyrighted. Every body below is original text
  * written specifically for testing. Each is marked `sourceName:
- * "One Read Demo"` so demo content is always distinguishable from real
+ * "OneRead Demo"` so demo content is always distinguishable from real
  * ingested articles, and uses a demo.oneread.app URL so nothing tries to
  * fetch a live page.
  *
@@ -21,7 +21,7 @@
 import { prisma } from "../lib/prisma";
 import { canonicalizeUrl } from "../lib/url-canonical";
 
-export const DEMO_SOURCE_NAME = "One Read Demo";
+export const DEMO_SOURCE_NAME = "OneRead Demo";
 
 interface DemoArticle {
   slug: string;

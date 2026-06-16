@@ -13,7 +13,7 @@ type Props = {
  *
  * Unlike the homepage these pages may scroll — they are reference documents.
  * The visual identity stays the same: centered logo, a measured editorial
- * column, and the quiet footer with a "Back to One Read" link.
+ * column, and the quiet footer with a "Back to OneRead" link.
  *
  * Prose styling is applied to the children container via arbitrary child
  * selectors so each page can be written as plain semantic HTML (h2 / p / ul).

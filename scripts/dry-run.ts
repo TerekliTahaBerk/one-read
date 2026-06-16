@@ -1,5 +1,5 @@
 /**
- * One Read — local dry-run of the daily pipeline (no server, no email).
+ * OneRead — local dry-run of the daily pipeline (no server, no email).
  *
  * Runs runDailyPipeline({ dryRun: true }): ingest → score → pick →
  * summarize → map deliveries, but never sends. Prints the full

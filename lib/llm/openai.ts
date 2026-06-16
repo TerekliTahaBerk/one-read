@@ -1,5 +1,5 @@
 /**
- * One Read — OpenAI provider.
+ * OneRead — OpenAI provider.
  *
  * Uses the official `openai` SDK with `response_format: json_object`
  * so we get a clean JSON string we can parse. Defaults to gpt-4o-mini,

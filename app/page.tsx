@@ -5,15 +5,15 @@ import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 
 const PRODUCTS = [
   {
-    name: "One Article",
+    name: "OneArticle",
     description: "One curated article summary every morning.",
     status: "Available",
-    cta: "Open One Article",
+    cta: "Open OneArticle",
     href: "/article",
     theme: "article",
   },
   {
-    name: "One Lingo",
+    name: "OneLingo",
     description: "Language practice and useful words in your inbox.",
     status: "Coming soon",
     cta: "Coming soon",
@@ -21,7 +21,7 @@ const PRODUCTS = [
     theme: "lingo",
   },
   {
-    name: "One Goal",
+    name: "OneGoal",
     description: "A daily sports brief for the teams and leagues you follow.",
     status: "Coming soon",
     cta: "Coming soon",
@@ -77,7 +77,7 @@ export default function HomePage() {
             animate-rise-delayed-2
           "
         >
-          One Read is a family of quiet daily emails for learning, reading,
+          OneRead is a family of quiet daily emails for learning, reading,
           language, sports, and more. No app. No feed. No noise.
         </p>
 
@@ -166,7 +166,7 @@ function ProductRow({
   return (
     <Link
       href={product.href}
-      className={`${className} focus-ring hover:-translate-y-px`}
+      className={`${className} focus-ring`}
       style={{
         backgroundColor: theme.background,
         borderColor: theme.border,

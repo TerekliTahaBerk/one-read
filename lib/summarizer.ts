@@ -1,5 +1,5 @@
 /**
- * One Read — summary generation + cache.
+ * OneRead — summary generation + cache.
  *
  * For each (TopicDailyPick, summaryLanguage, primaryTopic, difficulty) we
  * generate the summary at most once. The cache lives in the `Summary`

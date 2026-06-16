@@ -61,7 +61,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 text-center">
           <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">
-            One&nbsp;·&nbsp;Read · admin
+            OneRead · admin
           </span>
         </div>
         {children}

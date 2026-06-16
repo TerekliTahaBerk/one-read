@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { ArticleLanding } from "@/components/ArticleLanding";
 
 export const metadata: Metadata = {
-  title: "One Article — One article worth reading. Every morning.",
+  title: "OneArticle — One article worth reading. Every morning.",
   description:
-    "Choose your interests and language preferences. Every morning at 7 AM, One Article sends one curated article summary to your inbox.",
+    "Choose your interests and language preferences. Every morning at 7 AM, OneArticle sends one curated article summary to your inbox.",
   openGraph: {
-    title: "One Article",
+    title: "OneArticle",
     description: "One curated article summary every morning.",
     type: "website",
   },

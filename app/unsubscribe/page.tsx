@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  *                            renders the page without mutating anything.
  *
  * Returns a small editorial confirmation page that mirrors the rest of
- * the One Read aesthetic.
+ * the OneRead aesthetic.
  */
 export default async function UnsubscribePage({
   searchParams,
@@ -55,7 +55,7 @@ export default async function UnsubscribePage({
             marginBottom: 32,
           }}
         >
-          One&nbsp;·&nbsp;Read
+          OneRead
         </div>
         <h1
           style={{
@@ -117,7 +117,7 @@ async function applyUnsubscribe(
     if (!subscriberId) {
       return {
         headline: "We couldn't find that subscription.",
-        body: "If this is unexpected, reply to any One Read email and we'll fix it.",
+        body: "If this is unexpected, reply to any OneRead email and we'll fix it.",
       };
     }
 
@@ -139,13 +139,13 @@ async function applyUnsubscribe(
 
     return {
       headline: "You're unsubscribed.",
-      body: "No more emails from One Read. If you change your mind, you can sign up again any morning.",
+      body: "No more emails from OneRead. If you change your mind, you can sign up again any morning.",
     };
   } catch (err) {
     console.error("[/unsubscribe] error:", err);
     return {
       headline: "Something went wrong.",
-      body: "We've logged it. Please try again, or reply to any One Read email.",
+      body: "We've logged it. Please try again, or reply to any OneRead email.",
     };
   }
 }

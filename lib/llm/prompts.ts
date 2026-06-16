@@ -1,5 +1,5 @@
 /**
- * One Read — shared LLM prompt scaffolding.
+ * OneRead — shared LLM prompt scaffolding.
  *
  * These prompts are intentionally strict: the system message always
  * tells the model to return JSON only, no prose, no markdown fences.
@@ -19,7 +19,7 @@ const TOPIC_LIST = ALL_TOPIC_SLUGS.join(", ");
 /* Summary prompts                                                         */
 /* ----------------------------------------------------------------------- */
 
-export const SUMMARY_SYSTEM_PROMPT = `You are the senior editor of "One Read", a calm morning newsletter that sends ONE curated article per subscriber per day. Your job is to write a faithful, useful, beautiful summary.
+export const SUMMARY_SYSTEM_PROMPT = `You are the senior editor of "OneRead", a calm morning newsletter that sends ONE curated article per subscriber per day. Your job is to write a faithful, useful, beautiful summary.
 
 Hard rules:
 - Return ONE JSON object, no prose, no markdown, no fences.
@@ -93,7 +93,7 @@ Constraints:
 /* Scoring prompts                                                         */
 /* ----------------------------------------------------------------------- */
 
-export const SCORE_SYSTEM_PROMPT = `You are the editorial scoring engine for "One Read", a calm morning newsletter. You classify and score candidate articles.
+export const SCORE_SYSTEM_PROMPT = `You are the editorial scoring engine for "OneRead", a calm morning newsletter. You classify and score candidate articles.
 
 Hard rules:
 - Return ONE JSON object, no prose, no markdown, no fences.

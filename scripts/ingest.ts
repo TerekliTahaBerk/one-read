@@ -1,5 +1,5 @@
 /**
- * One Read — direct ingestion runner (no dev server, no email).
+ * OneRead — direct ingestion runner (no dev server, no email).
  *
  * Exercises the real production code path:
  *   1. `ingestCandidates(date, [rssSource])` — fetch RSS feeds, normalize

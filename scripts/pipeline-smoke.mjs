@@ -1,5 +1,5 @@
 /**
- * One Read — editorial pipeline smoke test.
+ * OneRead — editorial pipeline smoke test.
  *
  * Seeds two synthetic articles, an ACTIVE subscriber, runs a minimal
  * version of the pipeline (TopicDailyPick selection), prints the result,

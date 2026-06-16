@@ -103,7 +103,7 @@ function thankYouPage(message: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>One Read — Thanks</title>
+  <title>OneRead — Thanks</title>
   <style>
     body{margin:0;background:#F6F1E6;color:#1B1612;font-family:ui-sans-serif,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
     .card{max-width:420px;text-align:center;}
@@ -115,7 +115,7 @@ function thankYouPage(message: string): string {
 </head>
 <body>
   <div class="card">
-    <div class="mark">One&nbsp;·&nbsp;Read</div>
+    <div class="mark">OneRead</div>
     <h1>Thanks for the note.</h1>
     <p>${escapeHtml(message)}</p>
     <div class="tagline">One article. Every morning. Curated for you.</div>

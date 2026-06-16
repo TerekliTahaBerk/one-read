@@ -1,12 +1,12 @@
 /**
- * One Read — admin endpoint: create a development preview pick.
+ * OneRead — admin endpoint: create a development preview pick.
  *
  * POST /api/admin/preview-pick
  * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}" (or ?token= / body.token)
  * Body: { articleId: string }
  *
  * Force-creates a TopicDailyPick for one article so the admin Email Preview
- * can render the full One Read email for demo/manual content that may not
+ * can render the full OneRead email for demo/manual content that may not
  * clear the production quality bar. Development/demo only — hard-disabled in
  * production. Never sends email.
  */

@@ -1,5 +1,5 @@
 /**
- * One Read — manual article scorer (no dev server, no email).
+ * OneRead — manual article scorer (no dev server, no email).
  *
  * Runs `extractAndScorePendingArticles()` over every PENDING article:
  * readability extract + LLM score (or heuristic in development). Persists

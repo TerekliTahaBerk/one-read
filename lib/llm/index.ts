@@ -1,5 +1,5 @@
 /**
- * One Read — LLM provider factory.
+ * OneRead — LLM provider factory.
  *
  * `getLlmProvider()` reads `AI_PROVIDER` and returns the configured
  * provider. Returns `null` if no provider is configured, which lets

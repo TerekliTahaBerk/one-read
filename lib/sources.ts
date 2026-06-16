@@ -1,5 +1,5 @@
 /**
- * One Read — curated RSS source catalog.
+ * OneRead — curated RSS source catalog.
  *
  * Quality over quantity. Each entry is a public RSS / Atom feed of a
  * publisher whose work tends to clear our editorial bar. Items still go

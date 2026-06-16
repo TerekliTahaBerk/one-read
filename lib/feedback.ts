@@ -1,5 +1,5 @@
 /**
- * One Read — feedback profile updater.
+ * OneRead — feedback profile updater.
  *
  * Translates a Feedback row into nudges on the Subscriber.feedbackProfile
  * JSON. Topic and source affinities live in [-1, 1] and decay slowly

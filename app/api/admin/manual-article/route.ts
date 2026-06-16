@@ -1,5 +1,5 @@
 /**
- * One Read — admin endpoint: manually add a candidate article.
+ * OneRead — admin endpoint: manually add a candidate article.
  *
  * POST /api/admin/manual-article
  * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}"  (or ?token= / body.token)

@@ -1,5 +1,5 @@
 /**
- * One Read — Anthropic provider.
+ * OneRead — Anthropic provider.
  *
  * Anthropic's `messages.create` returns blocks; we ask for raw JSON in
  * the user message and parse the first text block. We don't use tool

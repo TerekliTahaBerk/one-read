@@ -1,4 +1,4 @@
-// One Read — send a test email to a single address.
+// OneRead — send a test email to a single address.
 //
 // Hits POST /api/admin/test-email. Useful for verifying templates,
 // translations, and Resend deliverability without disturbing the

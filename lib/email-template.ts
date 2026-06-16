@@ -1,5 +1,5 @@
 /**
- * One Read — daily email template.
+ * OneRead — daily email template.
  *
  * Two outputs: a plain-text version for deliverability and a small,
  * editorial HTML version that mirrors the website's quiet aesthetic.
@@ -72,8 +72,8 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
   // composed fallback.
   const llmSubject = structured?.subject?.trim();
   const subject = llmSubject
-    ? `One Read · ${llmSubject}`
-    : `One Read · ${topicLabel} — ${displayTitle}`;
+    ? `OneRead · ${llmSubject}`
+    : `OneRead · ${topicLabel} — ${displayTitle}`;
 
   // Optional hook + why-this lines (only present from real LLM summaries).
   const hook = structured?.oneLineHook?.trim() ?? "";
@@ -158,7 +158,7 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
 <body style="margin:0;padding:0;background:#F6F1E6;">
   <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:ui-serif,Georgia,Cambria,serif;color:#1B1612;">
     <div style="text-align:center;font-size:12.5px;letter-spacing:0.22em;text-transform:uppercase;font-style:italic;color:#6B5F50;">
-      One&nbsp;·&nbsp;Read
+      OneRead
     </div>
     <div style="text-align:center;margin-top:6px;font-size:12px;color:#9C8F7E;font-family:ui-sans-serif,system-ui,sans-serif;">
       ${escapeHtml(formatDate(ctx.date, lang))}${readingTimeBlock}

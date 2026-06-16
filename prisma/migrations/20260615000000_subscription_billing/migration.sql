@@ -1,4 +1,4 @@
--- One Read — paid subscription support.
+-- OneRead — paid subscription support.
 --
 -- Additive only: two new nullable columns on Subscriber that track paid
 -- (simulated) subscription state. No columns are dropped or retyped, so

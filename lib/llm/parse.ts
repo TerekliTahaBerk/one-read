@@ -1,5 +1,5 @@
 /**
- * One Read — strict JSON validators for LLM output.
+ * OneRead — strict JSON validators for LLM output.
  *
  * Every numeric is clamped; every required field is defaulted; arrays
  * with fixed-length contracts (3, 5) are coerced or rejected.

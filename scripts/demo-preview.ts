@@ -1,5 +1,5 @@
 /**
- * One Read — one-shot demo preview (development only, no AI key, no email).
+ * OneRead — one-shot demo preview (development only, no AI key, no email).
  *
  * Runs the whole preview flow end to end so you can see:
  *   demo article → topic pick → summary → email preview → dry-run mapping

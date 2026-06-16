@@ -1,5 +1,5 @@
 /**
- * One Read — admin endpoint: send a test email to a single recipient.
+ * OneRead — admin endpoint: send a test email to a single recipient.
  *
  * POST /api/admin/test-email
  * Body: {
@@ -10,7 +10,7 @@
  * }
  * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}"
  *
- * Generates a fresh One Read email for "today" (using whatever
+ * Generates a fresh OneRead email for "today" (using whatever
  * TopicDailyPick the test recipient would receive — falling back to
  * the highest-scoring pick if no real send exists for this email)
  * and delivers via Resend. Does NOT mutate DailySend rows, so it can

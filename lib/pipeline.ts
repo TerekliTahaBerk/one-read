@@ -1,5 +1,5 @@
 /**
- * One Read — daily editorial pipeline.
+ * OneRead — daily editorial pipeline.
  *
  * High-level flow (one calendar day, UTC):
  *   1. Ingest candidate articles from RSS / Atom sources.
@@ -210,7 +210,7 @@ export async function runDailyPipeline(
       date,
       article: {
         OR: [
-          { sourceName: "One Read Demo" },
+          { sourceName: "OneRead Demo" },
           { tags: { hasSome: ["demo", "manual"] } },
         ],
       },
@@ -440,7 +440,7 @@ export async function createPreviewPick(
   const article = await prisma.article.findUnique({ where: { id: articleId } });
   if (!article) return { pick: null, reason: "article not found" };
   const isPreviewArticle =
-    article.sourceName === "One Read Demo" ||
+    article.sourceName === "OneRead Demo" ||
     article.tags.includes("demo") ||
     article.tags.includes("manual");
   if (!isPreviewArticle) {

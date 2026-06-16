@@ -1,4 +1,4 @@
-// One Read — seed the Source table from lib/sources.ts.
+// OneRead — seed the Source table from lib/sources.ts.
 //
 // Usage:  npm run db:seed-sources
 //

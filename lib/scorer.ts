@@ -1,5 +1,5 @@
 /**
- * One Read — article extraction + scoring stage.
+ * OneRead — article extraction + scoring stage.
  *
  * For each newly-ingested article whose `scoringStatus = "PENDING"`:
  *   1. Best-effort extract the cleaned body via readability.

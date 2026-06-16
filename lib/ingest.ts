@@ -1,5 +1,5 @@
 /**
- * One Read — article candidate ingestion.
+ * OneRead — article candidate ingestion.
  *
  * The ingestion layer is intentionally pluggable. The pipeline calls
  * `ingestCandidates(date)` and gets back zero or more articles to score

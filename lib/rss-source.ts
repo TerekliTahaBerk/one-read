@@ -1,5 +1,5 @@
 /**
- * One Read — RSS / Atom ingestion source.
+ * OneRead — RSS / Atom ingestion source.
  *
  * Reads enabled `Source` rows from the DB (falling back to
  * `ACTIVE_SEED_SOURCES` if the DB is empty), pulls each feed,

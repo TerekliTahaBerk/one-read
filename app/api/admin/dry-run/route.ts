@@ -1,5 +1,5 @@
 /**
- * One Read — admin endpoint: dry-run the daily pipeline.
+ * OneRead — admin endpoint: dry-run the daily pipeline.
  *
  * POST /api/admin/dry-run
  * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}"

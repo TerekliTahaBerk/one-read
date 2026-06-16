@@ -9,7 +9,7 @@ type Props = {
 };
 
 /**
- * One Read logo lockup.
+ * OneRead logo lockup.
  *
  * Rendered as live text in the brand serif (Fraunces) rather than a raster
  * asset, so the wordmark stays perfectly crisp at any size or pixel density and
@@ -21,7 +21,7 @@ type Props = {
  */
 export function Logo({
   href = "/",
-  label = "One Read",
+  label = "OneRead",
   ariaLabel,
   className = "",
 }: Props) {

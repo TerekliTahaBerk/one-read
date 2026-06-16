@@ -1,4 +1,4 @@
--- One Read — RSS ingestion + article extraction support.
+-- OneRead — RSS ingestion + article extraction support.
 --
 -- Additive only: new columns, a new `Source` table, and supporting
 -- indexes. No columns are dropped or retyped, so existing Article /

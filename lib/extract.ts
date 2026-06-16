@@ -1,5 +1,5 @@
 /**
- * One Read — readability-style article extractor.
+ * OneRead — readability-style article extractor.
  *
  * Public web articles only. We respect robots conventions in spirit:
  *   - polite User-Agent, includes contact URL

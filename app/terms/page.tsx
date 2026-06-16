@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LegalLayout } from "@/components/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — One Read",
+  title: "Terms of Service — OneRead",
   description:
-    "The terms for using One Article, a One Read product — one curated article summary delivered to your inbox each morning.",
+    "The terms for using OneArticle, a OneRead product — one curated article summary delivered to your inbox each morning.",
 };
 
 /*
@@ -19,16 +19,16 @@ export default function TermsPage() {
   return (
     <LegalLayout title="Terms of Service" lastUpdated="June 16, 2026">
       <p>
-        These terms govern your use of One Article, a One Read product. By
+        These terms govern your use of OneArticle, a OneRead product. By
         signing up for or using the service, you agree to them. If you
-        don&apos;t agree, please don&apos;t use One Article. Please read them
+        don&apos;t agree, please don&apos;t use OneArticle. Please read them
         alongside our{" "}
         <a href="/privacy">Privacy Policy</a>.
       </p>
 
       <h2>The service</h2>
       <p>
-        One Article, a One Read product, sends you one curated article summary
+        OneArticle, a OneRead product, sends you one curated article summary
         by email each morning, chosen to match the interests and language
         preferences you provide. We aim to deliver it reliably around 7 AM, but
         timing, frequency, and availability are provided on a best-effort basis
@@ -38,7 +38,7 @@ export default function TermsPage() {
 
       <h2>Eligibility</h2>
       <p>
-        You must be able to form a binding agreement to use One Article, must be
+        You must be able to form a binding agreement to use OneArticle, must be
         at least the minimum age required in your country, and must provide an
         email address you are authorized to use.
       </p>
@@ -53,7 +53,7 @@ export default function TermsPage() {
 
       <h2>Subscription, billing, and cancellation</h2>
       <p>
-        One Article may be offered as a paid subscription. If you subscribe to a
+        OneArticle may be offered as a paid subscription. If you subscribe to a
         paid plan, the current options are a monthly plan and a yearly plan, at
         the prices shown on our <a href="/article/pricing">pricing page</a> at
         the time you subscribe. Prices may change for future billing periods, and
@@ -87,23 +87,23 @@ export default function TermsPage() {
           Don&apos;t scrape, archive, resell, redistribute, or systematically
           copy the summaries we send.
         </li>
-        <li>Don&apos;t use One Article for any unlawful purpose.</li>
+        <li>Don&apos;t use OneArticle for any unlawful purpose.</li>
       </ul>
 
       <h2>Content and intellectual property</h2>
       <p>
         Each daily email contains an{" "}
-        <strong>original summary and commentary</strong> written for One Article,
+        <strong>original summary and commentary</strong> written for OneArticle,
         together with a link to the source article. We summarize and comment —
         we don&apos;t reproduce articles in full and we don&apos;t publish full
         translations of them. The underlying articles{" "}
         <strong>remain the property of their respective publishers</strong>, and
-        nothing in our emails should be read as One Article claiming to be the
+        nothing in our emails should be read as OneArticle claiming to be the
         publisher of a source article or as an endorsement by that publisher.
       </p>
       <p>
         Summaries are provided for your <strong>personal, non-commercial use</strong>.
-        The One Read and One Article names, design, and the summaries and
+        The OneRead and OneArticle names, design, and the summaries and
         commentary we write remain ours or our licensors&apos;. You may read and
         share a link to a summary, but you may not copy, resell, redistribute,
         scrape, or archive our summaries on a systematic basis.
@@ -131,7 +131,7 @@ export default function TermsPage() {
 
       <h2>Disclaimers</h2>
       <p>
-        One Article is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo;
+        OneArticle is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo;
         We work to make summaries accurate and useful, but we make no warranties
         about the service&apos;s availability, accuracy, reliability, or fitness
         for a particular purpose, to the fullest extent permitted by law.
@@ -139,7 +139,7 @@ export default function TermsPage() {
 
       <h2>Limitation of liability</h2>
       <p>
-        To the fullest extent permitted by law, One Article is not liable for any
+        To the fullest extent permitted by law, OneArticle is not liable for any
         indirect, incidental, special, or consequential damages, or for any loss
         arising from your reliance on a summary or from your use of, or
         inability to use, the service.
@@ -156,7 +156,7 @@ export default function TermsPage() {
       <h2>Changes to these terms</h2>
       <p>
         We may update these terms from time to time. When we do, we&apos;ll
-        revise the date above. Continuing to use One Article after changes take
+        revise the date above. Continuing to use OneArticle after changes take
         effect means you accept the updated terms.
       </p>
 
@@ -166,15 +166,15 @@ export default function TermsPage() {
         <strong>[Insert governing jurisdiction before launch]</strong>, without
         regard to conflict-of-law rules. If any provision is found
         unenforceable, the remaining provisions stay in full effect, and these
-        terms make up the entire agreement between you and One Read regarding
-        One Article.
+        terms make up the entire agreement between you and OneRead regarding
+        OneArticle.
       </p>
 
       <h2>Contact</h2>
       <p>
         Questions about these terms? Email us at{" "}
         <a href="mailto:hello@oneread.com">hello@oneread.com</a>, or reply to
-        any One Article email.
+        any OneArticle email.
       </p>
     </LegalLayout>
   );

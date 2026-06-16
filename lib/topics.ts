@@ -1,5 +1,5 @@
 /**
- * One Read — full editorial topic taxonomy.
+ * OneRead — full editorial topic taxonomy.
  *
  * The UI shows a curated subset (`UI_INTEREST_LABELS`) so the form stays
  * minimal. The backend reasons about the full taxonomy via canonical slugs.

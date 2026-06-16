@@ -1,5 +1,5 @@
 /**
- * One Read — editorial thresholds + tunables.
+ * OneRead — editorial thresholds + tunables.
  *
  * Centralized so we can tune the editorial bar without grepping.
  * Production defaults are intentionally strict: we'd rather skip a day
@@ -47,7 +47,7 @@ export const PER_SOURCE_CANDIDATE_LIMIT = num(
 /* ----------------------------------------------------------------------- */
 
 /**
- * Relaxed thresholds used ONLY to preview the full One Read experience with
+ * Relaxed thresholds used ONLY to preview the full OneRead experience with
  * demo/manual articles before real LLM keys exist. These are never used in
  * production — `getEffectiveThresholds()` refuses to apply them when
  * NODE_ENV === "production". Production constants above are untouched.

@@ -113,7 +113,7 @@ export function PricingCard() {
               active:scale-[0.99]
             "
           >
-            Start with One Article
+            Start with OneArticle
             <svg
               width="14"
               height="14"

@@ -1,5 +1,5 @@
 /**
- * One Read — URL canonicalization.
+ * OneRead — URL canonicalization.
  *
  * Strips tracking params, fragments, trailing slashes; lowercases host.
  * Used for stronger deduplication when the same article surfaces from

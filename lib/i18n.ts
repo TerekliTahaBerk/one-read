@@ -1,5 +1,5 @@
 /**
- * One Read — email + summary chrome translations.
+ * OneRead — email + summary chrome translations.
  *
  * The LLM writes the *editorial* content (summary, hook, takeaways) in the
  * subscriber's chosen language. This module owns the surrounding *chrome*:

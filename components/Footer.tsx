@@ -16,10 +16,10 @@ export function Footer({
   showPricing = false,
   pricingHref = "/pricing",
   tagline = "No feeds. No noise. Just one good read.",
-  xAriaLabel = "One Read on X",
+  xAriaLabel = "OneRead on X",
   showBackHome = false,
   backHref = "/",
-  backLabel = "Back to One Read",
+  backLabel = "Back to OneRead",
 }: Props) {
   return (
     <footer className="w-full pt-6 pb-1 sm:pb-2 flex flex-col items-center text-center animate-rise-delayed-4">

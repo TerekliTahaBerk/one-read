@@ -1,4 +1,4 @@
-// One Read — local pipeline runner.
+// OneRead — local pipeline runner.
 //
 // Wraps the cron HTTP endpoint so the CLI exercises the *exact* same code
 // path as the Vercel cron job (and so we don't have to compile TypeScript

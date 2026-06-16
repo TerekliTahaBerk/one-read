@@ -1,4 +1,4 @@
-// One Read — manual ingestion runner.
+// OneRead — manual ingestion runner.
 //
 // Runs the RSS ingest stage by hitting the admin dry-run endpoint with
 // `?stage=ingest`. The pipeline route already supports `dryRun=1`, so we

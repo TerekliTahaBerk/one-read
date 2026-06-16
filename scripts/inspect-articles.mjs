@@ -1,4 +1,4 @@
-// One Read — inspect ingested articles + verify deduplication.
+// OneRead — inspect ingested articles + verify deduplication.
 //
 // Pure @prisma/client; no dev server needed.
 //

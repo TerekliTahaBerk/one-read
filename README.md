@@ -1,4 +1,4 @@
-# One Read# One Read
+# OneRead# OneRead
 
 
 
@@ -6,7 +6,7 @@
 
 
 
-A calm, editorial signup experience for **One Read** — a service that delivers a single curated article summary to your inbox every morning at 7 AM, based on your interests and language preferences.A calm, editorial landing page for **One Read** — a service that delivers a single curated article summary to your inbox every morning at 7 AM, based on your interests and language preferences.
+A calm, editorial signup experience for **OneRead** — a service that delivers a single curated article summary to your inbox every morning at 7 AM, based on your interests and language preferences.A calm, editorial landing page for **OneRead** — a service that delivers a single curated article summary to your inbox every morning at 7 AM, based on your interests and language preferences.
 
 
 
@@ -98,7 +98,7 @@ Copy `.env.example` to `.env` and fill in values.## Design notes
 
 | `RESEND_API_KEY` | Welcome email | If unset, signup still works — email is skipped and logged. |- **Accessibility** — semantic `fieldset`/`legend`, `role="checkbox"` chips with `aria-checked`, `role="radiogroup"` language groups, polite live region on the success state, visible focus rings via `:focus-visible`.
 
-| `RESEND_FROM` | Welcome email "From" | Optional. Falls back to `One Read <onboarding@resend.dev>` (dev only). Set this to a verified sender on a verified domain in production. |
+| `RESEND_FROM` | Welcome email "From" | Optional. Falls back to `OneRead <onboarding@resend.dev>` (dev only). Set this to a verified sender on a verified domain in production. |
 
 ## Wiring a backend later
 
@@ -163,7 +163,7 @@ Open <http://localhost:3000>.
 
 1. Enter a valid email → click **Continue**. The row is upserted in `Subscriber` with `status = "PENDING_PREFERENCES"`.
 2. Pick at least one interest, optionally adjust languages → click **Finish setup**. The row is updated with prefs and `status = "ACTIVE"`, and a welcome email is sent via Resend.
-3. You should see the success state: *"You're in. Your first One Read arrives tomorrow at 7 AM."*
+3. You should see the success state: *"You're in. Your first OneRead arrives tomorrow at 7 AM."*
 
 Inspect the database with Prisma Studio:
 

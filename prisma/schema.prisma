@@ -1,4 +1,4 @@
-// One Read — database schema
+// OneRead — database schema
 // Reference: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -10,7 +10,7 @@ datasource db {
   url      = env("PRISMA_DATABASE_URL")
 }
 
-/// A subscriber to the One Read morning newsletter.
+/// A subscriber to the OneRead morning newsletter.
 model Subscriber {
   id              String   @id @default(cuid())
   email           String   @unique

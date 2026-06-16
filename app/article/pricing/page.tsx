@@ -6,9 +6,9 @@ import { PricingCard } from "@/components/PricingCard";
 import { productThemes } from "@/lib/product-themes";
 
 export const metadata: Metadata = {
-  title: "Pricing — One Article",
+  title: "Pricing — OneArticle",
   description:
-    "Simple pricing for One Article. One carefully selected article summary in your inbox every day — $2/month or $18/year.",
+    "Simple pricing for OneArticle. One carefully selected article summary in your inbox every day — $2/month or $18/year.",
 };
 
 export default function ArticlePricingPage() {
@@ -35,7 +35,7 @@ export default function ArticlePricingPage() {
       }
     >
       <header className="w-full flex justify-center animate-rise">
-        <Logo label="One Article" href="/" ariaLabel="One Article — One Read home" />
+        <Logo label="OneArticle" href="/" ariaLabel="OneArticle — OneRead home" />
       </header>
 
       <section
@@ -58,7 +58,7 @@ export default function ArticlePricingPage() {
             animate-rise-delayed
           "
         >
-          Simple pricing for One Article.
+          Simple pricing for OneArticle.
         </h1>
 
         <p
@@ -76,7 +76,7 @@ export default function ArticlePricingPage() {
         <PricingCard />
       </section>
 
-      <Footer showBackHome backHref="/article" backLabel="Back to One Article" />
+      <Footer showBackHome backHref="/article" backLabel="Back to OneArticle" />
     </main>
   );
 }

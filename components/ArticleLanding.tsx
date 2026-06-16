@@ -20,7 +20,7 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
     lead: "Start your morning with one article ",
     accent: "worth reading.",
     support:
-      "Choose your interests and language preferences. Every morning at 7 AM, One Article sends you one curated article summary in your inbox.",
+      "Choose your interests and language preferences. Every morning at 7 AM, OneArticle sends you one curated article summary in your inbox.",
   },
   preferences: {
     lead: "Tell us ",
@@ -38,12 +38,12 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
     lead: "Welcome back - ",
     accent: "update your reading.",
     support:
-      "Adjust your interests and languages, or cancel your subscription. Changes apply to tomorrow's One Article.",
+      "Adjust your interests and languages, or cancel your subscription. Changes apply to tomorrow's OneArticle.",
   },
 };
 
 // Where the back arrow returns to from each step. The email step uses the same
-// affordance to return to the One Read umbrella homepage.
+// affordance to return to the OneRead umbrella homepage.
 const BACK_TO: Partial<Record<Phase, Phase>> = {
   preferences: "email",
   payment: "preferences",
@@ -106,7 +106,7 @@ export function ArticleLanding() {
         ) : phase === "email" ? (
           <Link
             href="/"
-            aria-label="Back to One Read"
+            aria-label="Back to OneRead"
             className="
               focus-ring
               absolute left-0 top-1/2 -translate-y-1/2
@@ -127,7 +127,7 @@ export function ArticleLanding() {
             </svg>
           </Link>
         ) : null}
-        <Logo label="One Article" href="/" ariaLabel="One Article — One Read home" />
+        <Logo label="OneArticle" href="/" ariaLabel="OneArticle — OneRead home" />
       </header>
 
       <section
@@ -207,7 +207,7 @@ export function ArticleLanding() {
         showPricing
         pricingHref="/article/pricing"
         tagline="No feeds. No noise. Just one good read."
-        xAriaLabel="One Article on X"
+        xAriaLabel="OneArticle on X"
       />
     </main>
   );

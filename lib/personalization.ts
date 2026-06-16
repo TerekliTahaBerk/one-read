@@ -1,5 +1,5 @@
 /**
- * One Read — personalized scoring engine.
+ * OneRead — personalized scoring engine.
  *
  * Pure functions. No DB access here, so this module is fully testable and
  * can be reused by the daily pipeline, the admin preview, and any future

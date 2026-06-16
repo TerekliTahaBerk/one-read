@@ -1,6 +1,6 @@
 export const productThemes = {
   read: {
-    name: "One Read",
+    name: "OneRead",
     background: "#FFFFFF",
     accent: "#111111",
     border: "#EAEAEA",
@@ -8,7 +8,7 @@ export const productThemes = {
     mutedText: "#6B6B6B",
   },
   article: {
-    name: "One Article",
+    name: "OneArticle",
     background: "#FBF7EF",
     accent: "#8A6F3F",
     border: "#E8DDC9",
@@ -16,7 +16,7 @@ export const productThemes = {
     mutedText: "#6B6B6B",
   },
   lingo: {
-    name: "One Lingo",
+    name: "OneLingo",
     background: "#F5F1FF",
     accent: "#6F5AA8",
     border: "#DED4F5",
@@ -24,7 +24,7 @@ export const productThemes = {
     mutedText: "#6B6B6B",
   },
   goal: {
-    name: "One Goal",
+    name: "OneGoal",
     background: "#F1FAF3",
     accent: "#3F7A4A",
     border: "#D3EBD8",

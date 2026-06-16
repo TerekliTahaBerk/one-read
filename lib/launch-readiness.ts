@@ -1,5 +1,5 @@
 /**
- * One Read — launch readiness checks.
+ * OneRead — launch readiness checks.
  *
  * Pure environment inspection for the admin "Launch readiness" panel.
  * NEVER returns secret values — only whether each var is configured plus a

@@ -1,4 +1,4 @@
-// One Read — inspect rejected articles + rejected summaries.
+// OneRead — inspect rejected articles + rejected summaries.
 //
 // Pure @prisma/client; no dev server needed.
 //

@@ -18,7 +18,7 @@ const resend = apiKey ? new Resend(apiKey) : null;
  * but only delivers to the Resend account owner's email — never use it in
  * production.
  */
-const FROM_FALLBACK = "One Read <onboarding@resend.dev>";
+const FROM_FALLBACK = "OneRead <onboarding@resend.dev>";
 const FROM =
   process.env.FROM_EMAIL?.trim() ||
   process.env.RESEND_FROM?.trim() ||
@@ -64,25 +64,25 @@ function warnIfMisconfigured(): void {
   }
 }
 
-const WELCOME_SUBJECT = "Welcome to One Read";
+const WELCOME_SUBJECT = "Welcome to OneRead";
 const WELCOME_TEXT = `Hi,
 
 You're in.
 
-Your first One Read arrives tomorrow at 7 AM.
+Your first OneRead arrives tomorrow at 7 AM.
 
 One article. Every morning. Curated for you.
 
-— One Read
+— OneRead
 `;
 
 const WELCOME_HTML = `
   <div style="font-family: ui-serif, Georgia, Cambria, serif; color: #1B1612; line-height: 1.6; font-size: 16px; max-width: 480px; margin: 0 auto; padding: 24px;">
     <p style="margin: 0 0 16px 0;">Hi,</p>
     <p style="margin: 0 0 16px 0;"><strong>You're in.</strong></p>
-    <p style="margin: 0 0 24px 0;">Your first One Read arrives tomorrow at <strong>7&nbsp;AM</strong>.</p>
+    <p style="margin: 0 0 24px 0;">Your first OneRead arrives tomorrow at <strong>7&nbsp;AM</strong>.</p>
     <p style="margin: 0 0 24px 0; font-style: italic; color: #6B5F50;">One article. Every morning. Curated for you.</p>
-    <p style="margin: 0; color: #9C8F7E; font-size: 14px;">— One Read</p>
+    <p style="margin: 0; color: #9C8F7E; font-size: 14px;">— OneRead</p>
   </div>
 `.trim();
 
