@@ -29,6 +29,7 @@ export default function ArticlePricingPage() {
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,
+          "--theme-selected-surface": theme.selectedSurface,
           "--theme-page": theme.background,
           "--theme-focus": theme.accent,
         } as CSSProperties

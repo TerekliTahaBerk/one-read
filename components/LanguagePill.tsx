@@ -29,7 +29,7 @@ export function LanguagePill({
         "text-[13px] leading-none",
         "border transition-[color,background-color,border-color] duration-200",
         selected
-          ? "bg-[var(--theme-accent)] text-paper border-[var(--theme-accent)]"
+          ? "bg-[var(--theme-selected-surface)] text-[var(--theme-accent)] border-[var(--theme-accent)]"
           : "bg-transparent text-ash border-[var(--theme-border)] hover:text-ink hover:border-[var(--theme-accent)]",
         className,
       ].join(" ")}

@@ -84,8 +84,7 @@ export default function HomePage() {
         <div
           className="
             mt-6 sm:mt-7 w-full max-w-[34rem]
-            divide-y divide-line
-            border-y border-line
+            space-y-2
             animate-rise-delayed-3
           "
         >
@@ -144,7 +143,7 @@ function ProductRow({
 
   const className = `
     group flex items-center justify-between gap-5
-    my-1 rounded-lg border px-3 py-3 sm:py-3.5
+    rounded-lg border px-3 py-3 sm:py-3.5
     transition-[background-color,border-color,transform] duration-200
   `;
 

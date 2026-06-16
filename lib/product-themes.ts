@@ -9,10 +9,11 @@ export const productThemes = {
   },
   article: {
     name: "OneArticle",
-    background: "#FBF7EF",
-    accent: "#8A6F3F",
-    border: "#E8DDC9",
-    surface: "#F6EFE3",
+    background: "#F3F8FF",
+    accent: "#3F6FA8",
+    border: "#D8E7F8",
+    surface: "#EAF3FF",
+    selectedSurface: "#DDEEFF",
     mutedText: "#6B6B6B",
   },
   lingo: {
