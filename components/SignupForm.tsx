@@ -40,6 +40,15 @@ type Props = {
   className?: string;
 };
 
+function prefersSameTabExternalRedirect(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(max-width: 767px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches ||
+    navigator.maxTouchPoints > 0
+  );
+}
+
 /**
  * Multi-step signup form. The parent controls the active `phase` and the
  * canonical `email`; each step owns its own local state and handles network
@@ -348,7 +357,8 @@ function PaymentStep({
     if (!canSubmit) return;
     setLoading(true);
     setError(null);
-    const checkoutWindow = window.open("about:blank", "_blank");
+    const sameTabRedirect = prefersSameTabExternalRedirect();
+    const checkoutWindow = sameTabRedirect ? null : window.open("about:blank", "_blank");
     if (checkoutWindow) checkoutWindow.opener = null;
     let redirected = false;
     try {
@@ -496,24 +506,31 @@ function ManageStep({
     setCanceling(true);
     setError(null);
     try {
-      const res = await fetch("/api/signup/cancel", {
+      const res = await fetch("/api/subscribe/portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
+        action?: string;
+        url?: string;
         error?: string;
       };
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error ?? "Couldn't cancel your subscription.");
+      if (res.ok && data.ok && data.action === "redirect" && data.url) {
+        window.location.href = data.url;
+        return;
       }
-      onCanceled();
+      if (data.action === "needs_setup_first") {
+        window.location.href = "/article";
+        return;
+      }
+      throw new Error(data.error ?? "Couldn't open billing.");
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Couldn't cancel your subscription. Please try again.",
+          : "Couldn't open billing. Please try again.",
       );
       setCanceling(false);
     }
@@ -557,12 +574,12 @@ function ManageStep({
               onClick={() => setConfirmingCancel(true)}
               className="focus-ring rounded text-[13px] font-sans text-fog underline underline-offset-4 hover:text-ash transition-colors"
             >
-              Cancel subscription
+              Cancel or manage subscription
             </button>
           ) : (
             <div className="animate-fade-in">
               <p className="text-[13px] font-sans text-ash">
-                Cancel your subscription? Daily emails will stop.
+                Open Polar billing to cancel or manage your subscription.
               </p>
               <div className="mt-3 flex items-center justify-center gap-3">
                 <button
@@ -580,7 +597,7 @@ function ManageStep({
                   aria-busy={canceling}
                   className="focus-ring h-9 px-4 rounded-full border border-dawn text-[13px] font-sans text-dawn hover:bg-dawn hover:text-paper transition-colors disabled:opacity-40"
                 >
-                  {canceling ? "Canceling..." : "Yes, cancel"}
+                  {canceling ? "Opening..." : "Open billing"}
                 </button>
               </div>
             </div>

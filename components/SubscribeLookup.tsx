@@ -17,6 +17,15 @@ type Cta =
   | { kind: "checkout"; label: string; plan?: BillingInterval; primary?: boolean }
   | { kind: "portal"; label: string; primary?: boolean };
 
+function prefersSameTabExternalRedirect(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(max-width: 767px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches ||
+    navigator.maxTouchPoints > 0
+  );
+}
+
 /**
  * Copy + CTAs for each resolved lifecycle state (cases A–J in the plan).
  *
@@ -164,7 +173,8 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
   async function onCheckout(plan: BillingInterval) {
     setLoading(true);
     setError(null);
-    const checkoutWindow = window.open("about:blank", "_blank");
+    const sameTabRedirect = prefersSameTabExternalRedirect();
+    const checkoutWindow = sameTabRedirect ? null : window.open("about:blank", "_blank");
     if (checkoutWindow) checkoutWindow.opener = null;
     let redirected = false;
     try {
