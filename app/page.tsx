@@ -64,7 +64,7 @@ export default function HomePage() {
             animate-rise-delayed
           "
         >
-          Everything you care about, delivered to your inbox.
+          The things you care about, delivered quietly to your inbox.
         </h1>
 
         <p
@@ -77,8 +77,8 @@ export default function HomePage() {
             animate-rise-delayed-2
           "
         >
-          OneRead is a family of quiet daily emails for learning, reading,
-          language, sports, and more. No app. No feed. No noise.
+          OneRead is a family of calm daily emails for articles, language,
+          sports, and more. No app. No feed. No noise.
         </p>
 
         <div
