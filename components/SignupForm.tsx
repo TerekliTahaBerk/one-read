@@ -525,6 +525,14 @@ function ManageStep({
         window.location.href = "/article";
         return;
       }
+      if (data.action === "needs_setup") {
+        window.location.href = `/article?email=${encodeURIComponent(email)}`;
+        return;
+      }
+      if (data.action === "needs_checkout") {
+        window.location.href = `/article/subscribe?email=${encodeURIComponent(email)}`;
+        return;
+      }
       throw new Error(data.error ?? "Couldn't open billing.");
     } catch (err) {
       setError(

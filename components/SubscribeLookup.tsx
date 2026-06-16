@@ -221,6 +221,10 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
         window.location.href = data.url;
       } else if (data.action === "needs_setup_first") {
         window.location.href = "/article";
+      } else if (data.action === "needs_setup") {
+        window.location.href = `/article?email=${encodeURIComponent(email)}`;
+      } else if (data.action === "needs_checkout") {
+        await onCheckout("monthly");
       } else {
         setError(data.error ?? "Could not open billing.");
       }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { getBillingProvider } from "@/lib/billing/provider";
-import { findOneArticleSubscription } from "@/lib/subscriptions";
+import { findOneArticleSubscription, preferencesComplete } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +30,16 @@ export async function POST(request: Request) {
     const sub = await findOneArticleSubscription(email);
     if (!sub) {
       return NextResponse.json({ ok: true, action: "needs_setup_first" });
+    }
+    if (!preferencesComplete(sub.preferences)) {
+      return NextResponse.json({ ok: true, action: "needs_setup" });
+    }
+    if (
+      sub.status === "PENDING_CHECKOUT" ||
+      sub.status === "PENDING_PREFERENCES" ||
+      (sub.paymentProvider === "polar" && !sub.providerCustomerId)
+    ) {
+      return NextResponse.json({ ok: true, action: "needs_checkout" });
     }
     const { url } = await getBillingProvider().createBillingPortalSession(email);
     return NextResponse.json({ ok: true, action: "redirect", url });
