@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
@@ -39,8 +40,8 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
   },
 };
 
-// Where the back arrow returns to from each step. Steps not listed have no
-// back affordance (email is the entry point; success/canceled are terminal).
+// Where the back arrow returns to from each step. The email step uses the same
+// affordance to return to the One Read umbrella homepage.
 const BACK_TO: Partial<Record<Phase, Phase>> = {
   preferences: "email",
   payment: "preferences",
@@ -65,7 +66,7 @@ export function ArticleLanding() {
       "
     >
       <header className="relative w-full flex justify-center animate-rise">
-        {backTo && (
+        {backTo ? (
           <button
             type="button"
             onClick={() => setPhase(backTo)}
@@ -89,7 +90,30 @@ export function ArticleLanding() {
               />
             </svg>
           </button>
-        )}
+        ) : phase === "email" ? (
+          <Link
+            href="/"
+            aria-label="Back to One Read"
+            className="
+              focus-ring
+              absolute left-0 top-1/2 -translate-y-1/2
+              inline-flex h-10 w-10 items-center justify-center
+              rounded-full text-ash
+              transition-colors duration-200
+              hover:text-ink hover:bg-cream/70
+            "
+          >
+            <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path
+                d="M12 7H2M6 3L2 7l4 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        ) : null}
         <Logo label="One Article" href="/" ariaLabel="One Article — One Read home" />
       </header>
 
