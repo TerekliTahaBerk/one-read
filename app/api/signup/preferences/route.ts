@@ -8,6 +8,11 @@ import {
 } from "@/lib/options";
 import { interestLabelsToSlugs } from "@/lib/topics";
 import { sendWelcomeEmail } from "@/lib/resend";
+import {
+  ensureOneArticleSubscription,
+  upsertArticlePreferences,
+  startTrialIfEligible,
+} from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,8 +78,9 @@ export async function POST(request: Request) {
     const primaryInterest = slugs[0] ?? null;
     const secondaryInterests = slugs.slice(1);
 
-    // Upsert handles the edge case where someone hits step 2 directly
-    // (e.g. resumed flow) without an existing record.
+    // Legacy dual-write: keep the old Subscriber row in sync so the pre-cutover
+    // pipeline/admin keep working and a rollback stays safe. Upsert handles the
+    // edge case where someone hits step 2 directly (e.g. resumed flow).
     await prisma.subscriber.upsert({
       where: { email },
       update: {
@@ -95,6 +101,19 @@ export async function POST(request: Request) {
         status: "ACTIVE",
       },
     });
+
+    // New model: complete preferences then start the 7-day trial. The trial is
+    // one-per-email-per-product and never resets (see startTrialIfEligible), so
+    // a returning user editing prefs keeps their original trial window.
+    const sub = await ensureOneArticleSubscription(email);
+    await upsertArticlePreferences(sub.id, {
+      interests,
+      primaryInterest,
+      secondaryInterests,
+      sourceLanguage,
+      summaryLanguage,
+    });
+    await startTrialIfEligible(sub.id);
   } catch (err) {
     console.error("[/api/signup/preferences] db error:", err);
     return NextResponse.json(

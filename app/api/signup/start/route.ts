@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseEmail, isAlwaysSubscribed } from "@/lib/options";
+import { ensureOneArticleSubscription } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +63,11 @@ export async function POST(request: Request) {
         summaryLanguage: true,
       },
     });
+
+    // New model dual-write: make sure a Contact + One Article subscription
+    // exist so the /article/subscribe email lookup can resolve this person.
+    // No trial is started here — that happens when preferences complete.
+    await ensureOneArticleSubscription(email);
 
     const subscribed =
       forceSubscribed ||

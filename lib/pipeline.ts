@@ -37,6 +37,7 @@ import { renderDailyEmail } from "./email-template";
 import { ingestCandidates, type IngestionSource } from "./ingest";
 import { rssSource } from "./rss-source";
 import { extractAndScorePendingArticles } from "./scorer";
+import { getOneArticleEligibilityByEmail } from "./subscriptions";
 import {
   MIN_ARTICLE_SCORE,
   MIN_DELIVERY_SCORE,
@@ -279,10 +280,13 @@ async function computeSubscriberDiagnostics(
   pickCount: number,
 ): Promise<PipelineResult["subscribers"]> {
   const day = atUtcMidnight(date);
-  const active = await prisma.subscriber.findMany({
-    where: { status: "ACTIVE" },
-    select: { id: true, email: true },
-  });
+  const eligibility = await getOneArticleEligibilityByEmail();
+  const active = (
+    await prisma.subscriber.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true, email: true },
+    })
+  ).filter((s) => eligibility.get(s.email)?.allowed === true);
   const sends = await prisma.dailySend.findMany({
     where: { date: day },
     select: { subscriberId: true },
@@ -300,6 +304,9 @@ async function computeSubscriberDiagnostics(
   }
 
   return {
+    // "active" now means eligible (valid trial/paid window + opted in), the
+    // real denominator for delivery. Trial-expired / past-due / unsubscribed
+    // are excluded by the eligibility gate, not counted as skips.
     active: active.length,
     mapped: active.filter((s) => mappedIds.has(s.id)).length,
     skipped: skippedReasons.length,
@@ -532,9 +539,14 @@ export async function selectSubscriberSends(
   // Quick lookup tables.
   const picksByTopic = groupBy(picks, (p) => p.topic);
 
-  const subscribers = await prisma.subscriber.findMany({
-    where: { status: "ACTIVE" },
-  });
+  // Eligibility gate (single source of truth, new model): only subscribers
+  // whose One Article subscription is in a valid trial/paid window and still
+  // opted in to email get a send. We pre-filter the legacy rows by ACTIVE to
+  // keep the query cheap, then drop anyone the eligibility map rejects.
+  const eligibility = await getOneArticleEligibilityByEmail();
+  const subscribers = (
+    await prisma.subscriber.findMany({ where: { status: "ACTIVE" } })
+  ).filter((s) => eligibility.get(s.email)?.allowed === true);
 
   const created: DailySend[] = [];
 

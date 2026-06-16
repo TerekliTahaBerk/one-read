@@ -67,7 +67,8 @@ export function SuccessState({
             You’re <em className="italic font-normal">all set.</em>
           </h2>
           <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-4 max-w-[34ch]">
-            Your first OneArticle arrives tomorrow at 7&nbsp;AM
+            Your 7-day free trial has started. Your first OneArticle arrives
+            tomorrow at 7&nbsp;AM
             {email ? (
               <>
                 {" "}
@@ -77,7 +78,7 @@ export function SuccessState({
             .
           </p>
           <p className="font-serif italic text-[13.5px] text-fog mt-8">
-            Sleep well. We’ll handle the rest.
+            Free for 7 days — we’ll remind you before it ends.
           </p>
         </>
       )}

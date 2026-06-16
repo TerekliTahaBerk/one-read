@@ -12,14 +12,14 @@ datasource db {
 
 /// A subscriber to the OneRead morning newsletter.
 model Subscriber {
-  id              String   @id @default(cuid())
-  email           String   @unique
+  id    String @id @default(cuid())
+  email String @unique
 
   /// Display labels the user picked in the signup form (kept verbatim).
-  interests       String[]
+  interests String[]
 
   /// Canonical topic slug used by the personalization engine.
-  primaryInterest    String?
+  primaryInterest String?
 
   /// Canonical topic slugs of remaining selected interests.
   secondaryInterests String[]
@@ -30,9 +30,9 @@ model Subscriber {
   summaryLanguage String?
 
   /// IANA timezone, used to determine local 7 AM.
-  timezone        String?  @default("Europe/Istanbul")
+  timezone     String? @default("Europe/Istanbul")
   /// Local hour-of-day delivery target.
-  deliveryHour    Int      @default(7)
+  deliveryHour Int     @default(7)
 
   /// "beginner" | "intermediate" | "advanced" | "mixed"
   preferredDifficulty String @default("mixed")
@@ -45,8 +45,8 @@ model Subscriber {
   /// Lightweight feedback profile JSON.
   feedbackProfile Json?
 
-  lastSentAt      DateTime?
-  unsubscribedAt  DateTime?
+  lastSentAt     DateTime?
+  unsubscribedAt DateTime?
 
   /// Set when the user completes (simulated) payment. Non-null + status != UNSUBSCRIBED ⇒ subscribed.
   subscribedAt    DateTime?
@@ -54,58 +54,180 @@ model Subscriber {
   billingInterval String?
 
   /// "PENDING_PREFERENCES" | "ACTIVE" | "PAUSED" | "UNSUBSCRIBED"
-  status          String   @default("PENDING_PREFERENCES")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status    String   @default("PENDING_PREFERENCES")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  feedbacks  Feedback[]
-  sends      DailySend[]
+  feedbacks Feedback[]
+  sends     DailySend[]
 
   @@index([status])
   @@index([summaryLanguage, status])
 }
 
+/// Umbrella-level identity: one row per unique email across all OneRead
+/// products. A Contact can hold many ProductSubscriptions (one-article today,
+/// one-lingo / one-goal later).
+model Contact {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions ProductSubscription[]
+}
+
+/// A single product subscription for a Contact. Holds the access lifecycle,
+/// trial window, billing/provider state, and (independently) email-delivery
+/// status. Access status and email-delivery status are intentionally separate
+/// axes — unsubscribing from emails must never cancel billing.
+model ProductSubscription {
+  id         String  @id @default(cuid())
+  contactId  String
+  contact    Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  /// Product slug, e.g. "one-article".
+  productKey String
+
+  /// Access lifecycle:
+  /// "PENDING_PREFERENCES" | "TRIALING" | "TRIAL_EXPIRED" | "ACTIVE_PAID"
+  /// | "PAST_DUE" | "CANCELED" | "EXPIRED" | "ADMIN_OVERRIDE"
+  status String @default("PENDING_PREFERENCES")
+
+  // Trial
+  trialStartedAt DateTime?
+  trialEndsAt    DateTime?
+  /// Set once the first trial is consumed; guards against trial resets.
+  trialUsedAt    DateTime?
+
+  // Billing
+  /// "monthly" | "annual"
+  plan                      String?
+  /// "stripe" | "lemonsqueezy" | "mock"
+  paymentProvider           String?
+  providerCustomerId        String?
+  providerSubscriptionId    String?
+  providerCheckoutSessionId String?
+  currentPeriodStart        DateTime?
+  currentPeriodEnd          DateTime?
+  cancelAtPeriodEnd         Boolean   @default(false)
+  canceledAt                DateTime?
+  pastDueAt                 DateTime?
+  paidAt                    DateTime?
+
+  // Email delivery (independent of access)
+  /// "SUBSCRIBED" | "UNSUBSCRIBED" | "SUPPRESSED"
+  emailDeliveryStatus String    @default("SUBSCRIBED")
+  /// Opaque token for unsubscribe links (in addition to the per-send id).
+  unsubscribeToken    String    @unique @default(cuid())
+  lastSentAt          DateTime?
+
+  // Admin
+  adminOverride Boolean @default(false)
+  adminNote     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preferences ArticlePreferences?
+  feedbacks   Feedback[]
+  sends       DailySend[]
+
+  @@unique([contactId, productKey])
+  @@index([productKey, status])
+  @@index([trialEndsAt])
+  @@index([providerSubscriptionId])
+}
+
+/// One-Article-specific personalization preferences for a ProductSubscription.
+model ArticlePreferences {
+  id                    String              @id @default(cuid())
+  productSubscriptionId String              @unique
+  subscription          ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  /// Display labels the user picked in the signup form (kept verbatim).
+  interests          String[]
+  /// Canonical topic slug used by the personalization engine.
+  primaryInterest    String?
+  /// Canonical topic slugs of remaining selected interests.
+  secondaryInterests String[]
+
+  /// "English" | "Turkish" | "Any"
+  sourceLanguage  String?
+  /// Summary language name, e.g. "English" | "Turkish" | "Spanish" | "French" | "German"
+  summaryLanguage String?
+
+  /// IANA timezone, used to determine local 7 AM.
+  timezone            String? @default("Europe/Istanbul")
+  /// Local hour-of-day delivery target.
+  deliveryHour        Int     @default(7)
+  /// "beginner" | "intermediate" | "advanced" | "mixed"
+  preferredDifficulty String  @default("mixed")
+
+  /// Last N topic slugs sent, most recent first. Used for novelty + rotation.
+  recentlySentTopics     String[]
+  /// Last N article ids sent, most recent first.
+  recentlySentArticleIds String[]
+
+  /// Lightweight feedback profile JSON.
+  feedbackProfile Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only log of billing-provider webhook events. The unique
+/// providerEventId gives us idempotency: a duplicate webhook is a no-op.
+model BillingEvent {
+  id              String    @id @default(cuid())
+  provider        String
+  providerEventId String    @unique
+  type            String
+  payload         Json
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+}
+
 /// A configured RSS / Atom source, persisted from the seed list in
 /// lib/sources.ts. Useful for observability and runtime overrides.
 model Source {
-  id            String   @id @default(cuid())
+  id               String    @id @default(cuid())
   /// Stable slug, e.g. "openai-blog".
-  slug          String   @unique
-  name          String
-  feedUrl       String   @unique
-  homepage      String?
+  slug             String    @unique
+  name             String
+  feedUrl          String    @unique
+  homepage         String?
   /// Default top-level topic slug for items from this source.
-  defaultTopic  String
+  defaultTopic     String
   /// Optional default subtopics.
   defaultSubtopics String[]
   /// "English" | "Turkish" | …
-  language      String   @default("English")
+  language         String    @default("English")
   /// True if the feed is enabled in the daily run.
-  active        Boolean  @default(true)
+  active           Boolean   @default(true)
   /// Free-form notes (why we chose it, throttling, etc.).
-  notes         String?
-  lastFetchedAt DateTime?
-  lastError     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  notes            String?
+  lastFetchedAt    DateTime?
+  lastError        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 /// A candidate article ingested from any source.
 model Article {
-  id            String   @id @default(cuid())
-  url           String   @unique
+  id                String    @id @default(cuid())
+  url               String    @unique
   /// Normalized URL used for stronger dedupe across slightly different
   /// surface forms (utm params stripped, trailing slash removed, etc.).
-  canonicalUrl  String?  @unique
-  title         String
-  sourceName    String
-  sourceLanguage String
-  topic         String
-  subtopics     String[]
+  canonicalUrl      String?   @unique
+  title             String
+  sourceName        String
+  sourceLanguage    String
+  topic             String
+  subtopics         String[]
   detectedInterests String[]
-  tags          String[]
-  publishedAt   DateTime?
-  ingestedAt    DateTime  @default(now())
+  tags              String[]
+  publishedAt       DateTime?
+  ingestedAt        DateTime  @default(now())
 
   qualityScore     Float @default(0)
   usefulnessScore  Float @default(0)
@@ -113,12 +235,12 @@ model Article {
   originalityScore Float @default(0)
   readabilityScore Float @default(0)
 
-  difficulty   String  @default("mixed")
+  difficulty String @default("mixed")
 
   /// Original RSS excerpt (always kept).
-  rawExcerpt        String? @db.Text
+  rawExcerpt           String? @db.Text
   /// Cleaned full text from readability extraction (may be null).
-  cleanedText       String? @db.Text
+  cleanedText          String? @db.Text
   /// 0..1 — how confident we are in `cleanedText` quality.
   extractionConfidence Float?
 
@@ -128,7 +250,7 @@ model Article {
   /// "PENDING" | "SCORED" | "REJECTED"
   scoringStatus String @default("PENDING")
 
-  picks  TopicDailyPick[]
+  picks TopicDailyPick[]
 
   @@index([topic, sourceLanguage])
   @@index([ingestedAt])
@@ -137,24 +259,24 @@ model Article {
 
 /// One best article per (date, topic, sourceLanguage).
 model TopicDailyPick {
-  id                 String   @id @default(cuid())
-  date               DateTime @db.Date
-  topic              String
-  subtopics          String[]
-  sourceLanguage     String
+  id             String   @id @default(cuid())
+  date           DateTime @db.Date
+  topic          String
+  subtopics      String[]
+  sourceLanguage String
 
-  articleId          String
-  article            Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleTitle       String
-  sourceName         String
+  articleId    String
+  article      Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleTitle String
+  sourceName   String
 
   score              Float
-  reasonForSelection String?  @db.Text
+  reasonForSelection String? @db.Text
 
   /// "DRAFT" | "READY" | "REJECTED" | "SENT"
-  status             String   @default("DRAFT")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  status    String   @default("DRAFT")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   summaries Summary[]
   sends     DailySend[]
@@ -165,55 +287,60 @@ model TopicDailyPick {
 
 /// Cached summary for a TopicDailyPick.
 model Summary {
-  id               String   @id @default(cuid())
+  id               String         @id @default(cuid())
   topicDailyPickId String
   pick             TopicDailyPick @relation(fields: [topicDailyPickId], references: [id], onDelete: Cascade)
 
-  summaryLanguage  String
-  primaryTopic     String
-  difficulty       String   @default("mixed")
+  summaryLanguage String
+  primaryTopic    String
+  difficulty      String @default("mixed")
 
   /// Compact plain text summary used as the email body.
-  bodyText         String   @db.Text
-  bodyHtml         String?  @db.Text
+  bodyText String  @db.Text
+  bodyHtml String? @db.Text
 
   /// Full structured LLM output (subject, threeSentenceSummary, etc.).
   /// Null for heuristic summaries.
-  structuredJson   Json?
+  structuredJson  Json?
   /// LLM-reported confidence in [0, 100].
-  confidence       Float?
+  confidence      Float?
   /// "DRAFT" | "READY" | "REJECTED"
-  status           String   @default("READY")
+  status          String  @default("READY")
   /// Provider id ("openai/gpt-4o-mini") for observability.
-  generator        String?
-  rejectionReason  String?  @db.Text
+  generator       String?
+  rejectionReason String? @db.Text
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([topicDailyPickId, summaryLanguage, primaryTopic, difficulty])
 }
 
 /// The single article a subscriber receives on a given day.
 model DailySend {
-  id                String   @id @default(cuid())
-  date              DateTime @db.Date
+  id   String   @id @default(cuid())
+  date DateTime @db.Date
 
-  subscriberId      String
-  subscriber        Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscriberId String
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
 
-  topicDailyPickId  String
-  pick              TopicDailyPick @relation(fields: [topicDailyPickId], references: [id], onDelete: Cascade)
+  /// New model link (additive during migration; becomes the source of truth
+  /// at cutover). Nullable until the backfill has run for every row.
+  productSubscriptionId String?
+  productSubscription   ProductSubscription? @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  topicDailyPickId String
+  pick             TopicDailyPick @relation(fields: [topicDailyPickId], references: [id], onDelete: Cascade)
 
   summaryLanguage   String
   matchedTopic      String
   personalizedScore Float
 
   /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
-  status            String   @default("QUEUED")
-  emailMessageId    String?
-  error             String?
-  sentAt            DateTime?
-  createdAt         DateTime @default(now())
+  status         String    @default("QUEUED")
+  emailMessageId String?
+  error          String?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   @@unique([date, subscriberId])
   @@index([date, status])
@@ -221,17 +348,22 @@ model DailySend {
 
 /// User reaction to a delivered article.
 model Feedback {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   subscriberId String
   subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
 
-  articleId    String?
-  topic        String?
-  sourceName   String?
+  /// New model link (additive during migration; becomes the source of truth
+  /// at cutover). Nullable until the backfill has run for every row.
+  productSubscriptionId String?
+  productSubscription   ProductSubscription? @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  articleId  String?
+  topic      String?
+  sourceName String?
 
   /// "loved" | "liked" | "meh" | "disliked"
-  reaction     String
-  createdAt    DateTime @default(now())
+  reaction  String
+  createdAt DateTime @default(now())
 
   @@index([subscriberId, createdAt])
 }

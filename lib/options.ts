@@ -40,6 +40,18 @@ export type SummaryLanguage = (typeof SUMMARY_LANGUAGES)[number];
 export const BILLING_INTERVALS = ["monthly", "annual"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
+/** Product slug for One Article (the first OneRead product). */
+export const ONE_ARTICLE_PRODUCT_KEY = "one-article";
+
+/** Free-trial length in days. Overridable via env for testing. */
+export const TRIAL_DAYS = Number(process.env.TRIAL_DAYS ?? 7);
+
+/**
+ * How long a PAST_DUE subscription keeps receiving emails after a failed
+ * payment before access is cut off. Overridable via env.
+ */
+export const PAST_DUE_GRACE_DAYS = Number(process.env.PAST_DUE_GRACE_DAYS ?? 3);
+
 /**
  * Single source of truth for pricing, shared by the pricing page and the
  * (simulated) payment step.
