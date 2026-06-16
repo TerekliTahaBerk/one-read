@@ -186,7 +186,7 @@ function EmailStep({
             rounded-xl
             bg-paper/80
             border border-line
-            text-[15.5px] text-ink placeholder:text-fog
+            text-[16px] sm:text-[15.5px] text-ink placeholder:text-fog
             transition-colors duration-200
             hover:border-line-strong
             focus:border-ink focus:bg-paper
@@ -781,7 +781,7 @@ function CardInput({
           rounded-xl
           bg-paper/80
           border border-line
-          text-[15px] text-ink placeholder:text-fog
+          text-[16px] sm:text-[15px] text-ink placeholder:text-fog
           transition-colors duration-200
           hover:border-line-strong
           focus:border-ink focus:bg-paper

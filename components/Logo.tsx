@@ -9,29 +9,35 @@ type Props = {
 /**
  * One Read logo lockup.
  *
- * Renders the brand asset from `/public/logo.png` (a 4:1 wordmark). Replace
- * that file to update the brand mark everywhere — the component constrains
- * the width and keeps height auto so the asset never stretches or distorts.
+ * Rendered as live text in the brand serif (Fraunces) rather than a raster
+ * asset, so the wordmark stays perfectly crisp at any size or pixel density and
+ * matches the typography used across the rest of the page. The optical sizing
+ * and tight tracking give it the high-contrast, editorial Didone feel.
  *
  * Defaults to linking home so it can double as the (intentionally minimal)
  * site navigation. Pass `href={null}` to render a non-interactive logo.
  */
 export function Logo({ href = "/", className = "" }: Props) {
-  const image = (
-    <img
-      src="/logo.png"
-      alt="One Read"
-      width={124}
-      height={31}
-      draggable={false}
-      className="h-auto w-[104px] sm:w-[124px] select-none"
-    />
+  const wordmark = (
+    <span
+      aria-hidden="true"
+      className="
+        font-serif font-medium
+        text-[1.5rem] sm:text-[1.75rem]
+        leading-none tracking-[-0.015em]
+        text-ink select-none
+        [font-optical-sizing:auto]
+      "
+    >
+      One&nbsp;Read
+    </span>
   );
 
   if (href === null) {
     return (
       <span className={`inline-flex items-center justify-center ${className}`}>
-        {image}
+        {wordmark}
+        <span className="sr-only">One Read</span>
       </span>
     );
   }
@@ -42,7 +48,7 @@ export function Logo({ href = "/", className = "" }: Props) {
       aria-label="One Read — home"
       className={`focus-ring inline-flex items-center justify-center rounded-full px-2 py-1 ${className}`}
     >
-      {image}
+      {wordmark}
     </Link>
   );
 }

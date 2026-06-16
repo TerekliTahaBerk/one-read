@@ -19,11 +19,35 @@
     -moz-osx-font-smoothing: grayscale;
     font-optical-sizing: auto;
     font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
+    /* Allow taller-than-viewport content to scroll on iOS without rubber-band
+       jank, and prevent horizontal overflow from edge-to-edge elements. */
+    overflow-x: hidden;
+  }
+
+  /* Remove the gray flash when tapping buttons/links on touch devices. */
+  button,
+  a,
+  [role="button"],
+  [role="radio"],
+  [role="checkbox"] {
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
     background-color: rgba(26, 26, 26, 0.12);
     color: #1A1A1A;
+  }
+
+  /* Respect users who prefer reduced motion — disable the rise/fade intros. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
