@@ -29,10 +29,10 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
       "Pick the topics you care about and your languages. We'll match each morning's article to you.",
   },
   payment: {
-    lead: "One last step to ",
-    accent: "secure your spot.",
+    lead: "Start your ",
+    accent: "7-day trial.",
     support:
-      "Choose a plan and complete your subscription. Cancel anytime in one click - no questions asked.",
+      "Your preferences are saved. Polar handles trial and billing; emails begin after checkout is confirmed.",
   },
   manage: {
     lead: "Welcome back - ",

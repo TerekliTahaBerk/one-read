@@ -66,7 +66,8 @@ export async function POST(request: Request) {
 
     // New model dual-write: make sure a Contact + One Article subscription
     // exist so the /article/subscribe email lookup can resolve this person.
-    // No trial is started here — that happens when preferences complete.
+    // No trial is started here. Polar checkout/webhooks are the source of
+    // truth for trial/paid access after preferences complete.
     await ensureOneArticleSubscription(email);
 
     const subscribed =

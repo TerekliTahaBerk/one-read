@@ -14,7 +14,7 @@ interface LookupResult {
 type Cta =
   | { kind: "link"; label: string; href: string; primary?: boolean }
   | { kind: "resume-emails"; label: string; primary?: boolean }
-  | { kind: "checkout"; label: string; plan: BillingInterval; primary?: boolean }
+  | { kind: "checkout"; label: string; plan?: BillingInterval; primary?: boolean }
   | { kind: "portal"; label: string; primary?: boolean };
 
 /**
@@ -32,7 +32,7 @@ function present(
   const q = `?email=${encodeURIComponent(email)}`;
   const pricing = `/article/pricing${q}`;
   // A checkout CTA when billing is on; otherwise a link to pricing.
-  const buy = (label: string, plan: BillingInterval, primary?: boolean): Cta =>
+  const buy = (label: string, plan: BillingInterval = "monthly", primary?: boolean): Cta =>
     billingEnabled ? { kind: "checkout", label, plan, primary } : { kind: "link", label, href: pricing, primary };
   const manage = (label: string, primary?: boolean): Cta =>
     billingEnabled ? { kind: "portal", label, primary } : { kind: "link", label, href: pricing, primary };
@@ -40,23 +40,29 @@ function present(
   switch (r.state) {
     case "new":
       return {
-        title: "Start your free trial first.",
-        body: "We don’t have a subscription for this email yet. Start your 7-day free trial — no card required.",
-        ctas: [{ kind: "link", label: "Start free trial", href: `/article`, primary: true }],
+        title: "Start your setup first.",
+        body: "We don’t have a OneArticle setup for this email yet. Save your preferences first, then start the 7-day trial through Polar.",
+        ctas: [{ kind: "link", label: "Start setup", href: `/article`, primary: true }],
       };
     case "incomplete":
       return {
         title: "Finish your setup to start your trial.",
-        body: "Your email is registered, but your preferences aren’t finished. Complete setup and your 7-day free trial begins.",
+        body: "Your email is registered, but your preferences aren’t finished. Complete setup, then start the 7-day trial in checkout.",
         ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
+      };
+    case "checkout_needed":
+      return {
+        title: "Start your 7-day free trial.",
+        body: "Your preferences are saved. Polar handles the trial and subscription, so emails begin after checkout is confirmed.",
+        ctas: [buy("Start 7-day free trial", "monthly", true)],
       };
     case "trialing":
       return {
         title: `You’re in your free trial${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
-        body: "Subscribe now and you won’t be charged until your trial ends — your free days are honored.",
-        ctas: [buy("Subscribe now", "monthly", true), { kind: "link", label: "Continue trial", href: `/article` }],
+        body: "Your Polar-confirmed trial is active and your daily emails are on.",
+        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to One Article", href: `/article` }],
       };
     case "trial_expired":
       return {
@@ -169,7 +175,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
         setError(data.error ?? "Could not start checkout.");
       } else if (data.action === "redirect" || data.action === "already_active") {
         window.location.href = data.url;
-      } else if (data.action === "needs_trial") {
+      } else if (data.action === "needs_setup_first") {
         window.location.href = "/article";
       } else if (data.action === "needs_setup") {
         window.location.href = `/article?email=${encodeURIComponent(email)}`;
@@ -193,7 +199,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       const data = await res.json();
       if (res.ok && data.ok && data.action === "redirect") {
         window.location.href = data.url;
-      } else if (data.action === "needs_trial") {
+      } else if (data.action === "needs_setup_first") {
         window.location.href = "/article";
       } else {
         setError(data.error ?? "Could not open billing.");
@@ -230,7 +236,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
         );
       case "checkout":
         return (
-          <button key={cta.label} onClick={() => onCheckout(cta.plan)} disabled={loading} className={cls}>
+          <button key={cta.label} onClick={() => onCheckout(cta.plan ?? "monthly")} disabled={loading} className={cls}>
             {cta.label}
           </button>
         );

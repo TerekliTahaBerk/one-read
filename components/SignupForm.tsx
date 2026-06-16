@@ -45,7 +45,7 @@ type Props = {
  * canonical `email`; each step owns its own local state and handles network
  * calls + inline error/loading UI.
  *
- *   email → preferences → payment → (success, handled by parent)
+ *   email → preferences → Polar checkout
  *   email → manage (for already-subscribed users)
  */
 export function SignupForm({
@@ -321,7 +321,7 @@ function PreferencesStep({
 }
 
 /* ----------------------------------------------------------------------- */
-/* Step 3 — Payment (simulated)                                            */
+/* Step 3 — Polar checkout                                                 */
 /* ----------------------------------------------------------------------- */
 
 function PaymentStep({
@@ -334,10 +334,6 @@ function PaymentStep({
   className?: string;
 }) {
   const [interval, setInterval] = useState<BillingInterval>("annual");
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -345,12 +341,7 @@ function PaymentStep({
   const amount = isAnnual ? PRICING.annual : PRICING.monthly;
   const period = isAnnual ? "year" : "month";
 
-  const cardComplete =
-    cardName.trim().length > 1 &&
-    cardNumber.replace(/\s/g, "").length >= 15 &&
-    /^\d{2}\s*\/\s*\d{2}$/.test(expiry) &&
-    cvc.replace(/\D/g, "").length >= 3;
-  const canSubmit = cardComplete && !loading;
+  const canSubmit = !loading;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -358,24 +349,33 @@ function PaymentStep({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/signup/subscribe", {
+      const res = await fetch("/api/subscribe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, billingInterval: interval }),
+        body: JSON.stringify({ email, plan: interval, productKey: "one-article" }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         error?: string;
+        action?: string;
+        url?: string;
       };
       if (!res.ok || !data.ok) {
-        throw new Error(data.error ?? "Payment couldn't be completed.");
+        throw new Error(data.error ?? "Checkout couldn't be started.");
+      }
+      if ((data.action === "redirect" || data.action === "already_active") && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data.action === "needs_setup" || data.action === "needs_setup_first") {
+        throw new Error("Please finish setup before checkout.");
       }
       onCompleted();
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Payment couldn't be completed. Please try again.",
+          : "Checkout couldn't be started. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -409,54 +409,17 @@ function PaymentStep({
         <span className="font-sans text-[14px] text-ash"> / {period}</span>
       </div>
 
-      {/* Card fields */}
-      <div className="mt-6 space-y-3 animate-rise-delayed-3">
-        <CardInput
-          label="Cardholder name"
-          placeholder="Ada Lovelace"
-          value={cardName}
-          autoComplete="cc-name"
-          onChange={setCardName}
-        />
-        <CardInput
-          label="Card number"
-          placeholder="4242 4242 4242 4242"
-          value={cardNumber}
-          inputMode="numeric"
-          autoComplete="cc-number"
-          maxLength={19}
-          onChange={(v) => setCardNumber(formatCardNumber(v))}
-        />
-        <div className="flex gap-3">
-          <CardInput
-            label="Expiry"
-            placeholder="MM / YY"
-            value={expiry}
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            maxLength={7}
-            onChange={(v) => setExpiry(formatExpiry(v))}
-            className="flex-1"
-          />
-          <CardInput
-            label="CVC"
-            placeholder="123"
-            value={cvc}
-            inputMode="numeric"
-            autoComplete="cc-csc"
-            maxLength={4}
-            onChange={(v) => setCvc(v.replace(/\D/g, ""))}
-            className="flex-1"
-          />
-        </div>
-      </div>
+      <p className="mt-6 text-center font-sans text-[14px] leading-[1.6] text-ash animate-rise-delayed-3">
+        Checkout opens in Polar. The 7-day trial starts there, and OneArticle
+        emails begin after Polar confirms the subscription.
+      </p>
 
       <div className="mt-7 animate-rise-delayed-4">
         <PrimaryButton
           loading={loading}
           disabled={!canSubmit}
-          loadingLabel="Processing..."
-          label={`Pay $${amount} & finish`}
+          loadingLabel="Opening checkout..."
+          label="Start 7-day free trial"
         />
         {error && (
           <p
@@ -467,7 +430,7 @@ function PaymentStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans">
-          Secure checkout. Cancel anytime in one click.
+          Secure checkout by Polar. Cancel anytime in the billing portal.
         </p>
       </div>
     </form>

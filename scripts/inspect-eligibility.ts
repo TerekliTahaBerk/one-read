@@ -35,6 +35,7 @@ const cases: { name: string; input: EligibilityInput; expectAllowed: boolean }[]
   { name: "email SUPPRESSED", input: { ...base, status: "ACTIVE_PAID", trialEndsAt: null, emailDeliveryStatus: "SUPPRESSED" }, expectAllowed: false },
   { name: "incomplete preferences (trialing)", input: { ...base, hasCompletePreferences: false }, expectAllowed: false },
   { name: "PENDING_PREFERENCES", input: { ...base, status: "PENDING_PREFERENCES", trialEndsAt: null, hasCompletePreferences: false }, expectAllowed: false },
+  { name: "PENDING_CHECKOUT", input: { ...base, status: "PENDING_CHECKOUT", trialEndsAt: null }, expectAllowed: false },
 ];
 
 let pass = 0;

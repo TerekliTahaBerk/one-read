@@ -1,5 +1,6 @@
 import type { BillingProvider, BillingProviderName } from "./types";
 import { MockBillingProvider } from "./mock";
+import { PolarBillingProvider } from "./polar";
 
 /**
  * Resolves the active billing provider from BILLING_PROVIDER. Defaults to
@@ -8,7 +9,7 @@ import { MockBillingProvider } from "./mock";
  */
 export function getBillingProviderName(): BillingProviderName {
   const raw = (process.env.BILLING_PROVIDER ?? "mock").toLowerCase();
-  if (raw === "stripe" || raw === "lemonsqueezy" || raw === "mock") return raw;
+  if (raw === "polar" || raw === "stripe" || raw === "lemonsqueezy" || raw === "mock") return raw;
   return "mock";
 }
 
@@ -25,6 +26,9 @@ export function getBillingProvider(): BillingProvider {
   switch (name) {
     case "mock":
       cached = new MockBillingProvider();
+      break;
+    case "polar":
+      cached = new PolarBillingProvider();
       break;
     // Phase 6: case "stripe": cached = new StripeBillingProvider(); break;
     default:

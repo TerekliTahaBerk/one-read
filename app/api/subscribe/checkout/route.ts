@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/subscribe/checkout
- * Body: { email: string, plan: "monthly" | "annual" }
+ * Body: { email: string, plan?: "monthly" | "annual", productKey?: "one-article" }
  *
  * Resolves the right next step via the active billing provider. Returns one of:
  *   { ok, action: "redirect", url }        — go complete checkout
- *   { ok, action: "needs_trial" }          — start a trial first
+ *   { ok, action: "needs_setup_first" }    — start setup first
  *   { ok, action: "needs_setup" }          — finish preferences first
  *   { ok, action: "already_active", url }  — manage billing instead
  */
@@ -28,18 +28,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Please enter a valid email." }, { status: 400 });
   }
 
-  const plan = parseBillingInterval(payload.plan);
-  if (!plan) {
-    return NextResponse.json({ ok: false, error: "Please choose a valid plan." }, { status: 400 });
+  const plan = parseBillingInterval(payload.plan) ?? "monthly";
+  const productKey =
+    typeof payload.productKey === "string" ? payload.productKey : "one-article";
+  if (productKey !== "one-article") {
+    return NextResponse.json({ ok: false, error: "Unknown product." }, { status: 400 });
   }
 
   try {
-    const result = await getBillingProvider().createCheckoutSession({ email, plan });
+    const result = await getBillingProvider().createCheckoutSession({ email, plan, productKey });
     switch (result.kind) {
       case "redirect":
         return NextResponse.json({ ok: true, action: "redirect", url: result.url });
-      case "needs_trial":
-        return NextResponse.json({ ok: true, action: "needs_trial" });
+      case "needs_setup_first":
+        return NextResponse.json({ ok: true, action: "needs_setup_first" });
       case "needs_setup":
         return NextResponse.json({ ok: true, action: "needs_setup" });
       case "already_active":

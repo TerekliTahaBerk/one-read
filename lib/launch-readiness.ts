@@ -107,11 +107,19 @@ export function getLaunchReadiness(): ReadinessCheck[] {
         : "Missing — no LLM key. Real summaries disabled until a provider + key are set.",
   });
 
-  // Billing provider. Mock is fine for local/dev but must not silently power
-  // production. Real providers (Stripe) land in Phase 6.
+  // Billing provider. Polar is the production provider for OneArticle. Mock is
+  // retained for local fixtures only.
   const billingProvider = (process.env.BILLING_PROVIDER || "").toLowerCase();
   const isProd = process.env.NODE_ENV === "production";
   const mockPreview = process.env.MOCK_BILLING_PREVIEW === "true";
+  const polarServer = (process.env.POLAR_SERVER || "sandbox").toLowerCase();
+  const polarRequired = [
+    ["POLAR_ACCESS_TOKEN", process.env.POLAR_ACCESS_TOKEN],
+    ["POLAR_SUCCESS_URL", process.env.POLAR_SUCCESS_URL],
+    ["POLAR_WEBHOOK_SECRET", process.env.POLAR_WEBHOOK_SECRET],
+    ["POLAR_ONE_ARTICLE_PRODUCT_ID", process.env.POLAR_ONE_ARTICLE_PRODUCT_ID],
+  ] as const;
+  const missingPolar = polarRequired.filter(([, value]) => !has(value)).map(([key]) => key);
   let billingStatus: ReadinessStatus;
   let billingExplanation: string;
   if (!billingProvider) {
@@ -123,10 +131,19 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     billingStatus = isProd && !mockPreview ? "missing" : isProd ? "warn" : "pass";
     billingExplanation =
       isProd && !mockPreview
-        ? "Mock billing is enabled in production — fake paid access is blocked. Set a real provider (Stripe)."
+        ? "Mock billing is enabled in production — fake paid access is blocked. Set BILLING_PROVIDER=polar."
         : isProd
           ? "Mock billing in production via MOCK_BILLING_PREVIEW (staging/preview only)."
           : "Dev mock provider — simulates the paid lifecycle, no real charges.";
+  } else if (billingProvider === "polar") {
+    const polarReady = missingPolar.length === 0;
+    const sandboxInProd = isProd && polarServer === "sandbox";
+    billingStatus = polarReady && !sandboxInProd ? "pass" : "missing";
+    billingExplanation = !polarReady
+      ? `Polar selected but missing: ${missingPolar.join(", ")}.`
+      : sandboxInProd
+        ? "Polar is configured, but POLAR_SERVER=sandbox in production."
+        : `Polar configured (${polarServer}).`;
   } else if (billingProvider === "stripe") {
     const stripeReady =
       has(process.env.STRIPE_SECRET_KEY) &&
@@ -142,6 +159,38 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     billingExplanation = `Unknown provider "${billingProvider}" — falling back to mock.`;
   }
   checks.push({ key: "BILLING_PROVIDER", status: billingStatus, explanation: billingExplanation });
+
+  const polarSelected = billingProvider === "polar";
+  for (const [key, value] of polarRequired) {
+    checks.push({
+      key,
+      status: has(value) ? "pass" : polarSelected || isProd ? "missing" : "warn",
+      explanation: has(value)
+        ? `${key} is configured.`
+        : polarSelected || isProd
+          ? `Missing — Polar payments cannot launch without ${key}.`
+          : "Missing — only required when Polar billing is selected.",
+    });
+  }
+  checks.push({
+    key: "POLAR_SERVER",
+    status:
+      polarServer === "production"
+        ? "pass"
+        : polarServer === "sandbox"
+          ? isProd
+            ? "missing"
+            : "warn"
+          : "missing",
+    explanation:
+      polarServer === "production"
+        ? "Using Polar production."
+        : polarServer === "sandbox"
+          ? isProd
+            ? "Sandbox is selected in production — switch to POLAR_SERVER=production before launch."
+            : "Using Polar sandbox."
+          : `Invalid value "${polarServer}" — use "sandbox" or "production".`,
+  });
 
   const model = process.env.AI_MODEL;
   checks.push({

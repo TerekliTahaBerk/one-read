@@ -101,7 +101,7 @@ export function PricingCard() {
 
           {/* CTA */}
           <Link
-            href="/article"
+            href="/article/subscribe"
             className="
               focus-ring group/cta
               mt-8 inline-flex w-full h-12 items-center justify-center gap-2
@@ -113,7 +113,7 @@ export function PricingCard() {
               active:scale-[0.99]
             "
           >
-            Start with OneArticle
+            Start 7-day free trial
             <svg
               width="14"
               height="14"
@@ -134,7 +134,7 @@ export function PricingCard() {
 
           {/* Reassurance line */}
           <p className="mt-4 font-sans text-[12.5px] text-fog">
-            Secure checkout · Start reading tomorrow morning.
+            Includes a 7-day free trial · Secure checkout by Polar.
           </p>
         </div>
       </div>

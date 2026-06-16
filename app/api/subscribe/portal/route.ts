@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   try {
     const sub = await findOneArticleSubscription(email);
     if (!sub) {
-      return NextResponse.json({ ok: true, action: "needs_trial" });
+      return NextResponse.json({ ok: true, action: "needs_setup_first" });
     }
     const { url } = await getBillingProvider().createBillingPortalSession(email);
     return NextResponse.json({ ok: true, action: "redirect", url });

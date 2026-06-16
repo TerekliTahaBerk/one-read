@@ -1,10 +1,6 @@
 import type { ArticlePreferences, ProductSubscription } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import {
-  ONE_ARTICLE_PRODUCT_KEY,
-  TRIAL_DAYS,
-  isAlwaysSubscribed,
-} from "@/lib/options";
+import { ONE_ARTICLE_PRODUCT_KEY, isAlwaysSubscribed } from "@/lib/options";
 import {
   canReceiveOneArticleEmail,
   type EligibilityInput,
@@ -142,8 +138,9 @@ export async function getOneArticleEligibilityByEmail(
 export type SubscribeState =
   | "new" // A — no record
   | "incomplete" // B — PENDING_PREFERENCES
-  | "trialing" // C — trial active
-  | "trial_expired" // D — trial ended, unpaid
+  | "checkout_needed" // C — preferences complete, awaiting Polar checkout
+  | "trialing" // D — Polar-confirmed trial active, or preserved legacy trial
+  | "trial_expired" // E — preserved legacy trial ended, unpaid
   | "active_paid" // E — paid & emails on (incl. comped)
   | "canceled_active" // F — canceled, still inside paid period
   | "expired" // G — canceled/expired, period over
@@ -178,6 +175,9 @@ export async function resolveSubscribeState(
   switch (sub.status) {
     case "PENDING_PREFERENCES":
       return { state: "incomplete" };
+
+    case "PENDING_CHECKOUT":
+      return { state: "checkout_needed" };
 
     case "TRIALING":
       if (sub.trialEndsAt && now < sub.trialEndsAt) {
@@ -255,31 +255,32 @@ export async function upsertArticlePreferences(
 }
 
 /**
- * Starts the free trial for a subscription if it has never been used. Trials
- * are one-per-email-per-product and never reset, so this is a no-op when
- * `trialUsedAt` is already set, when the subscription is paid/comped, or when
- * it has already moved past the trial. Returns the (possibly updated) row.
+ * Marks a subscription ready for provider checkout after preferences are
+ * complete. Polar owns trial creation; this deliberately does not write
+ * trialStartedAt/trialEndsAt/trialUsedAt.
  */
-export async function startTrialIfEligible(
+export async function markReadyForCheckout(
   subId: string,
-  now: Date = new Date(),
 ): Promise<SubscriptionWithPrefs> {
   const sub = await prisma.productSubscription.findUniqueOrThrow({
     where: { id: subId },
     include: { preferences: true },
   });
 
-  // Never restart a consumed trial, and never downgrade a paid/comped account.
-  if (sub.trialUsedAt) return sub;
-  if (sub.status === "ADMIN_OVERRIDE" || sub.status === "ACTIVE_PAID") return sub;
+  if (
+    sub.status === "ADMIN_OVERRIDE" ||
+    sub.status === "ACTIVE_PAID" ||
+    sub.status === "TRIALING" ||
+    sub.status === "CANCELED" ||
+    sub.status === "PAST_DUE"
+  ) {
+    return sub;
+  }
 
   return prisma.productSubscription.update({
     where: { id: subId },
     data: {
-      status: "TRIALING",
-      trialStartedAt: now,
-      trialEndsAt: new Date(now.getTime() + TRIAL_DAYS * DAY_MS),
-      trialUsedAt: now,
+      status: "PENDING_CHECKOUT",
     },
     include: { preferences: true },
   });

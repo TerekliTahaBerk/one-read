@@ -112,12 +112,23 @@ export default async function AdminPage({
       status: s.status,
       emailDeliveryStatus: s.emailDeliveryStatus,
       provider: s.paymentProvider ?? "—",
+      providerCustomerId: s.providerCustomerId ?? "—",
+      providerSubscriptionId: s.providerSubscriptionId ?? "—",
+      providerCheckoutSessionId: s.providerCheckoutSessionId ?? "—",
       plan: s.plan ?? "—",
       trialEndsAt: d(s.trialEndsAt),
+      periodStart: d(s.currentPeriodStart),
       periodEnd: d(s.currentPeriodEnd),
       cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+      canceledAt: d(s.canceledAt),
       pastDueAt: d(s.pastDueAt),
       paidAt: d(s.paidAt),
+      adminOverride: s.adminOverride,
+      accessSource: s.adminOverride
+        ? "admin"
+        : s.paymentProvider === "polar"
+          ? "polar"
+          : s.paymentProvider ?? "local/legacy",
       eligible: elig.allowed,
       reason: elig.reason,
     };
@@ -301,12 +312,18 @@ export default async function AdminPage({
             "Access",
             "Email",
             "Provider",
+            "Customer ID",
+            "Subscription ID",
+            "Checkout ID",
             "Plan",
             "Trial ends",
+            "Period starts",
             "Period ends",
             "Cancel@end",
+            "Canceled",
             "Past due",
             "Paid",
+            "Source",
             "Eligible",
             "Reason",
           ]}
@@ -321,11 +338,17 @@ export default async function AdminPage({
             <span key="pv" className="text-[11.5px] text-ash">
               {r.provider}
             </span>,
+            <MonoShort key="pc" value={r.providerCustomerId} />,
+            <MonoShort key="ps" value={r.providerSubscriptionId} />,
+            <MonoShort key="pcs" value={r.providerCheckoutSessionId} />,
             <span key="pl" className="text-[11.5px] text-ash">
               {r.plan}
             </span>,
             <span key="t" className="text-[11.5px] text-ash">
               {r.trialEndsAt}
+            </span>,
+            <span key="pstart" className="text-[11.5px] text-ash">
+              {r.periodStart}
             </span>,
             <span key="pe" className="text-[11.5px] text-ash">
               {r.periodEnd}
@@ -333,11 +356,17 @@ export default async function AdminPage({
             <span key="ce" className="text-[11.5px] text-ash">
               {r.cancelAtPeriodEnd ? "yes" : "—"}
             </span>,
+            <span key="ca" className="text-[11.5px] text-ash">
+              {r.canceledAt}
+            </span>,
             <span key="pd" className="text-[11.5px] text-ash">
               {r.pastDueAt}
             </span>,
             <span key="pa" className="text-[11.5px] text-ash">
               {r.paidAt}
+            </span>,
+            <span key="src" className="text-[11.5px] text-ash">
+              {r.accessSource}
             </span>,
             <span
               key="el"
@@ -827,6 +856,18 @@ function StatusBadge({ value }: { value: string }) {
       className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] uppercase tracking-eyebrow ${cls}`}
     >
       {value}
+    </span>
+  );
+}
+
+function MonoShort({ value }: { value: string }) {
+  const display = value.length > 14 ? `${value.slice(0, 10)}…` : value;
+  return (
+    <span
+      title={value === "—" ? undefined : value}
+      className="font-mono text-[10.5px] text-fog"
+    >
+      {display}
     </span>
   );
 }

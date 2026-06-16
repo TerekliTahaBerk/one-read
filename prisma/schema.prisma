@@ -89,8 +89,9 @@ model ProductSubscription {
   productKey String
 
   /// Access lifecycle:
-  /// "PENDING_PREFERENCES" | "TRIALING" | "TRIAL_EXPIRED" | "ACTIVE_PAID"
-  /// | "PAST_DUE" | "CANCELED" | "EXPIRED" | "ADMIN_OVERRIDE"
+  /// "PENDING_PREFERENCES" | "PENDING_CHECKOUT" | "TRIALING"
+  /// | "TRIAL_EXPIRED" | "ACTIVE_PAID" | "PAST_DUE" | "CANCELED"
+  /// | "EXPIRED" | "ADMIN_OVERRIDE"
   status String @default("PENDING_PREFERENCES")
 
   // Trial
@@ -102,7 +103,7 @@ model ProductSubscription {
   // Billing
   /// "monthly" | "annual"
   plan                      String?
-  /// "stripe" | "lemonsqueezy" | "mock"
+  /// "polar" | "stripe" | "lemonsqueezy" | "mock"
   paymentProvider           String?
   providerCustomerId        String?
   providerSubscriptionId    String?

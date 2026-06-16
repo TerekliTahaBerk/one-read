@@ -138,7 +138,7 @@ export class MockBillingProvider implements BillingProvider {
 
   async createCheckoutSession({ email, plan }: CreateCheckoutArgs): Promise<CheckoutResult> {
     const sub = await findOneArticleSubscription(email);
-    if (!sub) return { kind: "needs_trial" };
+    if (!sub) return { kind: "needs_setup_first" };
     if (!preferencesComplete(sub.preferences)) return { kind: "needs_setup" };
     if (sub.status === "ACTIVE_PAID") {
       return {

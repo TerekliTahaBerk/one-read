@@ -8,7 +8,7 @@ import type { BillingInterval } from "@/lib/options";
  * Stripe / Lemon Squeezy slot in here later without touching callers.
  */
 
-export type BillingProviderName = "mock" | "stripe" | "lemonsqueezy";
+export type BillingProviderName = "mock" | "polar" | "stripe" | "lemonsqueezy";
 
 /** Where the user should be sent to complete or manage billing. */
 export interface RedirectResult {
@@ -18,8 +18,8 @@ export interface RedirectResult {
 /** Outcome of a checkout request before the user is redirected. */
 export type CheckoutResult =
   | { kind: "redirect"; url: string }
-  /** No subscription yet — the UI should send them to start a trial. */
-  | { kind: "needs_trial" }
+  /** No subscription yet — the UI should send them to start setup. */
+  | { kind: "needs_setup_first" }
   /** Preferences incomplete — finish setup before paying. */
   | { kind: "needs_setup" }
   /** Already paying — send them to manage billing instead of double-charging. */
@@ -28,6 +28,7 @@ export type CheckoutResult =
 export interface CreateCheckoutArgs {
   email: string;
   plan: BillingInterval;
+  productKey?: string;
 }
 
 export interface ProviderSubscriptionStatus {

@@ -89,9 +89,9 @@ async function main() {
   const subsForEmail = await prisma.productSubscription.count({ where: { contact: { email: `${P}paid-annual@example.com` } } });
   check("9 no duplicate subscription", subsForEmail === 1, `count=${subsForEmail}`);
 
-  // Checkout guards: needs_trial / needs_setup.
+  // Checkout guards: needs_setup_first / needs_setup.
   const cTrial = await provider.createCheckoutSession({ email: "nobody-xyz@example.com", plan: "monthly" });
-  check("checkout needs_trial for unknown", cTrial.kind === "needs_trial", cTrial.kind);
+  check("checkout needs_setup_first for unknown", cTrial.kind === "needs_setup_first", cTrial.kind);
 
   console.log(`\n${pass} passed, ${fail} failed`);
   if (fail > 0) process.exitCode = 1;

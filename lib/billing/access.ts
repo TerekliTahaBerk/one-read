@@ -9,6 +9,7 @@ import { PAST_DUE_GRACE_DAYS } from "@/lib/options";
  */
 export type AccessStatus =
   | "PENDING_PREFERENCES"
+  | "PENDING_CHECKOUT"
   | "TRIALING"
   | "TRIAL_EXPIRED"
   | "ACTIVE_PAID"
@@ -40,6 +41,7 @@ export type EligibilityReason =
   | "email_unsubscribed"
   | "email_suppressed"
   | "pending_preferences"
+  | "pending_checkout"
   | "trial_expired"
   | "past_due_grace_ended"
   | "canceled_expired"
@@ -90,6 +92,8 @@ export function hasValidAccess(
     }
     case "PENDING_PREFERENCES":
       return { allowed: false, reason: "pending_preferences" };
+    case "PENDING_CHECKOUT":
+      return { allowed: false, reason: "pending_checkout" };
     case "TRIAL_EXPIRED":
       return { allowed: false, reason: "trial_expired" };
     case "EXPIRED":

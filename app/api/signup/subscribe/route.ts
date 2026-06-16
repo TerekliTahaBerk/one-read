@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { parseEmail, parseBillingInterval } from "@/lib/options";
+import { getBillingProvider } from "@/lib/billing/provider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,9 +9,8 @@ export const dynamic = "force-dynamic";
  * POST /api/signup/subscribe
  * Body: { email: string, billingInterval: "monthly" | "annual" }
  *
- * Marks a subscriber as paid. This is a SIMULATED payment — no real charge is
- * made. Records the billing interval, stamps `subscribedAt`, and ensures the
- * subscriber is ACTIVE so daily emails resume.
+ * Legacy compatibility endpoint. It no longer marks anyone paid locally; it
+ * delegates to the configured billing provider and returns a checkout URL.
  */
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
@@ -41,17 +40,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    await prisma.subscriber.update({
-      where: { email },
-      data: {
-        billingInterval,
-        subscribedAt: new Date(),
-        status: "ACTIVE",
-        unsubscribedAt: null,
-      },
+    const result = await getBillingProvider().createCheckoutSession({
+      email,
+      plan: billingInterval,
+      productKey: "one-article",
     });
-
-    return NextResponse.json({ ok: true });
+    switch (result.kind) {
+      case "redirect":
+        return NextResponse.json({ ok: true, action: "redirect", url: result.url });
+      case "already_active":
+        return NextResponse.json({ ok: true, action: "already_active", url: result.manageUrl });
+      case "needs_setup":
+        return NextResponse.json({ ok: true, action: "needs_setup" });
+      case "needs_setup_first":
+        return NextResponse.json({ ok: true, action: "needs_setup_first" });
+    }
   } catch (err) {
     console.error("[/api/signup/subscribe] db error:", err);
     return NextResponse.json(

@@ -11,7 +11,7 @@ import { sendWelcomeEmail } from "@/lib/resend";
 import {
   ensureOneArticleSubscription,
   upsertArticlePreferences,
-  startTrialIfEligible,
+  markReadyForCheckout,
 } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
@@ -102,9 +102,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // New model: complete preferences then start the 7-day trial. The trial is
-    // one-per-email-per-product and never resets (see startTrialIfEligible), so
-    // a returning user editing prefs keeps their original trial window.
+    // New model: complete preferences, then wait for Polar checkout/webhook.
+    // Polar owns the 7-day trial; local DB mirrors provider state only.
     const sub = await ensureOneArticleSubscription(email);
     await upsertArticlePreferences(sub.id, {
       interests,
@@ -113,7 +112,7 @@ export async function POST(request: Request) {
       sourceLanguage,
       summaryLanguage,
     });
-    await startTrialIfEligible(sub.id);
+    await markReadyForCheckout(sub.id);
   } catch (err) {
     console.error("[/api/signup/preferences] db error:", err);
     return NextResponse.json(
