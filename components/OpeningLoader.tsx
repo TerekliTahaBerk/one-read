@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type CSSProperties,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -20,14 +21,40 @@ import { productThemes } from "@/lib/product-themes";
  */
 type ColorKey = "read" | "article" | "lingo" | "goal" | "plate" | "move";
 
-const SEQUENCE: { suffix: string; color: ColorKey }[] = [
+const SEQUENCE = [
   { suffix: "Read", color: "read" },
   { suffix: "Article", color: "article" },
   { suffix: "Lingo", color: "lingo" },
   { suffix: "Goal", color: "goal" },
   { suffix: "Plate", color: "plate" },
   { suffix: "Move", color: "move" },
+  { suffix: "Read", color: "read" },
+] as const satisfies ReadonlyArray<{ suffix: string; color: ColorKey }>;
+
+const ORBIT_ITEMS: {
+  label: string;
+  color: Exclude<ColorKey, "read">;
+  x: number;
+  y: number;
+}[] = [
+  { label: "Article", color: "article", x: 0, y: -86 },
+  { label: "Lingo", color: "lingo", x: 96, y: -28 },
+  { label: "Goal", color: "goal", x: 60, y: 76 },
+  { label: "Plate", color: "plate", x: -60, y: 76 },
+  { label: "Move", color: "move", x: -96, y: -28 },
 ];
+
+type LoaderOrbitStyle = CSSProperties & {
+  "--orbit-x": string;
+  "--orbit-y": string;
+  "--orbit-start-x": string;
+  "--orbit-start-y": string;
+  "--orbit-peak-x": string;
+  "--orbit-peak-y": string;
+  "--orbit-settle-x": string;
+  "--orbit-settle-y": string;
+  "--orbit-color": string;
+};
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
   // `Read` stays neutral/dark; the rest use each product's own accent.
@@ -49,36 +76,42 @@ const PUBLIC_PATHS = new Set([
 
 const SESSION_KEY = "oneread-opening-loader-shown";
 
-/* Timing (ms) — tuned to keep the six-name sequence around ~5s. */
-const TYPE_MS = 55;
-const DELETE_MS = 34;
-const PAUSE_MS = 300;
-const FINAL_HOLD_MS = 750;
-const FADE_MS = 600;
+/* Timing (ms) — tuned to keep the full sequence around ~4.3s. */
+const TYPE_MS = 48;
+const DELETE_MS = 30;
+const PAUSE_MS = 220;
+const FINAL_HOLD_MS = 300;
+const CLOSING_MS = 850;
+const FADE_MS = 450;
 const REDUCED_HOLD_MS = 650;
 
 type Frame = { suffix: string; color: ColorKey; hold: number };
 
 /** Expand the sequence into per-character typewriter frames. */
 function buildFrames(): Frame[] {
-  const frames: Frame[] = [];
+  const [first, ...rest] = SEQUENCE;
+  const frames: Frame[] = [
+    { suffix: first.suffix, color: first.color, hold: PAUSE_MS },
+  ];
 
-  SEQUENCE.forEach(({ suffix, color }, index) => {
-    const isLast = index === SEQUENCE.length - 1;
+  rest.forEach(({ suffix, color }, index) => {
+    const previous = SEQUENCE[index];
+    const isLast = index === rest.length - 1;
 
-    // Type the suffix in, one character at a time.
+    // Delete the previous suffix back down to `One`.
+    for (let i = previous.suffix.length - 1; i >= 0; i -= 1) {
+      frames.push({
+        suffix: previous.suffix.slice(0, i),
+        color: previous.color,
+        hold: DELETE_MS,
+      });
+    }
+
+    // Type the next suffix in, one character at a time.
     for (let i = 1; i <= suffix.length; i += 1) {
       frames.push({ suffix: suffix.slice(0, i), color, hold: TYPE_MS });
     }
-    // Hold on the fully-typed word.
     frames[frames.length - 1].hold = isLast ? FINAL_HOLD_MS : PAUSE_MS;
-
-    // Delete the suffix back down to `One` (keep the final word on screen).
-    if (!isLast) {
-      for (let i = suffix.length - 1; i >= 0; i -= 1) {
-        frames.push({ suffix: suffix.slice(0, i), color, hold: DELETE_MS });
-      }
-    }
   });
 
   return frames;
@@ -99,7 +132,8 @@ export function OpeningLoader() {
   // overlay, so there's no homepage flash and no hydration mismatch.
   const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
-  const [suffix, setSuffix] = useState("");
+  const [closing, setClosing] = useState(false);
+  const [suffix, setSuffix] = useState("Read");
   const [color, setColor] = useState<ColorKey>("read");
 
   const timers = useRef<number[]>([]);
@@ -142,6 +176,14 @@ export function OpeningLoader() {
       timers.current.push(id);
     };
 
+    const startClosing = () => {
+      setClosing(true);
+      setSuffix("Read");
+      setColor("read");
+      const id = window.setTimeout(startFadeOut, CLOSING_MS);
+      timers.current.push(id);
+    };
+
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -158,7 +200,7 @@ export function OpeningLoader() {
     const frames = buildFrames();
     const play = (i: number) => {
       if (i >= frames.length) {
-        startFadeOut();
+        startClosing();
         return;
       }
       const frame = frames[i];
@@ -187,28 +229,54 @@ export function OpeningLoader() {
         pointerEvents: "none",
       }}
     >
-      <span
-        className="
-          font-serif font-medium
-          text-[2.6rem] sm:text-[3.4rem]
-          leading-none tracking-[-0.02em]
-          select-none
-          [font-optical-sizing:auto]
-        "
-      >
-        <span style={{ color: "#1A1A1A" }}>One</span>
-        <span style={{ color: SUFFIX_COLORS[color] }}>{suffix}</span>
+      <div className="relative flex h-44 w-72 items-center justify-center sm:h-56 sm:w-[28rem]">
+        {closing &&
+          ORBIT_ITEMS.map((item) => (
+            <span
+              key={item.label}
+              className="loader-orbit-item"
+              style={
+                {
+                  "--orbit-x": `${item.x}px`,
+                  "--orbit-y": `${item.y}px`,
+                  "--orbit-start-x": `${item.x * 0.72}px`,
+                  "--orbit-start-y": `${item.y * 0.72}px`,
+                  "--orbit-peak-x": `${item.x * 1.02 + 4}px`,
+                  "--orbit-peak-y": `${item.y * 1.02 - 2}px`,
+                  "--orbit-settle-x": `${item.x * 0.94 - 3}px`,
+                  "--orbit-settle-y": `${item.y * 0.94 + 2}px`,
+                  "--orbit-color": SUFFIX_COLORS[item.color],
+                } as LoaderOrbitStyle
+              }
+            >
+              <span className="loader-orbit-dot" />
+              <span className="loader-orbit-label">{item.label}</span>
+            </span>
+          ))}
         <span
-          className="loader-caret"
-          style={{
-            color: SUFFIX_COLORS[color],
-            fontWeight: 300,
-            marginLeft: "0.04em",
-          }}
+          className="
+            font-serif font-medium
+            text-[2.6rem] sm:text-[3.4rem]
+            leading-none tracking-[-0.02em]
+            select-none
+            [font-optical-sizing:auto]
+          "
         >
-          |
+          <span style={{ color: "#1A1A1A" }}>One</span>
+          <span style={{ color: SUFFIX_COLORS[color] }}>{suffix}</span>
+          <span
+            className="loader-caret"
+            style={{
+              opacity: closing ? 0 : undefined,
+              color: SUFFIX_COLORS[color],
+              fontWeight: 300,
+              marginLeft: "0.04em",
+            }}
+          >
+            |
+          </span>
         </span>
-      </span>
+      </div>
     </div>
   );
 }
