@@ -45,6 +45,15 @@ export function Footer({
         </Link>
         <span aria-hidden="true" className="text-line-strong">·</span>
         <a
+          href="https://tally.so/r/PdPQl1"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-underline transition-colors duration-200 hover:text-ink"
+        >
+          Feedback
+        </a>
+        <span aria-hidden="true" className="text-line-strong">·</span>
+        <a
           href="#"
           className="link-underline transition-colors duration-200 hover:text-ink"
           aria-label={xAriaLabel}
