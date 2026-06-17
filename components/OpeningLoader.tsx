@@ -18,13 +18,14 @@ import { productThemes } from "@/lib/product-themes";
  * is ever typed or deleted — `One` stays fixed. Colors come straight from the
  * existing product theme tokens so the loader can't drift from the brand.
  */
-type ColorKey = "read" | "article" | "lingo" | "goal";
+type ColorKey = "read" | "article" | "lingo" | "goal" | "plate";
 
 const SEQUENCE: { suffix: string; color: ColorKey }[] = [
   { suffix: "Read", color: "read" },
   { suffix: "Article", color: "article" },
   { suffix: "Lingo", color: "lingo" },
   { suffix: "Goal", color: "goal" },
+  { suffix: "Plate", color: "plate" },
 ];
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
@@ -33,6 +34,7 @@ const SUFFIX_COLORS: Record<ColorKey, string> = {
   article: productThemes.article.accent,
   lingo: productThemes.lingo.accent,
   goal: productThemes.goal.accent,
+  plate: productThemes.plate.accent,
 };
 
 /** Only these public, top-of-funnel pages get the opening animation. */
@@ -45,10 +47,10 @@ const PUBLIC_PATHS = new Set([
 
 const SESSION_KEY = "oneread-opening-loader-shown";
 
-/* Timing (ms) — tuned to land the whole sequence around ~4.5s. */
-const TYPE_MS = 70;
-const DELETE_MS = 45;
-const PAUSE_MS = 450;
+/* Timing (ms) — tuned to keep the five-name sequence under ~5s. */
+const TYPE_MS = 62;
+const DELETE_MS = 38;
+const PAUSE_MS = 360;
 const FINAL_HOLD_MS = 750;
 const FADE_MS = 600;
 const REDUCED_HOLD_MS = 650;

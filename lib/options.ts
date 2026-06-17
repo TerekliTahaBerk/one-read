@@ -42,8 +42,8 @@ export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
 /**
  * External Tally waitlist form for not-yet-launched products (OneLingo,
- * OneGoal). Frontend-only — no waitlist backend. Swap this URL when each
- * product gets its own form.
+ * OneGoal, OnePlate). Frontend-only — no waitlist backend. Swap this URL when
+ * each product gets its own form.
  */
 export const WAITLIST_FORM_URL = "https://tally.so/r/WOZWLe";
 

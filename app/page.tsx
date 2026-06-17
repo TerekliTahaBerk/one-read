@@ -34,6 +34,16 @@ const PRODUCTS = [
     external: true,
     theme: "goal",
   },
+  {
+    name: "OnePlate",
+    description: "Simple meal ideas for your day, delivered quietly to your inbox.",
+    status: "Coming soon",
+    cta: "Join waitlist",
+    note: "A calmer way to decide what to eat.",
+    href: WAITLIST_FORM_URL,
+    external: true,
+    theme: "plate",
+  },
 ] as const;
 
 export default function HomePage() {
@@ -85,7 +95,7 @@ export default function HomePage() {
             "
           >
             OneRead sends small, useful emails for articles, language, sports,
-            and more.
+            meals, and more.
           </p>
 
           <div
@@ -105,6 +115,7 @@ export default function HomePage() {
       <Footer
         tagline="No feed to check. Just something worth opening."
         showManifesto
+        showProducts
       />
     </main>
   );

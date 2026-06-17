@@ -13,7 +13,7 @@ type Props = {
   backLabel?: string;
   /** Show the small OneRead brand line (homepage). */
   showManifesto?: boolean;
-  /** Show the product links row: OneArticle · OneLingo · OneGoal (homepage). */
+  /** Show the product links row: OneArticle · OneLingo · OneGoal · OnePlate (homepage). */
   showProducts?: boolean;
 };
 
@@ -21,6 +21,7 @@ const PRODUCT_LINKS = [
   { label: "OneArticle", href: "/article", external: false },
   { label: "OneLingo", href: WAITLIST_FORM_URL, external: true },
   { label: "OneGoal", href: WAITLIST_FORM_URL, external: true },
+  { label: "OnePlate", href: WAITLIST_FORM_URL, external: true },
 ] as const;
 
 export function Footer({
@@ -49,7 +50,7 @@ export function Footer({
       {showProducts && (
         <nav
           aria-label="Products"
-          className="mt-4 flex items-center gap-3 text-[12px] text-fog font-sans"
+          className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[12px] text-fog font-sans"
         >
           {PRODUCT_LINKS.map((p, i) => (
             <span key={p.label} className="flex items-center gap-3">
@@ -82,20 +83,20 @@ export function Footer({
 
       <nav
         aria-label="Footer"
-        className="mt-3 flex items-center gap-3 text-[12px] text-fog font-sans"
+        className="mt-3 flex flex-wrap items-center justify-center gap-3 text-[12px] text-fog font-sans"
       >
-        <Link
-          href="/privacy"
-          className="link-underline transition-colors duration-200 hover:text-ink"
-        >
-          Privacy
-        </Link>
-        <span aria-hidden="true" className="text-line-strong">·</span>
         <Link
           href="/terms"
           className="link-underline transition-colors duration-200 hover:text-ink"
         >
           Terms
+        </Link>
+        <span aria-hidden="true" className="text-line-strong">·</span>
+        <Link
+          href="/privacy"
+          className="link-underline transition-colors duration-200 hover:text-ink"
+        >
+          Privacy
         </Link>
         <span aria-hidden="true" className="text-line-strong">·</span>
         <a

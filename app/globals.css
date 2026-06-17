@@ -5,6 +5,11 @@
 @layer base {
   :root {
     color-scheme: light;
+    --one-plate-bg: #FFF6F3;
+    --one-plate-accent: #C96457;
+    --one-plate-border: #F1D6D1;
+    --one-plate-surface: #FFEDEA;
+    --one-plate-hover: #FFE3DD;
   }
 
   html,

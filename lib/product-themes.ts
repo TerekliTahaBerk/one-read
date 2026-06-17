@@ -32,6 +32,15 @@ export const productThemes = {
     surface: "#E7F5EA",
     mutedText: "#6B6B6B",
   },
+  plate: {
+    name: "OnePlate",
+    background: "#FFF6F3",
+    accent: "#C96457",
+    border: "#F1D6D1",
+    surface: "#FFEDEA",
+    hover: "#FFE3DD",
+    mutedText: "#6B6B6B",
+  },
 } as const;
 
 export type ProductThemeKey = keyof typeof productThemes;
