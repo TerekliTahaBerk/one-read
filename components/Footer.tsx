@@ -13,7 +13,7 @@ type Props = {
   backLabel?: string;
   /** Show the small OneRead brand line (homepage). */
   showManifesto?: boolean;
-  /** Show the product links row: OneArticle · OneLingo · OneGoal · OnePlate (homepage). */
+  /** Show the product links row: OneArticle · OneLingo · OneGoal · OnePlate · OneMove. */
   showProducts?: boolean;
 };
 
@@ -22,6 +22,7 @@ const PRODUCT_LINKS = [
   { label: "OneLingo", href: WAITLIST_FORM_URL, external: true },
   { label: "OneGoal", href: WAITLIST_FORM_URL, external: true },
   { label: "OnePlate", href: WAITLIST_FORM_URL, external: true },
+  { label: "OneMove", href: WAITLIST_FORM_URL, external: true },
 ] as const;
 
 export function Footer({

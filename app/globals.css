@@ -10,6 +10,11 @@
     --one-plate-border: #F1D6D1;
     --one-plate-surface: #FFEDEA;
     --one-plate-hover: #FFE3DD;
+    --one-move-bg: #F3FAF5;
+    --one-move-accent: #5F8C6A;
+    --one-move-border: #D7EBDD;
+    --one-move-surface: #EAF6EE;
+    --one-move-hover: #DFF0E5;
   }
 
   html,

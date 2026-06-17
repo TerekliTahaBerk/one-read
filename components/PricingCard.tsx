@@ -101,15 +101,14 @@ export function PricingCard() {
 
           {/* CTA */}
           <Link
-            href="/article/subscribe"
+            href="/article"
             className="
               focus-ring group/cta
               mt-8 inline-flex w-full h-12 items-center justify-center gap-2
               rounded-xl bg-[var(--theme-accent)] text-paper
               font-sans text-[15px] tracking-tight
-              shadow-[0_6px_20px_-8px_rgba(0,0,0,0.5)]
-              transition-[transform,background-color,box-shadow] duration-200
-              hover:brightness-95 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)]
+              transition-[transform,background-color,opacity] duration-200
+              hover:brightness-95
               active:scale-[0.99]
             "
           >

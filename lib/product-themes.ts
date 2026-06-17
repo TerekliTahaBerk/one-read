@@ -41,6 +41,15 @@ export const productThemes = {
     hover: "#FFE3DD",
     mutedText: "#6B6B6B",
   },
+  move: {
+    name: "OneMove",
+    background: "#F3FAF5",
+    accent: "#5F8C6A",
+    border: "#D7EBDD",
+    surface: "#EAF6EE",
+    hover: "#DFF0E5",
+    mutedText: "#6B6B6B",
+  },
 } as const;
 
 export type ProductThemeKey = keyof typeof productThemes;
