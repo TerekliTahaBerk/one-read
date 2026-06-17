@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import { OpeningLoader } from "@/components/OpeningLoader";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -44,7 +45,10 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${inter.variable}`}
     >
-      <body className="min-h-svh">{children}</body>
+      <body className="min-h-svh">
+        {children}
+        <OpeningLoader />
+      </body>
     </html>
   );
 }
