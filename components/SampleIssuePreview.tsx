@@ -4,20 +4,20 @@ import { useId, useState } from "react";
 
 const SECTIONS = [
   {
-    heading: "Why it matters",
-    body: "Software work is moving from writing every step manually to directing systems that can plan, draft, test, and revise. The value is shifting from doing more tasks to asking better questions and making better decisions.",
+    heading: "Why this is worth your time",
+    body: "AI agents are changing the shape of software work. Not by making human judgment disappear, but by moving more of the routine execution into systems that can plan, draft, test, and revise with less hand-holding.",
   },
   {
     heading: "The short version",
-    body: "AI agents are becoming more useful because they can work across multiple steps instead of only answering one prompt at a time. For builders, this means faster experiments, more automation, and a greater need for judgment.",
+    body: "The important shift is not that software can answer a prompt. It is that software can now carry work across several steps. That makes speed easier to access, but it also makes direction, taste, and review more important.",
   },
   {
-    heading: "One useful idea",
-    body: "The best use of AI is not replacing attention. It is protecting attention for the parts of the work where taste, context, and decisions matter most.",
+    heading: "The useful idea",
+    body: "When tools become better at execution, the valuable work moves upstream. Knowing what to ask for, what to ignore, and what “good” should look like becomes harder to outsource.",
   },
   {
-    heading: "Worth thinking about",
-    body: "If a tool can do more of the execution, the real skill becomes knowing what should be built, why it matters, and what good looks like.",
+    heading: "A question to keep",
+    body: "If more of the doing becomes automated, where should your attention actually go?",
   },
 ] as const;
 
@@ -44,7 +44,7 @@ export function SampleIssuePreview() {
             transition-colors duration-200 hover:text-ink
           "
         >
-          {open ? "Hide sample issue" : "See a sample issue"}
+          {open ? "Hide the sample" : "Read the sample"}
           <svg
             width="12"
             height="12"
@@ -76,7 +76,7 @@ export function SampleIssuePreview() {
             Sample OneArticle
           </p>
           <h3 className="mt-2 font-serif font-medium text-[1.25rem] sm:text-[1.4rem] leading-[1.2] text-ink">
-            Why AI agents are changing software work
+            When software starts working beside you
           </h3>
 
           <div className="mt-4 space-y-4">
@@ -93,8 +93,8 @@ export function SampleIssuePreview() {
           </div>
 
           <p className="mt-5 border-t border-[var(--theme-border)] pt-4 font-sans text-[12.5px] leading-[1.55] text-fog">
-            This is an example of the format. Real OneArticle emails are selected
-            around your interests and language preferences.
+            This is only a sample format. Real OneArticle emails are chosen
+            around your interests, source language, and summary preferences.
           </p>
         </div>
       )}

@@ -88,8 +88,6 @@ export default function HomePage() {
             sports, and more.
           </p>
 
-          <ValueLine className="mt-5 reveal-item reveal-item-3" />
-
           <div
             className="
               mt-6 sm:mt-7 w-full max-w-[34rem]
@@ -107,29 +105,8 @@ export default function HomePage() {
       <Footer
         tagline="No feeds. No noise. Just one useful email."
         showManifesto
-        showProducts
       />
     </main>
-  );
-}
-
-/** Quiet three-part restatement of the OneRead promise. */
-function ValueLine({ className = "" }: { className?: string }) {
-  return (
-    <ul
-      className={`flex items-center justify-center gap-3 sm:gap-4 font-sans text-[12.5px] sm:text-[13px] tracking-tight text-ash ${className}`}
-    >
-      {["No app.", "No feed.", "No noise."].map((item, i) => (
-        <li key={item} className="flex items-center gap-3 sm:gap-4">
-          {i > 0 && (
-            <span aria-hidden="true" className="text-line-strong">
-              ·
-            </span>
-          )}
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
