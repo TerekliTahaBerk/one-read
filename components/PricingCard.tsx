@@ -132,10 +132,18 @@ export function PricingCard() {
             </svg>
           </Link>
 
-          {/* Reassurance line */}
-          <p className="mt-4 font-sans text-[12.5px] text-fog">
-            Includes a 7-day free trial · Secure checkout by Polar.
-          </p>
+          {/* Trust notes */}
+          <div className="mt-4 space-y-1.5">
+            <p className="font-sans text-[12.5px] text-ash">
+              7-day free trial included. Cancel anytime.
+            </p>
+            <p className="font-sans text-[12.5px] text-fog">
+              No app. No feed. Just one useful email every morning.
+            </p>
+            <p className="font-sans text-[12.5px] text-fog">
+              Trial and billing are handled securely by Polar.
+            </p>
+          </div>
         </div>
       </div>
     </div>

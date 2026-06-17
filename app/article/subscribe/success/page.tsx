@@ -41,7 +41,7 @@ export default function SubscribeSuccessPage({
           Checkout complete
         </p>
         <h1 className="font-serif font-medium text-[2rem] leading-[1.08] sm:text-[2.5rem] sm:leading-[1.06] text-ink mt-3">
-          We’re activating OneArticle.
+          We’re activating your subscription.
         </h1>
         <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-5 max-w-[42ch]">
           Your checkout is complete. Access may take a moment while Polar

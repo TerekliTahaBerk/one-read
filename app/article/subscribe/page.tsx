@@ -10,7 +10,7 @@ import { isBillingConfigured } from "@/lib/billing/provider";
 export const metadata: Metadata = {
   title: "Subscribe — OneArticle",
   description:
-    "Enter your email to continue your One Article subscription, manage billing, or restart your daily emails.",
+    "Enter your email to continue your OneArticle subscription, manage billing, or restart your daily emails.",
 };
 
 export default function ArticleSubscribePage() {

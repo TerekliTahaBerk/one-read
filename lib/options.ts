@@ -40,6 +40,13 @@ export type SummaryLanguage = (typeof SUMMARY_LANGUAGES)[number];
 export const BILLING_INTERVALS = ["monthly", "annual"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
+/**
+ * External Tally waitlist form for not-yet-launched products (OneLingo,
+ * OneGoal). Frontend-only — no waitlist backend. Swap this URL when each
+ * product gets its own form.
+ */
+export const WAITLIST_FORM_URL = "https://tally.so/r/WOZWLe";
+
 /** Product slug for One Article (the first OneRead product). */
 export const ONE_ARTICLE_PRODUCT_KEY = "one-article";
 

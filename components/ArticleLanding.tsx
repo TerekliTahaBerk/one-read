@@ -10,6 +10,7 @@ import {
   type Preferences,
   type SignupPhase,
 } from "@/components/SignupForm";
+import { SampleEmailPreview } from "@/components/SampleEmailPreview";
 import { SuccessState } from "@/components/SuccessState";
 import { productThemes } from "@/lib/product-themes";
 
@@ -188,6 +189,10 @@ export function ArticleLanding() {
               onCompleted={() => setPhase("success")}
               onCanceled={() => setPhase("canceled")}
             />
+
+            {phase === "email" && (
+              <SampleEmailPreview className="mt-10 sm:mt-12 animate-rise-delayed-4" />
+            )}
           </div>
         )}
 

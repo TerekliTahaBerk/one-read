@@ -50,65 +50,65 @@ function present(
     case "new":
       return {
         title: "Start your setup first.",
-        body: "We don’t have a OneArticle setup for this email yet. Save your preferences first, then start the 7-day trial through Polar.",
-        ctas: [{ kind: "link", label: "Set up One Article", href: `/article`, primary: true }],
+        body: "Choose your interests and language preferences before starting your OneArticle trial.",
+        ctas: [{ kind: "link", label: "Set up OneArticle", href: `/article`, primary: true }],
       };
     case "incomplete":
       return {
         title: "Finish your setup.",
-        body: "Your email is registered, but your preferences aren’t finished. Complete setup, then start the 7-day trial in checkout.",
+        body: "Complete your preferences so OneArticle can be personalized before checkout.",
         ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
       };
     case "checkout_needed":
       return {
-        title: "Start your 7-day free trial.",
-        body: "Your preferences are saved. Complete checkout with Polar to start receiving One Article.",
+        title: "You’re almost there.",
+        body: "Your preferences are saved. Start your 7-day free trial with Polar to receive OneArticle every morning.",
         ctas: [buy("Start 7-day free trial", "monthly", true)],
       };
     case "trialing":
       return {
-        title: `Your One Article subscription is active${
+        title: `Your OneArticle subscription is active${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
-        body: "Your Polar-confirmed trial is active and your daily emails are on.",
-        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to One Article", href: `/article` }],
+        body: "You’re set to receive one useful article summary every morning.",
+        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "trial_expired":
       return {
         title: "Your free trial has ended.",
-        body: "Subscribe to keep receiving One Article — $2/month or $18/year.",
+        body: "Subscribe to keep receiving OneArticle — $2/month or $18/year.",
         ctas: [buy("Subscribe $2/mo", "monthly", true), buy("Subscribe $18/yr", "annual")],
       };
     case "active_paid":
       return {
-        title: "Your One Article subscription is active.",
-        body: "Your subscription is active and your daily emails are on.",
-        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to One Article", href: `/article` }],
+        title: "Your OneArticle subscription is active.",
+        body: "You’re set to receive one useful article summary every morning.",
+        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "canceled_active":
       return {
         title: r.periodEndsAt
           ? `Your subscription is active until ${new Date(r.periodEndsAt).toLocaleDateString()}.`
           : "Your subscription is active until the end of the period.",
-        body: "You’ve canceled, but you’ll keep receiving One Article until your paid period ends.",
-        ctas: [manage("Resume subscription", true), manage("Manage billing")],
+        body: "You’ll continue receiving OneArticle until the end of your current billing period.",
+        ctas: [manage("Manage billing", true), manage("Resume subscription")],
       };
     case "expired":
       return {
         title: "Your subscription has ended.",
-        body: "Subscribe again any time to start receiving One Article.",
-        ctas: [buy("Subscribe again", "monthly", true)],
+        body: "Restart your subscription to receive OneArticle again.",
+        ctas: [buy("Restart subscription", "monthly", true)],
       };
     case "past_due":
       return {
         title: "Payment needs attention.",
-        body: "We couldn’t process your latest payment. Update your payment method to keep your subscription active.",
-        ctas: [manage("Update payment", true)],
+        body: "Update your billing details to keep receiving OneArticle.",
+        ctas: [manage("Manage billing", true)],
       };
     case "active_email_paused":
       return {
         title: "Your subscription is active, but emails are paused.",
-        body: "Billing is fine — you just unsubscribed from the daily email. Turn it back on whenever you like.",
+        body: "Resume emails when you’re ready to receive OneArticle again.",
         ctas: [{ kind: "resume-emails", label: "Resume emails", primary: true }, manage("Manage billing")],
       };
     case "suppressed":

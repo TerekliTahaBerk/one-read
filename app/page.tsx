@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
+import { WAITLIST_FORM_URL } from "@/lib/options";
 import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 
 const PRODUCTS = [
@@ -16,8 +18,9 @@ const PRODUCTS = [
     name: "OneLingo",
     description: "Language practice and useful words in your inbox.",
     status: "Coming soon",
-    cta: "Request early access",
-    href: "https://tally.so/r/WOZWLe",
+    cta: "Join waitlist",
+    note: "Be first to try it when it launches.",
+    href: WAITLIST_FORM_URL,
     external: true,
     theme: "lingo",
   },
@@ -25,8 +28,9 @@ const PRODUCTS = [
     name: "OneGoal",
     description: "A daily sports brief for the teams and leagues you follow.",
     status: "Coming soon",
-    cta: "Request early access",
-    href: "https://tally.so/r/WOZWLe",
+    cta: "Join waitlist",
+    note: "Be first to try it when it launches.",
+    href: WAITLIST_FORM_URL,
     external: true,
     theme: "goal",
   },
@@ -43,61 +47,89 @@ export default function HomePage() {
         pb-4 sm:pb-5
       "
     >
-      <header className="w-full flex justify-center animate-rise">
-        <Logo href="/" />
-      </header>
+      <HomeReveal>
+        <header className="w-full flex justify-center reveal-item">
+          <Logo href="/" />
+        </header>
 
-      <section
-        className="
-          flex-1 w-full
-          flex flex-col items-center justify-center
-          max-w-[40rem] mx-auto
-          py-4 sm:py-5
-        "
-      >
-        <h1
+        <section
           className="
-            font-serif font-medium
-            text-[2.45rem] leading-[1.02]
-            sm:text-[3.55rem] sm:leading-[0.99]
-            tracking-[-0.026em]
-            text-ink text-center text-balance
-            max-w-[16ch]
-            animate-rise-delayed
+            flex-1 w-full
+            flex flex-col items-center justify-center
+            max-w-[40rem] mx-auto
+            py-4 sm:py-5
           "
         >
-          The things you care about, delivered quietly to your inbox.
-        </h1>
+          <h1
+            className="
+              font-serif font-medium
+              text-[2.45rem] leading-[1.02]
+              sm:text-[3.55rem] sm:leading-[0.99]
+              tracking-[-0.026em]
+              text-ink text-center text-balance
+              max-w-[16ch]
+              reveal-item reveal-item-2
+            "
+          >
+            The things you care about, delivered quietly to your inbox.
+          </h1>
 
-        <p
-          className="
-            font-sans
-            text-[15px] sm:text-[16px] leading-[1.65]
-            text-ash text-center text-pretty
-            mt-4 sm:mt-5
-            max-w-[48ch]
-            animate-rise-delayed-2
-          "
-        >
-          OneRead is a family of calm daily emails for articles, language,
-          sports, and more. No app. No feed. No noise.
-        </p>
+          <p
+            className="
+              font-sans
+              text-[15px] sm:text-[16px] leading-[1.65]
+              text-ash text-center text-pretty
+              mt-4 sm:mt-5
+              max-w-[48ch]
+              reveal-item reveal-item-3
+            "
+          >
+            OneRead is a family of calm daily emails for articles, language,
+            sports, and more.
+          </p>
 
-        <div
-          className="
-            mt-6 sm:mt-7 w-full max-w-[34rem]
-            space-y-2
-            animate-rise-delayed-3
-          "
-        >
-          {PRODUCTS.map((product) => (
-            <ProductRow key={product.name} product={product} />
-          ))}
-        </div>
-      </section>
+          <ValueLine className="mt-5 reveal-item reveal-item-3" />
 
-      <Footer tagline="No feeds. No noise. Just one useful email." />
+          <div
+            className="
+              mt-6 sm:mt-7 w-full max-w-[34rem]
+              space-y-2
+              reveal-item reveal-item-4
+            "
+          >
+            {PRODUCTS.map((product) => (
+              <ProductRow key={product.name} product={product} />
+            ))}
+          </div>
+        </section>
+      </HomeReveal>
+
+      <Footer
+        tagline="No feeds. No noise. Just one useful email."
+        showManifesto
+        showProducts
+      />
     </main>
+  );
+}
+
+/** Quiet three-part restatement of the OneRead promise. */
+function ValueLine({ className = "" }: { className?: string }) {
+  return (
+    <ul
+      className={`flex items-center justify-center gap-3 sm:gap-4 font-sans text-[12.5px] sm:text-[13px] tracking-tight text-ash ${className}`}
+    >
+      {["No app.", "No feed.", "No noise."].map((item, i) => (
+        <li key={item} className="flex items-center gap-3 sm:gap-4">
+          {i > 0 && (
+            <span aria-hidden="true" className="text-line-strong">
+              ·
+            </span>
+          )}
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -107,6 +139,7 @@ function ProductRow({
   product: (typeof PRODUCTS)[number];
 }) {
   const theme = productThemes[product.theme as ProductThemeKey];
+  const note = "note" in product ? product.note : undefined;
 
   const content = (
     <>
@@ -116,12 +149,7 @@ function ProductRow({
             {product.name}
           </h2>
           <span
-            className="rounded-full border px-2 py-0.5 font-sans text-[11px] leading-none"
-            style={{
-              borderColor: theme.border,
-              color: theme.accent,
-              backgroundColor: theme.background,
-            }}
+            className="product-badge rounded-full border px-2 py-0.5 font-sans text-[11px] leading-none transition-colors duration-200"
           >
             {product.status}
           </span>
@@ -129,6 +157,11 @@ function ProductRow({
         <p className="mt-1 font-sans text-[13.5px] leading-[1.55] text-ash">
           {product.description}
         </p>
+        {note && (
+          <p className="mt-1 font-sans text-[12px] leading-[1.5] text-fog">
+            {note}
+          </p>
+        )}
       </div>
 
       <span
@@ -144,22 +177,24 @@ function ProductRow({
   );
 
   const className = `
-    group flex flex-col items-start gap-2
+    product-card group flex flex-col items-start gap-2
     sm:flex-row sm:items-center sm:justify-between sm:gap-5
     rounded-lg border px-3 py-3 sm:py-3.5
-    transition-[background-color,border-color,transform] duration-200
   `;
+
+  // Per-card theme tokens drive the hover tint/border (see .product-card in
+  // globals.css). Kept as CSS variables so :hover can swap them — inline
+  // background/border would otherwise win over the hover rule.
+  const themeVars = {
+    "--card-bg": theme.background,
+    "--card-surface": theme.surface,
+    "--card-border": theme.border,
+    "--card-accent": theme.accent,
+  } as React.CSSProperties;
 
   if (!product.href) {
     return (
-      <div
-        className={className}
-        aria-disabled="true"
-        style={{
-          backgroundColor: theme.background,
-          borderColor: theme.border,
-        }}
-      >
+      <div className={className} aria-disabled="true" style={themeVars}>
         {content}
       </div>
     );
@@ -172,10 +207,7 @@ function ProductRow({
         target="_blank"
         rel="noopener noreferrer"
         className={`${className} focus-ring`}
-        style={{
-          backgroundColor: theme.background,
-          borderColor: theme.border,
-        }}
+        style={themeVars}
       >
         {content}
       </a>
@@ -183,14 +215,7 @@ function ProductRow({
   }
 
   return (
-    <Link
-      href={product.href}
-      className={`${className} focus-ring`}
-      style={{
-        backgroundColor: theme.background,
-        borderColor: theme.border,
-      }}
-    >
+    <Link href={product.href} className={`${className} focus-ring`} style={themeVars}>
       {content}
     </Link>
   );

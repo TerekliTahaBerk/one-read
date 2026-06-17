@@ -130,6 +130,9 @@ export function OpeningLoader() {
       } catch {
         // Non-fatal — the loader just may replay if storage is unavailable.
       }
+      // Cue any page-level reveal (e.g. the homepage) to begin as we fade, so
+      // the handoff feels like one smooth motion rather than a hard cut.
+      window.dispatchEvent(new Event("oneread:reveal"));
       setFading(true);
       const id = window.setTimeout(() => setVisible(false), FADE_MS);
       timers.current.push(id);
