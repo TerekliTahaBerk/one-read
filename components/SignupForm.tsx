@@ -436,6 +436,7 @@ function PaymentStep({
 
       <div className="mt-7 animate-rise-delayed-4">
         <PrimaryButton
+          subtle
           loading={loading}
           disabled={!canSubmit}
           loadingLabel="Opening checkout..."
@@ -811,27 +812,30 @@ function PrimaryButton({
   disabled,
   label,
   loadingLabel,
+  subtle = false,
 }: {
   loading: boolean;
   disabled: boolean;
   label: string;
   loadingLabel: string;
+  subtle?: boolean;
 }) {
   return (
     <button
       type="submit"
       disabled={disabled}
       aria-busy={loading}
-      className="
-        focus-ring
-        relative w-full h-12 rounded-xl
-        bg-[var(--theme-accent)] text-paper
-        font-sans text-[15px] tracking-tight
-        transition-[transform,background-color,opacity] duration-200
-        hover:brightness-95
-        active:scale-[0.99]
-        disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100
-      "
+      className={[
+        "focus-ring",
+        "relative w-full h-12 rounded-xl",
+        "font-sans text-[15px] tracking-tight",
+        "transition-[transform,background-color,border-color,color,opacity] duration-200",
+        subtle
+          ? "bg-white/65 text-ash border border-[var(--theme-border)] hover:text-ink hover:border-[var(--theme-accent)] hover:bg-white/85"
+          : "bg-[var(--theme-accent)] text-paper hover:brightness-95",
+        "active:scale-[0.99]",
+        "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100",
+      ].join(" ")}
     >
       <span
         className={`inline-flex items-center justify-center gap-2 transition-opacity duration-200 ${
@@ -860,8 +864,18 @@ function PrimaryButton({
           aria-live="polite"
           className="absolute inset-0 flex items-center justify-center gap-2"
         >
-          <span className="h-4 w-4 rounded-full border-2 border-paper/40 border-t-paper animate-spin" />
-          <span className="text-paper/85 text-[14px]">{loadingLabel}</span>
+          <span
+            className={`h-4 w-4 rounded-full border-2 animate-spin ${
+              subtle
+                ? "border-ash/30 border-t-ash"
+                : "border-paper/40 border-t-paper"
+            }`}
+          />
+          <span
+            className={`text-[14px] ${subtle ? "text-ash" : "text-paper/85"}`}
+          >
+            {loadingLabel}
+          </span>
         </span>
       )}
     </button>
@@ -892,7 +906,7 @@ function LanguageRow<T extends string>({
         sm:flex-row sm:items-center sm:justify-between sm:gap-4
       "
     >
-      <span className="text-[12.5px] sm:text-[13px] font-sans text-ash sm:text-ink/85 tracking-tight">
+      <span className="text-[11px] font-sans uppercase tracking-eyebrow text-fog">
         {label}
       </span>
       <div className="flex flex-wrap gap-2 justify-center">

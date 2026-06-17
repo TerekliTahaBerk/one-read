@@ -128,7 +128,7 @@ export function ArticleLanding() {
             </svg>
           </Link>
         ) : null}
-        <Logo label="OneArticle" href="/" ariaLabel="OneArticle — OneRead home" />
+        <Logo label="OneArticle" href="/article" ariaLabel="OneArticle home" />
       </header>
 
       <section

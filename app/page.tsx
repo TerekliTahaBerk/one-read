@@ -144,7 +144,8 @@ function ProductRow({
   );
 
   const className = `
-    group flex items-center justify-between gap-5
+    group flex flex-col items-start gap-2
+    sm:flex-row sm:items-center sm:justify-between sm:gap-5
     rounded-lg border px-3 py-3 sm:py-3.5
     transition-[background-color,border-color,transform] duration-200
   `;
