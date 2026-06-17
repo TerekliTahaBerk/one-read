@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 
 const SECTIONS = [
   {
-    heading: "Why this is worth your time",
+    heading: "Why it’s worth reading",
     body: "AI agents are changing the shape of software work. Not by making human judgment disappear, but by moving more of the routine execution into systems that can plan, draft, test, and revise with less hand-holding.",
   },
   {
@@ -44,7 +44,7 @@ export function SampleIssuePreview() {
             transition-colors duration-200 hover:text-ink
           "
         >
-          {open ? "Hide the sample" : "Read the sample"}
+          {open ? "Hide the example" : "Read the example"}
           <svg
             width="12"
             height="12"
@@ -73,7 +73,7 @@ export function SampleIssuePreview() {
           "
         >
           <p className="font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
-            Sample OneArticle
+            A sample morning read
           </p>
           <h3 className="mt-2 font-serif font-medium text-[1.25rem] sm:text-[1.4rem] leading-[1.2] text-ink">
             When software starts working beside you
@@ -93,7 +93,7 @@ export function SampleIssuePreview() {
           </div>
 
           <p className="mt-5 border-t border-[var(--theme-border)] pt-4 font-sans text-[12.5px] leading-[1.55] text-fog">
-            This is only a sample format. Real OneArticle emails are chosen
+            This is an example of the format. Real OneArticle emails are chosen
             around your interests, source language, and summary preferences.
           </p>
         </div>

@@ -42,7 +42,7 @@ export function Footer({
 
       {showManifesto && (
         <p className="mt-2 max-w-[40ch] font-sans text-[12.5px] leading-[1.55] text-fog">
-          OneRead is built for people who want better inputs without more noise.
+          For people who want better inputs without another app to open.
         </p>
       )}
 

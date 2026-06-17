@@ -56,7 +56,7 @@ function present(
     case "incomplete":
       return {
         title: "Finish your setup.",
-        body: "Complete your preferences so OneArticle can be personalized before checkout.",
+        body: "Choose your reading interests before checkout.",
         ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
       };
     case "checkout_needed":
@@ -70,7 +70,7 @@ function present(
         title: `Your OneArticle subscription is active${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
-        body: "You’re set to receive one useful article summary every morning.",
+        body: "You’re set to receive one useful article brief every morning.",
         ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "trial_expired":
@@ -82,7 +82,7 @@ function present(
     case "active_paid":
       return {
         title: "Your OneArticle subscription is active.",
-        body: "You’re set to receive one useful article summary every morning.",
+        body: "You’re set to receive one useful article brief every morning.",
         ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "canceled_active":

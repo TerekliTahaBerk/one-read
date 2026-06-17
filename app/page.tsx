@@ -8,7 +8,7 @@ import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 const PRODUCTS = [
   {
     name: "OneArticle",
-    description: "One curated article summary every morning.",
+    description: "One carefully chosen article, every morning.",
     status: "Available",
     cta: "Open OneArticle",
     href: "/article",
@@ -16,20 +16,20 @@ const PRODUCTS = [
   },
   {
     name: "OneLingo",
-    description: "Language practice and useful words in your inbox.",
+    description: "Small language practice that fits into your inbox.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "Be first to try it when it launches.",
+    note: "Join the list for the first release.",
     href: WAITLIST_FORM_URL,
     external: true,
     theme: "lingo",
   },
   {
     name: "OneGoal",
-    description: "A daily sports brief for the teams and leagues you follow.",
+    description: "A calmer way to follow the teams and stories you care about.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "Be first to try it when it launches.",
+    note: "Join the list for the first release.",
     href: WAITLIST_FORM_URL,
     external: true,
     theme: "goal",
@@ -84,8 +84,8 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead is a family of calm daily emails for articles, language,
-            sports, and more.
+            OneRead sends small, useful emails for articles, language, sports,
+            and more.
           </p>
 
           <div
@@ -103,7 +103,7 @@ export default function HomePage() {
       </HomeReveal>
 
       <Footer
-        tagline="No feeds. No noise. Just one useful email."
+        tagline="No feed to check. Just something worth opening."
         showManifesto
       />
     </main>

@@ -74,10 +74,10 @@ export const PRICING = {
  * payment step.
  */
 export const FEATURES = [
-  "One curated article every morning at 7 AM",
-  "Personalized by your interests",
-  "English and Turkish summaries",
-  "Source language preferences",
+  "One carefully chosen article every morning at 7 AM",
+  "Chosen around your reading interests",
+  "English and Turkish briefs",
+  "Source-language preferences",
   "Edit your preferences anytime",
   "One-click cancel — no questions asked",
 ] as const;

@@ -21,13 +21,13 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
     lead: "Start your morning with one article ",
     accent: "worth reading.",
     support:
-      "Choose your interests and language preferences. Every morning at 7 AM, OneArticle sends you one curated article summary in your inbox.",
+      "Choose your interests and language preferences. Every morning at 7 AM, OneArticle sends one carefully chosen article brief to your inbox.",
   },
   preferences: {
     lead: "Tell us ",
     accent: "what to read.",
     support:
-      "Pick the topics you care about and your languages. We'll match each morning's article to you.",
+      "Pick the topics you care about and the languages you read in. We'll use that to choose each morning's article.",
   },
   payment: {
     lead: "Start your ",

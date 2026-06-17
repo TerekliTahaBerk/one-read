@@ -8,7 +8,7 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Pricing — OneArticle",
   description:
-    "Simple pricing for OneArticle. One carefully selected article summary in your inbox every day — $2/month or $18/year.",
+    "Simple pricing for OneArticle. One carefully chosen article brief in your inbox every day — $2/month or $18/year.",
 };
 
 export default function ArticlePricingPage() {
@@ -59,7 +59,7 @@ export default function ArticlePricingPage() {
             animate-rise-delayed
           "
         >
-          Simple pricing for OneArticle.
+          OneArticle, simply priced.
         </h1>
 
         <p
@@ -71,7 +71,7 @@ export default function ArticlePricingPage() {
             animate-rise-delayed-2
           "
         >
-          One carefully selected article summary in your inbox every day.
+          One carefully chosen article brief in your inbox every day.
         </p>
 
         <PricingCard />

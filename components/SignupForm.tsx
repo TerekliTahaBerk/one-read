@@ -226,7 +226,7 @@ function EmailStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
-          One email a day. Cancel in one click.
+          One email each morning. Cancel in one click.
           <br />
           Already a member? Enter your email to change your preferences or
           cancel.
@@ -699,8 +699,12 @@ function PreferenceControls({
       {/* Interests */}
       <fieldset className="animate-rise-delayed-2">
         <legend className="block text-[11px] font-sans uppercase tracking-eyebrow text-fog mb-3 text-center w-full">
-          What you'd like to read about
+          Choose your reading interests
         </legend>
+        <p className="mx-auto mb-4 max-w-[36ch] text-center font-sans text-[12.5px] leading-[1.55] text-fog">
+          Pick a few areas you’d like OneArticle to pay attention to. You can
+          keep it broad or make it specific.
+        </p>
         <div className="flex flex-wrap gap-2 sm:gap-2.5 justify-center">
           {INTERESTS.map((interest) => (
             <InterestChip
