@@ -16,16 +16,18 @@ const PRODUCTS = [
     name: "OneLingo",
     description: "Language practice and useful words in your inbox.",
     status: "Coming soon",
-    cta: "Coming soon",
-    href: null,
+    cta: "Request early access",
+    href: "https://tally.so/r/WOZWLe",
+    external: true,
     theme: "lingo",
   },
   {
     name: "OneGoal",
     description: "A daily sports brief for the teams and leagues you follow.",
     status: "Coming soon",
-    cta: "Coming soon",
-    href: null,
+    cta: "Request early access",
+    href: "https://tally.so/r/WOZWLe",
+    external: true,
     theme: "goal",
   },
 ] as const;
@@ -159,6 +161,23 @@ function ProductRow({
       >
         {content}
       </div>
+    );
+  }
+
+  if ("external" in product && product.external) {
+    return (
+      <a
+        href={product.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${className} focus-ring`}
+        style={{
+          backgroundColor: theme.background,
+          borderColor: theme.border,
+        }}
+      >
+        {content}
+      </a>
     );
   }
 
