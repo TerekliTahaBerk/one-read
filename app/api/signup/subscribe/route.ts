@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/signup/subscribe
- * Body: { email: string, billingInterval: "monthly" | "annual" }
+ * Body: { email: string, billingInterval: "monthly" }
  *
  * Legacy compatibility endpoint. It no longer marks anyone paid locally; it
  * delegates to the configured billing provider and returns a checkout URL.

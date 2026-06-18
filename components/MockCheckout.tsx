@@ -14,7 +14,7 @@ export function MockCheckout({ email, plan }: { email: string; plan: BillingInte
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const price = plan === "annual" ? `$${PRICING.annual} / year` : `$${PRICING.monthly} / month`;
+  const price = `$${PRICING.monthly} / month`;
 
   async function complete() {
     setLoading(true);

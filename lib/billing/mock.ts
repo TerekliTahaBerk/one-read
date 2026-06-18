@@ -35,11 +35,10 @@ export function isMockAllowed(): boolean {
   return process.env.MOCK_BILLING_PREVIEW === "true";
 }
 
-/** Adds one plan interval (1 month / 1 year) to a date. */
-export function addInterval(from: Date, plan: BillingInterval): Date {
+/** Adds one plan interval (1 month) to a date. */
+export function addInterval(from: Date, _plan: BillingInterval): Date {
   const d = new Date(from);
-  if (plan === "annual") d.setUTCFullYear(d.getUTCFullYear() + 1);
-  else d.setUTCMonth(d.getUTCMonth() + 1);
+  d.setUTCMonth(d.getUTCMonth() + 1);
   return d;
 }
 

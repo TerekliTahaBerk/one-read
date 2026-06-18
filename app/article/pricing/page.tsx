@@ -8,7 +8,7 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Pricing — OneArticle",
   description:
-    "Simple pricing for OneArticle. One carefully chosen article brief in your inbox every day — $2/month or $18/year.",
+    "Simple pricing for OneArticle. One carefully chosen article brief in your inbox every day — $2/month.",
 };
 
 export default function ArticlePricingPage() {

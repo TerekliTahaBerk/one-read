@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/subscribe/checkout
- * Body: { email: string, plan?: "monthly" | "annual", productKey?: "one-article" }
+ * Body: { email: string, plan?: "monthly", productKey?: "one-article" }
  *
  * Resolves the right next step via the active billing provider. Returns one of:
  *   { ok, action: "redirect", url }        — go complete checkout

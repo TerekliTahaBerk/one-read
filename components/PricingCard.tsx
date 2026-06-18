@@ -1,25 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { BillingToggle } from "./BillingToggle";
-import {
-  FEATURES,
-  PRICING,
-  type BillingInterval,
-} from "@/lib/options";
+import { FEATURES, PRICING } from "@/lib/options";
 
 /**
- * Interactive pricing card. Lives inside the (server) pricing page so the page
- * can keep its metadata. The Monthly/Annual toggle animates the price and the
- * supporting line, and the full feature list is rendered from lib/options.
+ * Pricing card. Lives inside the (server) pricing page so the page can keep its
+ * metadata. OneArticle is a single monthly plan; the full feature list is
+ * rendered from lib/options.
  */
 export function PricingCard() {
-  const [interval, setInterval] = useState<BillingInterval>("annual");
-
-  const isAnnual = interval === "annual";
-  const price = isAnnual ? PRICING.annual : PRICING.monthly;
-  const period = isAnnual ? "per year" : "per month";
+  const price = PRICING.monthly;
+  const period = "per month";
   return (
     <div
       className="
@@ -29,17 +20,8 @@ export function PricingCard() {
     >
       <div className="relative">
         <div className="px-1 py-0 text-center">
-          {/* Toggle */}
-          <div className="flex justify-center">
-            <BillingToggle
-              value={interval}
-              onChange={setInterval}
-              annualBadge={`Save ${PRICING.annualSavingsPct}%`}
-            />
-          </div>
-
-          {/* Animated price — keyed so it re-mounts and fades on interval change */}
-          <div key={interval} className="mt-7 animate-fade-in" aria-live="polite">
+          {/* Price */}
+          <div className="mt-1" aria-live="polite">
             <div className="flex items-end justify-center gap-1.5">
               <span className="font-serif font-medium text-[1.5rem] leading-none text-ash translate-y-[-0.55rem]">
                 $
@@ -53,17 +35,7 @@ export function PricingCard() {
             </div>
 
             <p className="mt-3 font-serif italic text-[13.5px] leading-snug text-ash">
-              {isAnnual ? (
-                <>Save {PRICING.annualSavingsPct}% with annual billing.</>
-              ) : (
-                <>
-                  Go annual for{" "}
-                  <span className="text-ink not-italic font-sans font-medium tabular-nums">
-                    ${PRICING.annual}
-                  </span>{" "}
-                  and save {PRICING.annualSavingsPct}%.
-                </>
-              )}
+              One simple monthly plan. Cancel anytime.
             </p>
           </div>
 

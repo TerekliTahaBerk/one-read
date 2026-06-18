@@ -33,8 +33,8 @@ const FIXTURES: Fix[] = [
     prefs: true,
   },
   {
-    slug: "paid-annual",
-    data: { status: "ACTIVE_PAID", paymentProvider: "mock", plan: "annual", paidAt: now, currentPeriodStart: now, currentPeriodEnd: addInterval(now, "annual") },
+    slug: "paid-active-2",
+    data: { status: "ACTIVE_PAID", paymentProvider: "mock", plan: "monthly", paidAt: now, currentPeriodStart: now, currentPeriodEnd: addInterval(now, "monthly") },
     prefs: true,
   },
   {

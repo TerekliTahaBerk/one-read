@@ -148,8 +148,7 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     const stripeReady =
       has(process.env.STRIPE_SECRET_KEY) &&
       has(process.env.STRIPE_WEBHOOK_SECRET) &&
-      has(process.env.STRIPE_ONE_ARTICLE_MONTHLY_PRICE_ID) &&
-      has(process.env.STRIPE_ONE_ARTICLE_ANNUAL_PRICE_ID);
+      has(process.env.STRIPE_ONE_ARTICLE_MONTHLY_PRICE_ID);
     billingStatus = stripeReady ? "pass" : "missing";
     billingExplanation = stripeReady
       ? "Stripe configured."

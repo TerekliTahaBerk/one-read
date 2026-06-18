@@ -77,11 +77,7 @@ function checkoutSuccessUrl(): string {
 }
 
 function planFromInterval(interval: string | null): BillingInterval | null {
-  return interval === "year" || interval === "annual"
-    ? "annual"
-    : interval === "month" || interval === "monthly"
-      ? "monthly"
-      : null;
+  return interval === "month" || interval === "monthly" ? "monthly" : null;
 }
 
 export function mapPolarSubscriptionStatus(status: string): string {

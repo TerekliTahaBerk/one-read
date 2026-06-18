@@ -38,6 +38,7 @@ import { ingestCandidates, type IngestionSource } from "./ingest";
 import { rssSource } from "./rss-source";
 import { extractAndScorePendingArticles } from "./scorer";
 import { getOneArticleEligibilityByEmail } from "./subscriptions";
+import { isApprovalRequired, SENDABLE_APPROVAL_STATUSES } from "./admin/issues-config";
 import {
   MIN_ARTICLE_SCORE,
   MIN_DELIVERY_SCORE,
@@ -75,6 +76,14 @@ export interface DailyPipelineOptions {
   demo?: boolean;
   /** Hook used by the email step. */
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
+  /**
+   * When true, only admin-approved issues (TopicDailyPick.approvalStatus in
+   * APPROVED/SCHEDULED) are eligible to be sent. When omitted, falls back to
+   * the ONE_ARTICLE_REQUIRE_APPROVAL env flag (default off → current behavior).
+   * The admin "send now" path passes this explicitly so it is safe regardless
+   * of the global flag.
+   */
+  requireApproval?: boolean;
 }
 
 export interface SendArgs {
@@ -181,6 +190,7 @@ export async function runDailyPipeline(
     dryRun: opts.dryRun ?? false,
     minDeliveryScore: thresholds.minDeliveryScore,
     send: opts.send,
+    requireApproval: opts.requireApproval ?? isApprovalRequired(),
   });
 
   // Source observability — fetch the rows we just touched.
@@ -527,11 +537,23 @@ function articleRank(a: Article): number {
 export async function selectSubscriberSends(
   date: Date,
   minDeliveryScore: number = MIN_DELIVERY_SCORE,
+  opts: { requireApproval?: boolean } = {},
 ): Promise<DailySend[]> {
   const day = atUtcMidnight(date);
 
+  // Admin approval gate. When enabled (explicitly, or via the
+  // ONE_ARTICLE_REQUIRE_APPROVAL env flag), only issues an admin has approved
+  // or scheduled are eligible to send. Default keeps the historical behavior:
+  // any READY/SENT pick can be sent.
+  const requireApproval = opts.requireApproval ?? isApprovalRequired();
   const picks = await prisma.topicDailyPick.findMany({
-    where: { date: day, status: { in: ["READY", "SENT"] } },
+    where: {
+      date: day,
+      status: { in: ["READY", "SENT"] },
+      ...(requireApproval
+        ? { approvalStatus: { in: [...SENDABLE_APPROVAL_STATUSES] } }
+        : {}),
+    },
     include: { article: true },
   });
   if (picks.length === 0) return [];
@@ -644,6 +666,7 @@ interface FanOutOpts {
   dryRun: boolean;
   minDeliveryScore?: number;
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
+  requireApproval?: boolean;
 }
 
 async function fanOutAndSend(
@@ -651,7 +674,9 @@ async function fanOutAndSend(
   opts: FanOutOpts,
 ): Promise<{ total: number; sent: number; skipped: number; failed: number }> {
   // Make sure DailySend rows exist before sending.
-  await selectSubscriberSends(date, opts.minDeliveryScore);
+  await selectSubscriberSends(date, opts.minDeliveryScore, {
+    requireApproval: opts.requireApproval,
+  });
 
   const day = atUtcMidnight(date);
   const queued = await prisma.dailySend.findMany({

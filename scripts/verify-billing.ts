@@ -36,14 +36,14 @@ async function main() {
   check("1 periodEnd = trialEndsAt + 1mo", sameDay(t1!.currentPeriodEnd, addInterval(trialEnds, "monthly")));
   check("1 eligible", evaluateEligibility(t1!).allowed);
 
-  // 2. Trial-expired subscribes annual → period begins now.
+  // 2. Trial-expired subscribes monthly → period begins now.
   const now = new Date();
-  await completeMockCheckout(`${P}trial-expired@example.com`, "annual");
+  await completeMockCheckout(`${P}trial-expired@example.com`, "monthly");
   const t2 = await get("trial-expired");
-  check("2 trial-expired→annual: ACTIVE_PAID", t2!.status === "ACTIVE_PAID");
-  check("2 plan annual", t2!.plan === "annual");
+  check("2 trial-expired→monthly: ACTIVE_PAID", t2!.status === "ACTIVE_PAID");
+  check("2 plan monthly", t2!.plan === "monthly");
   check("2 periodStart ~ now", sameDay(t2!.currentPeriodStart, now), `${t2!.currentPeriodStart}`);
-  check("2 periodEnd ~ now + 1yr", sameDay(t2!.currentPeriodEnd, addInterval(now, "annual")));
+  check("2 periodEnd ~ now + 1mo", sameDay(t2!.currentPeriodEnd, addInterval(now, "monthly")));
   check("2 eligible", evaluateEligibility(t2!).allowed);
 
   // 3. Active paid lookup + portal.
@@ -84,9 +84,9 @@ async function main() {
   check("8 eligibility denied email_unsubscribed", !e8.allowed && e8.reason === "email_unsubscribed", e8.reason);
 
   // 9. Duplicate checkout for active paid → already_active.
-  const c9 = await provider.createCheckoutSession({ email: `${P}paid-annual@example.com`, plan: "monthly" });
+  const c9 = await provider.createCheckoutSession({ email: `${P}paid-active-2@example.com`, plan: "monthly" });
   check("9 duplicate checkout → already_active", c9.kind === "already_active", c9.kind);
-  const subsForEmail = await prisma.productSubscription.count({ where: { contact: { email: `${P}paid-annual@example.com` } } });
+  const subsForEmail = await prisma.productSubscription.count({ where: { contact: { email: `${P}paid-active-2@example.com` } } });
   check("9 no duplicate subscription", subsForEmail === 1, `count=${subsForEmail}`);
 
   // Checkout guards: needs_setup_first / needs_setup.

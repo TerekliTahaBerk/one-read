@@ -11,11 +11,9 @@ import {
   type Interest,
   type SourceLanguage,
   type SummaryLanguage,
-  type BillingInterval,
 } from "@/lib/options";
 import { InterestChip } from "./InterestChip";
 import { LanguagePill } from "./LanguagePill";
-import { BillingToggle } from "./BillingToggle";
 
 export type SignupPhase = "email" | "preferences" | "payment" | "manage";
 
@@ -342,13 +340,11 @@ function PaymentStep({
   onCompleted: () => void;
   className?: string;
 }) {
-  const [interval, setInterval] = useState<BillingInterval>("annual");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAnnual = interval === "annual";
-  const amount = isAnnual ? PRICING.annual : PRICING.monthly;
-  const period = isAnnual ? "year" : "month";
+  const amount = PRICING.monthly;
+  const period = "month";
 
   const canSubmit = !loading;
 
@@ -365,7 +361,7 @@ function PaymentStep({
       const res = await fetch("/api/subscribe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, plan: interval, productKey: "one-article" }),
+        body: JSON.stringify({ email, plan: "monthly", productKey: "one-article" }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
@@ -409,20 +405,7 @@ function PaymentStep({
       className={`w-full ${className}`}
       aria-label="Choose a plan and pay"
     >
-      {/* Plan selector */}
-      <div className="flex justify-center animate-rise-delayed-2">
-        <BillingToggle
-          value={interval}
-          onChange={setInterval}
-          annualBadge={`Save ${PRICING.annualSavingsPct}%`}
-        />
-      </div>
-
-      <div
-        key={interval}
-        className="mt-4 text-center animate-fade-in"
-        aria-live="polite"
-      >
+      <div className="text-center animate-rise-delayed-2" aria-live="polite">
         <span className="font-serif font-medium text-[2rem] leading-none text-ink">
           ${amount}
         </span>

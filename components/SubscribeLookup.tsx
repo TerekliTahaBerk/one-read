@@ -76,8 +76,8 @@ function present(
     case "trial_expired":
       return {
         title: "Your free trial has ended.",
-        body: "Subscribe to keep receiving OneArticle — $2/month or $18/year.",
-        ctas: [buy("Subscribe $2/mo", "monthly", true), buy("Subscribe $18/yr", "annual")],
+        body: "Subscribe to keep receiving OneArticle — $2/month.",
+        ctas: [buy("Subscribe $2/mo", "monthly", true)],
       };
     case "active_paid":
       return {

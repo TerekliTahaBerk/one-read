@@ -37,7 +37,7 @@ export const SUMMARY_LANGUAGES = [
 ] as const;
 export type SummaryLanguage = (typeof SUMMARY_LANGUAGES)[number];
 
-export const BILLING_INTERVALS = ["monthly", "annual"] as const;
+export const BILLING_INTERVALS = ["monthly"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
 /**
@@ -65,8 +65,6 @@ export const PAST_DUE_GRACE_DAYS = Number(process.env.PAST_DUE_GRACE_DAYS ?? 3);
  */
 export const PRICING = {
   monthly: 2,
-  annual: 18,
-  annualSavingsPct: 25,
 } as const;
 
 /**
