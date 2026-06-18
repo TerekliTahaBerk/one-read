@@ -7,17 +7,38 @@ import { usePathname } from "next/navigation";
  * Left navigation for the admin. Highlights the active section. Intentionally
  * unlinked from any public UI.
  */
-const NAV: { href: string; label: string; matchPrefix?: string }[] = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/users", label: "Users", matchPrefix: "/admin/users" },
-  { href: "/admin/products", label: "Products" },
+const NAV_GROUPS: {
+  label: string;
+  items: { href: string; label: string; matchPrefix?: string }[];
+}[] = [
+  {
+    label: "Main",
+    items: [
+      { href: "/admin", label: "Overview" },
+      { href: "/admin/users", label: "Users", matchPrefix: "/admin/users" },
+      { href: "/admin/products", label: "Products" },
+    ],
+  },
+  {
+    label: "OneArticle",
+    items: [
   {
     href: "/admin/one-article",
     label: "OneArticle",
     matchPrefix: "/admin/one-article",
   },
-  { href: "/admin/settings", label: "Settings" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/admin/settings", label: "Settings" },
+      { href: "/admin/audit", label: "Audit log", matchPrefix: "/admin/audit" },
+    ],
+  },
 ];
+
+const NAV = NAV_GROUPS.flatMap((group) => group.items);
 
 const SUB_NAV: Record<string, { href: string; label: string }[]> = {
   "/admin/one-article": [
@@ -42,45 +63,54 @@ export function AdminNav() {
 
   return (
     <nav className="text-[13px] font-sans">
-      <ul className="space-y-0.5">
-        {NAV.map((item) => {
-          const active = isActive(item);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`block rounded-lg px-3 py-1.5 transition-colors ${
-                  active
-                    ? "bg-cream text-ink font-medium"
-                    : "text-ash hover:bg-cream/60 hover:text-ink"
-                }`}
-              >
-                {item.label}
-              </Link>
-              {active && sub && (
-                <ul className="mt-0.5 mb-1 ml-3 space-y-0.5 border-l border-line pl-3">
-                  {sub.map((s) => {
-                    const subActive = pathname === s.href;
-                    return (
-                      <li key={s.href}>
-                        <Link
-                          href={s.href}
-                          className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors ${
-                            subActive
-                              ? "text-ink font-medium"
-                              : "text-fog hover:text-ink"
-                          }`}
-                        >
-                          {s.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </li>
-          );
-        })}
+      <ul className="space-y-4">
+        {NAV_GROUPS.map((group) => (
+          <li key={group.label}>
+            <div className="px-3 pb-1 text-[10px] uppercase tracking-eyebrow text-fog">
+              {group.label}
+            </div>
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = isActive(item);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`block rounded-lg px-3 py-1.5 transition-colors ${
+                        active
+                          ? "bg-cream text-ink font-medium"
+                          : "text-ash hover:bg-cream/60 hover:text-ink"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                    {active && sub && (
+                      <ul className="mt-0.5 mb-1 ml-3 space-y-0.5 border-l border-line pl-3">
+                        {sub.map((s) => {
+                          const subActive = pathname === s.href;
+                          return (
+                            <li key={s.href}>
+                              <Link
+                                href={s.href}
+                                className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors ${
+                                  subActive
+                                    ? "text-ink font-medium"
+                                    : "text-fog hover:text-ink"
+                                }`}
+                              >
+                                {s.label}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        ))}
       </ul>
       <div className="mt-6 border-t border-line pt-3">
         <Link

@@ -26,6 +26,7 @@ export interface IssueListItem {
   approvalStatus: string;
   scheduledFor: Date | null;
   summaryLanguages: string[];
+  /** Existing DailySend rows for this issue. Not a guessed recipient estimate. */
   recipientCount: number;
   sentCount: number;
   skippedCount: number;

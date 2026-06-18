@@ -61,6 +61,13 @@ export interface OverviewMetrics {
     renewals7d: number;
     renewals30d: number;
   };
+  content: {
+    articles: number;
+    scoredArticles: number;
+    summaries: number;
+    auditEvents: number;
+    billingEvents: number;
+  };
   ops: {
     isoDate: string;
     picksToday: number;
@@ -79,7 +86,18 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
   const today = todayUtc();
   const iso = today.toISOString().slice(0, 10);
 
-  const [subs, totalContacts, sendsToday, picksToday, lastSent] = await Promise.all([
+  const [
+    subs,
+    totalContacts,
+    sendsToday,
+    picksToday,
+    lastSent,
+    articles,
+    scoredArticles,
+    summaries,
+    auditEvents,
+    billingEvents,
+  ] = await Promise.all([
     loadOneArticleSubs(),
     prisma.contact.count(),
     prisma.dailySend.groupBy({
@@ -96,6 +114,11 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
       orderBy: { sentAt: "desc" },
       select: { sentAt: true },
     }),
+    prisma.article.count(),
+    prisma.article.count({ where: { scoringStatus: "SCORED" } }),
+    prisma.summary.count(),
+    prisma.adminAuditLog.count(),
+    prisma.billingEvent.count(),
   ]);
 
   const access = countBy(subs, (s) => s.status);
@@ -163,6 +186,13 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
       plans,
       renewals7d,
       renewals30d,
+    },
+    content: {
+      articles,
+      scoredArticles,
+      summaries,
+      auditEvents,
+      billingEvents,
     },
     ops: {
       isoDate: iso,

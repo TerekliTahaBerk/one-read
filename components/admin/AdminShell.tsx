@@ -18,11 +18,14 @@ export function AdminShell({
   children: ReactNode;
 }) {
   return (
-    <main className="min-h-svh w-full bg-cream/30">
+    <main className="min-h-svh w-full bg-[#fbfaf7]">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-between border-b border-line pb-4">
           <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">
             OneRead · admin
+          </span>
+          <span className="text-[11px] uppercase tracking-eyebrow text-fog">
+            Internal operations
           </span>
         </div>
         <div className="flex flex-col lg:flex-row gap-8">

@@ -9,6 +9,7 @@ import { loadIssueDetail } from "@/lib/admin/issues-read";
 import { IssueActionsBar } from "@/components/admin/IssueActionsBar";
 import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime } from "@/lib/admin/format";
+import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function IssueDetailPage({
   const detail = await loadIssueDetail(params.id);
   if (!detail) notFound();
   const { pick, previews, recipients } = detail;
+  const auditEvents = await loadAuditLogs({ targetType: "TopicDailyPick", q: pick.id }, 20);
 
   return (
     <AdminShell
@@ -75,7 +77,7 @@ export default async function IssueDetailPage({
         />
       </AdminCard>
 
-      <AdminCard title="Recipients" bodyClassName="p-4">
+      <AdminCard title="Recipients" subtitle="Calculated from ProductSubscription eligibility" bodyClassName="p-4">
         <MetricGrid>
           <MetricCard label="Matching" value={detail.matchingCount} />
           <MetricCard label="Eligible" value={detail.eligibleCount} tone="good" />
@@ -97,7 +99,7 @@ export default async function IssueDetailPage({
         />
       </AdminCard>
 
-      <AdminCard title="Email preview" subtitle={`${previews.length} language(s) · rendering only, no send`}>
+      <AdminCard title="Email preview" subtitle={`${previews.length} Summary row(s) · rendering only, no send`}>
         {previews.length === 0 ? (
           <div className="px-4 py-8 text-[13px] text-fog">
             No summary generated for this issue yet.
@@ -138,6 +140,21 @@ export default async function IssueDetailPage({
             ))}
           </div>
         )}
+      </AdminCard>
+
+      <AdminCard title="Audit history" subtitle="From AdminAuditLog">
+        <AdminTable
+          head={["Date", "Action", "Actor", "Metadata"]}
+          empty="No audit events for this issue yet."
+          rows={auditEvents.map((event) => [
+            <span key="d" className="text-ash">{fmtDateTime(event.createdAt)}</span>,
+            <StatusBadge key="a" value={event.action} tone="neutral" />,
+            <span key="actor" className="font-mono text-[11.5px] text-ash">{event.actor}</span>,
+            <span key="m" className="text-[11.5px] text-ash">
+              {summarizeAuditMetadata(event.metadata)}
+            </span>,
+          ])}
+        />
       </AdminCard>
     </AdminShell>
   );

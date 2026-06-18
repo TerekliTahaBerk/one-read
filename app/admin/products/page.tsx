@@ -5,7 +5,7 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
-import { PRODUCTS, WAITLIST_NOTE } from "@/lib/admin/products";
+import { PRODUCTS } from "@/lib/admin/products";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 
 export const runtime = "nodejs";
@@ -29,23 +29,26 @@ export default async function AdminProductsPage({
     >
       <AdminCard>
         <AdminTable
-          head={["Product", "Status", "Data", "Subscribers", "Actions"]}
+          head={["Product", "Status", "Source", "Operational data", "Actions"]}
           rows={PRODUCTS.map((p) => [
-            <span key="n" className="font-medium text-ink">{p.name}</span>,
+            <span key="n" className="flex items-center gap-2 font-medium text-ink">
+              <span className={`h-2.5 w-2.5 rounded-full ${productDotClass(p.key)}`} />
+              {p.name}
+            </span>,
             <StatusBadge
               key="s"
               value={p.status === "live" ? "live" : "waitlist"}
               tone={p.status === "live" ? "good" : "muted"}
             />,
             p.connected ? (
-              <span key="d" className="text-ash">Database</span>
+              <span key="d" className="text-ash">From ProductSubscription</span>
             ) : (
-              <span key="d" className="text-fog">{WAITLIST_NOTE}</span>
+              <span key="d" className="text-fog">External: Tally, not connected</span>
             ),
             p.connected ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
             ) : (
-              <span key="c" className="text-fog">—</span>
+              <span key="c" className="text-fog">Waitlist count not available</span>
             ),
             p.key === "one-article" ? (
               <Link key="a" href="/admin/one-article" className="text-ink underline underline-offset-2">
@@ -73,4 +76,21 @@ export default async function AdminProductsPage({
       </p>
     </AdminShell>
   );
+}
+
+function productDotClass(key: string): string {
+  switch (key) {
+    case "one-article":
+      return "bg-sky-500";
+    case "one-lingo":
+      return "bg-emerald-500";
+    case "one-goal":
+      return "bg-amber-500";
+    case "one-plate":
+      return "bg-[#C96457]";
+    case "one-move":
+      return "bg-[#7A6FA8]";
+    default:
+      return "bg-fog";
+  }
 }

@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getLaunchReadiness } from "@/lib/launch-readiness";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime } from "@/lib/admin/format";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
+import { WAITLIST_FORM_URL } from "@/lib/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +77,9 @@ export default async function SettingsPage({
   if (process.env.ADMIN_TOKEN === "dev-admin-local-7Qk2") {
     warnings.push("Dev admin token detected — replace ADMIN_TOKEN before production.");
   }
+  if (process.env.ADMIN_PASSWORD === "taha123") {
+    warnings.push("Development password in use. Replace ADMIN_PASSWORD before production.");
+  }
   if (!flags.mutationsEnabled) {
     warnings.push("ADMIN_MUTATIONS_ENABLED is false — user/admin mutations are hidden or blocked.");
   }
@@ -126,14 +130,80 @@ export default async function SettingsPage({
               />,
             ],
             ["Admin override subscriptions", String(overrideCount)],
-            ["Last successful send", fmtDateTime(lastSend?.sentAt ?? null)],
+            ["Last successful send recorded", fmtDateTime(lastSend?.sentAt ?? null)],
             [
               "Last failed send",
-              lastFailed ? `${fmtDateTime(lastFailed.createdAt)} — ${lastFailed.error ?? ""}` : "—",
+              lastFailed ? `${fmtDateTime(lastFailed.createdAt)} — ${lastFailed.error ?? "No error text stored"}` : "No failed sends recorded yet",
             ],
           ]}
         />
       </AdminCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
+        <ConfigCard
+          title="Admin access"
+          rows={[
+            ["ADMIN_EMAIL", configured(process.env.ADMIN_EMAIL)],
+            ["ADMIN_PASSWORD_HASH", configured(process.env.ADMIN_PASSWORD_HASH)],
+            [
+              "ADMIN_PASSWORD",
+              process.env.ADMIN_PASSWORD
+                ? process.env.ADMIN_PASSWORD === "taha123"
+                  ? "Development password in use"
+                  : "Development fallback configured"
+                : "Missing",
+            ],
+            ["ADMIN_SESSION_SECRET", configured(process.env.ADMIN_SESSION_SECRET)],
+            ["ADMIN_TOKEN", process.env.ADMIN_TOKEN === "dev-admin-local-7Qk2" ? "Development token in use" : configured(process.env.ADMIN_TOKEN)],
+          ]}
+        />
+        <ConfigCard
+          title="Billing / Polar"
+          rows={[
+            ["BILLING_PROVIDER", process.env.BILLING_PROVIDER ? "Configured from environment" : "Development fallback"],
+            ["POLAR_ACCESS_TOKEN", configured(process.env.POLAR_ACCESS_TOKEN)],
+            ["POLAR_WEBHOOK_SECRET", configured(process.env.POLAR_WEBHOOK_SECRET)],
+            ["POLAR_SERVER", process.env.POLAR_SERVER ? "Configured from environment" : "Development fallback: sandbox"],
+            ["Revenue reporting", "Not tracked yet"],
+          ]}
+        />
+        <ConfigCard
+          title="Email / Resend"
+          rows={[
+            ["RESEND_API_KEY", configured(process.env.RESEND_API_KEY)],
+            ["FROM_EMAIL / RESEND_FROM", configured(process.env.FROM_EMAIL || process.env.RESEND_FROM)],
+            ["Open tracking", "Not implemented"],
+            ["Click tracking", "Not implemented"],
+          ]}
+        />
+        <ConfigCard
+          title="AI provider"
+          rows={[
+            ["AI_PROVIDER", process.env.AI_PROVIDER ? "Configured from environment" : "Development heuristic fallback"],
+            ["OPENAI_API_KEY", configured(process.env.OPENAI_API_KEY)],
+            ["ANTHROPIC_API_KEY", configured(process.env.ANTHROPIC_API_KEY)],
+            ["AI_MODEL", process.env.AI_MODEL ? "Configured from environment" : "Provider default"],
+          ]}
+        />
+        <ConfigCard
+          title="Cron / scheduling"
+          rows={[
+            ["CRON_SECRET", configured(process.env.CRON_SECRET)],
+            ["Schedule source", "vercel.json cron + environment"],
+            ["Last cron run", "Not tracked yet"],
+            ["Next cron run", "Not tracked by current schema"],
+          ]}
+        />
+        <ConfigCard
+          title="Public URLs / waitlist"
+          rows={[
+            ["PUBLIC_BASE_URL", process.env.PUBLIC_BASE_URL ? "Configured from environment" : "Fallback to https://oneread.app"],
+            ["POLAR_SUCCESS_URL", configured(process.env.POLAR_SUCCESS_URL)],
+            ["TALLY_WAITLIST_URL", WAITLIST_FORM_URL ? "Configured" : "Missing"],
+            ["Waitlist counts", "External source not connected"],
+          ]}
+        />
+      </div>
 
       <AdminCard title="Launch readiness" subtitle={`${passCount}/${readiness.length} pass`}>
         <AdminTable
@@ -152,5 +222,38 @@ export default async function SettingsPage({
         settings.
       </p>
     </AdminShell>
+  );
+}
+
+function configured(value: string | undefined): string {
+  return value && value.trim() ? "Configured" : "Missing";
+}
+
+function ConfigCard({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: readonly (readonly [string, string])[];
+}) {
+  return (
+    <AdminCard title={title} subtitle="Secret values hidden">
+      <DefList
+        rows={rows.map(([key, value]) => [
+          <span key="k" className="font-mono text-[11.5px] text-ash">{key}</span>,
+          <StatusBadge
+            key="v"
+            value={value}
+            tone={
+              value === "Configured" || value === "Enabled" || value === "Provider default"
+                ? "good"
+                : value.includes("Missing") || value.includes("Development")
+                  ? "wait"
+                  : "muted"
+            }
+          />,
+        ])}
+      />
+    </AdminCard>
   );
 }

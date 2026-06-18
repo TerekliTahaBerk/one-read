@@ -31,7 +31,7 @@ export function AdminCard({
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <div className="border border-line rounded-xl bg-paper/60 overflow-hidden">
+      <div className="border border-line rounded-lg bg-paper/70 overflow-hidden">
         {bodyClassName ? (
           <div className={bodyClassName}>{children}</div>
         ) : (
@@ -61,11 +61,11 @@ export function MetricCard({
         ? "text-emerald-700"
         : "text-ink";
   return (
-    <div className="border border-line rounded-xl bg-paper/60 px-4 py-3">
+    <div className="border border-line rounded-lg bg-paper/70 px-4 py-3">
       <div className="text-[11px] uppercase tracking-eyebrow text-fog font-sans">
         {label}
       </div>
-      <div className={`mt-1 font-serif text-[26px] leading-none ${valueClass}`}>
+      <div className={`mt-1 font-serif text-[clamp(16px,2vw,26px)] leading-tight ${valueClass}`}>
         {value}
       </div>
       {hint != null && (

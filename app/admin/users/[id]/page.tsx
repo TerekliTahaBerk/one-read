@@ -12,6 +12,7 @@ import { fmtDate, fmtDateTime, yesNo } from "@/lib/admin/format";
 import { UserActionsBar } from "@/components/admin/UserActionsBar";
 import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
 import { INTERESTS, SOURCE_LANGUAGES, SUMMARY_LANGUAGES } from "@/lib/options";
+import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function AdminUserDetailPage({
 
   // Activity: sends + feedback for this person (by new-model link or by email
   // through the legacy Subscriber, since the backfill is still in progress).
-  const [sends, feedback] = await Promise.all([
+  const [sends, feedback, auditEvents] = await Promise.all([
     prisma.dailySend.findMany({
       where: {
         OR: [
@@ -60,6 +61,7 @@ export default async function AdminUserDetailPage({
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    loadAuditLogs({ targetType: "ProductSubscription", q: sub.id }, 20),
   ]);
 
   const lastSend = sends.find((s) => s.status === "SENT");
@@ -200,6 +202,21 @@ export default async function AdminUserDetailPage({
             fb.reaction,
             fb.topic ? topicBySlug(fb.topic)?.label ?? fb.topic : "—",
             fb.sourceName ?? "—",
+          ])}
+        />
+      </AdminCard>
+
+      <AdminCard title="Audit history" subtitle="From AdminAuditLog">
+        <AdminTable
+          head={["Date", "Action", "Actor", "Metadata"]}
+          empty="No audit events for this user yet."
+          rows={auditEvents.map((event) => [
+            <span key="d" className="text-ash">{fmtDateTime(event.createdAt)}</span>,
+            <StatusBadge key="a" value={event.action} tone="neutral" />,
+            <span key="actor" className="font-mono text-[11.5px] text-ash">{event.actor}</span>,
+            <span key="m" className="text-[11.5px] text-ash">
+              {summarizeAuditMetadata(event.metadata)}
+            </span>,
           ])}
         />
       </AdminCard>

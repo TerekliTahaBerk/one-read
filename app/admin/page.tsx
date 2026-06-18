@@ -39,10 +39,10 @@ export default async function AdminOverviewPage({
   return (
     <AdminShell
       title="Overview"
-      subtitle="OneRead operations · all figures from live data"
+      subtitle="OneRead operations · no estimated or placeholder metrics"
     >
       {/* Users */}
-      <AdminCard title="Users" subtitle={`${m.users.totalContacts} contacts`} bodyClassName="p-4">
+      <AdminCard title="Users" subtitle="From Contact and ProductSubscription" bodyClassName="p-4">
         <MetricGrid>
           <MetricCard label="Total contacts" value={m.users.totalContacts} />
           <MetricCard label="Email subscribed" value={m.users.subscribed} tone="good" />
@@ -65,7 +65,7 @@ export default async function AdminOverviewPage({
       </AdminCard>
 
       {/* Subscriptions */}
-      <AdminCard title="Subscriptions" subtitle="OneArticle access states">
+      <AdminCard title="Subscriptions" subtitle="From ProductSubscription.status">
         <DefList
           rows={accessOrder
             .filter((k) => (m.access[k] ?? 0) > 0)
@@ -80,20 +80,25 @@ export default async function AdminOverviewPage({
       </AdminCard>
 
       {/* Payment */}
-      <AdminCard title="Payment" subtitle="Providers, plans, and renewals" bodyClassName="p-4">
+      <AdminCard title="Billing state" subtitle="From ProductSubscription and BillingEvent" bodyClassName="p-4">
         <MetricGrid>
-          <MetricCard label="Paid users" value={m.payment.paidCount} />
+          <MetricCard label="Paid states" value={m.payment.paidCount} />
           <MetricCard
             label="Renewals · 7 days"
             value={m.payment.renewals7d}
-            hint="period ends within 7d"
+            hint="from currentPeriodEnd"
           />
           <MetricCard
             label="Renewals · 30 days"
             value={m.payment.renewals30d}
-            hint="period ends within 30d"
+            hint="from currentPeriodEnd"
           />
-          <MetricCard label="Last payment" value="—" hint="see user detail" />
+          <MetricCard
+            label="Revenue"
+            value="Not tracked yet"
+            hint="Polar states are mirrored; totals are not computed here"
+          />
+          <MetricCard label="Webhook events" value={m.content.billingEvents} hint="from BillingEvent" />
         </MetricGrid>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SmallBreakdown title="Provider" data={m.payment.providers} />
@@ -102,7 +107,7 @@ export default async function AdminOverviewPage({
       </AdminCard>
 
       {/* Products */}
-      <AdminCard title="Products" subtitle="OneRead family">
+      <AdminCard title="Products" subtitle="OneRead family · Tally waitlists not connected">
         <DefList
           rows={PRODUCTS.map((p) => [
             <span key="n" className="flex items-center gap-2">
@@ -131,7 +136,7 @@ export default async function AdminOverviewPage({
       </AdminCard>
 
       {/* Daily operations */}
-      <AdminCard title="Today's delivery" subtitle={m.ops.isoDate} bodyClassName="p-4">
+      <AdminCard title="Today's delivery" subtitle={`From TopicDailyPick and DailySend · ${m.ops.isoDate}`} bodyClassName="p-4">
         <MetricGrid>
           <MetricCard label="Prepared issues" value={m.ops.picksToday} />
           <MetricCard label="Approved / scheduled" value={m.ops.approvedToday} />
@@ -146,8 +151,8 @@ export default async function AdminOverviewPage({
         </MetricGrid>
         <DefList
           rows={[
-            ["Next scheduled send", `${m.ops.nextSendUtc} · 07:00 Europe/Istanbul`],
-            ["Last successful send", fmtDateTime(m.ops.lastSendAt)],
+            ["Configured daily send time", `${m.ops.nextSendUtc} · 07:00 Europe/Istanbul`],
+            ["Last successful send recorded", fmtDateTime(m.ops.lastSendAt)],
             [
               "Today's issues",
               <Link key="l" href="/admin/one-article/issues" className="text-ink underline underline-offset-2">
@@ -156,6 +161,18 @@ export default async function AdminOverviewPage({
             ],
           ]}
         />
+      </AdminCard>
+
+      <AdminCard title="Content & audit" subtitle="From Article, Summary, and AdminAuditLog" bodyClassName="p-4">
+        <MetricGrid>
+          <MetricCard label="Articles ingested" value={m.content.articles} />
+          <MetricCard label="Scored articles" value={m.content.scoredArticles} />
+          <MetricCard label="Summaries generated" value={m.content.summaries} />
+          <MetricCard label="Audit events" value={m.content.auditEvents} />
+        </MetricGrid>
+        <Link href="/admin/audit" className="text-[13px] text-ink underline underline-offset-2">
+          View audit log →
+        </Link>
       </AdminCard>
     </AdminShell>
   );
