@@ -23,6 +23,7 @@ export default async function SettingsPage({
 }) {
   const guard = guardAdminPage("/admin/settings", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
+  const adminSession = guard.session;
 
   const readiness = getLaunchReadiness();
   const passCount = readiness.filter((c) => c.status === "pass").length;
@@ -143,7 +144,13 @@ export default async function SettingsPage({
         <ConfigCard
           title="Admin access"
           rows={[
+            ["Admin session", "Active"],
+            ["Admin session expires", fmtDateTime(adminSession.expiresAt)],
             ["ADMIN_EMAIL", configured(process.env.ADMIN_EMAIL)],
+            [
+              "ADMIN_PASSWORD_HASH or ADMIN_PASSWORD",
+              configured(process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD),
+            ],
             ["ADMIN_PASSWORD_HASH", configured(process.env.ADMIN_PASSWORD_HASH)],
             [
               "ADMIN_PASSWORD",

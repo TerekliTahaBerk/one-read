@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { AdminNav } from "./AdminNav";
-import { AdminTokenBridge } from "./AdminTokenBridge";
 
 /**
  * Page chrome for every admin screen: wordmark, left nav (token-preserving),
@@ -20,7 +19,6 @@ export function AdminShell({
 }) {
   return (
     <main className="min-h-svh w-full bg-[#fbfaf7]">
-      <AdminTokenBridge />
       <div className="mx-auto max-w-7xl px-5 sm:px-8 py-8">
         <div className="mb-8 flex items-center justify-between border-b border-line pb-4">
           <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">

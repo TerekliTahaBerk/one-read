@@ -67,6 +67,10 @@ export function isAdminAuthorized(req: Request, body?: unknown): boolean {
   return Boolean(readAdminSessionFromRequest(req)) || isAdminTokenAuthorized(req, body);
 }
 
+export function isAdminRequest(req: Request, body?: unknown): boolean {
+  return isAdminAuthorized(req, body);
+}
+
 export function requireAdmin(
   req: Request,
   body?: unknown,
@@ -85,7 +89,7 @@ export function guardAdminPage(
     return { ok: false, reason: "not_configured" };
   }
 
-  const session = readCurrentAdminSession();
+  const session = getAdminSession();
   if (session) return { ok: true, session };
 
   if (queryTokenAuthorized) {
@@ -176,8 +180,40 @@ function createAdminSessionToken(email: string): string {
 }
 
 export function readCurrentAdminSession(): AdminSession | null {
+  return getAdminSession();
+}
+
+export function getAdminSession(): AdminSession | null {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
   return verifyAdminSessionToken(token);
+}
+
+export function sanitizeAdminNextPath(next?: string): string {
+  if (!next) return "/admin";
+  if (!next.startsWith("/")) return "/admin";
+
+  let pathname = next;
+  try {
+    const parsed = new URL(next, "http://oneread.local");
+    if (parsed.origin !== "http://oneread.local") return "/admin";
+    pathname = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "/admin";
+  }
+
+  if (
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/login?") ||
+    pathname.startsWith("/admin/login#")
+  ) {
+    return "/admin";
+  }
+
+  if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/admin?")) {
+    return pathname;
+  }
+
+  return "/admin";
 }
 
 function readAdminSessionFromRequest(req: Request): AdminSession | null {
@@ -268,10 +304,7 @@ function buildSafeAdminPath(
   pathname: string,
   searchParams?: Record<string, string | string[] | undefined>,
 ): string {
-  const safePathname =
-    pathname.startsWith("/admin") && pathname !== "/admin/login"
-      ? pathname
-      : "/admin";
+  const safePathname = sanitizeAdminNextPath(pathname);
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams ?? {})) {

@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 export function AdminLoginForm({ next }: { next: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,8 +35,7 @@ export function AdminLoginForm({ next }: { next: string }) {
         return;
       }
 
-      router.replace(json.next ?? "/admin");
-      router.refresh();
+      window.location.assign(json.next ?? "/admin");
     } catch {
       setError("Network error. Try again.");
       setBusy(false);

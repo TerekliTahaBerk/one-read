@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { adminLoginConfigured, readCurrentAdminSession } from "@/lib/admin/auth";
+import {
+  adminLoginConfigured,
+  getAdminSession,
+  sanitizeAdminNextPath,
+} from "@/lib/admin/auth";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 
 export const runtime = "nodejs";
@@ -10,8 +14,8 @@ export default function AdminLoginPage({
 }: {
   searchParams: { next?: string };
 }) {
-  if (readCurrentAdminSession()) {
-    redirect(sanitizeNext(searchParams.next));
+  if (getAdminSession()) {
+    redirect(sanitizeAdminNextPath(searchParams.next));
   }
 
   return (
@@ -28,7 +32,7 @@ export default function AdminLoginPage({
         </div>
 
         {adminLoginConfigured() ? (
-          <AdminLoginForm next={sanitizeNext(searchParams.next)} />
+          <AdminLoginForm next={sanitizeAdminNextPath(searchParams.next)} />
         ) : (
           <div className="rounded-lg border border-line-strong bg-paper p-4 text-[13px] text-ash">
             Configure <code className="font-mono">ADMIN_EMAIL</code>,{" "}
@@ -40,9 +44,4 @@ export default function AdminLoginPage({
       </div>
     </main>
   );
-}
-
-function sanitizeNext(next?: string): string {
-  if (!next?.startsWith("/admin") || next.startsWith("/admin/login")) return "/admin";
-  return next;
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   adminLoginConfigured,
+  sanitizeAdminNextPath,
   setAdminSessionCookie,
   verifyAdminCredentials,
 } from "@/lib/admin/auth";
@@ -33,13 +34,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const next = sanitizeNext(body.next);
+  const next = sanitizeAdminNextPath(body.next);
   const res = NextResponse.json({ ok: true, next });
   setAdminSessionCookie(res, process.env.ADMIN_EMAIL ?? email.trim().toLowerCase());
   return res;
-}
-
-function sanitizeNext(next?: string): string {
-  if (!next?.startsWith("/admin") || next.startsWith("/admin/login")) return "/admin";
-  return next;
 }
