@@ -12,7 +12,6 @@ type Pending = null | "send-now" | "send-test" | "regenerate" | "schedule";
  * audited /api/admin/issues/action route.
  */
 export function IssueActionsBar({
-  token,
   pickId,
   dateIso,
   approvalStatus,
@@ -20,7 +19,6 @@ export function IssueActionsBar({
   segmentLabel,
   defaultTestEmail,
 }: {
-  token: string;
   pickId: string;
   dateIso: string;
   approvalStatus: string;
@@ -42,7 +40,7 @@ export function IssueActionsBar({
       const res = await fetch("/api/admin/issues/action", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, pickId, ...body }),
+        body: JSON.stringify({ pickId, ...body }),
       });
       const json = await res.json();
       setBusy(false);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, adminActorLabel } from "@/lib/admin/auth";
+import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import { recordAudit } from "@/lib/admin/audit";
 import {
   approveIssue,
@@ -19,8 +19,9 @@ export const maxDuration = 300; // sending may take time (reuses the pipeline)
 
 /**
  * POST /api/admin/issues/action — issue approval / scheduling / sending.
- * Body: { action, pickId, token, ...args }. Shared ADMIN_TOKEN auth; every
- * successful mutation is audited. "send-now" must be confirmed in the UI.
+ * Body: { action, pickId, ...args }. Auth is the admin session cookie or
+ * ADMIN_TOKEN for internal callers; every successful mutation is audited.
+ * "send-now" must be confirmed in the UI.
  */
 export async function POST(req: Request): Promise<Response> {
   let body: Record<string, unknown>;
@@ -34,6 +35,15 @@ export async function POST(req: Request): Promise<Response> {
   if (denied) return denied;
 
   const action = typeof body.action === "string" ? body.action : "";
+  if (
+    !adminFeatureFlags().sendActionsEnabled &&
+    ["send-test", "send-now"].includes(action)
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "admin_send_actions_disabled" },
+      { status: 403 },
+    );
+  }
   const pickId = typeof body.pickId === "string" ? body.pickId : "";
   const actor = adminActorLabel(req, body);
   const str = (k: string) => (typeof body[k] === "string" ? (body[k] as string) : undefined);

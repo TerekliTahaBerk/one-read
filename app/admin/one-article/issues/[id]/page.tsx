@@ -19,12 +19,10 @@ export default async function IssueDetailPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage(`/admin/one-article/issues/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const detail = await loadIssueDetail(params.id);
   if (!detail) notFound();
@@ -32,18 +30,16 @@ export default async function IssueDetailPage({
 
   return (
     <AdminShell
-      token={token}
       title={topicBySlug(pick.topic)?.label ?? pick.topic}
       subtitle={`${fmtDate(pick.date)} · ${pick.sourceLanguage} source`}
       actions={
-        <Link href={`/admin/one-article/issues?${tokenQ}&date=${fmtDate(pick.date)}`} className="text-[13px] text-ash hover:text-ink">
+        <Link href={`/admin/one-article/issues?date=${fmtDate(pick.date)}`} className="text-[13px] text-ash hover:text-ink">
           ← All issues
         </Link>
       }
     >
       <AdminCard title="Actions" bodyClassName="p-4">
         <IssueActionsBar
-          token={token}
           pickId={pick.id}
           dateIso={fmtDate(pick.date)}
           approvalStatus={pick.approvalStatus}
@@ -90,7 +86,7 @@ export default async function IssueDetailPage({
           head={["Email", "Eligibility", "Language", "Interests", "Already sent"]}
           empty="No eligible recipients match this segment right now."
           rows={recipients.map((r) => [
-            <Link key="e" href={`/admin/users/${r.subscriptionId}?${tokenQ}`} className="text-ink underline underline-offset-2">
+            <Link key="e" href={`/admin/users/${r.subscriptionId}`} className="text-ink underline underline-offset-2">
               {r.email}
             </Link>,
             <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,

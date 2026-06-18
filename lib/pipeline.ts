@@ -79,7 +79,7 @@ export interface DailyPipelineOptions {
   /**
    * When true, only admin-approved issues (TopicDailyPick.approvalStatus in
    * APPROVED/SCHEDULED) are eligible to be sent. When omitted, falls back to
-   * the ONE_ARTICLE_REQUIRE_APPROVAL env flag (default off → current behavior).
+   * the ONE_ARTICLE_REQUIRE_APPROVAL env flag (default on for admin approval).
    * The admin "send now" path passes this explicitly so it is safe regardless
    * of the global flag.
    */
@@ -543,8 +543,8 @@ export async function selectSubscriberSends(
 
   // Admin approval gate. When enabled (explicitly, or via the
   // ONE_ARTICLE_REQUIRE_APPROVAL env flag), only issues an admin has approved
-  // or scheduled are eligible to send. Default keeps the historical behavior:
-  // any READY/SENT pick can be sent.
+  // or scheduled are eligible to send. Set ONE_ARTICLE_REQUIRE_APPROVAL=false
+  // to allow any READY/SENT pick to be sent.
   const requireApproval = opts.requireApproval ?? isApprovalRequired();
   const picks = await prisma.topicDailyPick.findMany({
     where: {

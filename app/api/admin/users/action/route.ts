@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, adminActorLabel } from "@/lib/admin/auth";
+import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import { recordAudit } from "@/lib/admin/audit";
 import {
   pauseEmails,
@@ -20,8 +20,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/users/action — single entrypoint for mutating user actions.
- * Body: { action, subId?, token, ...args }. Auth is the shared ADMIN_TOKEN;
- * every successful mutation writes an audit row.
+ * Body: { action, subId?, ...args }. Auth is the admin session cookie or
+ * ADMIN_TOKEN for internal callers; every successful mutation writes an audit row.
  */
 export async function POST(req: Request): Promise<Response> {
   let body: Record<string, unknown>;
@@ -33,6 +33,12 @@ export async function POST(req: Request): Promise<Response> {
 
   const denied = requireAdmin(req, body);
   if (denied) return denied;
+  if (!adminFeatureFlags().mutationsEnabled) {
+    return NextResponse.json(
+      { ok: false, error: "admin_mutations_disabled" },
+      { status: 403 },
+    );
+  }
 
   const action = typeof body.action === "string" ? body.action : "";
   const subId = typeof body.subId === "string" ? body.subId : "";

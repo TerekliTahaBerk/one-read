@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /** Adds a OneArticle contact + subscription by email (PENDING_PREFERENCES). */
-export function CreateUserButton({ token }: { token: string }) {
+export function CreateUserButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -17,7 +17,7 @@ export function CreateUserButton({ token }: { token: string }) {
     const res = await fetch("/api/admin/users/action", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token, action: "create-user", email }),
+      body: JSON.stringify({ action: "create-user", email }),
     });
     const json = await res.json();
     setBusy(false);
@@ -27,7 +27,7 @@ export function CreateUserButton({ token }: { token: string }) {
     }
     setOpen(false);
     setEmail("");
-    if (json.subId) router.push(`/admin/users/${json.subId}?token=${encodeURIComponent(token)}`);
+    if (json.subId) router.push(`/admin/users/${json.subId}`);
     else router.refresh();
   }
 

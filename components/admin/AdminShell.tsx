@@ -7,13 +7,11 @@ import { AdminNav } from "./AdminNav";
  * on small screens.
  */
 export function AdminShell({
-  token,
   title,
   subtitle,
   actions,
   children,
 }: {
-  token: string;
   title: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
@@ -30,7 +28,7 @@ export function AdminShell({
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-48 lg:shrink-0">
             <div className="lg:sticky lg:top-8">
-              <AdminNav token={token} />
+              <AdminNav />
             </div>
           </aside>
           <div className="min-w-0 flex-1">
@@ -78,7 +76,7 @@ export function AdminNotConfigured() {
         </span>
         <p className="mt-6 text-ash text-sm font-sans">
           Set <code className="font-mono">ADMIN_TOKEN</code> in your environment
-          to enable the admin panel.
+          plus admin login credentials to enable the admin panel.
         </p>
       </div>
     </main>

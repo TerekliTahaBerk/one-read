@@ -9,14 +9,12 @@ import { useRouter } from "next/navigation";
  * by default so the detail page stays calm.
  */
 export function PreferencesEditor({
-  token,
   subId,
   interests,
   sourceLanguages,
   summaryLanguages,
   current,
 }: {
-  token: string;
   subId: string;
   interests: readonly string[];
   sourceLanguages: readonly string[];
@@ -48,7 +46,6 @@ export function PreferencesEditor({
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        token,
         action: "update-preferences",
         subId,
         interests: selected,

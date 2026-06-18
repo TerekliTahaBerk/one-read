@@ -14,18 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function OneArticleOverviewPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/one-article", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const q = `?token=${encodeURIComponent(token)}`;
 
   const m = await getOverviewMetrics();
 
   return (
-    <AdminShell token={token} title="OneArticle" subtitle="Daily editorial operations">
-      <AdminTabs tabs={oneArticleTabs(token)} active="overview" />
+    <AdminShell title="OneArticle" subtitle="Daily editorial operations">
+      <AdminTabs tabs={oneArticleTabs()} active="overview" />
 
       <AdminCard title="Subscribers" bodyClassName="p-4">
         <MetricGrid>
@@ -51,13 +49,13 @@ export default async function OneArticleOverviewPage({
       </AdminCard>
 
       <div className="flex flex-wrap gap-3 text-[13px] font-sans">
-        <Link href={`/admin/one-article/issues${q}`} className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/issues" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
           Prepared issues →
         </Link>
-        <Link href={`/admin/one-article/subscribers${q}`} className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/subscribers" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
           Subscribers →
         </Link>
-        <Link href={`/admin/one-article/sends${q}`} className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/sends" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
           Send logs →
         </Link>
       </div>

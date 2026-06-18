@@ -18,11 +18,10 @@ export const dynamic = "force-dynamic";
 export default async function SendsPage({
   searchParams,
 }: {
-  searchParams: { token?: string; date?: string; status?: string; email?: string };
+  searchParams: { date?: string; status?: string; email?: string };
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/one-article/sends", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
 
   const where: Prisma.DailySendWhereInput = {};
   if (searchParams.date) where.date = new Date(searchParams.date + "T00:00:00Z");
@@ -39,11 +38,10 @@ export default async function SendsPage({
   });
 
   return (
-    <AdminShell token={token} title="Sends" subtitle={`${sends.length} most recent send records`}>
-      <AdminTabs tabs={oneArticleTabs(token)} active="sends" />
+    <AdminShell title="Sends" subtitle={`${sends.length} most recent send records`}>
+      <AdminTabs tabs={oneArticleTabs()} active="sends" />
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <input type="hidden" name="token" value={token} />
         <label className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-eyebrow text-fog">Date</span>
           <input type="date" name="date" defaultValue={searchParams.date ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink" />
@@ -62,7 +60,7 @@ export default async function SendsPage({
           <input type="text" name="email" defaultValue={searchParams.email ?? ""} placeholder="contains…" className="w-44 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink" />
         </label>
         <button type="submit" className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream">Apply</button>
-        <Link href={`/admin/one-article/sends?token=${encodeURIComponent(token)}`} className="px-2 py-1.5 text-fog hover:text-ink">Reset</Link>
+        <Link href="/admin/one-article/sends" className="px-2 py-1.5 text-fog hover:text-ink">Reset</Link>
       </form>
 
       <AdminCard>

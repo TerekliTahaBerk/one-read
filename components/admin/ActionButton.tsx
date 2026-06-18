@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
  * need a value (a note, or the email for a hard delete) prompt for it inline.
  */
 export interface ActionButtonProps {
-  token: string;
   action: string;
   subId?: string;
   label: string;
@@ -27,7 +26,6 @@ export interface ActionButtonProps {
 }
 
 export function ActionButton({
-  token,
   action,
   subId,
   label,
@@ -50,7 +48,7 @@ export function ActionButton({
     setBusy(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = { token, action, subId, ...extra };
+      const body: Record<string, unknown> = { action, subId, ...extra };
       if (promptField) body[promptField] = value;
       const res = await fetch("/api/admin/users/action", {
         method: "POST",

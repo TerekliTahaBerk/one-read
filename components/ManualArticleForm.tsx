@@ -32,11 +32,11 @@ type Result =
   | { kind: "error"; message: string };
 
 /**
- * Admin-only manual article entry. Posts to /api/admin/manual-article with
- * the admin token (passed in from the server page via the URL). Lets us
- * test editorial quality before real RSS/LLM providers are configured.
+ * Admin-only manual article entry. Auth is handled by the httpOnly admin
+ * session cookie. Lets us test editorial quality before real RSS/LLM providers
+ * are configured.
  */
-export function ManualArticleForm({ token }: { token: string }) {
+export function ManualArticleForm() {
   const [form, setForm] = useState({
     title: "",
     url: "",
@@ -63,7 +63,6 @@ export function ManualArticleForm({ token }: { token: string }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(form),
       });

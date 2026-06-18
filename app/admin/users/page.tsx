@@ -16,7 +16,6 @@ export default async function AdminUsersPage({
   searchParams,
 }: {
   searchParams: {
-    token?: string;
     status?: string;
     email_status?: string;
     provider?: string;
@@ -25,10 +24,8 @@ export default async function AdminUsersPage({
     suppressed?: string;
   };
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/users", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const now = new Date();
   const subs = await loadOneArticleSubs();
@@ -49,14 +46,12 @@ export default async function AdminUsersPage({
 
   return (
     <AdminShell
-      token={token}
       title="Users"
       subtitle={`${rows.length} of ${subs.length} OneArticle subscriptions`}
-      actions={<CreateUserButton token={token} />}
+      actions={<CreateUserButton />}
     >
       {/* Filter bar — a plain GET form so state lives in the URL. */}
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <input type="hidden" name="token" value={token} />
         <FilterField label="Search email">
           <input
             type="text"
@@ -77,7 +72,7 @@ export default async function AdminUsersPage({
         >
           Apply
         </button>
-        <Link href={`/admin/users?${tokenQ}`} className="px-2 py-1.5 text-fog hover:text-ink">
+        <Link href="/admin/users" className="px-2 py-1.5 text-fog hover:text-ink">
           Reset
         </Link>
       </form>
@@ -114,7 +109,7 @@ export default async function AdminUsersPage({
             <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,
             <Link
               key="v"
-              href={`/admin/users/${r.id}?${tokenQ}`}
+              href={`/admin/users/${r.id}`}
               className="text-ink underline underline-offset-2"
             >
               View

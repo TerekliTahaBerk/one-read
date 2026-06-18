@@ -17,12 +17,10 @@ export const dynamic = "force-dynamic";
 export default async function IssuesListPage({
   searchParams,
 }: {
-  searchParams: { token?: string; date?: string; status?: string; approval?: string };
+  searchParams: { date?: string; status?: string; approval?: string };
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/one-article/issues", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const today = todayUtc();
   const iso = searchParams.date ?? today.toISOString().slice(0, 10);
@@ -34,22 +32,20 @@ export default async function IssuesListPage({
 
   return (
     <AdminShell
-      token={token}
       title="Issues"
       subtitle={`Prepared issues for ${iso}`}
       actions={
         <Link
-          href={`/admin/manual-article?${tokenQ}`}
+          href="/admin/manual-article"
           className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream"
         >
           + Create issue from article
         </Link>
       }
     >
-      <AdminTabs tabs={oneArticleTabs(token)} active="issues" />
+      <AdminTabs tabs={oneArticleTabs()} active="issues" />
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <input type="hidden" name="token" value={token} />
         <label className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-eyebrow text-fog">Date</span>
           <input
@@ -71,7 +67,7 @@ export default async function IssuesListPage({
         <button type="submit" className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream">
           Apply
         </button>
-        <Link href={`/admin/one-article/issues?${tokenQ}`} className="px-2 py-1.5 text-fog hover:text-ink">
+        <Link href="/admin/one-article/issues" className="px-2 py-1.5 text-fog hover:text-ink">
           Today
         </Link>
       </form>
@@ -107,7 +103,7 @@ export default async function IssuesListPage({
             i.sentCount,
             i.skippedCount,
             <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,
-            <Link key="v" href={`/admin/one-article/issues/${i.id}?${tokenQ}`} className="text-ink underline underline-offset-2">
+            <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-ink underline underline-offset-2">
               View
             </Link>,
           ])}

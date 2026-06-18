@@ -81,11 +81,27 @@ export function getLaunchReadiness(): ReadinessCheck[] {
   });
 
   checks.push({
+    key: "ADMIN_EMAIL / ADMIN_PASSWORD_HASH / ADMIN_SESSION_SECRET",
+    status:
+      has(process.env.ADMIN_EMAIL) &&
+      has(process.env.ADMIN_PASSWORD_HASH) &&
+      has(process.env.ADMIN_SESSION_SECRET)
+        ? "pass"
+        : "missing",
+    explanation:
+      has(process.env.ADMIN_EMAIL) &&
+      has(process.env.ADMIN_PASSWORD_HASH) &&
+      has(process.env.ADMIN_SESSION_SECRET)
+        ? "Admin login is configured."
+        : "Missing — browser admin login is disabled.",
+  });
+
+  checks.push({
     key: "ADMIN_TOKEN",
-    status: has(process.env.ADMIN_TOKEN) ? "pass" : "missing",
+    status: has(process.env.ADMIN_TOKEN) ? "pass" : "warn",
     explanation: has(process.env.ADMIN_TOKEN)
-      ? "Admin pages and admin APIs are protected."
-      : "Missing — admin tooling is disabled.",
+      ? "Internal admin API token fallback is configured."
+      : "Missing — browser admin still works, but token-based internal admin API calls are disabled.",
   });
 
   checks.push({

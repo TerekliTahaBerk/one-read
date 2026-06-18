@@ -8,7 +8,7 @@
  *   topic?: <topic-slug>,
  *   difficulty?: "beginner" | "intermediate" | "advanced" | "mixed"
  * }
- * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}"
+ * Auth: admin session cookie or "Authorization: Bearer ${ADMIN_TOKEN}".
  *
  * Generates a fresh OneRead email for "today" (using whatever
  * TopicDailyPick the test recipient would receive — falling back to
@@ -23,6 +23,7 @@ import { renderDailyEmail } from "@/lib/email-template";
 import { getOrCreateSummary } from "@/lib/summarizer";
 import { sendDailyEmail, getResendStatus } from "@/lib/resend";
 import { subscriberToContext } from "@/lib/pipeline";
+import { requireAdmin } from "@/lib/admin/auth";
 import {
   parseSummaryLanguage,
   type SummaryLanguage,
@@ -33,13 +34,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const expected = process.env.ADMIN_TOKEN
-    ? `Bearer ${process.env.ADMIN_TOKEN}`
-    : "";
-  if (!expected || auth !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdmin(req);
+  if (denied) return denied;
 
   let body: {
     to?: string;

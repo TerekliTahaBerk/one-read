@@ -17,12 +17,10 @@ export const dynamic = "force-dynamic";
 export default async function ArticlesPage({
   searchParams,
 }: {
-  searchParams: { token?: string; status?: string };
+  searchParams: { status?: string };
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/one-article/articles", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const where = searchParams.status ? { scoringStatus: searchParams.status } : {};
   const [articles, usedArticleIds] = await Promise.all([
@@ -40,12 +38,11 @@ export default async function ArticlesPage({
     a.sourceName === "OneRead Demo" || a.tags.includes("demo") || a.tags.includes("manual");
 
   return (
-    <AdminShell token={token} title="Articles" subtitle={`${articles.length} most recent`}>
-      <AdminTabs tabs={oneArticleTabs(token)} active="articles" />
+    <AdminShell title="Articles" subtitle={`${articles.length} most recent`}>
+      <AdminTabs tabs={oneArticleTabs()} active="articles" />
 
       <div className="mb-6 flex flex-wrap items-center gap-3 text-[12.5px] font-sans">
         <form method="get" className="flex items-end gap-3">
-          <input type="hidden" name="token" value={token} />
           <label className="flex flex-col gap-1">
             <span className="text-[11px] uppercase tracking-eyebrow text-fog">Scoring status</span>
             <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink">
@@ -60,7 +57,7 @@ export default async function ArticlesPage({
           </button>
         </form>
         <Link
-          href={`/admin/manual-article?${tokenQ}`}
+          href="/admin/manual-article"
           className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream"
         >
           + Add article manually

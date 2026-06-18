@@ -8,10 +8,8 @@ import { useState } from "react";
  */
 export function PreviewPickButton({
   articleId,
-  token,
 }: {
   articleId: string;
-  token: string;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [msg, setMsg] = useState<string>("");
@@ -24,7 +22,6 @@ export function PreviewPickButton({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ articleId }),
       });

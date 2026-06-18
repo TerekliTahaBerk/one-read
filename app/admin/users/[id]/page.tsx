@@ -22,12 +22,10 @@ export default async function AdminUserDetailPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage(`/admin/users/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const sub = await prisma.productSubscription.findUnique({
     where: { id: params.id },
@@ -68,18 +66,16 @@ export default async function AdminUserDetailPage({
 
   return (
     <AdminShell
-      token={token}
       title={sub.contact.email}
       subtitle="OneArticle subscription detail"
       actions={
-        <Link href={`/admin/users?${tokenQ}`} className="text-[13px] text-ash hover:text-ink">
+        <Link href="/admin/users" className="text-[13px] text-ash hover:text-ink">
           ← All users
         </Link>
       }
     >
       <AdminCard title="Actions" bodyClassName="p-4">
         <UserActionsBar
-          token={token}
           subId={sub.id}
           email={sub.contact.email}
           emailDeliveryStatus={sub.emailDeliveryStatus}
@@ -141,7 +137,6 @@ export default async function AdminUserDetailPage({
       <AdminCard title="OneArticle preferences">
         <div className="p-4 border-b border-line">
           <PreferencesEditor
-            token={token}
             subId={sub.id}
             interests={INTERESTS}
             sourceLanguages={SOURCE_LANGUAGES}

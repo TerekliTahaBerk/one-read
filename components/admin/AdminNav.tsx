@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * Left navigation for the admin. Highlights the active section and preserves
- * the `?token=` param on every link so the single-secret auth keeps working
- * across navigations. Intentionally unlinked from any public UI.
+ * Left navigation for the admin. Highlights the active section. Intentionally
+ * unlinked from any public UI.
  */
 const NAV: { href: string; label: string; matchPrefix?: string }[] = [
   { href: "/admin", label: "Overview" },
@@ -30,12 +29,7 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
   ],
 };
 
-function withToken(href: string, token: string): string {
-  const q = new URLSearchParams({ token }).toString();
-  return `${href}?${q}`;
-}
-
-export function AdminNav({ token }: { token: string }) {
+export function AdminNav() {
   const pathname = usePathname() ?? "/admin";
 
   const isActive = (item: (typeof NAV)[number]): boolean => {
@@ -54,7 +48,7 @@ export function AdminNav({ token }: { token: string }) {
           return (
             <li key={item.href}>
               <Link
-                href={withToken(item.href, token)}
+                href={item.href}
                 className={`block rounded-lg px-3 py-1.5 transition-colors ${
                   active
                     ? "bg-cream text-ink font-medium"
@@ -70,7 +64,7 @@ export function AdminNav({ token }: { token: string }) {
                     return (
                       <li key={s.href}>
                         <Link
-                          href={withToken(s.href, token)}
+                          href={s.href}
                           className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors ${
                             subActive
                               ? "text-ink font-medium"
@@ -88,6 +82,14 @@ export function AdminNav({ token }: { token: string }) {
           );
         })}
       </ul>
+      <div className="mt-6 border-t border-line pt-3">
+        <Link
+          href="/admin/logout"
+          className="block rounded-lg px-3 py-1.5 text-ash transition-colors hover:bg-cream/60 hover:text-ink"
+        >
+          Logout
+        </Link>
+      </div>
     </nav>
   );
 }

@@ -17,12 +17,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminOverviewPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const q = `?token=${encodeURIComponent(token)}`;
 
   const m = await getOverviewMetrics();
 
@@ -40,7 +38,6 @@ export default async function AdminOverviewPage({
 
   return (
     <AdminShell
-      token={token}
       title="Overview"
       subtitle="OneRead operations · all figures from live data"
     >
@@ -110,7 +107,7 @@ export default async function AdminOverviewPage({
           rows={PRODUCTS.map((p) => [
             <span key="n" className="flex items-center gap-2">
               <Link
-                href={p.key === "one-article" ? `/admin/one-article${q}` : `/admin/products${q}`}
+                href={p.key === "one-article" ? "/admin/one-article" : "/admin/products"}
                 className="text-ink underline underline-offset-2 hover:text-graphite"
               >
                 {p.name}
@@ -153,7 +150,7 @@ export default async function AdminOverviewPage({
             ["Last successful send", fmtDateTime(m.ops.lastSendAt)],
             [
               "Today's issues",
-              <Link key="l" href={`/admin/one-article/issues${q}`} className="text-ink underline underline-offset-2">
+              <Link key="l" href="/admin/one-article/issues" className="text-ink underline underline-offset-2">
                 View issues →
               </Link>,
             ],

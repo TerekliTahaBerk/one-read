@@ -240,6 +240,6 @@ npm run summarize -- --lang Turkish --twice
 npm run demo:preview
 ```
 
-`npm run demo:preview` seeds demo articles, scores them, creates development preview picks for demo articles, generates heuristic summaries, runs a dry-run mapping, and prints the `/admin?token=<ADMIN_TOKEN>` preview instruction.
+`npm run demo:preview` seeds demo articles, scores them, creates development preview picks for demo articles, generates heuristic summaries, runs a dry-run mapping, and prints an `/admin/login` preview instruction.
 
 Demo mode is development-only. `DEMO_MODE=true` or `--demo` can relax preview thresholds only when `NODE_ENV !== "production"`; production thresholds remain unchanged. Demo output is labeled as `heuristic-dev`, demo/manual, and render-only, and no real email is sent by demo preview or dry-run commands.

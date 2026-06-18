@@ -2,7 +2,7 @@
  * OneRead — admin endpoint: manually add a candidate article.
  *
  * POST /api/admin/manual-article
- * Auth: header "Authorization: Bearer ${ADMIN_TOKEN}"  (or ?token= / body.token)
+ * Auth: admin session cookie or ADMIN_TOKEN for internal callers.
  *
  * Body: {
  *   title, url, sourceName?, sourceLanguage?, topic, subtopics?,
@@ -18,6 +18,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canonicalizeUrl } from "@/lib/url-canonical";
 import { ALL_TOPIC_SLUGS } from "@/lib/topics";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,21 +33,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  // Accept the token via Authorization header, ?token=, or body.token so the
-  // simple admin form can post without custom headers.
-  const url = new URL(req.url);
-  const headerToken = (req.headers.get("authorization") ?? "").replace(
-    /^Bearer\s+/i,
-    "",
-  );
-  const token =
-    headerToken ||
-    url.searchParams.get("token") ||
-    (typeof body.token === "string" ? body.token : "");
-  const expected = process.env.ADMIN_TOKEN;
-  if (!expected || token !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdmin(req, body);
+  if (denied) return denied;
 
   const title = str(body.title);
   const rawUrl = str(body.url);

@@ -20,12 +20,10 @@ export const dynamic = "force-dynamic";
 export default async function OneArticleSubscribersPage({
   searchParams,
 }: {
-  searchParams: { token?: string; reason?: string };
+  searchParams: { reason?: string };
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/one-article/subscribers", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const tokenQ = `token=${encodeURIComponent(token)}`;
 
   const now = new Date();
   const subs = await loadOneArticleSubs();
@@ -38,11 +36,10 @@ export default async function OneArticleSubscribersPage({
 
   return (
     <AdminShell
-      token={token}
       title="Subscribers"
       subtitle={`${eligible} of ${rows.length} eligible for delivery`}
     >
-      <AdminTabs tabs={oneArticleTabs(token)} active="subscribers" />
+      <AdminTabs tabs={oneArticleTabs()} active="subscribers" />
 
       <AdminCard>
         <AdminTable
@@ -69,7 +66,7 @@ export default async function OneArticleSubscribersPage({
               {(r.sourceLanguage ?? "—") + " → " + (r.summaryLanguage ?? "—")}
             </span>,
             <span key="i" className="text-ash">{r.interestsCount}</span>,
-            <Link key="v" href={`/admin/users/${r.id}?${tokenQ}`} className="text-ink underline underline-offset-2">
+            <Link key="v" href={`/admin/users/${r.id}`} className="text-ink underline underline-offset-2">
               View
             </Link>,
           ])}

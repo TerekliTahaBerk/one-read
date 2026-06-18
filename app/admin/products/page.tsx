@@ -15,18 +15,15 @@ export const dynamic = "force-dynamic";
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
-  const q = `?token=${encodeURIComponent(token)}`;
 
   const m = await getOverviewMetrics();
 
   return (
     <AdminShell
-      token={token}
       title="Products"
       subtitle="OneRead product family"
     >
@@ -51,7 +48,7 @@ export default async function AdminProductsPage({
               <span key="c" className="text-fog">—</span>
             ),
             p.key === "one-article" ? (
-              <Link key="a" href={`/admin/one-article${q}`} className="text-ink underline underline-offset-2">
+              <Link key="a" href="/admin/one-article" className="text-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : (

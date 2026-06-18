@@ -1,4 +1,4 @@
-import { guardAdminPage } from "@/lib/admin/auth";
+import { adminFeatureFlags, adminLoginConfigured, guardAdminPage } from "@/lib/admin/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard, DefList } from "@/components/admin/AdminCard";
@@ -18,11 +18,10 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const guard = guardAdminPage(searchParams);
+  const guard = guardAdminPage("/admin/settings", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-  const { token } = guard;
 
   const readiness = getLaunchReadiness();
   const passCount = readiness.filter((c) => c.status === "pass").length;
@@ -52,6 +51,7 @@ export default async function SettingsPage({
   ]);
 
   const approvalRequired = isApprovalRequired();
+  const flags = adminFeatureFlags();
   const tone = (s: string): "good" | "muted" => (s === "pass" ? "good" : "muted");
 
   // Operational warnings — surfaced plainly, never alarmist.
@@ -70,10 +70,22 @@ export default async function SettingsPage({
   if (overrideCount > 0) {
     warnings.push(`${overrideCount} subscription(s) have an admin override and are eligible regardless of payment.`);
   }
+  if (!adminLoginConfigured()) {
+    warnings.push("Admin login is not fully configured. Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and ADMIN_SESSION_SECRET.");
+  }
+  if (process.env.ADMIN_TOKEN === "dev-admin-local-7Qk2") {
+    warnings.push("Dev admin token detected — replace ADMIN_TOKEN before production.");
+  }
+  if (!flags.mutationsEnabled) {
+    warnings.push("ADMIN_MUTATIONS_ENABLED is false — user/admin mutations are hidden or blocked.");
+  }
+  if (!flags.sendActionsEnabled) {
+    warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
+  }
   warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
 
   return (
-    <AdminShell token={token} title="Settings" subtitle="Configuration & launch readiness">
+    <AdminShell title="Settings" subtitle="Configuration & launch readiness">
       <AdminCard title="Notices">
         <ul className="divide-y divide-line/70">
           {warnings.map((w, i) => (
@@ -95,6 +107,22 @@ export default async function SettingsPage({
                 key="a"
                 value={approvalRequired ? "ON" : "OFF"}
                 tone={approvalRequired ? "good" : "muted"}
+              />,
+            ],
+            [
+              "Admin mutations",
+              <StatusBadge
+                key="m"
+                value={flags.mutationsEnabled ? "ON" : "OFF"}
+                tone={flags.mutationsEnabled ? "good" : "muted"}
+              />,
+            ],
+            [
+              "Admin send actions",
+              <StatusBadge
+                key="send"
+                value={flags.sendActionsEnabled ? "ON" : "OFF"}
+                tone={flags.sendActionsEnabled ? "good" : "muted"}
               />,
             ],
             ["Admin override subscriptions", String(overrideCount)],
