@@ -79,10 +79,24 @@ export function guardAdminPage(
   pathname: string,
   searchParams?: Record<string, string | string[] | undefined>,
 ): AdminPageGuard {
-  if (!adminLoginConfigured()) return { ok: false, reason: "not_configured" };
+  const queryToken = readTokenFromSearchParams(searchParams);
+  const queryTokenAuthorized = Boolean(queryToken && isAdminTokenValueAuthorized(queryToken));
+  if (!adminLoginConfigured() && !queryTokenAuthorized) {
+    return { ok: false, reason: "not_configured" };
+  }
 
   const session = readCurrentAdminSession();
   if (session) return { ok: true, session };
+
+  if (queryTokenAuthorized) {
+    return {
+      ok: true,
+      session: {
+        email: "admin-token",
+        expiresAt: new Date(Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000),
+      },
+    };
+  }
 
   const next = buildSafeAdminPath(pathname, searchParams);
   redirect(`/admin/login?next=${encodeURIComponent(next)}`);
@@ -195,6 +209,20 @@ function isAdminTokenAuthorized(req: Request, body?: unknown): boolean {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) return false;
   return timingSafeStringEqual(getAdminToken(req, body), expected);
+}
+
+function isAdminTokenValueAuthorized(token: string): boolean {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) return false;
+  return timingSafeStringEqual(token, expected);
+}
+
+function readTokenFromSearchParams(
+  searchParams?: Record<string, string | string[] | undefined>,
+): string {
+  const value = searchParams?.token;
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 }
 
 function sign(body: string): string {
