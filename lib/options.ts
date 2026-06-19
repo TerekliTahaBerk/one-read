@@ -54,6 +54,12 @@ export const ONE_ARTICLE_PRODUCT_KEY = "one-article";
 /** Product slug for OneLingo (the daily language-practice product). */
 export const ONE_LINGO_PRODUCT_KEY = "one-lingo";
 
+/** Product slug for OneNews (the calm morning-briefing product). */
+export const ONE_NEWS_PRODUCT_KEY = "one-news";
+
+/** Product slug for OneFilm (the daily film-note product). */
+export const ONE_FILM_PRODUCT_KEY = "one-film";
+
 /* ----------------------------------------------------------------------- */
 /* OneLingo option catalogs + validators                                   */
 /* ----------------------------------------------------------------------- */
@@ -152,6 +158,198 @@ export function parseLingoMinutesPerDay(input: unknown): number {
   if (!Number.isFinite(n)) return 5;
   return Math.min(20, Math.max(3, Math.round(n)));
 }
+
+/* ----------------------------------------------------------------------- */
+/* OneNews option catalogs + validators                                    */
+/* ----------------------------------------------------------------------- */
+
+export const NEWS_BRIEFING_LANGUAGES = ["English", "Turkish"] as const;
+export type NewsBriefingLanguage = (typeof NEWS_BRIEFING_LANGUAGES)[number];
+
+export const NEWS_REGION_FOCUS = [
+  "Global",
+  "United States",
+  "Europe",
+  "Turkey",
+  "United Kingdom",
+  "Middle East",
+  "Technology-focused",
+  "Business-focused",
+] as const;
+export type NewsRegionFocus = (typeof NEWS_REGION_FOCUS)[number];
+
+export const NEWS_TOPICS = [
+  "World",
+  "Business",
+  "Technology",
+  "Science",
+  "Culture",
+  "Economy",
+  "Climate",
+  "Media",
+  "Sports",
+] as const;
+export type NewsTopic = (typeof NEWS_TOPICS)[number];
+
+export const NEWS_EXCLUDED_TOPICS = [
+  "Politics",
+  "War/conflict",
+  "Crime",
+  "Sports",
+  "Celebrity",
+  "Markets",
+] as const;
+export type NewsExcludedTopic = (typeof NEWS_EXCLUDED_TOPICS)[number];
+
+export const NEWS_TONES = ["Calm", "Brief", "Analytical", "Neutral"] as const;
+export type NewsTone = (typeof NEWS_TONES)[number];
+
+export const NEWS_DEPTHS = ["Short", "Standard", "Deeper"] as const;
+export type NewsDepth = (typeof NEWS_DEPTHS)[number];
+
+export const NEWS_SOURCE_PREFERENCES = [
+  "Balanced",
+  "Business-focused",
+  "Technology-focused",
+  "Global outlets",
+  "Turkish sources where available",
+] as const;
+export type NewsSourcePreference = (typeof NEWS_SOURCE_PREFERENCES)[number];
+
+export const parseNewsBriefingLanguage = makeMemberParser(NEWS_BRIEFING_LANGUAGES);
+export const parseNewsRegionFocus = makeMemberParser(NEWS_REGION_FOCUS);
+export const parseNewsTone = makeMemberParser(NEWS_TONES);
+export const parseNewsDepth = makeMemberParser(NEWS_DEPTHS);
+export const parseNewsSourcePreference = makeMemberParser(NEWS_SOURCE_PREFERENCES);
+
+function makeListParser<T extends string>(
+  allowed: readonly T[],
+  { allowEmpty = false }: { allowEmpty?: boolean } = {},
+): (input: unknown) => T[] | null {
+  const set = new Set<string>(allowed);
+  return (input: unknown) => {
+    if (!Array.isArray(input)) return null;
+    const seen = new Set<string>();
+    const out: T[] = [];
+    for (const item of input) {
+      if (typeof item !== "string" || !set.has(item)) return null;
+      if (seen.has(item)) continue;
+      seen.add(item);
+      out.push(item as T);
+    }
+    return out.length > 0 || allowEmpty ? out : null;
+  };
+}
+
+export const parseNewsTopics = makeListParser(NEWS_TOPICS);
+export const parseNewsExcludedTopics = makeListParser(NEWS_EXCLUDED_TOPICS, {
+  allowEmpty: true,
+});
+
+/* ----------------------------------------------------------------------- */
+/* OneFilm option catalogs + validators                                    */
+/* ----------------------------------------------------------------------- */
+
+export const FILM_EMAIL_LANGUAGES = ["English", "Turkish"] as const;
+export type FilmEmailLanguage = (typeof FILM_EMAIL_LANGUAGES)[number];
+
+export const FILM_GENRES = [
+  "Drama",
+  "Comedy",
+  "Thriller",
+  "Sci-fi",
+  "Romance",
+  "Documentary",
+  "Crime",
+  "Animation",
+  "Horror",
+  "Action",
+  "Arthouse",
+  "Classics",
+] as const;
+export type FilmGenre = (typeof FILM_GENRES)[number];
+
+export const FILM_MOODS = [
+  "Quiet",
+  "Thoughtful",
+  "Comforting",
+  "Intense",
+  "Strange",
+  "Beautiful",
+  "Funny",
+  "Emotional",
+  "Light",
+  "Dark",
+] as const;
+export type FilmMood = (typeof FILM_MOODS)[number];
+
+export const FILM_DECADES = [
+  "New releases",
+  "2020s",
+  "2010s",
+  "2000s",
+  "1990s",
+  "Classics",
+] as const;
+export type FilmDecade = (typeof FILM_DECADES)[number];
+
+export const FILM_LANGUAGES = [
+  "English",
+  "Turkish",
+  "French",
+  "Korean",
+  "Japanese",
+  "Spanish",
+  "Italian",
+  "Any",
+] as const;
+export type FilmLanguage = (typeof FILM_LANGUAGES)[number];
+
+export const FILM_PLATFORMS = [
+  "Netflix",
+  "Mubi",
+  "Prime Video",
+  "Disney+",
+  "Apple TV",
+  "BluTV",
+  "Theaters",
+  "Any",
+] as const;
+export type FilmPlatform = (typeof FILM_PLATFORMS)[number];
+
+export const FILM_SPOILER_PREFERENCES = [
+  "Spoiler-free",
+  "Spoiler-light",
+  "Full analysis allowed",
+] as const;
+export type FilmSpoilerPreference = (typeof FILM_SPOILER_PREFERENCES)[number];
+
+export const FILM_FAMILIARITIES = [
+  "Popular films",
+  "Hidden gems",
+  "Classics",
+  "Mixed",
+] as const;
+export type FilmFamiliarity = (typeof FILM_FAMILIARITIES)[number];
+
+export const FILM_RUNTIME_PREFERENCES = [
+  "Under 90 minutes",
+  "90–120 minutes",
+  "Long films are fine",
+  "Any",
+] as const;
+export type FilmRuntimePreference = (typeof FILM_RUNTIME_PREFERENCES)[number];
+
+export const parseFilmEmailLanguage = makeMemberParser(FILM_EMAIL_LANGUAGES);
+export const parseFilmSpoilerPreference = makeMemberParser(FILM_SPOILER_PREFERENCES);
+export const parseFilmFamiliarity = makeMemberParser(FILM_FAMILIARITIES);
+export const parseFilmRuntimePreference = makeMemberParser(FILM_RUNTIME_PREFERENCES);
+
+export const parseFilmGenres = makeListParser(FILM_GENRES);
+export const parseFilmMoods = makeListParser(FILM_MOODS);
+export const parseFilmDecades = makeListParser(FILM_DECADES, { allowEmpty: true });
+export const parseFilmLanguages = makeListParser(FILM_LANGUAGES, { allowEmpty: true });
+export const parseFilmPlatforms = makeListParser(FILM_PLATFORMS, { allowEmpty: true });
 
 /** Free-trial length in days. Overridable via env for testing. */
 export const TRIAL_DAYS = Number(process.env.TRIAL_DAYS ?? 7);

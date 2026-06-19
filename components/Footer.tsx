@@ -20,8 +20,8 @@ type Props = {
 const PRODUCT_LINKS = [
   { label: "OneArticle", href: "/article", external: false },
   { label: "OneLingo", href: "/lingo", external: false },
-  { label: "OneNews", href: WAITLIST_FORM_URL, external: true },
-  { label: "OneFilm", href: WAITLIST_FORM_URL, external: true },
+  { label: "OneNews", href: "/news", external: false },
+  { label: "OneFilm", href: "/film", external: false },
   { label: "OneDish", href: WAITLIST_FORM_URL, external: true },
 ] as const;
 

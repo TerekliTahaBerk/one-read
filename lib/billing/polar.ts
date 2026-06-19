@@ -1,7 +1,14 @@
 import { Polar } from "@polar-sh/sdk";
 import type { BillingInterval } from "@/lib/options";
-import { ONE_ARTICLE_PRODUCT_KEY, ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
+import {
+  ONE_ARTICLE_PRODUCT_KEY,
+  ONE_LINGO_PRODUCT_KEY,
+  ONE_NEWS_PRODUCT_KEY,
+  ONE_FILM_PRODUCT_KEY,
+} from "@/lib/options";
 import { lingoPolarProductId } from "@/lib/lingo/config";
+import { newsPolarProductId } from "@/lib/news/config";
+import { filmPolarProductId } from "@/lib/film/config";
 import { prisma } from "@/lib/prisma";
 import {
   findOneArticleSubscription,
@@ -47,6 +54,24 @@ export function getPolarProductId(
     }
     return id;
   }
+  if (productKey === ONE_NEWS_PRODUCT_KEY) {
+    const id = newsPolarProductId();
+    if (!id) {
+      throw new Error(
+        "OneNews billing is not configured. Missing: POLAR_ONENEWS_PRODUCT_ID.",
+      );
+    }
+    return id;
+  }
+  if (productKey === ONE_FILM_PRODUCT_KEY) {
+    const id = filmPolarProductId();
+    if (!id) {
+      throw new Error(
+        "OneFilm billing is not configured. Missing: POLAR_ONEFILM_PRODUCT_ID.",
+      );
+    }
+    return id;
+  }
   return (
     process.env.POLAR_ONE_ARTICLE_PRODUCT_ID?.trim() ||
     DEFAULT_ONE_ARTICLE_PRODUCT_ID
@@ -81,9 +106,18 @@ export function getPolarClient(): Polar {
   return new Polar({ accessToken, server: getPolarServer() });
 }
 
-/** Product-relative path segment, e.g. "article" or "lingo". */
+/** Product-relative path segment, e.g. "article", "lingo", "news", "film". */
 function productPathSegment(productKey: string): string {
-  return productKey === ONE_LINGO_PRODUCT_KEY ? "lingo" : "article";
+  switch (productKey) {
+    case ONE_LINGO_PRODUCT_KEY:
+      return "lingo";
+    case ONE_NEWS_PRODUCT_KEY:
+      return "news";
+    case ONE_FILM_PRODUCT_KEY:
+      return "film";
+    default:
+      return "article";
+  }
 }
 
 function checkoutReturnUrl(
@@ -100,6 +134,12 @@ function checkoutReturnUrl(
     has(process.env.POLAR_ONE_LINGO_RETURN_URL)
   ) {
     return process.env.POLAR_ONE_LINGO_RETURN_URL;
+  }
+  if (productKey === ONE_NEWS_PRODUCT_KEY && has(process.env.POLAR_ONENEWS_RETURN_URL)) {
+    return process.env.POLAR_ONENEWS_RETURN_URL;
+  }
+  if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_RETURN_URL)) {
+    return process.env.POLAR_ONEFILM_RETURN_URL;
   }
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
   return base ? `${base}/${productPathSegment(productKey)}/subscribe` : undefined;
@@ -124,6 +164,12 @@ function checkoutSuccessUrl(
     has(process.env.POLAR_ONE_LINGO_SUCCESS_URL)
   ) {
     return process.env.POLAR_ONE_LINGO_SUCCESS_URL;
+  }
+  if (productKey === ONE_NEWS_PRODUCT_KEY && has(process.env.POLAR_ONENEWS_SUCCESS_URL)) {
+    return process.env.POLAR_ONENEWS_SUCCESS_URL as string;
+  }
+  if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_SUCCESS_URL)) {
+    return process.env.POLAR_ONEFILM_SUCCESS_URL as string;
   }
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
   return `${base}/${productPathSegment(productKey)}/subscribe/success?checkout_id={CHECKOUT_ID}`;

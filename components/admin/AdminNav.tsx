@@ -40,6 +40,18 @@ const NAV_GROUPS: {
     ],
   },
   {
+    label: "OneNews",
+    items: [
+      { href: "/admin/one-news", label: "OneNews", matchPrefix: "/admin/one-news" },
+    ],
+  },
+  {
+    label: "OneFilm",
+    items: [
+      { href: "/admin/one-film", label: "OneFilm", matchPrefix: "/admin/one-film" },
+    ],
+  },
+  {
     label: "System",
     items: [
       { href: "/admin/settings", label: "Settings" },
@@ -63,6 +75,20 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/admin/one-lingo/subscribers", label: "Subscribers" },
     { href: "/admin/one-lingo/lessons", label: "Lessons" },
     { href: "/admin/one-lingo/sends", label: "Sends" },
+  ],
+  "/admin/one-news": [
+    { href: "/admin/one-news", label: "Overview" },
+    { href: "/admin/one-news/subscribers", label: "Subscribers" },
+    { href: "/admin/one-news/issues", label: "Issues" },
+    { href: "/admin/one-news/sources", label: "Sources" },
+    { href: "/admin/one-news/sends", label: "Sends" },
+  ],
+  "/admin/one-film": [
+    { href: "/admin/one-film", label: "Overview" },
+    { href: "/admin/one-film/subscribers", label: "Subscribers" },
+    { href: "/admin/one-film/issues", label: "Issues" },
+    { href: "/admin/one-film/catalog", label: "Catalog" },
+    { href: "/admin/one-film/sends", label: "Sends" },
   ],
 };
 

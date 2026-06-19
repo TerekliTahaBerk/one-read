@@ -112,7 +112,7 @@ export default async function AdminOverviewPage({
           rows={PRODUCTS.map((p) => [
             <span key="n" className="flex items-center gap-2">
               <Link
-                href={p.key === "one-article" ? "/admin/one-article" : "/admin/products"}
+                href={p.connected ? `/admin/${p.key}` : "/admin/products"}
                 className="text-ink underline underline-offset-2 hover:text-graphite"
               >
                 {p.name}

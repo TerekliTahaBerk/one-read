@@ -17,6 +17,18 @@ import {
   lingoTimezone,
 } from "@/lib/lingo/config";
 import {
+  newsBillingConfigured,
+  newsCronEnabled,
+  newsRequireApproval,
+  newsSourceMode,
+} from "@/lib/news/config";
+import {
+  filmBillingConfigured,
+  filmCronEnabled,
+  filmRequireApproval,
+  filmSourceMode,
+} from "@/lib/film/config";
+import {
   emailVerificationSecretConfigured,
   verificationConfig,
   verificationEmailConfigured,
@@ -111,6 +123,18 @@ export default async function SettingsPage({
   if (!lingoCronEnabled()) {
     warnings.push("ONELINGO_CRON_ENABLED is not true — the OneLingo cron route will refuse scheduled runs.");
   }
+  if (!newsBillingConfigured()) {
+    warnings.push("POLAR_ONENEWS_PRODUCT_ID is missing — OneNews public pages work, but checkout is disabled.");
+  }
+  if (!newsCronEnabled()) {
+    warnings.push("ONENEWS_CRON_ENABLED is not true — the OneNews cron route will refuse scheduled runs.");
+  }
+  if (!filmBillingConfigured()) {
+    warnings.push("POLAR_ONEFILM_PRODUCT_ID is missing — OneFilm public pages work, but checkout is disabled.");
+  }
+  if (!filmCronEnabled()) {
+    warnings.push("ONEFILM_CRON_ENABLED is not true — the OneFilm cron route will refuse scheduled runs.");
+  }
   warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
 
   const verifyCfg = verificationConfig();
@@ -202,6 +226,12 @@ export default async function SettingsPage({
             ["POLAR_ONE_ARTICLE_RETURN_URL", configured(process.env.POLAR_ONE_ARTICLE_RETURN_URL)],
             ["POLAR_ONE_LINGO_SUCCESS_URL", configured(process.env.POLAR_ONE_LINGO_SUCCESS_URL)],
             ["POLAR_ONE_LINGO_RETURN_URL", configured(process.env.POLAR_ONE_LINGO_RETURN_URL)],
+            ["POLAR_ONENEWS_PRODUCT_ID", configured(process.env.POLAR_ONENEWS_PRODUCT_ID || process.env.POLAR_ONE_NEWS_PRODUCT_ID)],
+            ["POLAR_ONENEWS_SUCCESS_URL", configured(process.env.POLAR_ONENEWS_SUCCESS_URL)],
+            ["POLAR_ONENEWS_RETURN_URL", configured(process.env.POLAR_ONENEWS_RETURN_URL)],
+            ["POLAR_ONEFILM_PRODUCT_ID", configured(process.env.POLAR_ONEFILM_PRODUCT_ID || process.env.POLAR_ONE_FILM_PRODUCT_ID)],
+            ["POLAR_ONEFILM_SUCCESS_URL", configured(process.env.POLAR_ONEFILM_SUCCESS_URL)],
+            ["POLAR_ONEFILM_RETURN_URL", configured(process.env.POLAR_ONEFILM_RETURN_URL)],
             ["POLAR_SERVER", process.env.POLAR_SERVER ? "Configured from environment" : "Development fallback: sandbox"],
             ["Revenue reporting", "Not tracked yet"],
           ]}
@@ -243,6 +273,12 @@ export default async function SettingsPage({
             ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
             ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
             ["OneLingo send time", `${String(lingoSendHourLocal()).padStart(2, "0")}:00 ${lingoTimezone()}`],
+            ["OneNews cron enabled", newsCronEnabled() ? "Enabled" : "Missing"],
+            ["OneNews approval required", newsRequireApproval() ? "Enabled" : "Off"],
+            ["OneNews source mode", newsSourceMode()],
+            ["OneFilm cron enabled", filmCronEnabled() ? "Enabled" : "Missing"],
+            ["OneFilm approval required", filmRequireApproval() ? "Enabled" : "Off"],
+            ["OneFilm source mode", filmSourceMode()],
             ["Last cron run", "Not tracked yet"],
             ["Next cron run", "Not tracked by current schema"],
           ]}

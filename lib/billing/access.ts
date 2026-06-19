@@ -41,6 +41,8 @@ export type EligibilityReason =
   | "ok"
   | "incomplete_preferences"
   | "missing_language_preferences"
+  | "missing_news_preferences"
+  | "missing_film_preferences"
   | "email_unsubscribed"
   | "email_suppressed"
   | "pending_preferences"

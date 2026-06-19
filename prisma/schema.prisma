@@ -77,6 +77,10 @@ model Contact {
   subscriptions    ProductSubscription[]
   lingoPreferences LingoPreferences[]
   lingoSends       LingoDailySend[]
+  newsPreferences  NewsPreferences[]
+  newsSends        NewsDailySend[]
+  filmPreferences  FilmPreferences[]
+  filmSends        FilmDailySend[]
 }
 
 /// A single product subscription for a Contact. Holds the access lifecycle,
@@ -133,9 +137,13 @@ model ProductSubscription {
 
   preferences      ArticlePreferences?
   lingoPreferences LingoPreferences?
+  newsPreferences  NewsPreferences?
+  filmPreferences  FilmPreferences?
   feedbacks        Feedback[]
   sends            DailySend[]
   lingoSends       LingoDailySend[]
+  newsSends        NewsDailySend[]
+  filmSends        FilmDailySend[]
 
   @@unique([contactId, productKey])
   @@index([productKey, status])
@@ -279,7 +287,7 @@ model TopicDailyPick {
   reasonForSelection String? @db.Text
 
   /// Editorial readiness — owned by the pipeline. "DRAFT" | "READY" | "REJECTED" | "SENT"
-  status    String   @default("DRAFT")
+  status String @default("DRAFT")
 
   /// Admin approval lifecycle — a thin layer over the editorial pipeline,
   /// independent of `status`. When ONE_ARTICLE_REQUIRE_APPROVAL is enabled,
@@ -421,6 +429,8 @@ model EmailVerificationCode {
   codeHash String
   /// "one-article-signup" | "one-article-preferences"
   /// | "one-lingo-signup" | "one-lingo-preferences"
+  /// | "one-news-signup" | "one-news-preferences"
+  /// | "one-film-signup" | "one-film-preferences"
   purpose  String
 
   expiresAt   DateTime
@@ -450,9 +460,9 @@ model EmailVerificationCode {
 /// ProductSubscription is scoped to a single product. Completing preferences
 /// never grants access — Polar remains the source of truth.
 model LingoPreferences {
-  id                    String  @id @default(cuid())
+  id                    String @id @default(cuid())
   contactId             String
-  productSubscriptionId String  @unique
+  productSubscriptionId String @unique
 
   /// "English" | "Spanish" | "French" | "German" | "Italian" | "Turkish"
   targetLanguage String
@@ -556,4 +566,285 @@ model LingoDailySend {
   @@unique([lessonDate, contactId])
   @@index([lingoDailyLessonId])
   @@index([status])
+}
+
+// ------------------------------------------------------------------------
+// OneNews — calm morning-briefing product
+// ------------------------------------------------------------------------
+
+/// OneNews-specific preferences for a ProductSubscription (productKey =
+/// "one-news"). Sibling to ArticlePreferences / LingoPreferences; never
+/// overlaps because a ProductSubscription is scoped to one product. Completing
+/// preferences never grants access — Polar remains the source of truth.
+model NewsPreferences {
+  id                    String @id @default(cuid())
+  contactId             String
+  productSubscriptionId String @unique
+
+  /// "English" | "Turkish"
+  briefingLanguage String
+  /// "Global" | "United States" | "Europe" | "Turkey" | "United Kingdom" | "Middle East" | "Technology-focused" | "Business-focused"
+  regionFocus      String
+  topics           String[]
+  excludedTopics   String[]
+  /// "Calm" | "Brief" | "Analytical" | "Neutral"
+  tone             String   @default("calm")
+  /// "Short" | "Standard" | "Deeper"
+  depth            String   @default("short")
+  /// "Balanced" | "Business-focused" | "Technology-focused" | "Global outlets" | "Turkish sources where available"
+  sourcePreference String   @default("balanced")
+
+  wantsWorld      Boolean @default(true)
+  wantsBusiness   Boolean @default(true)
+  wantsTechnology Boolean @default(true)
+  wantsCulture    Boolean @default(false)
+  wantsScience    Boolean @default(false)
+  wantsSports     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([briefingLanguage])
+  @@index([regionFocus])
+}
+
+/// A generated daily OneNews briefing, shared across all users in a segment
+/// (briefingLanguage + regionFocus + topic grouping) for a given date. Stored
+/// once and reused; never regenerated unless an admin requests it. OneNews is
+/// source-grounded — contentJson carries only real, cited stories.
+model NewsDailyIssue {
+  id         String   @id @default(cuid())
+  issueDate  DateTime @db.Date
+  segmentKey String
+
+  briefingLanguage String
+  regionFocus      String
+  topics           String[]
+
+  title       String
+  subject     String
+  previewText String?
+  contentJson Json
+  htmlBody    String? @db.Text
+  textBody    String? @db.Text
+
+  /// "GENERATED" | "NOT_GENERATED" | "NO_SOURCES" | "FAILED"
+  status         String    @default("GENERATED")
+  /// "PENDING" | "APPROVED" | "SCHEDULED" | "CANCELED" | "NEEDS_REVIEW"
+  approvalStatus String    @default("PENDING")
+  scheduledFor   DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  adminNotes     String?   @db.Text
+
+  generationProvider String?
+  generationModel    String?
+  generationMetadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sends NewsDailySend[]
+
+  @@unique([issueDate, segmentKey])
+  @@index([issueDate])
+  @@index([briefingLanguage, regionFocus])
+  @@index([approvalStatus])
+}
+
+/// One OneNews email per (date, contact). Unique constraint makes daily sends
+/// idempotent — the pipeline can safely retry.
+model NewsDailySend {
+  id                    String   @id @default(cuid())
+  issueDate             DateTime @db.Date
+  contactId             String
+  productSubscriptionId String
+  newsDailyIssueId      String
+
+  /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
+  status            String
+  sentAt            DateTime?
+  skippedReason     String?
+  failedReason      String?
+  providerMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+  issue               NewsDailyIssue      @relation(fields: [newsDailyIssueId], references: [id], onDelete: Cascade)
+
+  @@unique([issueDate, contactId])
+  @@index([newsDailyIssueId])
+  @@index([status])
+}
+
+/// A manually-curated source story for OneNews. The admin adds real headlines +
+/// source URLs; the generator may summarize these but never invents news. When
+/// none exist for a segment/day, the issue is marked NO_SOURCES (no fake news).
+model NewsSourceStory {
+  id         String    @id @default(cuid())
+  headline   String
+  sourceName String
+  sourceUrl  String
+  /// Short excerpt or admin note — never a full copyrighted article.
+  excerpt    String?   @db.Text
+  topic      String
+  region     String
+  /// "English" | "Turkish"
+  language   String
+  storyDate  DateTime  @db.Date
+  /// True once an issue has consumed this story (kept for provenance).
+  usedAt     DateTime?
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([storyDate])
+  @@index([region, language])
+  @@index([topic])
+}
+
+// ------------------------------------------------------------------------
+// OneFilm — daily film-note product
+// ------------------------------------------------------------------------
+
+/// OneFilm-specific preferences for a ProductSubscription (productKey =
+/// "one-film"). Completing preferences never grants access — Polar is the
+/// source of truth.
+model FilmPreferences {
+  id                    String @id @default(cuid())
+  contactId             String
+  productSubscriptionId String @unique
+
+  /// "English" | "Turkish"
+  emailLanguage     String
+  preferredGenres   String[]
+  moods             String[]
+  decades           String[]
+  languages         String[]
+  platforms         String[]
+  /// "Spoiler-free" | "Spoiler-light" | "Full analysis allowed"
+  spoilerPreference String   @default("spoiler-light")
+  /// "Popular films" | "Hidden gems" | "Classics" | "Mixed"
+  familiarity       String   @default("mixed")
+  /// "Under 90 minutes" | "90–120 minutes" | "Long films are fine" | "Any"
+  runtimePreference String   @default("any")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([emailLanguage])
+}
+
+/// A generated daily OneFilm note, shared across a segment (emailLanguage +
+/// genre/mood/spoiler cluster) for a given date. Commentary is original;
+/// factual metadata is only present when grounded (admin-provided or verified).
+model FilmDailyIssue {
+  id         String   @id @default(cuid())
+  issueDate  DateTime @db.Date
+  segmentKey String
+
+  emailLanguage String
+  genres        String[]
+  moods         String[]
+
+  filmTitle      String?
+  filmYear       Int?
+  director       String?
+  filmLanguage   String?
+  runtimeMinutes Int?
+  sourceUrl      String?
+
+  title       String
+  subject     String
+  previewText String?
+  contentJson Json
+  htmlBody    String? @db.Text
+  textBody    String? @db.Text
+
+  /// "GENERATED" | "NOT_GENERATED" | "NO_FILM" | "FAILED"
+  status         String    @default("GENERATED")
+  /// "PENDING" | "APPROVED" | "SCHEDULED" | "CANCELED" | "NEEDS_REVIEW"
+  approvalStatus String    @default("PENDING")
+  scheduledFor   DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  adminNotes     String?   @db.Text
+
+  generationProvider String?
+  generationModel    String?
+  generationMetadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sends FilmDailySend[]
+
+  @@unique([issueDate, segmentKey])
+  @@index([issueDate])
+  @@index([emailLanguage])
+  @@index([approvalStatus])
+}
+
+/// One OneFilm email per (date, contact). Idempotent daily sends.
+model FilmDailySend {
+  id                    String   @id @default(cuid())
+  issueDate             DateTime @db.Date
+  contactId             String
+  productSubscriptionId String
+  filmDailyIssueId      String
+
+  /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
+  status            String
+  sentAt            DateTime?
+  skippedReason     String?
+  failedReason      String?
+  providerMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+  issue               FilmDailyIssue      @relation(fields: [filmDailyIssueId], references: [id], onDelete: Cascade)
+
+  @@unique([issueDate, contactId])
+  @@index([filmDailyIssueId])
+  @@index([status])
+}
+
+/// A manually-curated film entry for OneFilm. Factual metadata is admin-entered
+/// (or from a verified provider); the generator writes original commentary on
+/// top but never invents cast/awards/ratings/availability.
+model FilmCatalogEntry {
+  id             String    @id @default(cuid())
+  title          String
+  year           Int?
+  director       String?
+  /// Original-language name of the film.
+  filmLanguage   String?
+  runtimeMinutes Int?
+  sourceUrl      String?
+  /// Admin note / framing seed — original, not a copied review.
+  adminNote      String?   @db.Text
+  genres         String[]
+  moods          String[]
+  /// "Spoiler-free" | "Spoiler-light" | "Full analysis allowed"
+  spoilerLevel   String    @default("spoiler-light")
+  usedAt         DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([usedAt])
 }
