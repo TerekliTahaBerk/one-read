@@ -40,6 +40,7 @@ export interface EligibilityInput {
 export type EligibilityReason =
   | "ok"
   | "incomplete_preferences"
+  | "missing_language_preferences"
   | "email_unsubscribed"
   | "email_suppressed"
   | "pending_preferences"
@@ -132,16 +133,17 @@ export function hasValidAccess(
 }
 
 /**
- * The single source of truth for "should this subscriber receive a daily One
- * Article email right now?". All daily-send logic must route through here —
- * never re-implement these checks inline.
+ * The single source of truth for "should this subscriber receive a daily email
+ * for this product right now?". Product-agnostic — OneArticle and OneLingo both
+ * route through here. All daily-send logic must use this — never re-implement
+ * these checks inline.
  *
  * A subscriber is eligible only if ALL hold:
  *   1. preferences are complete,
  *   2. email delivery is enabled (SUBSCRIBED), and
  *   3. their access status grants a valid window (see hasValidAccess).
  */
-export function canReceiveOneArticleEmail(
+export function canReceiveProductEmail(
   sub: EligibilityInput,
   now: Date = new Date(),
 ): EligibilityResult {
@@ -156,3 +158,9 @@ export function canReceiveOneArticleEmail(
   }
   return hasValidAccess(sub, now);
 }
+
+/**
+ * OneArticle-named alias, preserved so existing callers and semantics are
+ * identical after the product-agnostic rename.
+ */
+export const canReceiveOneArticleEmail = canReceiveProductEmail;

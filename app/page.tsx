@@ -17,11 +17,10 @@ const PRODUCTS = [
   {
     name: "OneLingo",
     description: "Small language practice that fits into your inbox.",
-    status: "Coming soon",
-    cta: "Join waitlist",
+    status: "Available",
+    cta: "Start free trial",
     note: "One small step at a time.",
-    href: WAITLIST_FORM_URL,
-    external: true,
+    href: "/lingo",
     theme: "lingo",
   },
   {

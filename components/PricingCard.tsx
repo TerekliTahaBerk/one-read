@@ -109,7 +109,7 @@ export function PricingCard() {
               7-day free trial included. Cancel anytime.
             </p>
             <p className="font-sans text-[12.5px] text-fog">
-              No app. No feed. One useful read every morning.
+              No app. No feed. One brief every morning at 7 AM.
             </p>
             <p className="font-sans text-[12.5px] text-fog">
               Trial and billing are handled securely by Polar.

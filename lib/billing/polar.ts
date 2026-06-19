@@ -1,6 +1,7 @@
 import { Polar } from "@polar-sh/sdk";
 import type { BillingInterval } from "@/lib/options";
-import { ONE_ARTICLE_PRODUCT_KEY } from "@/lib/options";
+import { ONE_ARTICLE_PRODUCT_KEY, ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
+import { lingoPolarProductId } from "@/lib/lingo/config";
 import { prisma } from "@/lib/prisma";
 import {
   findOneArticleSubscription,
@@ -29,7 +30,23 @@ export function getPolarServer(): PolarServer {
   return process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
 }
 
-export function getPolarProductId(): string {
+/**
+ * Resolves the Polar product id for a product. OneArticle keeps its env/default
+ * behavior. OneLingo NEVER falls back to the OneArticle id — when unconfigured
+ * it throws a safe "billing not configured" error the route can surface.
+ */
+export function getPolarProductId(
+  productKey: string = ONE_ARTICLE_PRODUCT_KEY,
+): string {
+  if (productKey === ONE_LINGO_PRODUCT_KEY) {
+    const id = lingoPolarProductId();
+    if (!id) {
+      throw new Error(
+        "OneLingo billing is not configured. Missing: POLAR_ONE_LINGO_PRODUCT_ID.",
+      );
+    }
+    return id;
+  }
   return (
     process.env.POLAR_ONE_ARTICLE_PRODUCT_ID?.trim() ||
     DEFAULT_ONE_ARTICLE_PRODUCT_ID
@@ -64,16 +81,52 @@ export function getPolarClient(): Polar {
   return new Polar({ accessToken, server: getPolarServer() });
 }
 
-function checkoutReturnUrl(): string | undefined {
-  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-  return base ? `${base}/article/subscribe` : undefined;
+/** Product-relative path segment, e.g. "article" or "lingo". */
+function productPathSegment(productKey: string): string {
+  return productKey === ONE_LINGO_PRODUCT_KEY ? "lingo" : "article";
 }
 
-function checkoutSuccessUrl(): string {
-  const configured = process.env.POLAR_SUCCESS_URL;
-  if (has(configured)) return configured;
+function checkoutReturnUrl(
+  productKey: string = ONE_ARTICLE_PRODUCT_KEY,
+): string | undefined {
+  if (
+    productKey === ONE_ARTICLE_PRODUCT_KEY &&
+    has(process.env.POLAR_ONE_ARTICLE_RETURN_URL)
+  ) {
+    return process.env.POLAR_ONE_ARTICLE_RETURN_URL;
+  }
+  if (
+    productKey === ONE_LINGO_PRODUCT_KEY &&
+    has(process.env.POLAR_ONE_LINGO_RETURN_URL)
+  ) {
+    return process.env.POLAR_ONE_LINGO_RETURN_URL;
+  }
+  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
+  return base ? `${base}/${productPathSegment(productKey)}/subscribe` : undefined;
+}
+
+function checkoutSuccessUrl(
+  productKey: string = ONE_ARTICLE_PRODUCT_KEY,
+): string {
+  // OneArticle honors the explicit POLAR_SUCCESS_URL env (back-compat). Other
+  // products build a product-aware URL from PUBLIC_BASE_URL.
+  if (productKey === ONE_ARTICLE_PRODUCT_KEY && has(process.env.POLAR_SUCCESS_URL)) {
+    return process.env.POLAR_SUCCESS_URL as string;
+  }
+  if (
+    productKey === ONE_ARTICLE_PRODUCT_KEY &&
+    has(process.env.POLAR_ONE_ARTICLE_SUCCESS_URL)
+  ) {
+    return process.env.POLAR_ONE_ARTICLE_SUCCESS_URL;
+  }
+  if (
+    productKey === ONE_LINGO_PRODUCT_KEY &&
+    has(process.env.POLAR_ONE_LINGO_SUCCESS_URL)
+  ) {
+    return process.env.POLAR_ONE_LINGO_SUCCESS_URL;
+  }
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-  return `${base}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
+  return `${base}/${productPathSegment(productKey)}/subscribe/success?checkout_id={CHECKOUT_ID}`;
 }
 
 function planFromInterval(interval: string | null): BillingInterval | null {
@@ -100,27 +153,28 @@ export function mapPolarSubscriptionStatus(status: string): string {
 }
 
 export async function createPolarCheckoutForSubscription(
-  sub: SubscriptionWithPrefs,
+  sub: { id: string; contactId: string },
   email: string,
+  productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): Promise<string> {
   assertPolarConfigured("Polar checkout");
 
   const checkout = await getPolarClient().checkouts.create({
-    products: [getPolarProductId()],
+    products: [getPolarProductId(productKey)],
     customerEmail: email,
     externalCustomerId: sub.contactId,
     allowTrial: true,
-    successUrl: checkoutSuccessUrl(),
-    returnUrl: checkoutReturnUrl(),
+    successUrl: checkoutSuccessUrl(productKey),
+    returnUrl: checkoutReturnUrl(productKey),
     metadata: {
       contactId: sub.contactId,
       productSubscriptionId: sub.id,
-      productKey: ONE_ARTICLE_PRODUCT_KEY,
+      productKey,
       email,
     },
     customerMetadata: {
       contactId: sub.contactId,
-      productKey: ONE_ARTICLE_PRODUCT_KEY,
+      productKey,
       email,
     },
   });
@@ -137,10 +191,11 @@ export async function createPolarCheckoutForSubscription(
 }
 
 export async function createPolarCustomerPortalUrl(
-  sub: SubscriptionWithPrefs,
+  sub: { providerCustomerId: string | null; contactId: string },
+  productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): Promise<string> {
   assertPolarConfigured("Polar customer portal");
-  const returnUrl = checkoutReturnUrl();
+  const returnUrl = checkoutReturnUrl(productKey);
   const session = await getPolarClient().customerSessions.create(
     sub.providerCustomerId
       ? { customerId: sub.providerCustomerId, returnUrl }
@@ -253,18 +308,21 @@ async function findSubscriptionForPolarData(data: PolarData) {
     if (sub) return sub;
   }
 
+  // The remaining fallbacks need to know which product this event is for.
+  // Trust the productKey we stamped into checkout metadata; default to
+  // OneArticle for legacy events that predate the field. The strong lookups
+  // above (productSubscriptionId / providerSubscriptionId) already disambiguate
+  // products, so an OneLingo purchase can never resolve to an OneArticle row
+  // here, and vice-versa.
+  const productKey = metadataValue(data, "productKey") ?? ONE_ARTICLE_PRODUCT_KEY;
+
   const contactId =
     metadataValue(data, "contactId") ??
     (typeof data.customer?.externalId === "string" ? data.customer.externalId : null) ??
     (typeof data.externalCustomerId === "string" ? data.externalCustomerId : null);
   if (contactId) {
     const sub = await prisma.productSubscription.findUnique({
-      where: {
-        contactId_productKey: {
-          contactId,
-          productKey: ONE_ARTICLE_PRODUCT_KEY,
-        },
-      },
+      where: { contactId_productKey: { contactId, productKey } },
       include: { preferences: true },
     });
     if (sub) return sub;
@@ -273,7 +331,14 @@ async function findSubscriptionForPolarData(data: PolarData) {
   const email =
     metadataValue(data, "email") ??
     (typeof data.customer?.email === "string" ? data.customer.email.toLowerCase() : null);
-  return email ? findOneArticleSubscription(email) : null;
+  if (!email) return null;
+  const contact = await prisma.contact.findUnique({
+    where: { email },
+    include: {
+      subscriptions: { where: { productKey }, include: { preferences: true }, take: 1 },
+    },
+  });
+  return contact?.subscriptions[0] ?? null;
 }
 
 export async function applyPolarWebhookPayload(payload: {

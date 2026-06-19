@@ -5,6 +5,7 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
+import { getLingoOverviewMetrics } from "@/lib/admin/lingo-queries";
 import { PRODUCTS } from "@/lib/admin/products";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 
@@ -20,7 +21,10 @@ export default async function AdminProductsPage({
   const guard = guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const m = await getOverviewMetrics();
+  const [m, lingo] = await Promise.all([
+    getOverviewMetrics(),
+    getLingoOverviewMetrics(),
+  ]);
 
   return (
     <AdminShell
@@ -45,13 +49,19 @@ export default async function AdminProductsPage({
             ) : (
               <span key="d" className="text-fog">External: Tally, not connected</span>
             ),
-            p.connected ? (
+            p.key === "one-article" ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
+            ) : p.key === "one-lingo" ? (
+              <span key="c">{`${lingo.subscribers.activeOrTrialing} active/trialing · ${lingo.subscribers.eligible} eligible`}</span>
             ) : (
               <span key="c" className="text-fog">Waitlist count not available</span>
             ),
             p.key === "one-article" ? (
               <Link key="a" href="/admin/one-article" className="text-ink underline underline-offset-2">
+                Operations →
+              </Link>
+            ) : p.key === "one-lingo" ? (
+              <Link key="a" href="/admin/one-lingo" className="text-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : (
@@ -71,7 +81,7 @@ export default async function AdminProductsPage({
 
       <p className="text-[12.5px] text-fog font-sans">
         Waitlist collected in Tally. Not connected to admin yet. Signups for
-        OneLingo, OneNews, OneFilm, and OneDish live in an external Tally form and
+        OneNews, OneFilm, and OneDish live in an external Tally form and
         are not yet connected to this database. Counts will appear here once an
         integration is added.
       </p>

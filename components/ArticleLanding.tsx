@@ -18,34 +18,34 @@ type Phase = SignupPhase | "success" | "canceled";
 
 const COPY: Record<SignupPhase, { lead: string; accent: string; support: string }> = {
   email: {
-    lead: "Start with ",
-    accent: "your email.",
+    lead: "Where should we send ",
+    accent: "your morning brief?",
     support:
-      "We'll send a short verification code before setting up OneArticle. One carefully chosen article brief, every morning at 7 AM.",
+      "Enter your email and we’ll send a 6-digit code before setting up OneArticle. One carefully chosen article brief, every morning at 7 AM.",
   },
   verify: {
     lead: "Check ",
     accent: "your inbox.",
     support:
-      "Enter the 6-digit code we just sent you. It keeps your OneArticle preferences tied to an email you own.",
+      "Enter the 6-digit code we just sent to continue setting up OneArticle.",
   },
   preferences: {
-    lead: "Tell us ",
-    accent: "what to read.",
+    lead: "Choose your ",
+    accent: "reading interests.",
     support:
-      "Pick the topics you care about and the languages you read in. We'll use that to choose each morning's article.",
+      "Pick a few areas you want OneArticle to pay attention to. We’ll use them to choose better morning reads for you.",
   },
   payment: {
-    lead: "Start your ",
-    accent: "7-day trial.",
+    lead: "You’re ",
+    accent: "almost there.",
     support:
-      "Your preferences are saved. Polar handles trial and billing; emails begin after checkout is confirmed.",
+      "Your preferences are saved. Start your 7-day free trial with Polar to begin receiving OneArticle every morning.",
   },
   manage: {
-    lead: "Welcome back - ",
-    accent: "update your reading.",
+    lead: "Your OneArticle ",
+    accent: "is active.",
     support:
-      "Adjust your interests and languages, or cancel your subscription. Changes apply to tomorrow's OneArticle.",
+      "Update your interests and languages, or cancel anytime. Changes apply to tomorrow’s brief.",
   },
 };
 
@@ -221,7 +221,7 @@ export function ArticleLanding() {
       <Footer
         showPricing
         pricingHref="/article/pricing"
-        tagline="No feeds. No noise. Just one good read."
+        tagline="No feed. No app. One good read before the day gets noisy."
         xAriaLabel="OneArticle on X"
       />
     </main>

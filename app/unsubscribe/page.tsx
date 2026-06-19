@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
  *
  *   ?send=<DailySend.id>   — preferred, opaque, comes from the email
  *   ?email=<email>         — fallback for support cases (web only)
+ *   ?subscription=<ProductSubscription.unsubscribeToken>
+ *                          — product-scoped fallback used by OneLingo
  *   ?preview=1             — used by /api/admin/test-email previews;
  *                            renders the page without mutating anything.
  *
@@ -20,7 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function UnsubscribePage({
   searchParams,
 }: {
-  searchParams: { send?: string; email?: string; preview?: string };
+  searchParams: { send?: string; email?: string; subscription?: string; preview?: string };
 }) {
   const isPreview = searchParams.preview === "1";
   const message: UnsubscribeResult = isPreview
@@ -28,7 +30,11 @@ export default async function UnsubscribePage({
         headline: "Preview mode.",
         body: "This is a preview. Real subscribers would now be unsubscribed.",
       }
-    : await applyUnsubscribe(searchParams.send, searchParams.email);
+    : await applyUnsubscribe(
+        searchParams.send,
+        searchParams.email,
+        searchParams.subscription,
+      );
 
   return (
     <main
@@ -96,8 +102,36 @@ interface UnsubscribeResult {
 async function applyUnsubscribe(
   sendId: string | undefined,
   email: string | undefined,
+  subscriptionToken: string | undefined,
 ): Promise<UnsubscribeResult> {
   try {
+    if (subscriptionToken) {
+      const sub = await prisma.productSubscription.findUnique({
+        where: { unsubscribeToken: subscriptionToken },
+        select: { id: true, emailDeliveryStatus: true, productKey: true },
+      });
+      if (!sub) {
+        return {
+          headline: "We couldn't find that subscription.",
+          body: "If this is unexpected, reply to any OneRead email and we'll fix it.",
+        };
+      }
+      if (sub.emailDeliveryStatus === "UNSUBSCRIBED") {
+        return {
+          headline: "You're already unsubscribed.",
+          body: "No further emails will arrive. Take care.",
+        };
+      }
+      await prisma.productSubscription.update({
+        where: { id: sub.id },
+        data: { emailDeliveryStatus: "UNSUBSCRIBED" },
+      });
+      return {
+        headline: "You're unsubscribed.",
+        body: `No more ${productLabel(sub.productKey)} emails. If you change your mind, you can resume emails from the subscribe page.`,
+      };
+    }
+
     let subscriberId: string | null = null;
 
     if (sendId) {
@@ -148,4 +182,8 @@ async function applyUnsubscribe(
       body: "We've logged it. Please try again, or reply to any OneRead email.",
     };
   }
+}
+
+function productLabel(productKey: string): string {
+  return productKey === "one-lingo" ? "OneLingo" : "OneRead";
 }

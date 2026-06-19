@@ -71,7 +71,8 @@ export default function ArticlePricingPage() {
             animate-rise-delayed-2
           "
         >
-          One carefully chosen article brief in your inbox every day.
+          Try OneArticle for a week. If it earns a place in your morning, keep
+          receiving one carefully chosen brief every day.
         </p>
 
         <PricingCard />

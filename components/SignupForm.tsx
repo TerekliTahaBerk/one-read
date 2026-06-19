@@ -205,7 +205,7 @@ function EmailStep({
           inputMode="email"
           autoComplete="email"
           spellCheck={false}
-          placeholder="you@morning.com"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           onBlur={() => setTouched(true)}
@@ -236,7 +236,7 @@ function EmailStep({
           loading={loading}
           disabled={!canSubmit}
           loadingLabel="Sending code..."
-          label="Send code"
+          label="Send verification code"
         />
         {error && (
           <p
@@ -247,9 +247,10 @@ function EmailStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
-          We&apos;ll email a 6-digit code to confirm it&apos;s you.
+          We’ll use this email for your code and, if you continue, your
+          OneArticle brief.
           <br />
-          Already a member? Verify your email to change your preferences or
+          Already a member? Verify your email to update your preferences or
           cancel.
         </p>
         <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
@@ -342,7 +343,7 @@ function VerifyStep({
       setError(
         err instanceof Error
           ? err.message
-          : "That code is not correct. Try again.",
+          : "That code does not look right. Please try again.",
       );
       inputRef.current?.focus();
     } finally {
@@ -353,7 +354,7 @@ function VerifyStep({
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) {
-      setError("Please enter the 6-digit code.");
+      setError("Enter the 6-digit code from your email.");
       return;
     }
     void verify(code);
@@ -408,8 +409,9 @@ function VerifyStep({
     >
       <div className="animate-rise-delayed-2">
         <p className="mb-4 text-center text-[13px] font-sans leading-[1.6] text-ash">
-          Enter the 6-digit code we sent to{" "}
-          <span className="text-ink">{email}</span>.
+          We sent a 6-digit code to{" "}
+          <span className="text-ink">{email}</span>. Enter it below to continue
+          setting up OneArticle.
         </p>
         <label htmlFor="code" className="sr-only">
           6-digit verification code
@@ -473,7 +475,7 @@ function VerifyStep({
               disabled={resending}
               className="focus-ring rounded link-underline transition-colors hover:text-ink disabled:opacity-50"
             >
-              {resending ? "Resending..." : "Resend code"}
+              {resending ? "Sending..." : "Send a new code"}
             </button>
           )}
           <button
@@ -492,17 +494,17 @@ function VerifyStep({
 function confirmErrorMessage(error: string | undefined): string {
   switch (error) {
     case "expired":
-      return "This code has expired. Request a new one.";
+      return "This code has expired. Request a new one to continue.";
     case "too_many":
-      return "Too many attempts. Request a new code.";
+      return "Too many attempts. Please request a new code.";
     case "invalid_code_format":
-      return "Please enter the 6-digit code.";
+      return "Enter the 6-digit code from your email.";
     case "verification_not_configured":
       return "Email verification isn't available right now.";
     case "incorrect":
     case "invalid":
     default:
-      return "That code is not correct. Try again.";
+      return "That code does not look right. Please try again.";
   }
 }
 
@@ -564,7 +566,7 @@ function PreferencesStep({
           loading={loading}
           disabled={!canSubmit}
           loadingLabel="Saving..."
-          label="Continue to payment"
+          label="Save preferences"
         />
         {error && (
           <p
@@ -575,7 +577,7 @@ function PreferencesStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans">
-          One email a day. Cancel in one click.
+          One brief every morning at 7 AM. Cancel anytime.
         </p>
       </div>
     </form>
@@ -668,8 +670,8 @@ function PaymentStep({
       </div>
 
       <p className="mt-6 text-center font-sans text-[14px] leading-[1.6] text-ash animate-rise-delayed-3">
-        Checkout opens in Polar. The 7-day trial starts there, and OneArticle
-        emails begin after Polar confirms the subscription.
+        Your 7-day free trial and billing are handled securely by Polar.
+        OneArticle begins once Polar confirms your subscription.
       </p>
 
       <div className="mt-7 animate-rise-delayed-4">
@@ -689,7 +691,7 @@ function PaymentStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans">
-          Secure checkout by Polar. Cancel anytime in the billing portal.
+          No app. No feed. One article brief at 7 AM. Cancel anytime.
         </p>
       </div>
     </form>
@@ -937,11 +939,11 @@ function PreferenceControls({
       {/* Interests */}
       <fieldset className="animate-rise-delayed-2">
         <legend className="block text-[11px] font-sans uppercase tracking-eyebrow text-fog mb-3 text-center w-full">
-          Choose your reading interests
+          Reading interests
         </legend>
         <p className="mx-auto mb-4 max-w-[36ch] text-center font-sans text-[12.5px] leading-[1.55] text-fog">
-          Pick a few areas you’d like OneArticle to pay attention to. You can
-          keep it broad or make it specific.
+          Tell OneArticle what feels worth your time. You can keep it broad or
+          make it specific.
         </p>
         <div className="flex flex-wrap gap-2 sm:gap-2.5 justify-center">
           {INTERESTS.map((interest) => (
@@ -960,6 +962,13 @@ function PreferenceControls({
 
       {/* Languages */}
       <div className="mt-7 space-y-3 animate-rise-delayed-3">
+        <p className="block text-[11px] font-sans uppercase tracking-eyebrow text-fog text-center w-full">
+          How you want to read
+        </p>
+        <p className="mx-auto max-w-[36ch] text-center font-sans text-[12.5px] leading-[1.55] text-fog">
+          Choose the source language you prefer and the language your brief is
+          written in.
+        </p>
         <LanguageRow
           label="Source language"
           options={SOURCE_LANGUAGES}

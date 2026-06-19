@@ -74,7 +74,9 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscriptions ProductSubscription[]
+  subscriptions    ProductSubscription[]
+  lingoPreferences LingoPreferences[]
+  lingoSends       LingoDailySend[]
 }
 
 /// A single product subscription for a Contact. Holds the access lifecycle,
@@ -129,9 +131,11 @@ model ProductSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  preferences ArticlePreferences?
-  feedbacks   Feedback[]
-  sends       DailySend[]
+  preferences      ArticlePreferences?
+  lingoPreferences LingoPreferences?
+  feedbacks        Feedback[]
+  sends            DailySend[]
+  lingoSends       LingoDailySend[]
 
   @@unique([contactId, productKey])
   @@index([productKey, status])
@@ -416,6 +420,7 @@ model EmailVerificationCode {
   /// HMAC-SHA256 of the 6-digit code (never the plaintext code).
   codeHash String
   /// "one-article-signup" | "one-article-preferences"
+  /// | "one-lingo-signup" | "one-lingo-preferences"
   purpose  String
 
   expiresAt   DateTime
@@ -434,4 +439,121 @@ model EmailVerificationCode {
 
   @@index([email, purpose])
   @@index([expiresAt])
+}
+
+// ------------------------------------------------------------------------
+// OneLingo — language-learning product
+// ------------------------------------------------------------------------
+
+/// OneLingo-specific preferences for a ProductSubscription (productKey =
+/// "one-lingo"). Sibling to ArticlePreferences; the two never overlap because a
+/// ProductSubscription is scoped to a single product. Completing preferences
+/// never grants access — Polar remains the source of truth.
+model LingoPreferences {
+  id                    String  @id @default(cuid())
+  contactId             String
+  productSubscriptionId String  @unique
+
+  /// "English" | "Spanish" | "French" | "German" | "Italian" | "Turkish"
+  targetLanguage String
+  /// "English" | "Turkish" — the language explanations are written in.
+  nativeLanguage String
+  /// "Beginner" | "Elementary" | "Intermediate" | "Upper-intermediate" | "Advanced"
+  level          String
+  /// "Travel" | "Work" | "School" | "Conversation" | "Reading" | "Exam preparation" | "General improvement"
+  learningGoal   String
+  /// "Vocabulary-first" | "Phrase-first" | "Grammar-light" | "Real-life examples" | "Mixed"
+  practiceStyle  String
+  /// Display labels the user picked (kept verbatim).
+  interests      String[]
+  minutesPerDay  Int      @default(5)
+
+  wantsVocabulary  Boolean @default(true)
+  wantsPhrases     Boolean @default(true)
+  wantsGrammar     Boolean @default(true)
+  wantsMiniQuiz    Boolean @default(true)
+  wantsCultureNote Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([targetLanguage])
+  @@index([level])
+}
+
+/// A generated daily practice lesson, shared across all users in a segment
+/// (targetLanguage + nativeLanguage + level) for a given date. Stored once and
+/// reused — never regenerated unless an admin explicitly requests it.
+model LingoDailyLesson {
+  id             String   @id @default(cuid())
+  lessonDate     DateTime @db.Date
+  targetLanguage String
+  nativeLanguage String
+  level          String
+  /// e.g. "english__turkish__intermediate".
+  segmentKey     String
+
+  title       String
+  subject     String
+  previewText String?
+  /// Full structured lesson (sections, words, phrase, grammar, quiz, answers).
+  contentJson Json
+  htmlBody    String? @db.Text
+  textBody    String? @db.Text
+
+  /// "GENERATED" | "NOT_GENERATED" | "FAILED"
+  status         String    @default("GENERATED")
+  /// "PENDING" | "APPROVED" | "SCHEDULED" | "CANCELED" | "NEEDS_REVIEW"
+  approvalStatus String    @default("PENDING")
+  /// The 07:00 Europe/Istanbul send instant (stored UTC) chosen by an admin.
+  scheduledFor   DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  adminNotes     String?   @db.Text
+
+  generationProvider String?
+  generationModel    String?
+  generationMetadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sends LingoDailySend[]
+
+  @@unique([lessonDate, segmentKey])
+  @@index([lessonDate])
+  @@index([targetLanguage, nativeLanguage, level])
+  @@index([approvalStatus])
+}
+
+/// One OneLingo email per (date, contact). The unique constraint guarantees
+/// idempotent daily sends — the pipeline can safely retry.
+model LingoDailySend {
+  id                    String   @id @default(cuid())
+  lessonDate            DateTime @db.Date
+  contactId             String
+  productSubscriptionId String
+  lingoDailyLessonId    String
+
+  /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
+  status            String
+  sentAt            DateTime?
+  skippedReason     String?
+  failedReason      String?
+  providerMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+  lesson              LingoDailyLesson    @relation(fields: [lingoDailyLessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonDate, contactId])
+  @@index([lingoDailyLessonId])
+  @@index([status])
 }

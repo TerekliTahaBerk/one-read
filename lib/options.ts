@@ -51,6 +51,108 @@ export const WAITLIST_FORM_URL =
 /** Product slug for One Article (the first OneRead product). */
 export const ONE_ARTICLE_PRODUCT_KEY = "one-article";
 
+/** Product slug for OneLingo (the daily language-practice product). */
+export const ONE_LINGO_PRODUCT_KEY = "one-lingo";
+
+/* ----------------------------------------------------------------------- */
+/* OneLingo option catalogs + validators                                   */
+/* ----------------------------------------------------------------------- */
+
+/** Languages a learner can study. */
+export const LINGO_TARGET_LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Italian",
+  "Turkish",
+] as const;
+export type LingoTargetLanguage = (typeof LINGO_TARGET_LANGUAGES)[number];
+
+/** Languages explanations can be written in (the learner's native language). */
+export const LINGO_NATIVE_LANGUAGES = ["English", "Turkish"] as const;
+export type LingoNativeLanguage = (typeof LINGO_NATIVE_LANGUAGES)[number];
+
+export const LINGO_LEVELS = [
+  "Beginner",
+  "Elementary",
+  "Intermediate",
+  "Upper-intermediate",
+  "Advanced",
+] as const;
+export type LingoLevel = (typeof LINGO_LEVELS)[number];
+
+export const LINGO_GOALS = [
+  "Travel",
+  "Work",
+  "School",
+  "Conversation",
+  "Reading",
+  "Exam preparation",
+  "General improvement",
+] as const;
+export type LingoGoal = (typeof LINGO_GOALS)[number];
+
+export const LINGO_PRACTICE_STYLES = [
+  "Vocabulary-first",
+  "Phrase-first",
+  "Grammar-light",
+  "Real-life examples",
+  "Mixed",
+] as const;
+export type LingoPracticeStyle = (typeof LINGO_PRACTICE_STYLES)[number];
+
+export const LINGO_INTERESTS = [
+  "Business",
+  "Technology",
+  "Travel",
+  "Food",
+  "Culture",
+  "Daily life",
+  "Work",
+  "Movies",
+  "Sports",
+  "Books",
+  "Social situations",
+] as const;
+export type LingoInterest = (typeof LINGO_INTERESTS)[number];
+
+function makeMemberParser<T extends string>(
+  allowed: readonly T[],
+): (input: unknown) => T | null {
+  const set = new Set<string>(allowed);
+  return (input: unknown) =>
+    typeof input === "string" && set.has(input) ? (input as T) : null;
+}
+
+export const parseLingoTargetLanguage = makeMemberParser(LINGO_TARGET_LANGUAGES);
+export const parseLingoNativeLanguage = makeMemberParser(LINGO_NATIVE_LANGUAGES);
+export const parseLingoLevel = makeMemberParser(LINGO_LEVELS);
+export const parseLingoGoal = makeMemberParser(LINGO_GOALS);
+export const parseLingoPracticeStyle = makeMemberParser(LINGO_PRACTICE_STYLES);
+
+/** Validates a list of OneLingo interest labels (1+ allowed, deduped). */
+export function parseLingoInterests(input: unknown): LingoInterest[] | null {
+  if (!Array.isArray(input) || input.length === 0) return null;
+  const allowed = new Set<string>(LINGO_INTERESTS);
+  const seen = new Set<string>();
+  const out: LingoInterest[] = [];
+  for (const item of input) {
+    if (typeof item !== "string" || !allowed.has(item)) return null;
+    if (seen.has(item)) continue;
+    seen.add(item);
+    out.push(item as LingoInterest);
+  }
+  return out.length > 0 ? out : null;
+}
+
+/** Clamps minutes-per-day into a sane 3..20 range; defaults to 5. */
+export function parseLingoMinutesPerDay(input: unknown): number {
+  const n = typeof input === "number" ? input : Number(input);
+  if (!Number.isFinite(n)) return 5;
+  return Math.min(20, Math.max(3, Math.round(n)));
+}
+
 /** Free-trial length in days. Overridable via env for testing. */
 export const TRIAL_DAYS = Number(process.env.TRIAL_DAYS ?? 7);
 

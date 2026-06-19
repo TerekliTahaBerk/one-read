@@ -49,40 +49,40 @@ function present(
   switch (r.state) {
     case "new":
       return {
-        title: "Start your setup first.",
-        body: "Choose your interests and language preferences before starting your OneArticle trial.",
+        title: "Set up OneArticle first.",
+        body: "Choose your reading interests and language preferences before starting your free trial.",
         ctas: [{ kind: "link", label: "Set up OneArticle", href: `/article`, primary: true }],
       };
     case "incomplete":
       return {
         title: "Finish your setup.",
-        body: "Choose your reading interests before checkout.",
+        body: "Complete your preferences so OneArticle knows what to look for.",
         ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
       };
     case "checkout_needed":
       return {
-        title: "You’re almost there.",
-        body: "Your preferences are saved. Start your 7-day free trial with Polar to receive OneArticle every morning.",
+        title: "Your preferences are ready.",
+        body: "Start your 7-day free trial with Polar to begin receiving OneArticle at 7 AM.",
         ctas: [buy("Start 7-day free trial", "monthly", true)],
       };
     case "trialing":
       return {
-        title: `Your OneArticle subscription is active${
+        title: `Your OneArticle is active${
           r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
         }.`,
-        body: "You’re set to receive one useful article brief every morning.",
+        body: "You’re set to receive one carefully chosen article brief every morning at 7 AM.",
         ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "trial_expired":
       return {
         title: "Your free trial has ended.",
-        body: "Subscribe to keep receiving OneArticle — $2/month.",
-        ctas: [buy("Subscribe $2/mo", "monthly", true)],
+        body: "Restart your subscription to keep receiving OneArticle — $2/month.",
+        ctas: [buy("Restart subscription", "monthly", true)],
       };
     case "active_paid":
       return {
-        title: "Your OneArticle subscription is active.",
-        body: "You’re set to receive one useful article brief every morning.",
+        title: "Your OneArticle is active.",
+        body: "You’re set to receive one carefully chosen article brief every morning at 7 AM.",
         ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
       };
     case "canceled_active":
@@ -107,8 +107,8 @@ function present(
       };
     case "active_email_paused":
       return {
-        title: "Your subscription is active, but emails are paused.",
-        body: "Resume emails when you’re ready to receive OneArticle again.",
+        title: "Your emails are paused.",
+        body: "Your subscription is still active. Resume emails when you want OneArticle back in your inbox.",
         ctas: [{ kind: "resume-emails", label: "Resume emails", primary: true }, manage("Manage billing")],
       };
     case "suppressed":

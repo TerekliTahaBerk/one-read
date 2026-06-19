@@ -9,6 +9,14 @@ import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime } from "@/lib/admin/format"
 import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 import {
+  lingoBillingConfigured,
+  lingoCronEnabled,
+  lingoDryRunForced,
+  lingoRequireApproval,
+  lingoSendHourLocal,
+  lingoTimezone,
+} from "@/lib/lingo/config";
+import {
   emailVerificationSecretConfigured,
   verificationConfig,
   verificationEmailConfigured,
@@ -93,9 +101,15 @@ export default async function SettingsPage({
     warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
   }
   if (!emailVerificationSecretConfigured()) {
-    warnings.push("EMAIL_VERIFICATION_SECRET is not set — OneArticle email verification (and preference edits) will be unavailable.");
+    warnings.push("EMAIL_VERIFICATION_SECRET is not set — OneArticle and OneLingo email verification will be unavailable.");
   } else if (!verificationEmailConfigured()) {
     warnings.push("Email verification is configured but RESEND_API_KEY is missing — codes are logged to the server console in development only.");
+  }
+  if (!lingoBillingConfigured()) {
+    warnings.push("POLAR_ONE_LINGO_PRODUCT_ID is missing — OneLingo public pages work, but checkout is disabled.");
+  }
+  if (!lingoCronEnabled()) {
+    warnings.push("ONELINGO_CRON_ENABLED is not true — the OneLingo cron route will refuse scheduled runs.");
   }
   warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
 
@@ -182,6 +196,12 @@ export default async function SettingsPage({
             ["BILLING_PROVIDER", process.env.BILLING_PROVIDER ? "Configured from environment" : "Development fallback"],
             ["POLAR_ACCESS_TOKEN", configured(process.env.POLAR_ACCESS_TOKEN)],
             ["POLAR_WEBHOOK_SECRET", configured(process.env.POLAR_WEBHOOK_SECRET)],
+            ["POLAR_ONE_ARTICLE_PRODUCT_ID", configured(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)],
+            ["POLAR_ONE_LINGO_PRODUCT_ID", configured(process.env.POLAR_ONE_LINGO_PRODUCT_ID || process.env.POLAR_ONELINGO_PRODUCT_ID)],
+            ["POLAR_ONE_ARTICLE_SUCCESS_URL", configured(process.env.POLAR_ONE_ARTICLE_SUCCESS_URL || process.env.POLAR_SUCCESS_URL)],
+            ["POLAR_ONE_ARTICLE_RETURN_URL", configured(process.env.POLAR_ONE_ARTICLE_RETURN_URL)],
+            ["POLAR_ONE_LINGO_SUCCESS_URL", configured(process.env.POLAR_ONE_LINGO_SUCCESS_URL)],
+            ["POLAR_ONE_LINGO_RETURN_URL", configured(process.env.POLAR_ONE_LINGO_RETURN_URL)],
             ["POLAR_SERVER", process.env.POLAR_SERVER ? "Configured from environment" : "Development fallback: sandbox"],
             ["Revenue reporting", "Not tracked yet"],
           ]}
@@ -219,6 +239,10 @@ export default async function SettingsPage({
           rows={[
             ["CRON_SECRET", configured(process.env.CRON_SECRET)],
             ["Schedule source", "vercel.json cron + environment"],
+            ["OneLingo cron enabled", lingoCronEnabled() ? "Enabled" : "Missing"],
+            ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
+            ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
+            ["OneLingo send time", `${String(lingoSendHourLocal()).padStart(2, "0")}:00 ${lingoTimezone()}`],
             ["Last cron run", "Not tracked yet"],
             ["Next cron run", "Not tracked by current schema"],
           ]}
