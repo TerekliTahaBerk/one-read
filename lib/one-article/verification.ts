@@ -24,10 +24,19 @@ const descriptor: VerificationDescriptor = {
   purposes: VERIFICATION_PURPOSES,
   cookieName: VERIFIED_EMAIL_COOKIE,
   email: {
-    subject: "Your OneArticle code",
+    subject: "Your OneArticle verification code",
     brandLine: "OneRead · OneArticle",
+    productName: "OneArticle",
     intro: "Your OneArticle verification code is:",
     textIntro: "Your OneArticle code is:",
+    support:
+      "Use this code to finish setting up your morning article brief. Preferences are saved only after this email is verified.",
+    theme: {
+      background: "#F3F8FF",
+      surface: "#FFFFFF",
+      accent: "#3F6FA8",
+      border: "#D8E7F8",
+    },
   },
 };
 

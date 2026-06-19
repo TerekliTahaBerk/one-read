@@ -20,10 +20,19 @@ const descriptor: VerificationDescriptor = {
   purposes: LINGO_VERIFICATION_PURPOSES,
   cookieName: LINGO_VERIFIED_EMAIL_COOKIE,
   email: {
-    subject: "Your OneLingo code",
+    subject: "Your OneLingo verification code",
     brandLine: "OneRead · OneLingo",
+    productName: "OneLingo",
     intro: "Your OneLingo verification code is:",
     textIntro: "Your OneLingo code is:",
+    support:
+      "Use this code to choose your language, level, and practice style. Checkout is separate and happens only after preferences are saved.",
+    theme: {
+      background: "#F5F1FF",
+      surface: "#FFFFFF",
+      accent: "#6F5AA8",
+      border: "#DED4F5",
+    },
   },
 };
 
