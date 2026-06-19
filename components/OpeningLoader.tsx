@@ -18,15 +18,15 @@ import { productThemes } from "@/lib/product-themes";
  * is ever typed or deleted — `One` stays fixed. Colors come straight from the
  * existing product theme tokens so the loader can't drift from the brand.
  */
-type ColorKey = "read" | "article" | "lingo" | "goal" | "plate" | "move";
+type ColorKey = "read" | "article" | "lingo" | "news" | "film" | "dish";
 
 const SEQUENCE: { suffix: string; color: ColorKey }[] = [
   { suffix: "Read", color: "read" },
   { suffix: "Article", color: "article" },
   { suffix: "Lingo", color: "lingo" },
-  { suffix: "Goal", color: "goal" },
-  { suffix: "Plate", color: "plate" },
-  { suffix: "Move", color: "move" },
+  { suffix: "News", color: "news" },
+  { suffix: "Film", color: "film" },
+  { suffix: "Dish", color: "dish" },
 ];
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
@@ -34,9 +34,9 @@ const SUFFIX_COLORS: Record<ColorKey, string> = {
   read: "#1A1A1A",
   article: productThemes.article.accent,
   lingo: productThemes.lingo.accent,
-  goal: productThemes.goal.accent,
-  plate: productThemes.plate.accent,
-  move: productThemes.move.accent,
+  news: productThemes.news.accent,
+  film: productThemes.film.accent,
+  dish: productThemes.dish.accent,
 };
 
 /** Only these public, top-of-funnel pages get the opening animation. */

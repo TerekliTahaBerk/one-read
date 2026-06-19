@@ -8,6 +8,11 @@ import { getLaunchReadiness } from "@/lib/launch-readiness";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime } from "@/lib/admin/format";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { WAITLIST_FORM_URL } from "@/lib/options";
+import {
+  emailVerificationSecretConfigured,
+  verificationConfig,
+  verificationEmailConfigured,
+} from "@/lib/one-article/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -87,7 +92,14 @@ export default async function SettingsPage({
   if (!flags.sendActionsEnabled) {
     warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
   }
+  if (!emailVerificationSecretConfigured()) {
+    warnings.push("EMAIL_VERIFICATION_SECRET is not set — OneArticle email verification (and preference edits) will be unavailable.");
+  } else if (!verificationEmailConfigured()) {
+    warnings.push("Email verification is configured but RESEND_API_KEY is missing — codes are logged to the server console in development only.");
+  }
   warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
+
+  const verifyCfg = verificationConfig();
 
   return (
     <AdminShell title="Settings" subtitle="Configuration & launch readiness">
@@ -181,6 +193,16 @@ export default async function SettingsPage({
             ["FROM_EMAIL / RESEND_FROM", configured(process.env.FROM_EMAIL || process.env.RESEND_FROM)],
             ["Open tracking", "Not implemented"],
             ["Click tracking", "Not implemented"],
+          ]}
+        />
+        <ConfigCard
+          title="Email verification"
+          rows={[
+            ["EMAIL_VERIFICATION_SECRET", emailVerificationSecretConfigured() ? "Configured" : "Missing"],
+            ["Verification email sending", verificationEmailConfigured() ? "Configured" : "Missing"],
+            ["Code TTL (minutes)", String(verifyCfg.ttlMinutes)],
+            ["Resend cooldown (seconds)", String(verifyCfg.resendCooldownSeconds)],
+            ["Max attempts", String(verifyCfg.maxAttempts)],
           ]}
         />
         <ConfigCard

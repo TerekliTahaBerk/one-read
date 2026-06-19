@@ -20,11 +20,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "OneRead — Quiet daily emails for what you care about.",
   description:
-    "OneRead is a family of quiet daily emails for learning, reading, language, sports, meals, movement, and more. No app. No feed. No noise.",
+    "OneRead is a family of calm daily emails for articles, language, news, film, and food. No app. No feed. No noise.",
   openGraph: {
     title: "OneRead",
     description:
-      "Everything you care about, delivered to your inbox.",
+      "Calm daily emails for articles, language, news, film, and food. No app. No feed. No noise.",
     type: "website",
   },
 };

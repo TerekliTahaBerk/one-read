@@ -39,6 +39,20 @@ export default async function AdminUserDetailPage({
 
   // Activity: sends + feedback for this person (by new-model link or by email
   // through the legacy Subscriber, since the backfill is still in progress).
+  // Verification status — timestamps/counts only, never codes or hashes.
+  const [lastVerificationRequest, lastVerified] = await Promise.all([
+    prisma.emailVerificationCode.findFirst({
+      where: { email: sub.contact.email },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    }),
+    prisma.emailVerificationCode.findFirst({
+      where: { email: sub.contact.email, consumedAt: { not: null } },
+      orderBy: { consumedAt: "desc" },
+      select: { consumedAt: true },
+    }),
+  ]);
+
   const [sends, feedback, auditEvents] = await Promise.all([
     prisma.dailySend.findMany({
       where: {
@@ -94,6 +108,8 @@ export default async function AdminUserDetailPage({
               ["Created", fmtDateTime(sub.contact.createdAt)],
               ["Updated", fmtDateTime(sub.contact.updatedAt)],
               ["Email delivery", <StatusBadge key="e" value={sub.emailDeliveryStatus} />],
+              ["Email verified", lastVerified?.consumedAt ? fmtDateTime(lastVerified.consumedAt) : "Not verified"],
+              ["Last verification request", fmtDateTime(lastVerificationRequest?.createdAt ?? null)],
               ["Unsubscribe token", <MonoShort key="u" value={sub.unsubscribeToken} />],
             ]}
           />

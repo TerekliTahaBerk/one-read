@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   INTERESTS,
@@ -15,7 +15,12 @@ import {
 import { InterestChip } from "./InterestChip";
 import { LanguagePill } from "./LanguagePill";
 
-export type SignupPhase = "email" | "preferences" | "payment" | "manage";
+export type SignupPhase =
+  | "email"
+  | "verify"
+  | "preferences"
+  | "payment"
+  | "manage";
 
 export type Preferences = {
   interests: string[];
@@ -28,10 +33,15 @@ type Props = {
   email: string;
   initialPreferences?: Preferences | null;
   onEmailChange: (email: string) => void;
-  onEmailSaved: (result: {
+  /** Email accepted and a verification code was sent → move to the verify step. */
+  onCodeSent: () => void;
+  /** Code verified → branch to preferences setup or manage. */
+  onVerified: (result: {
     subscribed: boolean;
     preferences: Preferences | null;
   }) => void;
+  /** "Use a different email" from the verify step. */
+  onChangeEmail: () => void;
   onPreferencesSaved: (preferences: Preferences) => void;
   onCompleted: () => void;
   onCanceled: () => void;
@@ -60,7 +70,9 @@ export function SignupForm({
   email,
   initialPreferences,
   onEmailChange,
-  onEmailSaved,
+  onCodeSent,
+  onVerified,
+  onChangeEmail,
   onPreferencesSaved,
   onCompleted,
   onCanceled,
@@ -71,7 +83,17 @@ export function SignupForm({
       <EmailStep
         email={email}
         onEmailChange={onEmailChange}
-        onSaved={onEmailSaved}
+        onCodeSent={onCodeSent}
+        className={className}
+      />
+    );
+  }
+  if (phase === "verify") {
+    return (
+      <VerifyStep
+        email={email}
+        onVerified={onVerified}
+        onChangeEmail={onChangeEmail}
         className={className}
       />
     );
@@ -112,15 +134,12 @@ export function SignupForm({
 function EmailStep({
   email,
   onEmailChange,
-  onSaved,
+  onCodeSent,
   className = "",
 }: {
   email: string;
   onEmailChange: (email: string) => void;
-  onSaved: (result: {
-    subscribed: boolean;
-    preferences: Preferences | null;
-  }) => void;
+  onCodeSent: () => void;
   className?: string;
 }) {
   const [touched, setTouched] = useState(false);
@@ -136,7 +155,7 @@ function EmailStep({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/signup/start", {
+      const res = await fetch("/api/one-article/verification/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
@@ -144,21 +163,25 @@ function EmailStep({
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         error?: string;
-        subscribed?: boolean;
-        preferences?: Preferences | null;
+        retryAfterSeconds?: number;
       };
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error ?? "Couldn't save your email.");
+      if (res.status === 503) {
+        throw new Error("Email verification isn't available right now.");
       }
-      onSaved({
-        subscribed: Boolean(data.subscribed),
-        preferences: data.preferences ?? null,
-      });
+      if (res.status === 429) {
+        const secs = data.retryAfterSeconds ?? 60;
+        throw new Error(`Please wait ${secs}s before requesting another code.`);
+      }
+      if (!res.ok || !data.ok) {
+        throw new Error("Couldn't send a code. Please try again.");
+      }
+      // Generic success — we never reveal whether the email already exists.
+      onCodeSent();
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Couldn't save your email. Please try again.",
+          : "Couldn't send a code. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -212,8 +235,8 @@ function EmailStep({
         <PrimaryButton
           loading={loading}
           disabled={!canSubmit}
-          loadingLabel="Checking..."
-          label="Continue"
+          loadingLabel="Sending code..."
+          label="Send code"
         />
         {error && (
           <p
@@ -224,9 +247,9 @@ function EmailStep({
           </p>
         )}
         <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
-          One email each morning. Cancel in one click.
+          We&apos;ll email a 6-digit code to confirm it&apos;s you.
           <br />
-          Already a member? Enter your email to change your preferences or
+          Already a member? Verify your email to change your preferences or
           cancel.
         </p>
         <p className="mt-3 text-center text-[12px] text-fog font-sans leading-[1.6]">
@@ -249,6 +272,238 @@ function EmailStep({
       </div>
     </form>
   );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Step 1b — Verify 6-digit code                                           */
+/* ----------------------------------------------------------------------- */
+
+function VerifyStep({
+  email,
+  onVerified,
+  onChangeEmail,
+  className = "",
+}: {
+  email: string;
+  onVerified: (result: {
+    subscribed: boolean;
+    preferences: Preferences | null;
+  }) => void;
+  onChangeEmail: () => void;
+  className?: string;
+}) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(60);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const submittedFor = useRef<string | null>(null);
+
+  // Countdown for the resend cooldown.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((s) => s - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const canSubmit = code.length === 6 && !loading;
+
+  const verify = async (value: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/one-article/verification/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), code: value }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        subscribed?: boolean;
+        preferences?: Preferences | null;
+      };
+      if (!res.ok || !data.ok) {
+        submittedFor.current = null;
+        setCode("");
+        throw new Error(confirmErrorMessage(data.error));
+      }
+      onVerified({
+        subscribed: Boolean(data.subscribed),
+        preferences: data.preferences ?? null,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "That code is not correct. Try again.",
+      );
+      inputRef.current?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!canSubmit) {
+      setError("Please enter the 6-digit code.");
+      return;
+    }
+    void verify(code);
+  };
+
+  const handleChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    setCode(digits);
+    setResent(false);
+    // Auto-submit once a full, clean 6-digit code is present.
+    if (digits.length === 6 && submittedFor.current !== digits && !loading) {
+      submittedFor.current = digits;
+      void verify(digits);
+    }
+  };
+
+  const handleResend = async () => {
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    setError(null);
+    setResent(false);
+    try {
+      const res = await fetch("/api/one-article/verification/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        retryAfterSeconds?: number;
+      };
+      if (res.status === 429) {
+        setCooldown(data.retryAfterSeconds ?? 60);
+      } else {
+        setCooldown(60);
+        setResent(true);
+        setCode("");
+        submittedFor.current = null;
+      }
+    } catch {
+      setError("Couldn't resend the code. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className={`w-full ${className}`}
+      aria-label="Enter your verification code"
+    >
+      <div className="animate-rise-delayed-2">
+        <p className="mb-4 text-center text-[13px] font-sans leading-[1.6] text-ash">
+          Enter the 6-digit code we sent to{" "}
+          <span className="text-ink">{email}</span>.
+        </p>
+        <label htmlFor="code" className="sr-only">
+          6-digit verification code
+        </label>
+        <input
+          id="code"
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="\d{6}"
+          maxLength={6}
+          spellCheck={false}
+          placeholder="• • • • • •"
+          value={code}
+          onChange={(e) => handleChange(e.target.value)}
+          aria-invalid={Boolean(error)}
+          className="
+            focus-ring
+            block w-full
+            h-14 px-4
+            rounded-xl
+            bg-white/75
+            border border-[var(--theme-border)]
+            text-center font-sans text-[26px] tracking-[0.4em] text-ink placeholder:text-fog placeholder:tracking-[0.3em]
+            transition-colors duration-200
+            hover:border-[var(--theme-accent)]
+            focus:border-[var(--theme-accent)] focus:bg-white
+          "
+        />
+      </div>
+
+      <div className="mt-5 animate-rise-delayed-3">
+        <PrimaryButton
+          loading={loading}
+          disabled={!canSubmit}
+          loadingLabel="Verifying..."
+          label="Verify email"
+        />
+        {error && (
+          <p
+            role="alert"
+            className="mt-3 text-center text-[12.5px] text-dawn font-sans animate-fade-in"
+          >
+            {error}
+          </p>
+        )}
+        {resent && !error && (
+          <p className="mt-3 text-center text-[12.5px] text-ash font-sans animate-fade-in">
+            A new code is on its way.
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-col items-center gap-1.5 text-[12px] font-sans text-fog">
+          {cooldown > 0 ? (
+            <span>You can request a new code in {cooldown}s.</span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+              className="focus-ring rounded link-underline transition-colors hover:text-ink disabled:opacity-50"
+            >
+              {resending ? "Resending..." : "Resend code"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onChangeEmail}
+            className="focus-ring rounded link-underline transition-colors hover:text-ink"
+          >
+            Use a different email
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function confirmErrorMessage(error: string | undefined): string {
+  switch (error) {
+    case "expired":
+      return "This code has expired. Request a new one.";
+    case "too_many":
+      return "Too many attempts. Request a new code.";
+    case "invalid_code_format":
+      return "Please enter the 6-digit code.";
+    case "verification_not_configured":
+      return "Email verification isn't available right now.";
+    case "incorrect":
+    case "invalid":
+    default:
+      return "That code is not correct. Try again.";
+  }
 }
 
 /* ----------------------------------------------------------------------- */

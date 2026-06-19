@@ -15,9 +15,9 @@ export interface ProductInfo {
 export const PRODUCTS: readonly ProductInfo[] = [
   { key: "one-article", name: "OneArticle", status: "live", connected: true },
   { key: "one-lingo", name: "OneLingo", status: "waitlist", connected: false },
-  { key: "one-goal", name: "OneGoal", status: "waitlist", connected: false },
-  { key: "one-plate", name: "OnePlate", status: "waitlist", connected: false },
-  { key: "one-move", name: "OneMove", status: "waitlist", connected: false },
+  { key: "one-news", name: "OneNews", status: "waitlist", connected: false },
+  { key: "one-film", name: "OneFilm", status: "waitlist", connected: false },
+  { key: "one-dish", name: "OneDish", status: "waitlist", connected: false },
 ];
 
 export const WAITLIST_NOTE = "External Tally waitlist — not connected yet";

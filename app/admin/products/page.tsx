@@ -70,9 +70,10 @@ export default async function AdminProductsPage({
       </AdminCard>
 
       <p className="text-[12.5px] text-fog font-sans">
-        Waitlist signups for OneLingo, OneGoal, OnePlate, and OneMove are collected
-        through an external Tally form and are not yet connected to this database.
-        Counts will appear here once an integration is added.
+        Waitlist collected in Tally. Not connected to admin yet. Signups for
+        OneLingo, OneNews, OneFilm, and OneDish live in an external Tally form and
+        are not yet connected to this database. Counts will appear here once an
+        integration is added.
       </p>
     </AdminShell>
   );
@@ -83,13 +84,13 @@ function productDotClass(key: string): string {
     case "one-article":
       return "bg-sky-500";
     case "one-lingo":
-      return "bg-emerald-500";
-    case "one-goal":
-      return "bg-amber-500";
-    case "one-plate":
-      return "bg-[#C96457]";
-    case "one-move":
-      return "bg-[#7A6FA8]";
+      return "bg-[#6F5AA8]";
+    case "one-news":
+      return "bg-[#53647A]";
+    case "one-film":
+      return "bg-[#7B5E8E]";
+    case "one-dish":
+      return "bg-[#B96A4B]";
     default:
       return "bg-fog";
   }

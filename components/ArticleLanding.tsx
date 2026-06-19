@@ -18,10 +18,16 @@ type Phase = SignupPhase | "success" | "canceled";
 
 const COPY: Record<SignupPhase, { lead: string; accent: string; support: string }> = {
   email: {
-    lead: "Start your morning with one article ",
-    accent: "worth reading.",
+    lead: "Start with ",
+    accent: "your email.",
     support:
-      "Choose your interests and language preferences. Every morning at 7 AM, OneArticle sends one carefully chosen article brief to your inbox.",
+      "We'll send a short verification code before setting up OneArticle. One carefully chosen article brief, every morning at 7 AM.",
+  },
+  verify: {
+    lead: "Check ",
+    accent: "your inbox.",
+    support:
+      "Enter the 6-digit code we just sent you. It keeps your OneArticle preferences tied to an email you own.",
   },
   preferences: {
     lead: "Tell us ",
@@ -46,6 +52,7 @@ const COPY: Record<SignupPhase, { lead: string; accent: string; support: string 
 // Where the back arrow returns to from each step. The email step uses the same
 // affordance to return to the OneRead umbrella homepage.
 const BACK_TO: Partial<Record<Phase, Phase>> = {
+  verify: "email",
   preferences: "email",
   payment: "preferences",
   manage: "email",
@@ -178,10 +185,12 @@ export function ArticleLanding() {
               email={email}
               initialPreferences={preferences}
               onEmailChange={setEmail}
-              onEmailSaved={({ subscribed, preferences: prefs }) => {
+              onCodeSent={() => setPhase("verify")}
+              onVerified={({ subscribed, preferences: prefs }) => {
                 setPreferences(prefs);
                 setPhase(subscribed ? "manage" : "preferences");
               }}
+              onChangeEmail={() => setPhase("email")}
               onPreferencesSaved={(prefs) => {
                 setPreferences(prefs);
                 setPhase("payment");

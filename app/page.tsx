@@ -10,7 +10,7 @@ const PRODUCTS = [
     name: "OneArticle",
     description: "One carefully chosen article, every morning.",
     status: "Available",
-    cta: "Open OneArticle",
+    cta: "Start free trial",
     href: "/article",
     theme: "article",
   },
@@ -19,40 +19,40 @@ const PRODUCTS = [
     description: "Small language practice that fits into your inbox.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "Join the list for the first release.",
+    note: "One small step at a time.",
     href: WAITLIST_FORM_URL,
     external: true,
     theme: "lingo",
   },
   {
-    name: "OneGoal",
-    description: "A calmer way to follow the teams and stories you care about.",
+    name: "OneNews",
+    description: "A calm morning briefing for the stories worth knowing.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "Join the list for the first release.",
+    note: "The important stories, summarized calmly, at 7 AM.",
     href: WAITLIST_FORM_URL,
     external: true,
-    theme: "goal",
+    theme: "news",
   },
   {
-    name: "OnePlate",
-    description: "Simple meal ideas for your day, delivered quietly to your inbox.",
+    name: "OneFilm",
+    description: "One film worth thinking about, delivered to your inbox.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "A calmer way to decide what to eat.",
+    note: "A short film note for people who want something better than scrolling.",
     href: WAITLIST_FORM_URL,
     external: true,
-    theme: "plate",
+    theme: "film",
   },
   {
-    name: "OneMove",
-    description: "Simple movement ideas for your day, delivered quietly to your inbox.",
+    name: "OneDish",
+    description: "One simple dish idea for your day.",
     status: "Coming soon",
     cta: "Join waitlist",
-    note: "A calmer way to stretch, reset, and move a little more.",
+    note: "A recipe you can actually make, without another app.",
     href: WAITLIST_FORM_URL,
     external: true,
-    theme: "move",
+    theme: "dish",
   },
 ] as const;
 
@@ -104,8 +104,8 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead sends small, useful emails for articles, language, sports,
-            meals, movement, and more.
+            OneRead is a family of quiet daily emails for reading, language,
+            news, film, and food. No app. No feed. No noise.
           </p>
 
           <div

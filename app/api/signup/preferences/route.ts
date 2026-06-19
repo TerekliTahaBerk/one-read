@@ -12,6 +12,7 @@ import {
   upsertArticlePreferences,
   markReadyForCheckout,
 } from "@/lib/subscriptions";
+import { hasVerifiedEmail } from "@/lib/one-article/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +46,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, error: "Please enter a valid email." },
       { status: 400 },
+    );
+  }
+
+  // Email ownership must be proven (6-digit code) before preferences can be
+  // written through the public flow. Admin edits go through the admin APIs and
+  // are not affected. This proves ownership only — it grants no access.
+  if (!hasVerifiedEmail(email)) {
+    return NextResponse.json(
+      { ok: false, error: "email_not_verified" },
+      { status: 401 },
     );
   }
 

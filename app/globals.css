@@ -5,16 +5,21 @@
 @layer base {
   :root {
     color-scheme: light;
-    --one-plate-bg: #FFF6F3;
-    --one-plate-accent: #C96457;
-    --one-plate-border: #F1D6D1;
-    --one-plate-surface: #FFEDEA;
-    --one-plate-hover: #FFE3DD;
-    --one-move-bg: #F7F5FF;
-    --one-move-accent: #7A6FA8;
-    --one-move-border: #DDD8F0;
-    --one-move-surface: #EFECFF;
-    --one-move-hover: #E7E2FA;
+    --one-news-bg: #F5F7FA;
+    --one-news-accent: #53647A;
+    --one-news-border: #DCE3EA;
+    --one-news-surface: #EEF2F6;
+    --one-news-hover: #E7EDF3;
+    --one-film-bg: #F8F4FA;
+    --one-film-accent: #7B5E8E;
+    --one-film-border: #E3D6EA;
+    --one-film-surface: #F1E8F5;
+    --one-film-hover: #EADDF1;
+    --one-dish-bg: #FFF6F1;
+    --one-dish-accent: #B96A4B;
+    --one-dish-border: #EFD7CB;
+    --one-dish-surface: #FFECE3;
+    --one-dish-hover: #FFE2D4;
   }
 
   html,

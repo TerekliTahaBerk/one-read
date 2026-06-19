@@ -404,3 +404,34 @@ model Feedback {
 
   @@index([subscriberId, createdAt])
 }
+
+/// One-time email verification codes for the public OneArticle signup /
+/// preferences flow. Proves a user controls an email before they can edit
+/// preferences. Never stores the raw 6-digit code — only an HMAC hash keyed by
+/// EMAIL_VERIFICATION_SECRET. Verification proves email ownership only; it never
+/// grants billing access (Polar remains the source of truth).
+model EmailVerificationCode {
+  id       String @id @default(cuid())
+  email    String
+  /// HMAC-SHA256 of the 6-digit code (never the plaintext code).
+  codeHash String
+  /// "one-article-signup" | "one-article-preferences"
+  purpose  String
+
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  /// Earliest time a new code may be requested for this email+purpose.
+  resendAfter DateTime?
+
+  /// Hashed request metadata for abuse limiting — never raw IP / UA.
+  ipHash        String?
+  userAgentHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}

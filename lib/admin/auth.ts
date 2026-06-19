@@ -86,13 +86,19 @@ export function guardAdminPage(
   const queryToken = readTokenFromSearchParams(searchParams);
   const queryTokenAuthorized = Boolean(queryToken && isAdminTokenValueAuthorized(queryToken));
   if (!adminLoginConfigured() && !queryTokenAuthorized) {
+    adminAuthDebug({ path: pathname, cookie: "n/a", verify: "skipped", reason: "not_configured", redirect: "no" });
     return { ok: false, reason: "not_configured" };
   }
 
+  const cookiePresent = Boolean(cookies().get(ADMIN_SESSION_COOKIE)?.value);
   const session = getAdminSession();
-  if (session) return { ok: true, session };
+  if (session) {
+    adminAuthDebug({ path: pathname, cookie: "present", verify: "ok", actor: "session", redirect: "no" });
+    return { ok: true, session };
+  }
 
   if (queryTokenAuthorized) {
+    adminAuthDebug({ path: pathname, cookie: cookiePresent ? "present" : "absent", verify: "ok", actor: "admin-token", redirect: "no" });
     return {
       ok: true,
       session: {
@@ -102,8 +108,30 @@ export function guardAdminPage(
     };
   }
 
+  adminAuthDebug({
+    path: pathname,
+    cookie: cookiePresent ? "present" : "absent",
+    verify: "failed",
+    reason: cookiePresent ? "invalid_or_expired" : "no_cookie",
+    redirect: "login",
+  });
+
   const next = buildSafeAdminPath(pathname, searchParams);
   redirect(`/admin/login?next=${encodeURIComponent(next)}`);
+}
+
+/**
+ * Safe admin-auth debug logging. Off by default; enable with ADMIN_AUTH_DEBUG=true
+ * in development. Never logs secrets, passwords, tokens, or raw cookie values —
+ * only presence/verification status.
+ */
+function adminAuthDebug(fields: Record<string, string>): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (process.env.ADMIN_AUTH_DEBUG !== "true") return;
+  const line = Object.entries(fields)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(" ");
+  console.log(`[admin-auth] ${line}`);
 }
 
 export async function verifyAdminCredentials(

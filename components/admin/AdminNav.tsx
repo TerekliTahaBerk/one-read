@@ -113,12 +113,20 @@ export function AdminNav() {
         ))}
       </ul>
       <div className="mt-6 border-t border-line pt-3">
-        <Link
-          href="/admin/logout"
-          className="block rounded-lg px-3 py-1.5 text-ash transition-colors hover:bg-cream/60 hover:text-ink"
-        >
-          Logout
-        </Link>
+        {/*
+          Logout is a POST form, never a <Link>. A GET/prefetchable logout link
+          would be hit by Next.js prefetch and clear the session in the
+          background right after login. method="post" with full navigation lets
+          the route handler 303-redirect to /admin/login.
+        */}
+        <form action="/admin/logout" method="post">
+          <button
+            type="submit"
+            className="block w-full rounded-lg px-3 py-1.5 text-left text-ash transition-colors hover:bg-cream/60 hover:text-ink"
+          >
+            Logout
+          </button>
+        </form>
       </div>
     </nav>
   );
