@@ -34,9 +34,13 @@ import type {
 /* ----------------------------------------------------------------------- */
 
 const DEFAULT_MODELS: Record<GeminiModelTier, string> = {
+  // gemini-2.5-flash is the reliable default across tiers: gemini-2.5-pro is
+  // rate-limited / unavailable on the current API key tier. Override per tier
+  // with GEMINI_MODEL_FAST / GEMINI_MODEL_QUALITY / GEMINI_MODEL_REASONING once
+  // a pro-capable key is in place.
   fast: "gemini-2.5-flash",
-  quality: "gemini-2.5-pro",
-  reasoning: "gemini-2.5-pro",
+  quality: "gemini-2.5-flash",
+  reasoning: "gemini-2.5-flash",
 };
 
 function modelForTier(tier: GeminiModelTier): string {
