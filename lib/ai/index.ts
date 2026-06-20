@@ -36,6 +36,7 @@ export {
 } from "./cache";
 export {
   runSharedGates,
+  runEditorialPolishGates,
   requireNonEmpty,
   toReport,
   collectStrings,
@@ -45,4 +46,5 @@ export {
   type GateReport,
   type GateSeverity,
   type SharedGateOptions,
+  type EditorialPolishOptions,
 } from "./quality";

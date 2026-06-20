@@ -70,7 +70,7 @@ export async function generateLingoLesson(
 
     if (result.ok) {
       const { title, subject, previewText, content } = mapLesson(result.data, seg);
-      const gate = runLingoGates(content);
+      const gate = runLingoGates(content, { subject, previewText });
       if (gate.ok) {
         return {
           title,

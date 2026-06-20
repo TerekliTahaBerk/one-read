@@ -9,7 +9,14 @@
  */
 
 import type { NewsSourceStory } from "@prisma/client";
-import { runSharedGates, toReport, isRealUrl, type GateFinding, type GateReport } from "@/lib/ai";
+import {
+  runEditorialPolishGates,
+  runSharedGates,
+  toReport,
+  isRealUrl,
+  type GateFinding,
+  type GateReport,
+} from "@/lib/ai";
 import type { NewsIssueContent } from "./types";
 
 /** Fake-urgency / sensational phrases OneNews must never use. */
@@ -63,8 +70,24 @@ export function validateSourceBundle(stories: NewsSourceStory[]): SourceBundleCh
 export function runNewsGates(
   content: NewsIssueContent,
   bundle: NewsSourceStory[],
+  display: { subject?: string; previewText?: string } = {},
 ): GateReport {
-  const findings: GateFinding[] = runSharedGates(content, { maxFieldLength: 900 });
+  const findings: GateFinding[] = [
+    ...runSharedGates({ ...display, ...content }, { maxFieldLength: 900 }),
+    ...runEditorialPolishGates(
+      { ...display, ...content },
+      {
+        product: "one-news",
+        genericSubjectPatterns: [
+          /^today'?s\s+onenews\b/i,
+          /^onenews:\s+your\b/i,
+          /\byour calm morning briefing\b/i,
+          /\btoday'?s top stories\b/i,
+          /^[a-z\s]+,\s+[a-z\s]+,\s+and\s+[a-z\s]+ updates$/i,
+        ],
+      },
+    ),
+  ];
   const allowedUrls = new Set(bundle.map((s) => s.sourceUrl));
   const allowedNames = new Set(bundle.map((s) => s.sourceName));
 
@@ -107,10 +130,10 @@ export function runNewsGates(
   });
 
   // Subject sensational check.
-  const subjectBlob = `${content.openingLine}`.toLowerCase();
+  const subjectBlob = `${display.subject ?? ""} ${content.openingLine}`.toLowerCase();
   for (const phrase of SENSATIONAL) {
     if (subjectBlob.includes(phrase)) {
-      findings.push({ severity: "error", code: "sensational_opening", field: "openingLine", message: `Sensational opening ("${phrase}").` });
+      findings.push({ severity: "error", code: "sensational_opening", field: "subject/openingLine", message: `Sensational inbox/opening framing ("${phrase}").` });
     }
   }
 

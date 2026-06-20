@@ -14,6 +14,7 @@
 import { z } from "zod";
 import {
   generateJsonWithGemini,
+  runEditorialPolishGates,
   runSharedGates,
   toReport,
   isRealUrl,
@@ -40,7 +41,7 @@ const LooseObjectSchema = z.record(z.string(), z.unknown());
 
 export function createGeminiProvider(): LlmProvider {
   const qualityModel =
-    process.env.GEMINI_MODEL_QUALITY?.trim() || "gemini-2.5-pro";
+    process.env.GEMINI_MODEL_QUALITY?.trim() || "gemini-2.5-flash";
   const id = `gemini/${qualityModel}@${ARTICLE_PROMPT_VERSION}`;
 
   return {
@@ -100,19 +101,35 @@ export function createGeminiProvider(): LlmProvider {
 
       // Quality gates (Phase 9). Banned phrases / placeholder / JSON leak +
       // article-specific source-URL preservation.
-      const findings = runSharedGates(
-        {
-          subject: summary.subject,
-          preheader: summary.preheader,
-          oneLineHook: summary.oneLineHook,
-          whyThisArticle: summary.whyThisArticle,
-          threeSentenceSummary: summary.threeSentenceSummary,
-          keyTakeaways: summary.keyTakeaways,
-          bestFor: summary.bestFor,
-          oneThingToRemember: summary.oneThingToRemember,
-        },
-        { maxFieldLength: 1200 },
-      );
+      const gateContent = {
+        subject: summary.subject,
+        preheader: summary.preheader,
+        oneLineHook: summary.oneLineHook,
+        whyThisArticle: summary.whyThisArticle,
+        threeSentenceSummary: summary.threeSentenceSummary,
+        keyTakeaways: summary.keyTakeaways,
+        bestFor: summary.bestFor,
+        oneThingToRemember: summary.oneThingToRemember,
+      };
+      const findings = [
+        ...runSharedGates(gateContent, { maxFieldLength: 1200 }),
+        ...runEditorialPolishGates(gateContent, { product: "one-article" }),
+      ];
+      const genericArticleOpeners =
+        /\b(in this article|this article|this piece|this post|the author argues|the author explains)\b/i;
+      for (const [field, value] of Object.entries(gateContent)) {
+        const values = Array.isArray(value) ? value : [value];
+        values.forEach((text, i) => {
+          if (typeof text === "string" && genericArticleOpeners.test(text)) {
+            findings.push({
+              severity: "warning",
+              code: "generic_article_framing",
+              field: Array.isArray(value) ? `${field}[${i}]` : field,
+              message: "Avoid generic article-summary framing; write the idea directly.",
+            });
+          }
+        });
+      }
       if (!isRealUrl(summary.originalUrl)) {
         findings.push({
           severity: "error",

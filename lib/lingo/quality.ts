@@ -8,11 +8,23 @@
  *  - answer key present (every exercise has an answer)
  */
 
-import { runSharedGates, toReport, type GateFinding, type GateReport } from "@/lib/ai";
+import {
+  runEditorialPolishGates,
+  runSharedGates,
+  toReport,
+  type GateFinding,
+  type GateReport,
+} from "@/lib/ai";
 import type { LingoLessonContent } from "./types";
 
-export function runLingoGates(content: LingoLessonContent): GateReport {
-  const findings: GateFinding[] = runSharedGates(content, { maxFieldLength: 600 });
+export function runLingoGates(
+  content: LingoLessonContent,
+  display: { subject?: string; previewText?: string } = {},
+): GateReport {
+  const findings: GateFinding[] = [
+    ...runSharedGates({ ...display, ...content }, { maxFieldLength: 600 }),
+    ...runEditorialPolishGates({ ...display, ...content }, { product: "one-lingo" }),
+  ];
 
   // Target-language examples present.
   if (content.words.length < 3) {
@@ -50,6 +62,20 @@ export function runLingoGates(content: LingoLessonContent): GateReport {
     if (!e.prompt?.trim())
       findings.push({ severity: "error", code: "missing_prompt", field: `exercises[${i}].prompt`, message: "Exercise prompt is empty." });
   });
+
+  const exerciseBlob = content.exercises.map((e) => `${e.prompt} ${e.answer}`).join(" ").toLowerCase();
+  const lessonTerms = [
+    ...content.words.map((w) => w.word),
+    ...content.phrases.map((p) => p.phrase),
+  ].filter(Boolean);
+  if (lessonTerms.length > 0 && !lessonTerms.some((term) => exerciseBlob.includes(term.toLowerCase()))) {
+    findings.push({
+      severity: "warning",
+      code: "exercise_not_linked",
+      field: "exercises",
+      message: "Exercises do not appear to practice the lesson words or phrases.",
+    });
+  }
 
   return toReport(findings);
 }

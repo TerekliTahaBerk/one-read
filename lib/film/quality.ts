@@ -11,7 +11,14 @@
  */
 
 import type { FilmCatalogEntry } from "@prisma/client";
-import { runSharedGates, toReport, requireNonEmpty, type GateFinding, type GateReport } from "@/lib/ai";
+import {
+  runEditorialPolishGates,
+  runSharedGates,
+  toReport,
+  requireNonEmpty,
+  type GateFinding,
+  type GateReport,
+} from "@/lib/ai";
 import type { FilmIssueContent } from "./types";
 import type { SpoilerLevel } from "./prompts";
 
@@ -97,8 +104,12 @@ export function runFilmGates(
   content: FilmIssueContent,
   film: FilmCatalogEntry,
   spoilerLevel: SpoilerLevel,
+  display: { subject?: string; previewText?: string } = {},
 ): GateReport {
-  const findings: GateFinding[] = runSharedGates(content, { maxFieldLength: 900 });
+  const findings: GateFinding[] = [
+    ...runSharedGates({ ...display, ...content }, { maxFieldLength: 900 }),
+    ...runEditorialPolishGates({ ...display, ...content }, { product: "one-film" }),
+  ];
 
   // Required commentary sections.
   findings.push(
@@ -143,7 +154,7 @@ export function runFilmGates(
 
   // Spoiler level respected: in spoiler-free/light, flag explicit spoiler/ending talk.
   if (spoilerLevel !== "analysis") {
-    if (/\b(the ending|the twist|dies|killer is|turns out that)\b/i.test(commentary)) {
+    if (/\b(the ending|the final scene|the twist|twist ending|dies|killer is|turns out that|reveals that)\b/i.test(commentary)) {
       findings.push({ severity: "error", code: "spoiler_violation", field: "commentary", message: `Spoiler-ish content present while spoiler level is "${spoilerLevel}".` });
     }
   }

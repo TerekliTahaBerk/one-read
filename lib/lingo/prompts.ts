@@ -13,7 +13,7 @@ import { z } from "zod";
 import type { LingoSegment } from "./segments";
 
 /** Bump when the prompt or schema changes in a way that affects output. */
-export const LINGO_PROMPT_VERSION = "lingo-lesson/v1-gemini";
+export const LINGO_PROMPT_VERSION = "lingo-lesson/v2-gemini";
 
 export interface LingoPromptOptions {
   learningGoal?: string | null;
@@ -35,6 +35,9 @@ HARD RULES:
 - Use real-life contexts, natural phrasing — no unnatural textbook sentences.
 - Include an answer key: every exercise MUST have a correct answer.
 - Do not overload: 3–5 words, 1–2 phrases, 2–3 exercises, ONE small grammar note.
+- Subject and previewText should make this feel like a useful 5-minute daily practice, not a vocabulary list. Keep them specific to the micro-topic.
+- Beginner lessons should be plain and useful, not childish. Intermediate/Advanced lessons should include more natural nuance and avoid obvious beginner-only phrases.
+- Do not use markdown formatting inside string fields: no backticks, bullets, bold markers, or numbered lists.
 - No offensive, medical, legal, political, or stereotyping content. No cultural stereotypes.
 
 FORBIDDEN OUTPUT:
@@ -85,6 +88,7 @@ Constraints:
 - "meaning" of each word is in ${seg.nativeLanguage}; "word"/"example" are in ${seg.targetLanguage}.
 - "translation" of each phrase is in ${seg.nativeLanguage}; "phrase" is in ${seg.targetLanguage}.
 - Explanations/intros/takeaways are in ${seg.nativeLanguage}.
+- Exercises should be answerable in 5 minutes and should practice the exact words, phrases, or grammar note from this lesson.
 - Keep the whole thing doable in ~5 minutes.`;
 }
 

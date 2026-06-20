@@ -16,7 +16,7 @@ import type { NewsSourceStory } from "@prisma/client";
 import type { NewsSegment } from "./segments";
 
 /** Bump when the prompt or schema changes in a way that affects output. */
-export const NEWS_PROMPT_VERSION = "news-briefing/v1-gemini";
+export const NEWS_PROMPT_VERSION = "news-briefing/v2-gemini";
 
 export const NEWS_SYSTEM_PROMPT = `You are OneNews, a calm editor who writes a short, trustworthy morning briefing.
 
@@ -36,6 +36,10 @@ OUTPUT RULES:
 - Return ONE JSON object. No prose, no markdown, no code fences.
 - Use 3–5 top stories (or fewer if fewer real stories are provided), in the input order.
 - Write summaries and framing in the requested briefing language.
+- Subject and previewText must be calm, source-specific inbox copy. Do not use "breaking", "urgent", "today's top stories", or generic feed language.
+- Subject should name one or two concrete developments from the bundle. Avoid abstract topic-list subjects like "Economic Policy, Science, and Trade Updates".
+- "whyItMatters" should explain the practical significance supported by the excerpt. If the excerpt is thin, say less rather than adding context from memory.
+- quietContext should connect the included stories without overstating a trend.
 
 FORBIDDEN OUTPUT:
 - Marketing/AI-slop phrases ("unlock", "supercharge", "seamless", "dive into", "AI-powered", "game-changing", etc.).
@@ -66,7 +70,7 @@ ${JSON.stringify(items, null, 2)}
 
 Return JSON with EXACTLY these fields:
 {
-  "subject": string,            // calm email subject, no "breaking"
+  "subject": string,            // calm, specific email subject, no "breaking"
   "previewText": string,        // ~80 char preheader
   "openingLine": string,        // one calm sentence
   "topStories": [               // one entry per provided story you include, in order

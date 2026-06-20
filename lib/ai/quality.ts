@@ -51,12 +51,16 @@ export const BANNED_PHRASES: readonly string[] = [
   "as an ai",
   "as a language model",
   "as an ai language model",
+  "look no further",
+  "it is important to note",
+  "it's important to note",
+  "worth noting that",
+  "it is worth noting",
 ];
 
 /** Placeholder / leakage markers that must never reach an email. */
 const PLACEHOLDER_MARKERS: readonly string[] = [
   "lorem ipsum",
-  "todo",
   "tbd",
   "placeholder",
   "{{",
@@ -140,6 +144,14 @@ export function runSharedGates(
     }
 
     // Placeholder / leakage.
+    if (/\bTODO\b/.test(text)) {
+      findings.push({
+        severity: "error",
+        code: "placeholder_text",
+        field: path,
+        message: "Contains placeholder/leak token \"TODO\".",
+      });
+    }
     for (const marker of PLACEHOLDER_MARKERS) {
       if (lower.includes(marker)) {
         findings.push({
@@ -161,6 +173,15 @@ export function runSharedGates(
       });
     }
 
+    if (/[`*]{1,}/.test(text)) {
+      findings.push({
+        severity: "warning",
+        code: "markdown_formatting",
+        field: path,
+        message: "Field contains markdown-style formatting; email copy should be plain prose.",
+      });
+    }
+
     // Over-length.
     if (text.length > maxLen) {
       findings.push({
@@ -169,6 +190,95 @@ export function runSharedGates(
         field: path,
         message: `Field is ${text.length} chars (> ${maxLen}).`,
       });
+    }
+  }
+
+  return findings;
+}
+
+export interface EditorialPolishOptions {
+  /** Product label used only in warning messages. */
+  product?: string;
+  /** Paths treated as subject lines. Defaults to fields named subject. */
+  subjectFields?: readonly string[];
+  /** Paths treated as preview/preheader copy. */
+  previewFields?: readonly string[];
+  /** Generic subject openers that make an issue feel templated. */
+  genericSubjectPatterns?: readonly RegExp[];
+}
+
+/**
+ * Soft quality checks for premium-feeling email copy. These warnings should
+ * help admins spot generic output without blocking grounded, valid content.
+ */
+export function runEditorialPolishGates(
+  content: unknown,
+  opts: EditorialPolishOptions = {},
+): GateFinding[] {
+  const findings: GateFinding[] = [];
+  const strings = collectStrings(content);
+  const subjectFields = new Set(opts.subjectFields ?? ["subject"]);
+  const previewFields = new Set(opts.previewFields ?? ["preheader", "previewText"]);
+  const genericSubjectPatterns =
+    opts.genericSubjectPatterns ?? [
+      /^today'?s\s+one(read|news|lingo|film)\b/i,
+      /^one(read|news|lingo|film):\s+your\b/i,
+      /\byour calm morning briefing\b/i,
+      /\bone film worth thinking about\b/i,
+    ];
+
+  for (const { path, text } of strings) {
+    const trimmed = text.trim();
+    const key = path.split(".").pop() ?? path;
+
+    if (subjectFields.has(key)) {
+      if (trimmed.length > 78) {
+        findings.push({
+          severity: "warning",
+          code: "subject_too_long",
+          field: path,
+          message: "Subject is long for an inbox; tighten it before sending.",
+        });
+      }
+      if (genericSubjectPatterns.some((re) => re.test(trimmed))) {
+        findings.push({
+          severity: "warning",
+          code: "generic_subject",
+          field: path,
+          message: "Subject reads like a template rather than a specific editorial promise.",
+        });
+      }
+    }
+
+    if (previewFields.has(key) && trimmed.length > 150) {
+      findings.push({
+        severity: "warning",
+        code: "preview_too_long",
+        field: path,
+        message: "Preview/preheader is long; keep it calm and scannable.",
+      });
+    }
+  }
+
+  const sentenceStarts = strings
+    .flatMap(({ path, text }) =>
+      splitSentences(text).map((sentence) => ({
+        path,
+        start: firstWords(sentence, 4).toLowerCase(),
+      })),
+    )
+    .filter((x) => x.start.length >= 14);
+  const counts = new Map<string, number>();
+  for (const { start } of sentenceStarts) counts.set(start, (counts.get(start) ?? 0) + 1);
+  for (const [start, count] of counts) {
+    if (count >= 3) {
+      findings.push({
+        severity: "warning",
+        code: "repetitive_sentence_starts",
+        field: opts.product,
+        message: `Several sentences start the same way ("${start}..."); revise for a more human rhythm.`,
+      });
+      break;
     }
   }
 
@@ -241,6 +351,22 @@ function looksLikeJson(text: string): boolean {
   } catch {
     return false;
   }
+}
+
+function splitSentences(text: string): string[] {
+  return text
+    .split(/[.!?]\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function firstWords(text: string, count: number): string {
+  return text
+    .replace(/["'“”‘’()[\]{}]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, count)
+    .join(" ");
 }
 
 /** True when a string is a real http(s) URL. Used by source-grounding gates. */

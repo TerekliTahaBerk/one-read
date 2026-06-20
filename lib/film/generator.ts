@@ -82,7 +82,10 @@ export async function generateFilmIssue(
 
     if (result.ok) {
       const content = mapNote(result.data, film, grounded);
-      const gate = runFilmGates(content, film, spoilerLevel);
+      const gate = runFilmGates(content, film, spoilerLevel, {
+        subject: result.data.subject,
+        previewText: result.data.previewText,
+      });
       if (gate.ok) {
         return {
           title: film.title,

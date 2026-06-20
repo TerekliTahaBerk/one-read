@@ -74,7 +74,10 @@ export async function generateNewsIssue(
 
     if (result.ok) {
       const content = mapBriefing(result.data, bundle);
-      const gate = runNewsGates(content, bundle);
+      const gate = runNewsGates(content, bundle, {
+        subject: result.data.subject,
+        previewText: result.data.previewText,
+      });
       if (gate.ok) {
         return {
           title: `${seg.regionFocus} briefing`,

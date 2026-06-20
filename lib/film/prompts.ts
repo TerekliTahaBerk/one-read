@@ -16,7 +16,7 @@ import type { FilmCatalogEntry } from "@prisma/client";
 import type { FilmSegment } from "./segments";
 
 /** Bump when the prompt or schema changes in a way that affects output. */
-export const FILM_PROMPT_VERSION = "film-note/v1-gemini";
+export const FILM_PROMPT_VERSION = "film-note/v2-gemini";
 
 /** Stored/exposed spoiler levels. */
 export type SpoilerLevel = "spoiler-free" | "spoiler-light" | "analysis";
@@ -57,6 +57,9 @@ OUTPUT RULES:
 - Return ONE JSON object. No prose, no markdown, no code fences.
 - Write all fields in the requested email language.
 - Keep it thoughtful and concise; do not overhype.
+- Subject and previewText should feel like an editorial note from someone with taste, not a streaming recommendation widget.
+- "whyThisFilm" should be 2-3 specific sentences rooted in the supplied mood/admin note/genres. If metadata is sparse, stay honest and write from the available premise only.
+- "beforeYouPressPlay" may mention mood, pacing, or viewing mindset, but must not invent availability, rating, awards, cast, or plot facts.
 
 FORBIDDEN OUTPUT:
 - Any invented factual metadata or availability/ratings/awards claims.
