@@ -23,6 +23,17 @@ export default async function OneNewsIssueDetailPage({
   const issue = await getNewsIssue(params.id);
   if (!issue) notFound();
 
+  const meta = (issue.generationMetadata ?? {}) as Record<string, unknown>;
+  const promptVersion = typeof meta.promptVersion === "string" ? meta.promptVersion : "n/a";
+  const validationStatus = typeof meta.validationStatus === "string" ? meta.validationStatus : "n/a";
+  const sourceBundleHash = typeof meta.sourceBundleHash === "string" && meta.sourceBundleHash ? meta.sourceBundleHash : "n/a";
+  const sourceCount = typeof meta.sourceCount === "number" ? meta.sourceCount : null;
+  const genSource = typeof meta.source === "string" ? meta.source : "n/a";
+  const genError = typeof meta.error === "string" ? meta.error : null;
+  const genWarnings = Array.isArray(meta.warnings)
+    ? (meta.warnings as unknown[]).filter((w): w is string => typeof w === "string")
+    : [];
+
   const isEmpty = issue.status !== "GENERATED";
   const rendered = isEmpty
     ? null
@@ -60,10 +71,29 @@ export default async function OneNewsIssueDetailPage({
             ["Subject", issue.subject],
             ["Provider", issue.generationProvider ?? "n/a"],
             ["Model", issue.generationModel ?? "n/a"],
+            ["Prompt version", promptVersion],
+            ["Generation source", genSource],
+            ["Validation", validationStatus],
+            ["Source bundle hash", sourceBundleHash],
+            ["Source story count", sourceCount === null ? "n/a" : String(sourceCount)],
             ["Recipients (send rows)", issue.sends.length],
           ]}
         />
       </AdminCard>
+      {(genError || genWarnings.length > 0) && (
+        <AdminCard title="Generation warnings" bodyClassName="p-4">
+          {genError && (
+            <div className="mb-2 text-[12.5px] text-rose-700">Error: {genError}</div>
+          )}
+          {genWarnings.length > 0 && (
+            <ul className="list-disc pl-5 text-[12px] text-amber-700">
+              {genWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </AdminCard>
+      )}
       {rendered && (
         <AdminCard title="Text preview" bodyClassName="p-4">
           <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-ink">{rendered.text}</pre>

@@ -121,6 +121,28 @@ export default async function IssueDetailPage({
                     render-only · not sent
                   </span>
                 </div>
+                <div className="mb-2 text-[11.5px] text-ash font-sans">
+                  Generation: provider/model/prompt ·{" "}
+                  <span className="font-mono">{p.generator ?? "—"}</span> · validation{" "}
+                  <span className={p.status === "READY" ? "text-emerald-700" : "text-amber-700"}>
+                    {p.status === "READY" ? "VALID" : p.status}
+                  </span>
+                </div>
+                {p.rejectionReason && (
+                  <div className="mb-2 text-[12px] text-rose-700 font-sans">
+                    Rejection: {p.rejectionReason}
+                  </div>
+                )}
+                {p.editorNotes && (
+                  <details className="mb-2">
+                    <summary className="cursor-pointer text-[11.5px] text-fog font-sans">
+                      Editor / quality-gate notes
+                    </summary>
+                    <pre className="mt-1 p-2 bg-paper/70 rounded-lg border border-line text-[11px] text-ink/80 whitespace-pre-wrap font-mono">
+                      {p.editorNotes}
+                    </pre>
+                  </details>
+                )}
                 {p.previewText && (
                   <div className="mb-2 text-[12px] text-fog font-sans">Preview text: {p.previewText}</div>
                 )}

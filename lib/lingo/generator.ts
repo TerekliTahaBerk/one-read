@@ -1,7 +1,19 @@
-import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
+import {
+  generateJsonWithGemini,
+  geminiConfigured,
+  buildGenerationMeta,
+  stableHash,
+} from "@/lib/ai";
 import type { LingoSegment } from "./segments";
 import { heuristicLesson } from "./heuristic";
+import {
+  LINGO_PROMPT_VERSION,
+  LINGO_SYSTEM_PROMPT,
+  LingoLessonSchema,
+  buildLingoUserPrompt,
+  type LingoLessonValidated,
+} from "./prompts";
+import { runLingoGates } from "./quality";
 import type {
   GeneratedLingoLesson,
   LingoExercise,
@@ -12,11 +24,11 @@ import type {
 
 /**
  * OneLingo lesson generator. Produces a single day's lesson for a segment
- * (targetLanguage + nativeLanguage + level), as strict JSON. Uses the
- * configured AI provider; falls back to a deterministic heuristic lesson in
- * development. In production without an AI provider it returns `generated:
- * false` so the pipeline marks the lesson NOT_GENERATED (no silent fake content)
- * unless `allowProdFallback` is explicitly set.
+ * (targetLanguage + nativeLanguage + level) as strict, schema-validated JSON,
+ * via the SHARED Gemini provider (lib/ai). Falls back to a deterministic
+ * heuristic lesson in development. In production without Gemini it returns
+ * `generated: false` so the pipeline marks the lesson NOT_GENERATED (no silent
+ * fake content) unless `allowProdFallback` is explicitly set.
  *
  * The generator is pure: it never reads or writes the database. The pipeline
  * handles find-or-create caching keyed by (lessonDate, segmentKey).
@@ -31,213 +43,220 @@ export interface GenerateOptions {
   allowProdFallback?: boolean;
 }
 
-const SYSTEM_PROMPT = `You are OneLingo, a calm, practical language tutor who prepares one short daily practice email.
-Tone: calm, practical, premium, useful. Never childish, gamified, academic-heavy, or generic.
-Hard rules:
-- Explanations are written in the NATIVE language; examples are in the TARGET language.
-- Be strictly level-appropriate. Do not overload beginners; do not condescend to advanced learners.
-- Never invent grammar rules or false facts. If unsure, keep it simple and correct.
-- No offensive, medical, legal, political, or stereotyping content.
-- Keep it short — about 5 minutes of practice.
-Return STRICT JSON ONLY (no markdown, no commentary) matching the requested schema.`;
-
-function buildUserPrompt(seg: LingoSegment, opts: GenerateOptions): string {
-  const flavor: string[] = [];
-  if (opts.learningGoal) flavor.push(`Learning goal: ${opts.learningGoal}.`);
-  if (opts.interests && opts.interests.length > 0) {
-    flavor.push(`Interests to lightly draw on: ${opts.interests.join(", ")}.`);
-  }
-  return `Create today's OneLingo lesson.
-
-Target language (examples in this): ${seg.targetLanguage}
-Native/explanation language (explanations in this): ${seg.nativeLanguage}
-Level: ${seg.level}
-${flavor.join("\n")}
-
-Return JSON with EXACTLY these fields:
-{
-  "title": string,            // short internal title, e.g. "Ordering coffee"
-  "subject": string,          // email subject, e.g. "Today's OneLingo: ordering coffee"
-  "previewText": string,      // ~80 char preheader
-  "openingLine": string,      // warm 1-sentence intro in the NATIVE language
-  "lessonTitle": string,      // today's tiny lesson topic
-  "lessonIntro": string,      // 1-2 sentences in the NATIVE language
-  "words": [                  // 3 to 5 items
-    { "word": string, "pronunciation": string, "meaning": string, "example": string }
-  ],
-  "phrases": [                // 1 to 2 items
-    { "phrase": string, "translation": string, "whenToUse": string }
-  ],
-  "grammarNote": { "title": string, "explanation": string },  // ONE small note
-  "exercises": [              // 2 to 3 items
-    { "kind": "fill-blank"|"translate"|"choose", "prompt": string, "answer": string }
-  ],
-  "oneThingToRemember": string,   // short takeaway in the NATIVE language
-  "tomorrowHint": string          // optional, may be ""
-}`;
-}
-
-/* ----------------------------------------------------------------------- */
-/* Provider calls                                                          */
-/* ----------------------------------------------------------------------- */
-
-async function callJson(system: string, user: string): Promise<{ raw: unknown | null; provider: string | null; model: string | null }> {
-  const provider = (process.env.AI_PROVIDER || "").toLowerCase();
-
-  if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY) {
-    const model = process.env.AI_MODEL || "claude-3-5-haiku-latest";
-    try {
-      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const res = await client.messages.create({
-        model,
-        max_tokens: 2048,
-        temperature: 0.4,
-        system,
-        messages: [{ role: "user", content: user }],
-      });
-      const block = res.content?.[0];
-      const text = block && "text" in block ? block.text : "";
-      return { raw: text ? safeJson(text) : null, provider: "anthropic", model };
-    } catch (err) {
-      console.error("[lingo/generator] anthropic call failed:", errMsg(err));
-      return { raw: null, provider: "anthropic", model };
-    }
-  }
-
-  if (provider === "openai" && process.env.OPENAI_API_KEY) {
-    const model = process.env.AI_MODEL || "gpt-4o-mini";
-    try {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const res = await client.chat.completions.create({
-        model,
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      });
-      const text = res.choices?.[0]?.message?.content ?? "";
-      return { raw: text ? safeJson(text) : null, provider: "openai", model };
-    } catch (err) {
-      console.error("[lingo/generator] openai call failed:", errMsg(err));
-      return { raw: null, provider: "openai", model };
-    }
-  }
-
-  return { raw: null, provider: null, model: null };
-}
-
-/* ----------------------------------------------------------------------- */
-/* Public entry                                                            */
-/* ----------------------------------------------------------------------- */
-
 export async function generateLingoLesson(
   seg: LingoSegment,
   opts: GenerateOptions = {},
 ): Promise<GeneratedLingoLesson> {
   const isProd = process.env.NODE_ENV === "production";
-  const { raw, provider, model } = await callJson(SYSTEM_PROMPT, buildUserPrompt(seg, opts));
+  const inputHash = stableHash({
+    seg,
+    learningGoal: opts.learningGoal ?? null,
+    interests: opts.interests ?? [],
+    promptVersion: LINGO_PROMPT_VERSION,
+  });
 
-  const parsed = raw ? parseLesson(raw, seg) : null;
-  if (parsed) {
-    return {
-      ...parsed,
-      generated: true,
-      provider,
-      model,
-      metadata: { source: "ai", provider, model },
-    };
+  if (geminiConfigured()) {
+    const result = await generateJsonWithGemini(
+      buildLingoUserPrompt(seg, opts),
+      LingoLessonSchema,
+      {
+        product: "one-lingo",
+        task: "lingo-lesson",
+        tier: "quality",
+        system: LINGO_SYSTEM_PROMPT,
+        promptVersion: LINGO_PROMPT_VERSION,
+      },
+    );
+
+    if (result.ok) {
+      const { title, subject, previewText, content } = mapLesson(result.data, seg);
+      const gate = runLingoGates(content);
+      if (gate.ok) {
+        return {
+          title,
+          subject,
+          previewText,
+          content,
+          generated: true,
+          provider: "gemini",
+          model: result.model,
+          metadata: metaRecord({
+            provider: "gemini",
+            model: result.model,
+            promptVersion: LINGO_PROMPT_VERSION,
+            inputHash,
+            source: "ai",
+            validationStatus: "VALID",
+            warnings: gate.warnings.length ? gate.warnings : undefined,
+            repaired: result.repaired,
+          }),
+        };
+      }
+      // Valid JSON but failed a hard quality gate — do not send it.
+      console.error(
+        `[lingo/generator] quality gate failed (${seg.targetLanguage}/${seg.level}): ${gate.warnings.join(" | ")}`,
+      );
+      const fellBack = fallbackOrNull(seg, opts, isProd, inputHash, {
+        provider: "gemini",
+        model: result.model,
+        validationStatus: "INVALID",
+        warnings: gate.warnings,
+        error: "quality_gate_failed",
+      });
+      if (fellBack) return fellBack;
+    } else {
+      console.error(`[lingo/generator] gemini failed: ${result.kind} — ${result.message}`);
+      const fellBack = fallbackOrNull(seg, opts, isProd, inputHash, {
+        provider: "gemini",
+        model: result.model ?? null,
+        validationStatus: "SKIPPED",
+        error: `${result.kind}: ${result.message}`,
+      });
+      if (fellBack) return fellBack;
+    }
+
+    // Production, no fallback allowed → do not fabricate.
+    return notGenerated(seg, inputHash, {
+      provider: "gemini",
+      validationStatus: "SKIPPED",
+      error: "generation_failed_in_production",
+    });
   }
 
-  // No usable AI output. In dev (or when explicitly allowed) use the heuristic.
+  // Gemini not configured.
+  const fellBack = fallbackOrNull(seg, opts, isProd, inputHash, {
+    provider: null,
+    model: null,
+    validationStatus: "SKIPPED",
+    error: "gemini_not_configured",
+  });
+  if (fellBack) return fellBack;
+
+  return notGenerated(seg, inputHash, {
+    provider: null,
+    validationStatus: "SKIPPED",
+    error: "ai_unavailable_in_production",
+  });
+}
+
+/** Provenance is stored in the free-form `metadata` Json column. */
+function metaRecord(
+  partial: Parameters<typeof buildGenerationMeta>[0],
+): Record<string, unknown> {
+  return buildGenerationMeta(partial) as unknown as Record<string, unknown>;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Fallback helpers                                                         */
+/* ----------------------------------------------------------------------- */
+
+function fallbackOrNull(
+  seg: LingoSegment,
+  opts: GenerateOptions,
+  isProd: boolean,
+  inputHash: string,
+  meta: {
+    provider: string | null;
+    model?: string | null;
+    validationStatus: "VALID" | "INVALID" | "SKIPPED";
+    warnings?: string[];
+    error?: string;
+  },
+): GeneratedLingoLesson | null {
   const allowFallback = !isProd || opts.allowProdFallback === true;
-  if (allowFallback) {
-    const lesson = heuristicLesson(seg, opts);
-    return {
-      ...lesson,
-      generated: true,
-      provider: "heuristic",
-      model: "heuristic",
-      metadata: { source: "heuristic", aiAttempted: provider !== null },
-    };
-  }
+  if (!allowFallback) return null;
+  const lesson = heuristicLesson(seg, opts);
+  return {
+    ...lesson,
+    generated: true,
+    provider: "heuristic",
+    model: "heuristic",
+    metadata: metaRecord({
+      provider: meta.provider,
+      model: meta.model ?? null,
+      promptVersion: LINGO_PROMPT_VERSION,
+      inputHash,
+      source: "heuristic",
+      validationStatus: meta.validationStatus,
+      warnings: meta.warnings,
+      error: meta.error,
+    }),
+  };
+}
 
-  // Production without AI: do not fabricate content.
+function notGenerated(
+  seg: LingoSegment,
+  inputHash: string,
+  meta: {
+    provider: string | null;
+    validationStatus: "VALID" | "INVALID" | "SKIPPED";
+    error?: string;
+  },
+): GeneratedLingoLesson {
   return {
     title: `${seg.targetLanguage} practice (${seg.level})`,
     subject: `Today's OneLingo: ${seg.targetLanguage} practice`,
     previewText: "",
     content: emptyContent(),
     generated: false,
-    provider,
-    model,
-    metadata: { source: "none", reason: "ai_unavailable_in_production" },
+    provider: meta.provider,
+    model: null,
+    metadata: metaRecord({
+      provider: meta.provider,
+      model: null,
+      promptVersion: LINGO_PROMPT_VERSION,
+      inputHash,
+      source: "none",
+      validationStatus: meta.validationStatus,
+      error: meta.error,
+    }),
   };
 }
 
 /* ----------------------------------------------------------------------- */
-/* Parsing / validation                                                    */
+/* Mapping (validated → stored content shape)                               */
 /* ----------------------------------------------------------------------- */
 
-function parseLesson(raw: unknown, seg: LingoSegment): Omit<GeneratedLingoLesson, "generated" | "provider" | "model" | "metadata"> | null {
-  if (!isRecord(raw)) return null;
+function mapLesson(
+  d: LingoLessonValidated,
+  seg: LingoSegment,
+): { title: string; subject: string; previewText: string; content: LingoLessonContent } {
+  const words: LingoWord[] = d.words.map((w) => ({
+    word: w.word,
+    meaning: w.meaning,
+    example: w.example,
+    ...(w.pronunciation ? { pronunciation: w.pronunciation } : {}),
+  }));
+  const phrases: LingoPhrase[] = d.phrases.map((p) => ({
+    phrase: p.phrase,
+    translation: p.translation,
+    whenToUse: p.whenToUse ?? "",
+  }));
+  const exercises: LingoExercise[] = d.exercises.map((e) => ({
+    kind: e.kind || "translate",
+    prompt: e.prompt,
+    answer: e.answer,
+  }));
 
-  const words = clampArray(raw.words, 3, 5, parseWord);
-  const phrases = clampArray(raw.phrases, 1, 2, parsePhrase);
-  const exercises = clampArray(raw.exercises, 2, 3, parseExercise);
-  if (words.length < 1 || phrases.length < 1 || exercises.length < 1) return null;
-
-  const grammarRaw = isRecord(raw.grammarNote) ? raw.grammarNote : {};
   const content: LingoLessonContent = {
-    openingLine: str(raw.openingLine, ""),
-    lessonTitle: str(raw.lessonTitle, "Today's practice"),
-    lessonIntro: str(raw.lessonIntro, ""),
+    openingLine: d.openingLine ?? "",
+    lessonTitle: d.lessonTitle || "Today's practice",
+    lessonIntro: d.lessonIntro ?? "",
     words,
     phrases,
     grammarNote: {
-      title: str(grammarRaw.title, "Grammar note"),
-      explanation: str(grammarRaw.explanation, ""),
+      title: d.grammarNote.title || "Grammar note",
+      explanation: d.grammarNote.explanation,
     },
     exercises,
-    oneThingToRemember: str(raw.oneThingToRemember, ""),
-    tomorrowHint: str(raw.tomorrowHint, "") || undefined,
+    oneThingToRemember: d.oneThingToRemember ?? "",
+    ...(d.tomorrowHint ? { tomorrowHint: d.tomorrowHint } : {}),
   };
 
-  const title = str(raw.title, `${seg.targetLanguage} practice`);
-  const subject = str(raw.subject, `Today's OneLingo: ${title}`);
-  const previewText = str(raw.previewText, content.lessonIntro).slice(0, 140);
-
-  if (subject.length < 4 || content.grammarNote.explanation.length < 3) return null;
-
+  const title = d.title || `${seg.targetLanguage} practice`;
+  const subject = d.subject || `Today's OneLingo: ${title}`;
+  const previewText = (d.previewText || content.lessonIntro).slice(0, 140);
   return { title, subject, previewText, content };
-}
-
-function parseWord(v: unknown): LingoWord | null {
-  if (!isRecord(v)) return null;
-  const word = str(v.word, "");
-  const meaning = str(v.meaning, "");
-  const example = str(v.example, "");
-  if (!word || !meaning) return null;
-  const pronunciation = str(v.pronunciation, "");
-  return { word, meaning, example, ...(pronunciation ? { pronunciation } : {}) };
-}
-
-function parsePhrase(v: unknown): LingoPhrase | null {
-  if (!isRecord(v)) return null;
-  const phrase = str(v.phrase, "");
-  const translation = str(v.translation, "");
-  if (!phrase || !translation) return null;
-  return { phrase, translation, whenToUse: str(v.whenToUse, "") };
-}
-
-function parseExercise(v: unknown): LingoExercise | null {
-  if (!isRecord(v)) return null;
-  const prompt = str(v.prompt, "");
-  const answer = str(v.answer, "");
-  if (!prompt || !answer) return null;
-  const kind = str(v.kind, "translate");
-  return { kind, prompt, answer };
 }
 
 function emptyContent(): LingoLessonContent {
@@ -251,49 +270,4 @@ function emptyContent(): LingoLessonContent {
     exercises: [],
     oneThingToRemember: "",
   };
-}
-
-/* ----------------------------------------------------------------------- */
-/* Small helpers                                                           */
-/* ----------------------------------------------------------------------- */
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function str(v: unknown, dflt: string): string {
-  return typeof v === "string" && v.trim().length > 0 ? v.trim() : dflt;
-}
-
-function clampArray<T>(
-  v: unknown,
-  min: number,
-  max: number,
-  parse: (item: unknown) => T | null,
-): T[] {
-  if (!Array.isArray(v)) return [];
-  const out: T[] = [];
-  for (const item of v) {
-    if (out.length >= max) break;
-    const parsed = parse(item);
-    if (parsed) out.push(parsed);
-  }
-  return out.length >= min || out.length === v.length ? out : out;
-}
-
-function safeJson(text: string): unknown | null {
-  try {
-    const cleaned = text
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/```$/i, "")
-      .trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return null;
-  }
-}
-
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

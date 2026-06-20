@@ -23,6 +23,16 @@ export default async function OneLingoLessonDetailPage({
   const lesson = await getLingoLesson(params.id);
   if (!lesson) notFound();
 
+  const meta = (lesson.generationMetadata ?? {}) as Record<string, unknown>;
+  const promptVersion = typeof meta.promptVersion === "string" ? meta.promptVersion : "n/a";
+  const validationStatus = typeof meta.validationStatus === "string" ? meta.validationStatus : "n/a";
+  const inputHash = typeof meta.inputHash === "string" ? meta.inputHash : "n/a";
+  const genSource = typeof meta.source === "string" ? meta.source : "n/a";
+  const genError = typeof meta.error === "string" ? meta.error : null;
+  const genWarnings = Array.isArray(meta.warnings)
+    ? (meta.warnings as unknown[]).filter((w): w is string => typeof w === "string")
+    : [];
+
   const rendered = renderLingoEmail(lesson, {
     date: lesson.lessonDate.toISOString().slice(0, 10),
     targetLanguage: lesson.targetLanguage,
@@ -51,10 +61,28 @@ export default async function OneLingoLessonDetailPage({
             ["Subject", lesson.subject],
             ["Provider", lesson.generationProvider ?? "n/a"],
             ["Model", lesson.generationModel ?? "n/a"],
+            ["Prompt version", promptVersion],
+            ["Generation source", genSource],
+            ["Validation", validationStatus],
+            ["Input hash", inputHash],
             ["Sends", lesson.sends.length],
           ]}
         />
       </AdminCard>
+      {(genError || genWarnings.length > 0) && (
+        <AdminCard title="Generation warnings" bodyClassName="p-4">
+          {genError && (
+            <div className="mb-2 text-[12.5px] text-rose-700">Error: {genError}</div>
+          )}
+          {genWarnings.length > 0 && (
+            <ul className="list-disc pl-5 text-[12px] text-amber-700">
+              {genWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </AdminCard>
+      )}
       <AdminCard title="Text preview" bodyClassName="p-4">
         <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-ink">{rendered.text}</pre>
       </AdminCard>

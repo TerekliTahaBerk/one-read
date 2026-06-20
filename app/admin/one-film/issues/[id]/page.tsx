@@ -23,6 +23,19 @@ export default async function OneFilmIssueDetailPage({
   const issue = await getFilmIssue(params.id);
   if (!issue) notFound();
 
+  const meta = (issue.generationMetadata ?? {}) as Record<string, unknown>;
+  const promptVersion = typeof meta.promptVersion === "string" ? meta.promptVersion : "n/a";
+  const validationStatus = typeof meta.validationStatus === "string" ? meta.validationStatus : "n/a";
+  const filmMetadataHash = typeof meta.filmMetadataHash === "string" && meta.filmMetadataHash ? meta.filmMetadataHash : "n/a";
+  const genSource = typeof meta.source === "string" ? meta.source : "n/a";
+  const spoilerLevel = typeof meta.spoilerLevel === "string" ? meta.spoilerLevel : "n/a";
+  const genError = typeof meta.error === "string" ? meta.error : null;
+  const strList = (v: unknown) =>
+    Array.isArray(v) ? (v as unknown[]).filter((x): x is string => typeof x === "string") : [];
+  const metadataProvided = strList(meta.metadataProvided);
+  const metadataMissing = strList(meta.metadataMissing);
+  const genWarnings = strList(meta.warnings);
+
   const rendered =
     issue.status !== "GENERATED"
       ? null
@@ -60,10 +73,32 @@ export default async function OneFilmIssueDetailPage({
             ["Director", issue.director ?? "n/a"],
             ["Year", issue.filmYear ?? "n/a"],
             ["Provider", issue.generationProvider ?? "n/a"],
+            ["Model", issue.generationModel ?? "n/a"],
+            ["Prompt version", promptVersion],
+            ["Generation source", genSource],
+            ["Validation", validationStatus],
+            ["Spoiler level", spoilerLevel],
+            ["Film metadata hash", filmMetadataHash],
+            ["Metadata provided", metadataProvided.length ? metadataProvided.join(", ") : "n/a"],
+            ["Metadata missing", metadataMissing.length ? metadataMissing.join(", ") : "none"],
             ["Recipients (send rows)", issue.sends.length],
           ]}
         />
       </AdminCard>
+      {(genError || genWarnings.length > 0) && (
+        <AdminCard title="Generation warnings" bodyClassName="p-4">
+          {genError && (
+            <div className="mb-2 text-[12.5px] text-rose-700">Error: {genError}</div>
+          )}
+          {genWarnings.length > 0 && (
+            <ul className="list-disc pl-5 text-[12px] text-amber-700">
+              {genWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </AdminCard>
+      )}
       {rendered && (
         <AdminCard title="Text preview" bodyClassName="p-4">
           <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-ink">{rendered.text}</pre>

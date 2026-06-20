@@ -5,6 +5,7 @@ import { AdminCard, DefList } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getLaunchReadiness } from "@/lib/launch-readiness";
+import { getLlmStatus } from "@/lib/llm";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime } from "@/lib/admin/format";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { WAITLIST_FORM_URL } from "@/lib/options";
@@ -52,6 +53,7 @@ export default async function SettingsPage({
 
   const readiness = getLaunchReadiness();
   const passCount = readiness.filter((c) => c.status === "pass").length;
+  const aiStatus = getLlmStatus();
 
   // Next scheduled send date (04:00 UTC = 07:00 Europe/Istanbul).
   const now = new Date();
@@ -256,12 +258,27 @@ export default async function SettingsPage({
           ]}
         />
         <ConfigCard
-          title="AI provider"
+          title="AI provider (Gemini brain)"
           rows={[
-            ["AI_PROVIDER", process.env.AI_PROVIDER ? "Configured from environment" : "Development heuristic fallback"],
-            ["OPENAI_API_KEY", configured(process.env.OPENAI_API_KEY)],
-            ["ANTHROPIC_API_KEY", configured(process.env.ANTHROPIC_API_KEY)],
-            ["AI_MODEL", process.env.AI_MODEL ? "Configured from environment" : "Provider default"],
+            ["AI_PROVIDER", aiStatus.provider === "none" ? "Development heuristic fallback" : `Configured: ${aiStatus.provider}`],
+            ["GEMINI_API_KEY", aiStatus.gemini.configured ? "Configured" : "Missing"],
+            ["Gemini active provider", aiStatus.gemini.isActiveProvider ? "Yes" : "No"],
+            ["Gemini model (fast)", aiStatus.gemini.models.fast],
+            ["Gemini model (quality)", aiStatus.gemini.models.quality],
+            ["Gemini model (reasoning)", aiStatus.gemini.models.reasoning],
+            ["Gemini temperature default", String(aiStatus.gemini.temperatureDefault)],
+            ["Gemini max output tokens", String(aiStatus.gemini.maxOutputTokens)],
+            ["OPENAI_API_KEY (fallback)", configured(process.env.OPENAI_API_KEY)],
+            ["ANTHROPIC_API_KEY (fallback)", configured(process.env.ANTHROPIC_API_KEY)],
+          ]}
+        />
+        <ConfigCard
+          title="Per-product AI brain"
+          rows={[
+            ["OneArticle", aiBrainStatus(aiStatus)],
+            ["OneLingo", aiBrainStatus(aiStatus)],
+            ["OneNews", `Source mode: ${newsSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
+            ["OneFilm", `Source mode: ${filmSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
           ]}
         />
         <ConfigCard
@@ -316,6 +333,12 @@ export default async function SettingsPage({
 
 function configured(value: string | undefined): string {
   return value && value.trim() ? "Configured" : "Missing";
+}
+
+function aiBrainStatus(status: ReturnType<typeof getLlmStatus>): string {
+  if (status.gemini.configured && status.gemini.isActiveProvider) return "Gemini ready";
+  if (status.configured) return `Ready (${status.provider})`;
+  return "Heuristic fallback";
 }
 
 function ConfigCard({

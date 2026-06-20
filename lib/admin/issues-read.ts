@@ -72,6 +72,9 @@ export interface RenderedPreview {
   status: string;
   confidence: number | null;
   generator: string | null;
+  rejectionReason: string | null;
+  /** Editor / quality-gate notes (banned-phrase warnings, repair retries). */
+  editorNotes: string | null;
   subjectOverride: string | null;
   previewTextOverride: string | null;
   subject: string;
@@ -157,6 +160,8 @@ export function renderPreviewForSummary(
     status: summary.status,
     confidence: summary.confidence,
     generator: summary.generator,
+    rejectionReason: summary.rejectionReason,
+    editorNotes: structuredRaw?.editorNotes ?? null,
     subjectOverride: summary.subjectOverride,
     previewTextOverride: summary.previewTextOverride,
     subject: rendered.subject,
