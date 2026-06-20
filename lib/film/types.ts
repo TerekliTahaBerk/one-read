@@ -6,6 +6,11 @@
  */
 
 export interface FilmIssueContent {
+  /**
+   * Short, natural greeting for tonight (e.g. "Bu akşam için kısa bir film
+   * notu."). Optional for backward compatibility with pre-v3 records.
+   */
+  greeting?: string;
   /** Calm 1-sentence opening line. */
   openingLine: string;
   /** The film's title (grounded — from catalog/admin). */

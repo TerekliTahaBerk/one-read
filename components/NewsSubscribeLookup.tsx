@@ -14,27 +14,27 @@ interface LookupResult {
 function present(r: LookupResult): [string, string, string, string] {
   switch (r.state) {
     case "new":
-      return ["Set up OneNews first.", "Choose your briefing preferences before starting your free trial.", "Set up OneNews", "/news"];
+      return ["Önce OneNews’i kur.", "Ücretsiz denemeni başlatmadan önce gündem tercihlerini seç.", "OneNews’i kur", "/news"];
     case "incomplete":
-      return ["Finish your setup.", "Complete your briefing preferences so OneNews knows what to send.", "Finish setup", "/news"];
+      return ["Kurulumunu tamamla.", "OneNews’in ne göndereceğini bilmesi için gündem tercihlerini tamamla.", "Kurulumu bitir", "/news"];
     case "checkout_needed":
-      return ["Your preferences are ready.", "Start your 7-day free trial with Polar to begin receiving OneNews.", "Start free trial", "checkout"];
+      return ["Gündem tercihlerin kaydedildi.", "OneNews’i her sabah 06.30’da almak için 7 günlük ücretsiz denemeni başlat.", "7 gün ücretsiz dene", "checkout"];
     case "trialing":
-      return [`Your OneNews briefing is active${r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""}.`, "You’re set to receive a calm morning briefing at 7 AM.", "Manage billing", "portal"];
+      return [`OneNews aktif${r.daysLeft != null ? ` — ${r.daysLeft} gün kaldı` : ""}.`, "Her sabah 06.30’da 5 dakikalık gündem özetini alacaksın.", "Faturalandırmayı yönet", "portal"];
     case "active_paid":
-      return ["Your OneNews briefing is active.", "You’re set to receive a calm morning briefing at 7 AM.", "Manage billing", "portal"];
+      return ["OneNews aktif.", "Her sabah 06.30’da 5 dakikalık gündem özetini alacaksın.", "Faturalandırmayı yönet", "portal"];
     case "active_email_paused":
-      return ["Your emails are paused.", "Your subscription is active. Resume email delivery when you’re ready.", "Resume emails", "resume"];
+      return ["E-postaların duraklatıldı.", "Aboneliğin aktif. Hazır olduğunda e-posta gönderimini sürdür.", "E-postaları sürdür", "resume"];
     case "canceled_active":
-      return [r.periodEndsAt ? `Active until ${new Date(r.periodEndsAt).toLocaleDateString()}.` : "Active until the end of the period.", "You’ll receive OneNews until your current billing period ends.", "Manage billing", "portal"];
+      return [r.periodEndsAt ? `${new Date(r.periodEndsAt).toLocaleDateString()} tarihine kadar aktif.` : "Dönem sonuna kadar aktif.", "Mevcut faturalandırma dönemin bitene kadar OneNews almaya devam edeceksin.", "Faturalandırmayı yönet", "portal"];
     case "past_due":
-      return ["Payment needs attention.", "Update billing to keep receiving OneNews.", "Manage billing", "portal"];
+      return ["Ödeme dikkat istiyor.", "OneNews almaya devam etmek için faturalandırmanı güncelle.", "Faturalandırmayı yönet", "portal"];
     case "suppressed":
-      return ["We can’t email this address.", "Please contact support and we’ll sort it out.", "Contact support", "mailto:hello@oneread.app"];
+      return ["Bu adrese e-posta gönderemiyoruz.", "Lütfen destekle iletişime geç, çözelim.", "Destekle iletişim", "mailto:hello@oneread.app"];
     case "trial_expired":
     case "expired":
     default:
-      return ["Your subscription has ended.", "Restart your subscription to receive OneNews again.", "Restart subscription", "checkout"];
+      return ["Aboneliğin sona erdi.", "OneNews’i tekrar almak için aboneliğini yeniden başlat.", "Aboneliği yeniden başlat", "checkout"];
   }
 }
 

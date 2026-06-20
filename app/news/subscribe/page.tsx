@@ -6,8 +6,8 @@ import { NewsSubscribeLookup } from "@/components/NewsSubscribeLookup";
 import { productThemes } from "@/lib/product-themes";
 
 export const metadata: Metadata = {
-  title: "Subscribe - OneNews",
-  description: "Manage or start your OneNews subscription.",
+  title: "Abonelik - OneNews",
+  description: "OneNews aboneliğini başlat veya yönet.",
 };
 
 export default function NewsSubscribePage({
@@ -33,10 +33,10 @@ export default function NewsSubscribePage({
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">
         <h1 className="animate-rise-delayed text-center font-serif text-[2.3rem] font-medium leading-tight text-ink">
-          Manage OneNews.
+          OneNews’i yönet.
         </h1>
         <p className="mt-4 max-w-[40ch] animate-rise-delayed-2 text-center text-[15px] leading-7 text-ash">
-          Look up your email to start checkout, resume email delivery, or manage billing.
+          Ödemeyi başlatmak, e-posta gönderimini sürdürmek veya faturalandırmayı yönetmek için e-postanı ara.
         </p>
         <NewsSubscribeLookup initialEmail={searchParams.email ?? ""} />
       </section>

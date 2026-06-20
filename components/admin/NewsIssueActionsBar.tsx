@@ -54,7 +54,7 @@ export function NewsIssueActionsBar({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         <button className={btn} disabled={busy} onClick={() => post({ action: "approve" })}>Approve</button>
-        <button className={btn} disabled={busy} onClick={() => setDialog("schedule")}>Schedule 7 AM</button>
+        <button className={btn} disabled={busy} onClick={() => setDialog("schedule")}>Schedule 06:30</button>
         <button className={btn} disabled={busy} onClick={() => post({ action: "cancel" })}>Cancel</button>
         <button className={btn} disabled={busy} onClick={() => post({ action: "needs-review" })}>Needs review</button>
         <button className={btn} disabled={busy} onClick={() => setDialog("send-test")}>Send test</button>
@@ -76,7 +76,7 @@ export function NewsIssueActionsBar({
                   ? "Sends this rendered briefing to one address. No send log is written."
                   : dialog === "regenerate"
                     ? "Regenerates the briefing from current source stories. Never fabricates news; if no sources exist it is marked NO_SOURCES."
-                    : "Marks this issue as scheduled for 07:00 Europe/Istanbul on the selected date."}
+                    : "Marks this issue as scheduled for 06:30 Europe/Istanbul on the selected date."}
             </p>
             {dialog === "send-test" && (
               <input

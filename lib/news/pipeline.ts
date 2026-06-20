@@ -237,7 +237,7 @@ async function ensureDailyIssue(
         regionFocus: seg.regionFocus,
         topics: seg.topics,
         title: `${seg.regionFocus} briefing`,
-        subject: "OneNews: your calm morning briefing",
+        subject: "OneNews: bugünün gündem özeti",
         previewText: "",
         contentJson: {},
         status: "NOT_GENERATED",
@@ -252,10 +252,14 @@ async function ensureDailyIssue(
     region: seg.regionFocus,
     language: seg.briefingLanguage,
     topics: seg.topics,
-    limit: 5,
+    limit: 10,
   });
 
-  const generated = await generateNewsIssue(seg, stories, { tone: opts.tone, depth: opts.depth });
+  const generated = await generateNewsIssue(seg, stories, {
+    tone: opts.tone,
+    depth: opts.depth,
+    today: toIsoDate(date),
+  });
 
   const status = generated.generated
     ? "GENERATED"

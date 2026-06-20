@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { FilmLanding } from "@/components/FilmLanding";
 
 export const metadata: Metadata = {
-  title: "OneFilm - One film worth thinking about, delivered to your inbox.",
+  title: "OneFilm - Tek film. Kısa bir not. İzlemeye değer bir sebep.",
   description:
-    "OneFilm sends one thoughtful film note or recommendation — a calmer way to choose what to watch.",
+    "OneFilm sana tek bir filmi, neden izlemeye değer olduğunu ve hangi ruh hâline iyi geleceğini kısa bir notla gönderir.",
 };
 
 export default function FilmPage() {

@@ -28,6 +28,8 @@ export default async function OneNewsIssueDetailPage({
   const validationStatus = typeof meta.validationStatus === "string" ? meta.validationStatus : "n/a";
   const sourceBundleHash = typeof meta.sourceBundleHash === "string" && meta.sourceBundleHash ? meta.sourceBundleHash : "n/a";
   const sourceCount = typeof meta.sourceCount === "number" ? meta.sourceCount : null;
+  const droppedSponsorCount = typeof meta.droppedSponsorCount === "number" ? meta.droppedSponsorCount : null;
+  const cleanedExcerptCount = typeof meta.cleanedExcerptCount === "number" ? meta.cleanedExcerptCount : null;
   const genSource = typeof meta.source === "string" ? meta.source : "n/a";
   const genError = typeof meta.error === "string" ? meta.error : null;
   const genWarnings = Array.isArray(meta.warnings)
@@ -76,6 +78,10 @@ export default async function OneNewsIssueDetailPage({
             ["Validation", validationStatus],
             ["Source bundle hash", sourceBundleHash],
             ["Source story count", sourceCount === null ? "n/a" : String(sourceCount)],
+            ["Sponsor blocks filtered", droppedSponsorCount === null ? "n/a" : String(droppedSponsorCount)],
+            ["Excerpts cleaned of sponsor text", cleanedExcerptCount === null ? "n/a" : String(cleanedExcerptCount)],
+            ["Sponsor-free", "Yes"],
+            ["Send time", "06:30 Europe/Istanbul"],
             ["Recipients (send rows)", issue.sends.length],
           ]}
         />

@@ -6,6 +6,8 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmOverviewMetrics } from "@/lib/admin/film-queries";
 import { filmBillingConfigured, filmCronEnabled, filmRequireApproval, filmSourceMode } from "@/lib/film/config";
+import { getLlmStatus } from "@/lib/llm";
+import { FILM_PROMPT_VERSION } from "@/lib/film/prompts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,9 +21,10 @@ export default async function OneFilmOverviewPage({
   if (!guard.ok) return <AdminNotConfigured />;
 
   const m = await getFilmOverviewMetrics();
+  const llm = getLlmStatus();
 
   return (
-    <AdminShell title="OneFilm" subtitle="Daily film-note operations">
+    <AdminShell title="OneFilm" subtitle="One thoughtful film note · metadata-grounded">
       <AdminTabs tabs={oneFilmTabs()} active="overview" />
       <AdminCard title="Configuration" bodyClassName="p-4">
         <MetricGrid>
@@ -30,6 +33,19 @@ export default async function OneFilmOverviewPage({
           <MetricCard label="Approval required" value={filmRequireApproval() ? "Yes" : "No"} />
           <MetricCard label="Source mode" value={filmSourceMode()} />
         </MetricGrid>
+      </AdminCard>
+      <AdminCard title="Gemini brain" bodyClassName="p-4">
+        <MetricGrid>
+          <MetricCard label="Model" value={llm.provider === "gemini" ? `Gemini · ${llm.model}` : llm.model} />
+          <MetricCard label="Metadata grounding" value="Enabled" tone="good" />
+          <MetricCard label="NO_FILM guard" value="Enabled" tone="good" />
+          <MetricCard label="Spoiler control" value="Enabled" tone="good" />
+          <MetricCard label="Streaming availability" value="Never invented" />
+          <MetricCard label="Prompt version" value={FILM_PROMPT_VERSION} />
+        </MetricGrid>
+        <p className="mt-3 text-[12px] text-ash font-sans">
+          Factual fields (title, year, director, runtime, language) are copied from the catalog entry — never written by the model. Ratings, awards, and streaming availability are never invented.
+        </p>
       </AdminCard>
       <AdminCard title="Subscribers" bodyClassName="p-4">
         <MetricGrid>

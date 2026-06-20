@@ -12,11 +12,13 @@ export const FILM_PRODUCT = {
   key: FILM_PRODUCT_KEY,
   name: "OneFilm",
   status: "Available" as const,
-  shortDescription: "One film worth thinking about, delivered to your inbox.",
+  shortDescription:
+    "Tek film. Kısa bir not. İzlemeye değer bir sebep.",
   longDescription:
-    "OneFilm sends one thoughtful film note or recommendation — a calmer way to choose what to watch.",
-  cta: "Start free trial",
-  corePromise: "One film worth thinking about, delivered to your inbox.",
+    "OneFilm sana tek bir filmi, neden izlemeye değer olduğunu ve hangi ruh hâline iyi geleceğini kısa bir notla gönderir. Liste yok, gürültü yok; metadata dışı bilgi uydurmaz.",
+  cta: "7 gün ücretsiz dene",
+  corePromise:
+    "Ne izleyeceğini aramakla vakit kaybetme. OneFilm sana tek bir filmi, neden izlemeye değer olduğunu ve hangi ruh hâline iyi geleceğini kısa bir notla gönderir.",
 } as const;
 
 export const FILM_PRICING = {
@@ -25,10 +27,11 @@ export const FILM_PRICING = {
 } as const;
 
 export const FILM_TRUST_NOTES = [
-  "7-day free trial included",
-  "Cancel anytime",
-  "One film note in your inbox",
-  "Billing handled securely by Polar",
+  "7 günlük ücretsiz deneme dahil",
+  "İstediğin zaman iptal et",
+  "Her gönderide tek bir film notu",
+  "Spoiler kontrollü",
+  "Ödeme Polar ile güvenle yönetilir",
 ] as const;
 
 export function filmSendHourLocal(): number {

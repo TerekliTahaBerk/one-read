@@ -1,6 +1,7 @@
 import Parser from "rss-parser";
 import { prisma } from "@/lib/prisma";
 import { newsAllowedSources, newsSourceMode } from "./config";
+import { isSponsorStory, stripSponsorText } from "./sanitize";
 
 /**
  * Optional RSS ingestion for OneNews. Only runs when ONENEWS_SOURCE_MODE=rss
@@ -57,6 +58,11 @@ export async function ingestNewsSources(
           skipped++;
           continue;
         }
+        // Never store whole sponsor/paid-placement blocks.
+        if (isSponsorStory({ headline, excerpt: item.contentSnippet ?? item.summary ?? "" })) {
+          skipped++;
+          continue;
+        }
         const existing = await prisma.newsSourceStory.findFirst({
           where: { sourceUrl: url, storyDate: opts.date },
           select: { id: true },
@@ -70,8 +76,8 @@ export async function ingestNewsSources(
             headline,
             sourceName,
             sourceUrl: url,
-            // Excerpt only — never the full content.
-            excerpt: clip(item.contentSnippet ?? item.summary ?? "", 400),
+            // Excerpt only — never the full content; sponsor lines stripped.
+            excerpt: clip(stripSponsorText(item.contentSnippet ?? item.summary ?? ""), 400),
             topic: opts.topic ?? "world",
             region: opts.region ?? "Global",
             language: opts.language ?? "English",

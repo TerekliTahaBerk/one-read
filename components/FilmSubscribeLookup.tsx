@@ -14,27 +14,27 @@ interface LookupResult {
 function present(r: LookupResult): [string, string, string, string] {
   switch (r.state) {
     case "new":
-      return ["Set up OneFilm first.", "Choose your film preferences before starting your free trial.", "Set up OneFilm", "/film"];
+      return ["Önce OneFilm’i kur.", "Ücretsiz denemeni başlatmadan önce film tercihlerini seç.", "OneFilm’i kur", "/film"];
     case "incomplete":
-      return ["Finish your setup.", "Complete your film preferences so OneFilm knows what to send.", "Finish setup", "/film"];
+      return ["Kurulumunu tamamla.", "OneFilm’in ne göndereceğini bilmesi için film tercihlerini tamamla.", "Kurulumu bitir", "/film"];
     case "checkout_needed":
-      return ["Your preferences are ready.", "Start your 7-day free trial with Polar to begin receiving OneFilm.", "Start free trial", "checkout"];
+      return ["Film tercihlerin kaydedildi.", "OneFilm’i almak için 7 günlük ücretsiz denemeni başlat.", "7 gün ücretsiz dene", "checkout"];
     case "trialing":
-      return [`Your OneFilm is active${r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""}.`, "You’re set to receive one thoughtful film note in your inbox.", "Manage billing", "portal"];
+      return [`OneFilm aktif${r.daysLeft != null ? ` — ${r.daysLeft} gün kaldı` : ""}.`, "Tek film notunu e-posta kutunda alacaksın.", "Faturalandırmayı yönet", "portal"];
     case "active_paid":
-      return ["Your OneFilm is active.", "You’re set to receive one thoughtful film note in your inbox.", "Manage billing", "portal"];
+      return ["OneFilm aktif.", "Tek film notunu e-posta kutunda alacaksın.", "Faturalandırmayı yönet", "portal"];
     case "active_email_paused":
-      return ["Your emails are paused.", "Your subscription is active. Resume email delivery when you’re ready.", "Resume emails", "resume"];
+      return ["E-postaların duraklatıldı.", "Aboneliğin aktif. Hazır olduğunda e-posta gönderimini sürdür.", "E-postaları sürdür", "resume"];
     case "canceled_active":
-      return [r.periodEndsAt ? `Active until ${new Date(r.periodEndsAt).toLocaleDateString()}.` : "Active until the end of the period.", "You’ll receive OneFilm until your current billing period ends.", "Manage billing", "portal"];
+      return [r.periodEndsAt ? `${new Date(r.periodEndsAt).toLocaleDateString()} tarihine kadar aktif.` : "Dönem sonuna kadar aktif.", "Mevcut faturalandırma dönemin bitene kadar OneFilm almaya devam edeceksin.", "Faturalandırmayı yönet", "portal"];
     case "past_due":
-      return ["Payment needs attention.", "Update billing to keep receiving OneFilm.", "Manage billing", "portal"];
+      return ["Ödeme dikkat istiyor.", "OneFilm almaya devam etmek için faturalandırmanı güncelle.", "Faturalandırmayı yönet", "portal"];
     case "suppressed":
-      return ["We can’t email this address.", "Please contact support and we’ll sort it out.", "Contact support", "mailto:hello@oneread.app"];
+      return ["Bu adrese e-posta gönderemiyoruz.", "Lütfen destekle iletişime geç, çözelim.", "Destekle iletişim", "mailto:hello@oneread.app"];
     case "trial_expired":
     case "expired":
     default:
-      return ["Your subscription has ended.", "Restart your subscription to receive OneFilm again.", "Restart subscription", "checkout"];
+      return ["Aboneliğin sona erdi.", "OneFilm’i tekrar almak için aboneliğini yeniden başlat.", "Aboneliği yeniden başlat", "checkout"];
   }
 }
 
@@ -140,14 +140,14 @@ export function FilmSubscribeLookup({ initialEmail = "" }: { initialEmail?: stri
           onChange={(e) => setEmail(e.target.value)}
         />
         <button className={primary} disabled={!isLikelyEmail(email) || loading}>
-          {loading ? "Checking..." : "Check status"}
+          {loading ? "Kontrol ediliyor..." : "Durumu kontrol et"}
         </button>
       </form>
 
       {view && (
         <div className="mt-5 rounded-2xl border border-[var(--theme-border)] bg-white/60 p-5 text-center">
           <h2 className="font-serif text-[26px] leading-tight text-ink">{view[0]}</h2>
-          <p className="mt-2 text-[14px] leading-6 text-ash">{resumed ? "Emails are resumed." : view[1]}</p>
+          <p className="mt-2 text-[14px] leading-6 text-ash">{resumed ? "E-postalar sürdürüldü." : view[1]}</p>
           <div className="mt-5">
             {view[3] === "checkout" ? (
               <button onClick={checkout} disabled={loading} className={primary}>{view[2]}</button>

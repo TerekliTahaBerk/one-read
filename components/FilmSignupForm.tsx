@@ -30,7 +30,7 @@ interface FilmPrefs {
 }
 
 const DEFAULT_PREFS: FilmPrefs = {
-  emailLanguage: "English",
+  emailLanguage: "Turkish",
   preferredGenres: ["Drama"],
   moods: ["Thoughtful"],
   decades: [],
@@ -167,10 +167,10 @@ export function FilmSignupForm({ className = "" }: { className?: string }) {
             onChange={(e) => setEmail(e.target.value)}
           />
           <button className={`${primary} mt-4`} disabled={!emailValid || loading}>
-            {loading ? "Sending code..." : "Send verification code"}
+            {loading ? "Kod gönderiliyor..." : "Doğrulama kodu gönder"}
           </button>
           <p className="mt-3 text-center text-[12px] leading-5 text-fog">
-            By continuing, you agree to the <Link className="link-underline" href="/terms">Terms</Link> and acknowledge the <Link className="link-underline" href="/privacy">Privacy Policy</Link>.
+            Devam ederek <Link className="link-underline" href="/terms">Şartlar</Link>’ı kabul eder ve <Link className="link-underline" href="/privacy">Gizlilik Politikası</Link>’nı onaylarsın.
           </p>
         </form>
       )}
@@ -178,7 +178,7 @@ export function FilmSignupForm({ className = "" }: { className?: string }) {
       {phase === "verify" && (
         <form onSubmit={verifyCode}>
           <p className="mb-3 text-center text-[13px] leading-6 text-ash">
-            Enter the 6-digit code we sent to {email} to continue setting up OneFilm.
+            OneFilm kurulumuna devam etmek için {email} adresine gönderdiğimiz 6 haneli kodu gir.
           </p>
           <input
             className={`${input} text-center tracking-[0.35em]`}
@@ -189,10 +189,10 @@ export function FilmSignupForm({ className = "" }: { className?: string }) {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           />
           <button className={`${primary} mt-4`} disabled={code.length !== 6 || loading}>
-            {loading ? "Checking..." : "Continue"}
+            {loading ? "Kontrol ediliyor..." : "Devam et"}
           </button>
           <button type="button" onClick={() => setPhase("email")} className="mt-3 w-full text-[12px] text-ash">
-            Use a different email
+            Farklı bir e-posta kullan
           </button>
         </form>
       )}
@@ -200,42 +200,42 @@ export function FilmSignupForm({ className = "" }: { className?: string }) {
       {phase === "preferences" && (
         <form onSubmit={savePrefs} className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Select label="Email language" value={prefs.emailLanguage} options={FILM_EMAIL_LANGUAGES} onChange={(v) => setPrefs({ ...prefs, emailLanguage: v })} className={select} />
-            <Select label="Spoilers" value={prefs.spoilerPreference} options={FILM_SPOILER_PREFERENCES} onChange={(v) => setPrefs({ ...prefs, spoilerPreference: v })} className={select} />
-            <Select label="Familiarity" value={prefs.familiarity} options={FILM_FAMILIARITIES} onChange={(v) => setPrefs({ ...prefs, familiarity: v })} className={select} />
-            <Select label="Runtime" value={prefs.runtimePreference} options={FILM_RUNTIME_PREFERENCES} onChange={(v) => setPrefs({ ...prefs, runtimePreference: v })} className={select} />
+            <Select label="E-posta dili" value={prefs.emailLanguage} options={FILM_EMAIL_LANGUAGES} onChange={(v) => setPrefs({ ...prefs, emailLanguage: v })} className={select} />
+            <Select label="Spoiler" value={prefs.spoilerPreference} options={FILM_SPOILER_PREFERENCES} onChange={(v) => setPrefs({ ...prefs, spoilerPreference: v })} className={select} />
+            <Select label="Aşinalık" value={prefs.familiarity} options={FILM_FAMILIARITIES} onChange={(v) => setPrefs({ ...prefs, familiarity: v })} className={select} />
+            <Select label="Süre" value={prefs.runtimePreference} options={FILM_RUNTIME_PREFERENCES} onChange={(v) => setPrefs({ ...prefs, runtimePreference: v })} className={select} />
           </div>
-          <ChipGroup label="Genres" options={FILM_GENRES} selected={prefs.preferredGenres} onToggle={(i) => toggle("preferredGenres", i)} />
-          <ChipGroup label="Moods" options={FILM_MOODS} selected={prefs.moods} onToggle={(i) => toggle("moods", i)} />
-          <ChipGroup label="Decades" options={FILM_DECADES} selected={prefs.decades} onToggle={(i) => toggle("decades", i)} />
-          <ChipGroup label="Languages" options={FILM_LANGUAGES} selected={prefs.languages} onToggle={(i) => toggle("languages", i)} />
-          <ChipGroup label="Platforms" options={FILM_PLATFORMS} selected={prefs.platforms} onToggle={(i) => toggle("platforms", i)} />
+          <ChipGroup label="Türler" options={FILM_GENRES} selected={prefs.preferredGenres} onToggle={(i) => toggle("preferredGenres", i)} />
+          <ChipGroup label="Ruh hâli" options={FILM_MOODS} selected={prefs.moods} onToggle={(i) => toggle("moods", i)} />
+          <ChipGroup label="Dönemler" options={FILM_DECADES} selected={prefs.decades} onToggle={(i) => toggle("decades", i)} />
+          <ChipGroup label="Diller" options={FILM_LANGUAGES} selected={prefs.languages} onToggle={(i) => toggle("languages", i)} />
+          <ChipGroup label="Platformlar" options={FILM_PLATFORMS} selected={prefs.platforms} onToggle={(i) => toggle("platforms", i)} />
           <button className={primary} disabled={prefs.preferredGenres.length === 0 || loading}>
-            {loading ? "Saving..." : "Save preferences"}
+            {loading ? "Kaydediliyor..." : "Tercihleri kaydet"}
           </button>
         </form>
       )}
 
       {phase === "payment" && (
         <div className="text-center">
-          <h2 className="font-serif text-[24px] text-ink">You’re almost there.</h2>
+          <h2 className="font-serif text-[24px] text-ink">Neredeyse hazırsın.</h2>
           <p className="mt-2 text-[13.5px] leading-6 text-ash">
-            Your film preferences are saved. Start your 7-day free trial with Polar to receive OneFilm in your inbox.
+            Film tercihlerin kaydedildi. OneFilm’i almak için 7 günlük ücretsiz denemeni Polar ile başlat.
           </p>
           <button onClick={checkout} className={`${primary} mt-4`} disabled={loading}>
-            {loading ? "Opening checkout..." : "Start your 7-day free trial"}
+            {loading ? "Ödeme açılıyor..." : "7 günlük ücretsiz denemeni başlat"}
           </button>
         </div>
       )}
 
       {phase === "manage" && (
         <div className="rounded-2xl border border-[var(--theme-border)] bg-white/60 p-5 text-center">
-          <h2 className="font-serif text-[24px] text-ink">Your OneFilm is active.</h2>
+          <h2 className="font-serif text-[24px] text-ink">OneFilm aktif.</h2>
           <p className="mt-2 text-[14px] leading-6 text-ash">
-            You’re set to receive one thoughtful film note in your inbox.
+            Tek film notunu e-posta kutunda alacaksın.
           </p>
           <Link href={`/film/subscribe?email=${encodeURIComponent(email)}`} className={`${primary} mt-4 inline-flex items-center justify-center`}>
-            Manage subscription
+            Aboneliği yönet
           </Link>
         </div>
       )}

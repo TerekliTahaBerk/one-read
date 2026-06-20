@@ -81,7 +81,7 @@ export async function generateFilmIssue(
     );
 
     if (result.ok) {
-      const content = mapNote(result.data, film, grounded);
+      const content = mapNote(result.data, film, grounded, seg.emailLanguage);
       const gate = runFilmGates(content, film, spoilerLevel, {
         subject: result.data.subject,
         previewText: result.data.previewText,
@@ -90,7 +90,7 @@ export async function generateFilmIssue(
         return {
           title: film.title,
           subject: result.data.subject,
-          previewText: (result.data.previewText || content.openingLine).slice(0, 140),
+          previewText: (result.data.previewText || content.greeting || content.openingLine).slice(0, 140),
           content,
           generated: true,
           provider: "gemini",
@@ -108,17 +108,17 @@ export async function generateFilmIssue(
         };
       }
       console.error(`[film/generator] quality gate failed (${film.title}): ${gate.warnings.join(" | ")}`);
-      if (allowFallback) return deterministic(film, grounded, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "quality_gate_failed", gate.warnings);
+      if (allowFallback) return deterministic(film, grounded, seg.emailLanguage, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "quality_gate_failed", gate.warnings);
     } else {
       console.error(`[film/generator] gemini failed: ${result.kind} — ${result.message}`);
-      if (allowFallback) return deterministic(film, grounded, inputHash, filmMetadataHash, metaCheck, spoilerLevel, `${result.kind}: ${result.message}`);
+      if (allowFallback) return deterministic(film, grounded, seg.emailLanguage, inputHash, filmMetadataHash, metaCheck, spoilerLevel, `${result.kind}: ${result.message}`);
     }
 
     return generationUnavailable(film, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "generation_failed");
   }
 
   // Gemini not configured.
-  if (allowFallback) return deterministic(film, grounded, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "gemini_not_configured");
+  if (allowFallback) return deterministic(film, grounded, seg.emailLanguage, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "gemini_not_configured");
   return generationUnavailable(film, inputHash, filmMetadataHash, metaCheck, spoilerLevel, "ai_unavailable_in_production");
 }
 
@@ -140,15 +140,18 @@ function mapNote(
   d: FilmNoteValidated,
   film: FilmCatalogEntry,
   grounded: FilmIssueContent["metadata"],
+  lang: string,
 ): FilmIssueContent {
+  const tr = lang === "Turkish";
   return {
-    openingLine: d.openingLine || "One film worth thinking about tonight.",
+    greeting: d.greeting || (tr ? "Bu akşam için kısa bir film notu." : "A short film note for tonight."),
+    openingLine: d.openingLine || (tr ? "İzlemeye değer tek bir film." : "One film worth thinking about tonight."),
     filmTitle: film.title, // verbatim from catalog — never the model
     whyThisFilm: d.whyThisFilm,
     whatItFeelsLike: d.whatItFeelsLike,
     bestWatchedWhen: d.bestWatchedWhen,
     beforeYouPressPlay: d.beforeYouPressPlay,
-    spoilerNote: d.spoilerNote || "Spoiler-light — no twists revealed.",
+    spoilerNote: d.spoilerNote || (tr ? "Spoiler içermez — sürprizler saklı." : "Spoiler-light — no twists revealed."),
     metadata: grounded,
   };
 }
@@ -160,6 +163,7 @@ function mapNote(
 function deterministic(
   film: FilmCatalogEntry,
   grounded: FilmIssueContent["metadata"],
+  lang: string,
   inputHash: string,
   filmMetadataHash: string,
   metaCheck: ReturnType<typeof validateFilmMetadata>,
@@ -167,21 +171,23 @@ function deterministic(
   error: string,
   extraWarnings: string[] = [],
 ): GeneratedFilmIssue {
+  const tr = lang === "Turkish";
   const note = (film.adminNote ?? "").trim();
   const content: FilmIssueContent = {
-    openingLine: "One film worth thinking about tonight.",
+    greeting: tr ? "Bu akşam için kısa bir film notu." : "A short film note for tonight.",
+    openingLine: tr ? "İzlemeye değer tek bir film." : "One film worth thinking about tonight.",
     filmTitle: film.title,
-    whyThisFilm: note || `A thoughtful recommendation: ${film.title}.`,
+    whyThisFilm: note || (tr ? `Düşünmeye değer bir öneri: ${film.title}.` : `A thoughtful recommendation: ${film.title}.`),
     whatItFeelsLike: "",
     bestWatchedWhen: "",
     beforeYouPressPlay: "",
-    spoilerNote: "Spoiler-light — no twists revealed.",
+    spoilerNote: tr ? "Spoiler içermez — sürprizler saklı." : "Spoiler-light — no twists revealed.",
     metadata: grounded,
   };
   return {
     title: film.title,
-    subject: `Tonight's OneFilm: ${film.title}`,
-    previewText: "One thoughtful film note, made for a calmer evening.",
+    subject: tr ? `Bu akşamın OneFilm notu: ${film.title}` : `Tonight's OneFilm: ${film.title}`,
+    previewText: tr ? "Daha sakin bir akşam için tek bir film notu." : "One thoughtful film note, made for a calmer evening.",
     content,
     generated: true,
     provider: "deterministic",

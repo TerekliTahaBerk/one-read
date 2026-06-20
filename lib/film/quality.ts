@@ -22,8 +22,18 @@ import {
 import type { FilmIssueContent } from "./types";
 import type { SpoilerLevel } from "./prompts";
 
-/** Listicle / content-farm / fake-critic phrasing OneFilm must avoid. */
+/**
+ * Lowercase + fold for matching. Turkish "İ" (U+0130) lowercases in JS to
+ * "i" + COMBINING DOT ABOVE (U+0307); strip that combining dot so markers
+ * written with a normal "i" still match (e.g. "IMDb" / "İmdb").
+ */
+function foldForMatch(s: string): string {
+  return s.toLowerCase().normalize("NFC").replace(/̇/g, "");
+}
+
+/** Listicle / content-farm / fake-critic / hype phrasing OneFilm must avoid (TR + EN). */
 const FORBIDDEN_TONE = [
+  // English
   "top 10",
   "top ten",
   "top 5",
@@ -33,7 +43,17 @@ const FORBIDDEN_TONE = [
   "you have to see",
   "critics agree",
   "critics are raving",
+  "critically acclaimed",
   "universally acclaimed",
+  "hidden gem",
+  "cinematic masterpiece",
+  "masterpiece",
+  "unforgettable journey",
+  "rollercoaster",
+  "edge of your seat",
+  "perfect movie night",
+  "perfect for movie night",
+  "award-winning",
   "rotten tomatoes",
   "imdb",
   "metacritic",
@@ -41,13 +61,29 @@ const FORBIDDEN_TONE = [
   "oscar winner",
   "oscar-winning",
   "academy award",
+  "as an ai",
+  // Turkish
+  "mutlaka izlenmeli",
+  "mutlaka izleyin",
+  "saklı cevher",
+  "sakli cevher",
+  "başyapıt",
+  "basyapit",
+  "nefes kesici",
+  "koltuğa çivileyen",
+  "koltuga civileyen",
+  "unutulmaz yolculuk",
+  "ödüllü",
+  "odullu",
 ];
 
-/** Words that usually signal an invented availability/rating/award claim. */
+/** Words that usually signal an invented availability/rating/award claim (TR + EN). */
 const UNSUPPORTED_FACT_HINTS = [
+  // English
   "now streaming",
   "available on",
   "streaming on",
+  "streaming now",
   "watch it on",
   "netflix",
   "hulu",
@@ -56,7 +92,6 @@ const UNSUPPORTED_FACT_HINTS = [
   "amazon prime",
   "prime video",
   "hbo",
-  "max",
   "apple tv",
   "rated ",
   "rating of",
@@ -65,6 +100,19 @@ const UNSUPPORTED_FACT_HINTS = [
   "won the",
   "nominated for",
   "grossed",
+  // Turkish
+  "yayında",
+  "yayinda",
+  "üzerinden izleyebilir",
+  "izleyebilirsiniz",
+  "imdb puanı",
+  "imdb puani",
+  "oscar kazandı",
+  "oscar kazandi",
+  "ödül kazandı",
+  "odul kazandi",
+  "gişe",
+  "gise hasilati",
 ];
 
 export interface FilmMetadataCheck {
@@ -117,44 +165,61 @@ export function runFilmGates(
   );
 
   // Body commentary (excludes spoilerNote, which legitimately says "Spoiler-light…").
-  const commentary = [
-    content.openingLine,
-    content.whyThisFilm,
-    content.whatItFeelsLike,
-    content.bestWatchedWhen,
-    content.beforeYouPressPlay,
-  ]
-    .join(" \n ")
-    .toLowerCase();
+  const commentary = foldForMatch(
+    [
+      content.greeting ?? "",
+      content.openingLine,
+      content.whyThisFilm,
+      content.whatItFeelsLike,
+      content.bestWatchedWhen,
+      content.beforeYouPressPlay,
+    ].join(" \n "),
+  );
 
-  // Listicle / content-farm / fake-critic tone.
+  // Tone scan also covers the inbox-facing subject/preheader so a listicle
+  // subject ("Top 10…") is caught too.
+  const toneBlob = foldForMatch(`${display.subject ?? ""} \n ${display.previewText ?? ""} \n ${commentary}`);
+
+  // Listicle / content-farm / fake-critic / hype tone (fold-aware, TR + EN).
+  // "hidden gem" / "saklı cevher" are allowed only when the admin note supports them.
+  const adminBlob = foldForMatch(film.adminNote ?? "");
   for (const phrase of FORBIDDEN_TONE) {
-    if (commentary.includes(phrase)) {
-      findings.push({ severity: "error", code: "content_farm_tone", field: "commentary", message: `Content-farm / fake-critic phrasing ("${phrase}").` });
-    }
+    const folded = foldForMatch(phrase);
+    if (!toneBlob.includes(folded)) continue;
+    const adminSupported =
+      (folded === foldForMatch("hidden gem") || folded === foldForMatch("saklı cevher")) &&
+      (adminBlob.includes(foldForMatch("hidden gem")) || adminBlob.includes(foldForMatch("saklı cevher")));
+    if (adminSupported) continue;
+    findings.push({ severity: "error", code: "content_farm_tone", field: "commentary", message: `Content-farm / fake-critic / hype phrasing ("${phrase}").` });
   }
 
   // Unsupported availability / ratings / awards claims. Allowed only if the
-  // exact token actually appears in the provided metadata (rare).
-  const providedBlob = `${film.adminNote ?? ""}`.toLowerCase();
+  // exact token actually appears in the provided admin metadata (rare).
   for (const hint of UNSUPPORTED_FACT_HINTS) {
-    if (commentary.includes(hint) && !providedBlob.includes(hint)) {
+    const folded = foldForMatch(hint);
+    if (commentary.includes(folded) && !adminBlob.includes(folded)) {
       findings.push({ severity: "error", code: "unsupported_fact", field: "commentary", message: `Possible invented fact/availability/rating ("${hint.trim()}") not in provided metadata.` });
     }
   }
 
-  // Director/year invention: if commentary names a 4-digit year or "directed by"
-  // but metadata lacks that fact, flag it.
+  // Director invention: commentary names "directed by" / "yönetmen(liğini)" but
+  // metadata lacks a director.
   if (!film.director && /\bdirected by\b/i.test(commentary)) {
     findings.push({ severity: "error", code: "invented_director", field: "commentary", message: "Mentions a director but none was provided in metadata." });
+  }
+  if (!film.director && /yönetmen|yonetmen/i.test(commentary)) {
+    findings.push({ severity: "warning", code: "possible_invented_director", field: "commentary", message: "Mentions a director (yönetmen) but none was provided in metadata." });
   }
   if (film.year == null && /\b(19|20)\d{2}\b/.test(commentary)) {
     findings.push({ severity: "warning", code: "possible_invented_year", field: "commentary", message: "Mentions a year-like number but no year was provided." });
   }
 
-  // Spoiler level respected: in spoiler-free/light, flag explicit spoiler/ending talk.
+  // Spoiler level respected: in spoiler-free/light, flag explicit spoiler/ending
+  // talk (TR + EN).
   if (spoilerLevel !== "analysis") {
-    if (/\b(the ending|the final scene|the twist|twist ending|dies|killer is|turns out that|reveals that)\b/i.test(commentary)) {
+    const spoilerEn = /\b(the ending|the final scene|the twist|twist ending|dies|killer is|turns out that|reveals that)\b/i;
+    const spoilerTr = /(sonunda ortaya çık|final sahnesi|filmin sonu|sürpriz son|katil(in| )|aslında .* olduğu ortaya|gerçek kimliği)/i;
+    if (spoilerEn.test(commentary) || spoilerTr.test(commentary)) {
       findings.push({ severity: "error", code: "spoiler_violation", field: "commentary", message: `Spoiler-ish content present while spoiler level is "${spoilerLevel}".` });
     }
   }

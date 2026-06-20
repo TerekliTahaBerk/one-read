@@ -14,15 +14,26 @@ import {
   type NewsBriefingValidated,
 } from "./prompts";
 import { runNewsGates, validateSourceBundle } from "./quality";
-import type { GeneratedNewsIssue, NewsIssueContent, NewsStory } from "./types";
+import { sanitizeSourceStories } from "./sanitize";
+import type {
+  GeneratedNewsIssue,
+  NewsAgendaItem,
+  NewsIssueContent,
+  NewsStory,
+  NewsWeekendItem,
+} from "./types";
 
 /**
  * OneNews issue generator. STRICTLY source-grounded via the SHARED Gemini
- * provider (lib/ai). It only ever rewrites the calm summary / "why it matters"
- * framing of REAL stories passed in. It never invents stories, sources, or URLs
- * — those are copied verbatim from the provided NewsSourceStory rows, matched by
- * index. With no valid sources it returns generated:false (NO_SOURCES) so the
- * pipeline shows an admin warning instead of fake news.
+ * provider (lib/ai). It produces a Turkish-first, sponsor-free, 5-minute morning
+ * brief. It only ever rewrites the calm framing of REAL stories passed in — it
+ * never invents stories, sources, or URLs (those are copied verbatim from the
+ * provided NewsSourceStory rows, matched by index). With no valid sources it
+ * returns generated:false (NO_SOURCES) so the pipeline shows an admin warning
+ * instead of fake news.
+ *
+ * Sponsor copy is filtered out of the source material BEFORE the bundle is
+ * created, so it never enters the Gemini input or the rendered email.
  *
  * Pure: never reads or writes the database. The pipeline handles caching.
  */
@@ -30,6 +41,8 @@ import type { GeneratedNewsIssue, NewsIssueContent, NewsStory } from "./types";
 export interface NewsGenerateOptions {
   tone?: string | null;
   depth?: string | null;
+  /** ISO date for the briefing day (greeting context). */
+  today?: string;
   /**
    * Allow the deterministic (non-AI) grounded framing as a fallback. It uses
    * ONLY the real headline/excerpt/url (invents nothing). Default: dev only —
@@ -39,6 +52,9 @@ export interface NewsGenerateOptions {
   allowDeterministic?: boolean;
 }
 
+/** Max stories briefed from in one issue (agenda wants 5–8 items). */
+const MAX_BUNDLE = 8;
+
 export async function generateNewsIssue(
   seg: NewsSegment,
   stories: NewsSourceStory[],
@@ -46,16 +62,24 @@ export async function generateNewsIssue(
 ): Promise<GeneratedNewsIssue> {
   const isProd = process.env.NODE_ENV === "production";
 
+  // Rule #0: strip sponsor blocks BEFORE building the bundle.
+  const sanitized = sanitizeSourceStories(stories);
+  const sponsorMeta = {
+    droppedSponsorCount: sanitized.droppedSponsorCount,
+    cleanedExcerptCount: sanitized.cleanedExcerptCount,
+  };
+
   // Rule #1: validate the source bundle FIRST. No valid sources → never fabricate.
-  const bundleCheck = validateSourceBundle(stories);
+  const bundleCheck = validateSourceBundle(sanitized.clean);
   if (!bundleCheck.ok) {
-    return noSources(seg, bundleCheck.warnings);
+    return noSources(seg, [...sanitized.warnings, ...bundleCheck.warnings]);
   }
-  const bundle = bundleCheck.valid.slice(0, 5);
+  const bundle = bundleCheck.valid.slice(0, MAX_BUNDLE);
   const sourceBundleHash = stableHash(
     bundle.map((s) => ({ id: s.id, url: s.sourceUrl, headline: s.headline, excerpt: s.excerpt ?? "" })),
   );
   const inputHash = stableHash({ sourceBundleHash, promptVersion: NEWS_PROMPT_VERSION, lang: seg.briefingLanguage, region: seg.regionFocus });
+  const baseWarnings = [...sanitized.warnings, ...bundleCheck.warnings];
 
   const allowFallback = opts.allowDeterministic ?? !isProd;
 
@@ -69,11 +93,17 @@ export async function generateNewsIssue(
         tier: "quality",
         system: NEWS_SYSTEM_PROMPT,
         promptVersion: NEWS_PROMPT_VERSION,
+        // The 5-minute brief emits a larger JSON (greeting + headline + summary +
+        // 5–8 agenda items). Gemini 2.5-flash spends part of the output budget on
+        // "thinking", so the 4096 default can truncate the JSON and fail schema
+        // validation. Give it explicit headroom so OneNews works without relying
+        // on a GEMINI_MAX_OUTPUT_TOKENS env override in production.
+        maxOutputTokens: 8192,
       },
     );
 
     if (result.ok) {
-      const content = mapBriefing(result.data, bundle);
+      const content = mapBriefing(result.data, bundle, seg);
       const gate = runNewsGates(content, bundle, {
         subject: result.data.subject,
         previewText: result.data.previewText,
@@ -82,7 +112,7 @@ export async function generateNewsIssue(
         return {
           title: `${seg.regionFocus} briefing`,
           subject: result.data.subject,
-          previewText: (result.data.previewText || content.openingLine).slice(0, 140),
+          previewText: (result.data.previewText || content.mainHeadline || content.openingLine).slice(0, 140),
           content,
           generated: true,
           provider: "gemini",
@@ -94,65 +124,92 @@ export async function generateNewsIssue(
             inputHash,
             source: "ai",
             validationStatus: "VALID",
-            warnings: mergeWarnings(bundleCheck.warnings, gate.warnings),
+            warnings: mergeWarnings(baseWarnings, gate.warnings),
             repaired: result.repaired,
-          }, sourceBundleHash, bundle.length),
+          }, sourceBundleHash, bundle.length, sponsorMeta),
         };
       }
       console.error(`[news/generator] quality gate failed: ${gate.warnings.join(" | ")}`);
-      if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, "quality_gate_failed", gate.warnings);
+      if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, "quality_gate_failed", sponsorMeta, mergeWarnings(baseWarnings, gate.warnings) ?? []);
     } else {
       console.error(`[news/generator] gemini failed: ${result.kind} — ${result.message}`);
-      if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, `${result.kind}: ${result.message}`);
+      if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, `${result.kind}: ${result.message}`, sponsorMeta, baseWarnings);
     }
 
-    return generationUnavailable(seg, inputHash, sourceBundleHash, bundle.length, "generation_failed");
+    return generationUnavailable(seg, inputHash, sourceBundleHash, bundle.length, "generation_failed", sponsorMeta);
   }
 
   // Gemini not configured.
-  if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, "gemini_not_configured");
-  return generationUnavailable(seg, inputHash, sourceBundleHash, bundle.length, "ai_unavailable_in_production");
+  if (allowFallback) return deterministic(seg, bundle, inputHash, sourceBundleHash, "gemini_not_configured", sponsorMeta, baseWarnings);
+  return generationUnavailable(seg, inputHash, sourceBundleHash, bundle.length, "ai_unavailable_in_production", sponsorMeta);
 }
 
 /* ----------------------------------------------------------------------- */
 /* Mapping (validated index-based output → grounded content)                */
 /* ----------------------------------------------------------------------- */
 
-function mapBriefing(d: NewsBriefingValidated, bundle: NewsSourceStory[]): NewsIssueContent {
-  // Only stories whose index is valid; in input order; de-duplicated.
+function mapBriefing(
+  d: NewsBriefingValidated,
+  bundle: NewsSourceStory[],
+  seg: NewsSegment,
+): NewsIssueContent {
+  // Only items whose index is valid; de-duplicated; in input order.
   const seen = new Set<number>();
-  const ordered = d.topStories
+  const ordered = d.agendaItems
     .filter((t) => t.index >= 0 && t.index < bundle.length && !seen.has(t.index) && seen.add(t.index) !== undefined)
     .sort((a, b) => a.index - b.index);
 
-  const topStories: NewsStory[] = ordered.map((t) => {
+  const agendaItems: NewsAgendaItem[] = ordered.map((t) => {
     const s = bundle[t.index];
     return {
+      category: t.category || topicLabel(s.topic, seg.briefingLanguage),
       title: t.title || s.headline,
-      source: s.sourceName, // verbatim from bundle — never the model
       summary: t.summary || (s.excerpt ?? ""),
-      whyItMatters: t.whyItMatters || "",
+      whyItMatters: t.whyItMatters || undefined,
+      source: s.sourceName, // verbatim from bundle — never the model
       url: s.sourceUrl, // verbatim from bundle — never the model
     };
   });
 
-  let oneStoryToWatch: NewsIssueContent["oneStoryToWatch"];
-  const watch = d.oneStoryToWatch;
-  if (watch && watch.index >= 0 && watch.index < bundle.length) {
-    const s = bundle[watch.index];
-    oneStoryToWatch = { title: s.headline, note: watch.note ?? "", source: s.sourceName, url: s.sourceUrl };
-  }
+  // Weekend extras (grounded by index; skip indexes already used in agenda).
+  const weekendExtra: NewsWeekendItem[] = (d.weekendExtra ?? [])
+    .filter((w) => w.index >= 0 && w.index < bundle.length && !seen.has(w.index) && seen.add(w.index) !== undefined)
+    .map((w) => {
+      const s = bundle[w.index];
+      return {
+        title: w.title || s.headline,
+        summary: w.summary || (s.excerpt ?? ""),
+        source: s.sourceName,
+        url: s.sourceUrl,
+      };
+    });
 
-  const usedIds = new Set(ordered.map((t) => t.index));
-  const sources = bundle
-    .filter((_, i) => usedIds.has(i))
-    .map((s) => ({ source: s.sourceName, url: s.sourceUrl }));
+  // Legacy mirror — drives grounding gates and any legacy renderer path.
+  const topStories: NewsStory[] = agendaItems.map((a) => ({
+    title: a.title,
+    source: a.source,
+    summary: a.summary,
+    whyItMatters: a.whyItMatters ?? "",
+    url: a.url,
+  }));
+
+  // Source list mirrors agenda + weekend URLs (deduped, in order).
+  const sourceSeen = new Set<string>();
+  const sources = [...agendaItems, ...weekendExtra]
+    .filter((x) => !sourceSeen.has(x.url) && sourceSeen.add(x.url) !== undefined)
+    .map((x) => ({ source: x.source, url: x.url }));
 
   return {
-    openingLine: d.openingLine || "Here is your calm morning briefing.",
+    greeting: d.greeting || undefined,
+    mainHeadline: d.mainHeadline || undefined,
+    mainSummary: d.mainSummary || undefined,
+    agendaItems,
+    alsoToday: (d.alsoToday ?? []).length ? d.alsoToday : undefined,
+    weekendExtra: weekendExtra.length ? weekendExtra : undefined,
+    // Legacy mirrors:
+    openingLine: d.mainSummary || d.greeting || "İşte bugünün kısa gündem özeti.",
     topStories,
-    oneStoryToWatch,
-    quietContext: d.quietContext || undefined,
+    quietContext: undefined,
     sources,
   };
 }
@@ -167,26 +224,48 @@ function deterministic(
   inputHash: string,
   sourceBundleHash: string,
   error: string,
+  sponsorMeta: SponsorMeta,
   extraWarnings: string[] = [],
 ): GeneratedNewsIssue {
-  const topStories: NewsStory[] = bundle.map((s) => ({
+  const tr = seg.briefingLanguage === "Turkish";
+  const agendaItems: NewsAgendaItem[] = bundle.map((s) => ({
+    category: topicLabel(s.topic, seg.briefingLanguage),
     title: s.headline,
-    source: s.sourceName,
     summary: s.excerpt ?? "",
-    whyItMatters: "",
+    whyItMatters: undefined,
+    source: s.sourceName,
     url: s.sourceUrl,
   }));
+  const topStories: NewsStory[] = agendaItems.map((a) => ({
+    title: a.title,
+    source: a.source,
+    summary: a.summary,
+    whyItMatters: "",
+    url: a.url,
+  }));
+  const greeting = tr ? "Günaydın, işte bugünün kısa gündem özeti." : "Good morning — here is today's short brief.";
+  const mainHeadline = bundle[0]?.headline ?? "";
+  const mainSummary = tr
+    ? "Bugünün öne çıkan gelişmeleri kaynaklara dayalı olarak aşağıda kısaca özetlendi."
+    : "Today's key developments are summarized below, grounded in the listed sources.";
   const content: NewsIssueContent = {
-    openingLine: "Here is your calm morning briefing — the stories worth knowing today.",
+    greeting,
+    mainHeadline: mainHeadline || undefined,
+    mainSummary,
+    agendaItems,
+    alsoToday: undefined,
+    weekendExtra: undefined,
+    openingLine: mainSummary,
     topStories,
-    oneStoryToWatch: undefined,
     quietContext: undefined,
     sources: bundle.map((s) => ({ source: s.sourceName, url: s.sourceUrl })),
   };
   return {
     title: `${seg.regionFocus} briefing`,
-    subject: "Today's OneNews: the stories worth knowing",
-    previewText: "A short, calm briefing with links to the original sources.",
+    subject: tr ? "OneNews: bugünün kısa gündem özeti" : "OneNews: today's short brief",
+    previewText: tr
+      ? "5 dakikalık sabah gündem özeti, kaynak bağlantılarıyla."
+      : "A 5-minute morning brief with links to the original sources.",
     content,
     generated: true,
     provider: "deterministic",
@@ -200,7 +279,7 @@ function deterministic(
       validationStatus: "SKIPPED",
       warnings: extraWarnings.length ? extraWarnings : undefined,
       error,
-    }, sourceBundleHash, bundle.length),
+    }, sourceBundleHash, bundle.length, sponsorMeta),
   };
 }
 
@@ -211,7 +290,7 @@ function deterministic(
 function noSources(seg: NewsSegment, warnings: string[]): GeneratedNewsIssue {
   return {
     title: `${seg.regionFocus} briefing`,
-    subject: "OneNews: your calm morning briefing",
+    subject: "OneNews: bugünün gündem özeti",
     previewText: "",
     content: emptyContent(),
     generated: false,
@@ -227,7 +306,7 @@ function noSources(seg: NewsSegment, warnings: string[]): GeneratedNewsIssue {
       validationStatus: "SKIPPED",
       warnings: warnings.length ? warnings : undefined,
       error: "no_source_material",
-    }, "", 0),
+    }, "", 0, { droppedSponsorCount: 0, cleanedExcerptCount: 0 }),
   };
 }
 
@@ -237,10 +316,11 @@ function generationUnavailable(
   sourceBundleHash: string,
   bundleSize: number,
   error: string,
+  sponsorMeta: SponsorMeta,
 ): GeneratedNewsIssue {
   return {
     title: `${seg.regionFocus} briefing`,
-    subject: "OneNews: your calm morning briefing",
+    subject: "OneNews: bugünün gündem özeti",
     previewText: "",
     content: emptyContent(),
     generated: false,
@@ -255,7 +335,7 @@ function generationUnavailable(
       source: "none",
       validationStatus: "SKIPPED",
       error,
-    }, sourceBundleHash, bundleSize),
+    }, sourceBundleHash, bundleSize, sponsorMeta),
   };
 }
 
@@ -263,16 +343,46 @@ function generationUnavailable(
 /* Helpers                                                                   */
 /* ----------------------------------------------------------------------- */
 
+interface SponsorMeta {
+  droppedSponsorCount: number;
+  cleanedExcerptCount: number;
+}
+
+/** Maps an internal topic token to a short reader-facing category label. */
+function topicLabel(topic: string, language: string): string {
+  const tr = language === "Turkish";
+  const map: Record<string, [string, string]> = {
+    markets: ["Piyasalar", "Markets"],
+    business: ["İş dünyası", "Business"],
+    economy: ["Ekonomi", "Economy"],
+    politics: ["Politika", "Politics"],
+    technology: ["Teknoloji", "Technology"],
+    world: ["Dünya", "World"],
+    turkey: ["Türkiye", "Turkey"],
+    culture: ["Kültür", "Culture"],
+    science: ["Bilim", "Science"],
+    sports: ["Spor", "Sports"],
+    weekend: ["Hafta sonu", "Weekend"],
+  };
+  const entry = map[topic?.toLowerCase()];
+  if (entry) return tr ? entry[0] : entry[1];
+  return topic || (tr ? "Gündem" : "Today");
+}
+
 /** Provenance bag with OneNews-specific source-bundle fields. */
 function metaRecord(
   partial: Parameters<typeof buildGenerationMeta>[0],
   sourceBundleHash: string,
   sourceCount: number,
+  sponsorMeta: SponsorMeta,
 ): Record<string, unknown> {
   return {
     ...(buildGenerationMeta(partial) as unknown as Record<string, unknown>),
     sourceBundleHash,
     sourceCount,
+    droppedSponsorCount: sponsorMeta.droppedSponsorCount,
+    cleanedExcerptCount: sponsorMeta.cleanedExcerptCount,
+    sponsorFree: true,
   };
 }
 
@@ -282,5 +392,5 @@ function mergeWarnings(a: string[], b: string[]): string[] | undefined {
 }
 
 function emptyContent(): NewsIssueContent {
-  return { openingLine: "", topStories: [], sources: [] };
+  return { openingLine: "", topStories: [], sources: [], agendaItems: [] };
 }

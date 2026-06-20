@@ -7,8 +7,8 @@ import { NEWS_PRICING, NEWS_TRUST_NOTES } from "@/lib/news/config";
 import { productThemes } from "@/lib/product-themes";
 
 export const metadata: Metadata = {
-  title: "Pricing - OneNews",
-  description: "Simple pricing for the OneNews morning briefing.",
+  title: "Fiyatlandırma - OneNews",
+  description: "OneNews sabah gündem özeti için sade fiyatlandırma.",
 };
 
 export default function NewsPricingPage() {
@@ -31,19 +31,19 @@ export default function NewsPricingPage() {
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[34rem] flex-col items-center py-8 text-center sm:py-10">
         <h1 className="animate-rise-delayed font-serif text-[2.3rem] font-medium leading-tight text-ink">
-          Start with a 7-day free trial.
+          7 günlük ücretsiz denemeyle başla.
         </h1>
         <p className="mt-4 max-w-[42ch] animate-rise-delayed-2 text-[15px] leading-7 text-ash">
-          Try OneNews for a week. If it makes the morning feel clearer, keep receiving one calm briefing every day for ${NEWS_PRICING.monthly}/month or ${NEWS_PRICING.yearly}/year.
+          OneNews’i bir hafta dene. Sabahları daha berrak hissettiriyorsa, her sabah 06.30’daki 5 dakikalık gündem özetini aylık ${NEWS_PRICING.monthly}$ veya yıllık ${NEWS_PRICING.yearly}$ ile almaya devam et.
         </p>
         <div className="mt-7 w-full rounded-2xl border border-[var(--theme-border)] bg-white/65 p-6 shadow-sm">
-          <div className="font-serif text-[42px] text-ink">${NEWS_PRICING.monthly}<span className="font-sans text-[14px] text-ash"> / month</span></div>
-          <div className="mt-1 text-[13px] text-ash">${NEWS_PRICING.yearly} yearly option available in Polar</div>
+          <div className="font-serif text-[42px] text-ink">${NEWS_PRICING.monthly}<span className="font-sans text-[14px] text-ash"> / ay</span></div>
+          <div className="mt-1 text-[13px] text-ash">${NEWS_PRICING.yearly} yıllık seçenek Polar’da mevcut</div>
           <ul className="mt-6 space-y-2 text-left text-[14px] leading-6 text-ash">
             {NEWS_TRUST_NOTES.map((note) => <li key={note}>{note}</li>)}
           </ul>
           <Link href="/news" className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--theme-accent)] px-5 text-[14.5px] font-medium text-white">
-            Start free trial
+            7 gün ücretsiz dene
           </Link>
         </div>
       </section>

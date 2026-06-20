@@ -82,12 +82,21 @@ async function liveOrSkip(label: string, s: FilmSegment, f: FilmCatalogEntry, li
     console.log(`  NOT GENERATED (${ms}ms) reason=${issue.reason}\n`);
     return;
   }
-  const gate = runFilmGates(issue.content, f, spoilerLevel);
+  const gate = runFilmGates(issue.content, f, spoilerLevel, { subject: issue.subject, previewText: issue.previewText });
   console.log(`  generated in ${ms}ms · provider=${issue.provider} model=${issue.model ?? "—"}`);
   console.log(`  validation : ${gate.ok ? "VALID" : "FAILED"} · spoiler level: ${spoilerLevel}`);
   console.log(`  subject    : ${issue.subject}`);
+  console.log(`  greeting   : ${issue.content.greeting ?? "(none)"}`);
   console.log(`  filmTitle  : ${issue.content.filmTitle}`);
   console.log(`  metadata   : ${JSON.stringify(issue.content.metadata ?? {})}`);
+
+  // New-format coverage: greeting + the four note sections must be present.
+  const c = issue.content;
+  const formatOk = !!(c.greeting && c.whyThisFilm && c.whatItFeelsLike && c.bestWatchedWhen && c.beforeYouPressPlay);
+  console.log(`  format     : greeting+whyThisFilm+whatItFeelsLike+bestWatchedWhen+beforeYouPressPlay present=${formatOk}`);
+  if (!formatOk) {
+    console.error("  WARN: one of the expected note sections is empty (model may have left it blank).");
+  }
   if (gate.warnings.length) console.log(`  warnings:\n${gate.warnings.map((w) => "    - " + w).join("\n")}`);
   console.log("");
 }

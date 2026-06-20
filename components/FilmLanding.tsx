@@ -39,15 +39,22 @@ export function FilmLanding() {
       </header>
 
       <section className="mx-auto flex w-full max-w-[38rem] flex-1 flex-col items-center justify-center py-6 sm:py-8">
-        <h1 className="max-w-[15ch] animate-rise-delayed text-center font-serif text-[2.5rem] font-medium leading-[1.02] tracking-[-0.028em] text-ink sm:text-[3.6rem] sm:leading-[0.98]">
-          One film worth <em className="font-serif font-normal italic">thinking about.</em>
+        <h1 className="max-w-[16ch] animate-rise-delayed text-center font-serif text-[2.5rem] font-medium leading-[1.02] tracking-[-0.028em] text-ink sm:text-[3.6rem] sm:leading-[0.98]">
+          Bu akşam ne izleyeceğini <em className="font-serif font-normal italic">arama.</em>
         </h1>
-        <p className="mt-5 max-w-[44ch] animate-rise-delayed-2 text-center font-sans text-[15px] leading-[1.65] text-ash text-pretty sm:mt-6 sm:text-[16px]">
-          OneFilm sends a short film note or recommendation to your inbox — thoughtful, spoiler-light, and made for people who want something better than endless scrolling.
+        <p className="mt-5 max-w-[46ch] animate-rise-delayed-2 text-center font-sans text-[15px] leading-[1.65] text-ash text-pretty sm:mt-6 sm:text-[16px]">
+          OneFilm sana tek bir filmi, neden izlemeye değer olduğunu ve hangi ruh hâline iyi geleceğini kısa bir notla gönderir.
         </p>
         <p className="mt-3 max-w-[42ch] animate-rise-delayed-2 text-center font-serif italic text-[14px] leading-[1.6] text-ash">
-          No endless browsing. No noisy rankings. Just one film note worth opening.
+          Tek film. Kısa bir not. İzlemeye değer bir sebep.
         </p>
+        <ul className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 animate-rise-delayed-2 text-center text-[12.5px] text-fog">
+          <li>Tek film önerisi</li>
+          <li aria-hidden>·</li>
+          <li>Spoiler kontrollü</li>
+          <li aria-hidden>·</li>
+          <li>Liste yok, gürültü yok</li>
+        </ul>
         <FilmSignupForm className="mt-7 animate-rise-delayed-3 sm:mt-8" />
         <FilmSampleEmailPreview className="mt-10 animate-rise-delayed-4 sm:mt-12" />
       </section>
@@ -55,7 +62,7 @@ export function FilmLanding() {
       <Footer
         showPricing
         pricingHref="/film/pricing"
-        tagline="One film. One reason to watch. No endless browsing."
+        tagline="Tek film. Kısa bir not. İzlemeye değer bir sebep."
         xAriaLabel="OneFilm on X"
       />
     </main>

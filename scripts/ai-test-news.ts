@@ -17,6 +17,7 @@
 import type { NewsSourceStory } from "@prisma/client";
 import { generateNewsIssue } from "../lib/news/generator";
 import { validateSourceBundle, runNewsGates } from "../lib/news/quality";
+import { sanitizeSourceStories } from "../lib/news/sanitize";
 import type { NewsSegment } from "../lib/news/segments";
 import { geminiConfigured } from "../lib/ai";
 import { getLlmStatus } from "../lib/llm";
@@ -83,6 +84,31 @@ async function main() {
     process.exitCode = 1;
   } else {
     console.log("  PASS: empty bundle correctly refused.\n");
+  }
+
+  // 1b. Sponsor sanitizer (always runs, no network).
+  console.log("========== Sponsor sanitizer ==========");
+  const now = new Date();
+  const base = { region: "Global", language: "English", storyDate: now, createdAt: now, usedAt: null, createdBy: "ai:test:news" };
+  const newsletterStyle: NewsSourceStory[] = ([
+    { id: "edit-1", headline: "Central bank holds rates steady", sourceName: "Example Wire", sourceUrl: "https://example.com/markets/rates", excerpt: "Policymakers kept benchmark rates unchanged this week.", topic: "business" },
+    { id: "spon-1", headline: "BUGÜNKÜ DESTEKÇİMİZ: BrandX", sourceName: "Example Bülten", sourceUrl: "https://example.com/sponsor/brandx", excerpt: "Detaylar için burayı ziyaret edebilirsiniz. Marka hikayelerinizi paylaşmak için sales@brandx.com" },
+    { id: "spon-2", headline: "Günün önerileri — Sponsorlu", sourceName: "Example Bülten", sourceUrl: "https://example.com/sponsor/oneriler", excerpt: "Reklam ve işbirliği için bizimle iletişime geçin." },
+    { id: "edit-2", headline: "Researchers publish open dataset", sourceName: "Example Science", sourceUrl: "https://example.com/science/dataset", excerpt: "A consortium released a large annotated dataset. Sponsorlu içerik: reklam metni burada." },
+  ] as Array<Partial<NewsSourceStory>>).map((r) => ({ ...base, ...r }) as NewsSourceStory);
+  const san = sanitizeSourceStories(newsletterStyle);
+  const ids = new Set(san.clean.map((s) => s.id));
+  const droppedSponsors = !ids.has("spon-1") && !ids.has("spon-2");
+  const keptEditorial = ids.has("edit-1") && ids.has("edit-2");
+  const cleanedExcerpt = (san.clean.find((s) => s.id === "edit-2")?.excerpt ?? "").toLowerCase();
+  const strippedSponsorLine = !cleanedExcerpt.includes("sponsorlu") && !cleanedExcerpt.includes("reklam");
+  console.log(`  in=${newsletterStyle.length} clean=${san.clean.length} droppedSponsorCount=${san.droppedSponsorCount} cleanedExcerptCount=${san.cleanedExcerptCount}`);
+  console.log(`  sponsor blocks dropped: ${droppedSponsors} · editorial kept: ${keptEditorial} · sponsor line stripped from excerpt: ${strippedSponsorLine}`);
+  if (droppedSponsors && keptEditorial && strippedSponsorLine) {
+    console.log("  PASS: sponsor content removed, editorial content preserved.\n");
+  } else {
+    console.error("  FAIL: sanitizer did not behave as expected.\n");
+    process.exitCode = 1;
   }
 
   // 2. Source-bundle validation (always runs, no network).

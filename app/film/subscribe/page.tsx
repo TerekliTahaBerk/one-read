@@ -6,8 +6,8 @@ import { FilmSubscribeLookup } from "@/components/FilmSubscribeLookup";
 import { productThemes } from "@/lib/product-themes";
 
 export const metadata: Metadata = {
-  title: "Subscribe - OneFilm",
-  description: "Manage or start your OneFilm subscription.",
+  title: "Abonelik - OneFilm",
+  description: "OneFilm aboneliğini başlat veya yönet.",
 };
 
 export default function FilmSubscribePage({
@@ -33,10 +33,10 @@ export default function FilmSubscribePage({
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">
         <h1 className="animate-rise-delayed text-center font-serif text-[2.3rem] font-medium leading-tight text-ink">
-          Manage OneFilm.
+          OneFilm’i yönet.
         </h1>
         <p className="mt-4 max-w-[40ch] animate-rise-delayed-2 text-center text-[15px] leading-7 text-ash">
-          Look up your email to start checkout, resume email delivery, or manage billing.
+          Ödemeyi başlatmak, e-posta gönderimini sürdürmek veya faturalandırmayı yönetmek için e-postanı ara.
         </p>
         <FilmSubscribeLookup initialEmail={searchParams.email ?? ""} />
       </section>

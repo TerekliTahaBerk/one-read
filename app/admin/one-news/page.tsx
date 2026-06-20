@@ -5,7 +5,8 @@ import { AdminCard, MetricCard, MetricGrid } from "@/components/admin/AdminCard"
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneNewsTabs } from "@/lib/admin/nav";
 import { getNewsOverviewMetrics } from "@/lib/admin/news-queries";
-import { newsBillingConfigured, newsCronEnabled, newsRequireApproval, newsSourceMode } from "@/lib/news/config";
+import { newsBillingConfigured, newsCronEnabled, newsRequireApproval, newsSourceMode, newsSendTimeLocal, newsTimezone } from "@/lib/news/config";
+import { geminiConfigured } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +26,16 @@ export default async function OneNewsOverviewPage({
       <AdminTabs tabs={oneNewsTabs()} active="overview" />
       <AdminCard title="Configuration" bodyClassName="p-4">
         <MetricGrid>
+          <MetricCard label="Send time" value={`${newsSendTimeLocal()} ${newsTimezone()}`} />
           <MetricCard label="Polar product" value={newsBillingConfigured() ? "Configured" : "Missing"} tone={newsBillingConfigured() ? "good" : "warn"} />
           <MetricCard label="Cron" value={newsCronEnabled() ? "Enabled" : "Disabled"} />
           <MetricCard label="Approval required" value={newsRequireApproval() ? "Yes" : "No"} />
           <MetricCard label="Source mode" value={newsSourceMode()} />
+          <MetricCard label="Sponsors" value="Disabled" tone="good" />
+          <MetricCard label="Source grounding" value="Enabled" tone="good" />
+          <MetricCard label="Source sanitizer" value="Enabled" tone="good" />
+          <MetricCard label="NO_SOURCES guard" value="Enabled" tone="good" />
+          <MetricCard label="Model" value={geminiConfigured() ? "Gemini Flash" : "Gemini Flash (key missing)"} tone={geminiConfigured() ? "good" : "warn"} />
         </MetricGrid>
       </AdminCard>
       <AdminCard title="Subscribers" bodyClassName="p-4">

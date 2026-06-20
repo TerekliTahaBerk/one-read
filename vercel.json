@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/one-news",
-      "schedule": "0 4 * * *"
+      "schedule": "30 3 * * *"
     },
     {
       "path": "/api/cron/one-film",

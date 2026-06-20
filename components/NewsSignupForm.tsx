@@ -269,12 +269,12 @@ export function NewsSignupForm({ className = "" }: { className?: string }) {
 
       {phase === "manage" && (
         <div className="rounded-2xl border border-[var(--theme-border)] bg-white/60 p-5 text-center">
-          <h2 className="font-serif text-[24px] text-ink">Your OneNews briefing is active.</h2>
+          <h2 className="font-serif text-[24px] text-ink">OneNews aktif.</h2>
           <p className="mt-2 text-[14px] leading-6 text-ash">
-            You’re set to receive a calm morning briefing at 7 AM.
+            Her sabah 06.30’da 5 dakikalık gündem özetini alacaksın.
           </p>
           <Link href={`/news/subscribe?email=${encodeURIComponent(email)}`} className={`${primary} mt-4 inline-flex items-center justify-center`}>
-            Manage subscription
+            Aboneliği yönet
           </Link>
         </div>
       )}

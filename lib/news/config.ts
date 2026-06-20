@@ -13,11 +13,13 @@ export const NEWS_PRODUCT = {
   key: NEWS_PRODUCT_KEY,
   name: "OneNews",
   status: "Available" as const,
-  shortDescription: "A calmer morning briefing, every day at 7 AM.",
+  shortDescription:
+    "Her sabah 06.30'da 5 dakikalık gündem özeti e-posta kutunda.",
   longDescription:
-    "OneNews sends a short morning briefing for the stories worth knowing — clear, calm, and made for your inbox.",
-  cta: "Start free trial",
-  corePromise: "A calmer morning briefing, every day at 7 AM.",
+    "OneNews her sabah 06.30'da 5 dakikalık gündem özetini e-posta kutuna getirir. Piyasalar, ekonomi, iş dünyası, politika, teknoloji ve hafta sonu ekleri; kısa, yalın, öz bir şekilde.",
+  cta: "7 gün ücretsiz dene",
+  corePromise:
+    "Her sabah 06.30'da 5 dakikalık gündem özeti e-posta kutunda. Piyasalar, ekonomi, iş dünyası, politika, teknoloji ve hafta sonu ekleri; kısa, yalın, öz bir şekilde.",
 } as const;
 
 /** Prices in whole units of the billing currency (USD). Polar is the truth. */
@@ -27,16 +29,27 @@ export const NEWS_PRICING = {
 } as const;
 
 export const NEWS_TRUST_NOTES = [
-  "7-day free trial included",
-  "Cancel anytime",
-  "One briefing every morning at 7 AM",
-  "Billing handled securely by Polar",
+  "7 günlük ücretsiz deneme dahil",
+  "İstediğin zaman iptal et",
+  "Her sabah 06.30'da tek bir özet",
+  "Ödeme Polar ile güvenle yönetilir",
 ] as const;
 
-/** Local send hour (0–23). Defaults to 7 AM. */
+/** Local send hour (0–23). Defaults to 6 (06:30 Europe/Istanbul). */
 export function newsSendHourLocal(): number {
   const raw = Number(process.env.ONENEWS_SEND_HOUR_LOCAL);
-  return Number.isFinite(raw) && raw >= 0 && raw <= 23 ? Math.floor(raw) : 7;
+  return Number.isFinite(raw) && raw >= 0 && raw <= 23 ? Math.floor(raw) : 6;
+}
+
+/** Local send minute (0–59). Defaults to 30 (06:30 Europe/Istanbul). */
+export function newsSendMinuteLocal(): number {
+  const raw = Number(process.env.ONENEWS_SEND_MINUTE_LOCAL);
+  return Number.isFinite(raw) && raw >= 0 && raw <= 59 ? Math.floor(raw) : 30;
+}
+
+/** Human-readable local send time, e.g. "06:30". */
+export function newsSendTimeLocal(): string {
+  return `${String(newsSendHourLocal()).padStart(2, "0")}:${String(newsSendMinuteLocal()).padStart(2, "0")}`;
 }
 
 /** IANA timezone used to anchor the local send hour. */

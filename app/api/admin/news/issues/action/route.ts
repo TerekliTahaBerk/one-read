@@ -52,7 +52,8 @@ export async function POST(req: Request) {
         where: { id: issue.id },
         data: {
           approvalStatus: "SCHEDULED",
-          scheduledFor: new Date(`${date}T04:00:00Z`),
+          // 06:30 Europe/Istanbul = 03:30 UTC (Istanbul is UTC+3, no DST).
+          scheduledFor: new Date(`${date}T03:30:00Z`),
           approvedAt: new Date(),
           approvedBy: actor,
         },
@@ -71,11 +72,12 @@ export async function POST(req: Request) {
         region: issue.regionFocus,
         language: issue.briefingLanguage,
         topics: issue.topics,
-        limit: 5,
+        limit: 10,
       });
       const generated = await generateNewsIssue(
         { briefingLanguage: issue.briefingLanguage, regionFocus: issue.regionFocus, topics: issue.topics },
         stories,
+        { today: issue.issueDate.toISOString().slice(0, 10) },
       );
       const status = generated.generated
         ? "GENERATED"
