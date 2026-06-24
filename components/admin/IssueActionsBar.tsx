@@ -51,7 +51,11 @@ export function IssueActionsBar({
         return false;
       }
       if (json.result) {
-        setMsg(`Sent ${json.result.sent} · skipped ${json.result.skipped} · failed ${json.result.failed}`);
+        setMsg(
+          json.result.messageId
+            ? `Test sent · provider message id ${json.result.messageId}`
+            : `Sent ${json.result.sent} · skipped ${json.result.skipped} · failed ${json.result.failed}`,
+        );
       }
       setDialog(null);
       router.refresh();

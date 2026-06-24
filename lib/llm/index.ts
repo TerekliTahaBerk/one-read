@@ -5,8 +5,8 @@
  * provider. Returns `null` if no provider is configured, which lets
  * callers fall back to heuristic logic in development.
  *
- * Production deployments MUST set `AI_PROVIDER` to "openai" or "anthropic"
- * and provide the corresponding API key. When that is missing in
+ * Production deployments MUST set `AI_PROVIDER` to "gemini", "openai", or
+ * "anthropic" and provide the corresponding API key. When that is missing in
  * production we log a loud error so the cron logs make the misconfig
  * obvious — the heuristic provider is never silently used in prod.
  */

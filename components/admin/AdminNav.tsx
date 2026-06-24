@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
  */
 const NAV_GROUPS: {
   label: string;
-  items: { href: string; label: string; matchPrefix?: string }[];
+  items: { href: string; label: string; matchPrefix?: string; badge?: string }[];
 }[] = [
   {
     label: "Main",
@@ -36,19 +36,20 @@ const NAV_GROUPS: {
         href: "/admin/one-lingo",
         label: "OneLingo",
         matchPrefix: "/admin/one-lingo",
+        badge: "Hidden",
       },
     ],
   },
   {
     label: "OneNews",
     items: [
-      { href: "/admin/one-news", label: "OneNews", matchPrefix: "/admin/one-news" },
+      { href: "/admin/one-news", label: "OneNews", matchPrefix: "/admin/one-news", badge: "Hidden" },
     ],
   },
   {
     label: "OneFilm",
     items: [
-      { href: "/admin/one-film", label: "OneFilm", matchPrefix: "/admin/one-film" },
+      { href: "/admin/one-film", label: "OneFilm", matchPrefix: "/admin/one-film", badge: "Hidden" },
     ],
   },
   {
@@ -124,7 +125,14 @@ export function AdminNav() {
                           : "text-ash hover:bg-cream/60 hover:text-ink"
                       }`}
                     >
-                      {item.label}
+                      <span className="flex items-center justify-between gap-2">
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] uppercase tracking-eyebrow text-fog">
+                            {item.badge}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                     {active && sub && (
                       <ul className="mt-0.5 mb-1 ml-3 space-y-0.5 border-l border-line pl-3">

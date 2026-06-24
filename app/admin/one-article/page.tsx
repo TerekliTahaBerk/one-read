@@ -9,7 +9,7 @@ import { getOverviewMetrics, loadOneArticleSubs, toSubRow } from "@/lib/admin/qu
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { SEND_TIMEZONE, fmtDateTime, isoDate, todayUtc } from "@/lib/admin/format";
 import {
-  geminiConfigured,
+  getOneArticleAiStatus,
   getOneArticleIssueReadiness,
   nextOneArticleSend,
   oneArticleCronEnabled,
@@ -68,6 +68,7 @@ export default async function OneArticleOverviewPage({
   ]);
   const flags = adminFeatureFlags();
   const resend = getResendStatus();
+  const aiStatus = getOneArticleAiStatus();
   const subRows = subs.map((s) => toSubRow(s));
   const pendingCheckout = subRows.filter((s) => s.status === "PENDING_CHECKOUT").length;
   const pendingPreferences = subRows.filter((s) => s.status === "PENDING_PREFERENCES").length;
@@ -80,10 +81,47 @@ export default async function OneArticleOverviewPage({
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
+  const critical = [
+    ...(aiStatus.blocker ? [`${aiStatus.blocker}.`] : []),
+    ...todayReadiness.blockers,
+    ...(!resend.hasApiKey ? ["Resend is not configured."] : []),
+  ];
+  const warnings = [
+    ...todayReadiness.warnings,
+    ...(m.eligibleCount > 0 && m.eligibleCount <= 1 ? [`Only ${m.eligibleCount} subscriber is eligible.`] : []),
+    ...(pendingCheckout > 0 ? [`${pendingCheckout} subscribers are pending checkout.`] : []),
+  ];
+  const info = [
+    oneArticleCronEnabled()
+      ? `Cron enabled. Next expected run: ${nextSend.localLabel} · ${fmtDateTime(nextSend.utc)}.`
+      : "Cron disabled.",
+    oneArticleDryRunForced() ? "Dry-run mode on." : "Dry-run mode off.",
+  ];
+  const currentState = todayReadiness.alreadySentCount > 0
+    ? "Sent today"
+    : critical.length > 0
+      ? todayReadiness.status === "Needs content"
+        ? "Needs content"
+        : "Blocked"
+      : todayReadiness.status;
 
   return (
     <AdminShell title="OneArticle" subtitle="Daily editorial operations">
       <AdminTabs tabs={oneArticleTabs()} active="overview" />
+
+      <AdminCard title="Operations summary" subtitle={currentState} bodyClassName="p-4">
+        <MetricGrid>
+          <MetricCard label="Current state" value={currentState} tone={critical.length > 0 ? "warn" : "good"} />
+          <MetricCard label="Eligible subscribers" value={m.eligibleCount} tone={m.eligibleCount > 0 ? "good" : "warn"} />
+          <MetricCard label="Today issue" value={todayReadiness.issueExists ? todayReadiness.status : "Missing"} tone={todayReadiness.issueExists ? "good" : "warn"} />
+          <MetricCard label="Tomorrow issue" value={tomorrowReadiness.issueExists ? tomorrowReadiness.status : "Missing"} />
+        </MetricGrid>
+        <div className="space-y-1 text-[12.5px] text-ash font-sans">
+          <p>Next action: {critical[0] ?? todayReadiness.nextAction}</p>
+          <p>Next send: {nextSend.localLabel} · {fmtDateTime(nextSend.utc)}</p>
+          <p>Last run: {lastRun ? `${fmtDateTime(lastRun.startedAt)} · ${lastRun.status}` : "No cron run recorded yet"}</p>
+        </div>
+      </AdminCard>
 
       <AdminCard title="Operational status" bodyClassName="p-4">
         <DefList
@@ -91,7 +129,12 @@ export default async function OneArticleOverviewPage({
             ["Product", "OneArticle"],
             ["Public visibility", "Visible"],
             ["Billing provider", "Polar"],
-            ["AI provider", geminiConfigured() ? "Gemini configured" : "Gemini missing"],
+            ["AI provider", aiStatus.statusLabel],
+            ["AI_PROVIDER", aiStatus.selectedProviderLabel],
+            ["Gemini API key", aiStatus.geminiKeyConfigured ? "Configured" : "Missing"],
+            ["Active AI model", aiStatus.activeModel],
+            ["Article scorer", aiStatus.scorerEnabled ? "Enabled" : "Blocked"],
+            ["Summary generator", aiStatus.summaryGeneratorEnabled ? "Enabled" : "Blocked"],
             ["Email provider", resend.hasApiKey ? "Resend configured" : "Resend missing"],
             ["Cron enabled", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
             ["Approval required", isApprovalRequired() ? "Yes" : "No"],
@@ -108,12 +151,12 @@ export default async function OneArticleOverviewPage({
       </AdminCard>
 
       <AdminCard title="Operational warnings" bodyClassName="p-4">
-        {[...todayReadiness.blockers, ...todayReadiness.warnings].length > 0 ? (
-          <ul className="space-y-1 text-[12.5px] text-ash font-sans">
-            {[...todayReadiness.blockers, ...todayReadiness.warnings].map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
+        {critical.length + warnings.length + info.length > 0 ? (
+          <div className="space-y-4 text-[12.5px] font-sans">
+            <WarningGroup title="Critical blockers" tone="text-dawn" items={dedupe(critical)} />
+            <WarningGroup title="Warnings" tone="text-amber-700" items={dedupe(warnings)} />
+            <WarningGroup title="Info" tone="text-ash" items={dedupe(info)} />
+          </div>
         ) : (
           <p className="text-[12.5px] text-emerald-700 font-sans">No blockers for today.</p>
         )}
@@ -176,6 +219,22 @@ export default async function OneArticleOverviewPage({
       </div>
     </AdminShell>
   );
+}
+
+function WarningGroup({ title, tone, items }: { title: string; tone: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-fog">{title}</div>
+      <ul className={`space-y-1 ${tone}`}>
+        {items.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function dedupe(items: string[]): string[] {
+  return Array.from(new Set(items.filter(Boolean)));
 }
 
 function IssueReadinessMetrics({

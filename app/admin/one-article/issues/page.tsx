@@ -5,10 +5,12 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { IssueEmptyActions } from "@/components/admin/IssueEmptyActions";
 import { loadIssues } from "@/lib/admin/issues-read";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime, todayUtc } from "@/lib/admin/format";
+import { getOneArticleIssueReadiness } from "@/lib/admin/one-article-ops";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +28,7 @@ export default async function IssuesListPage({
   const iso = searchParams.date ?? today.toISOString().slice(0, 10);
   const date = new Date(iso + "T00:00:00Z");
 
+  const readiness = await getOneArticleIssueReadiness({ date });
   let issues = await loadIssues(date);
   if (searchParams.status) issues = issues.filter((i) => i.status === searchParams.status);
   if (searchParams.approval) issues = issues.filter((i) => i.approvalStatus === searchParams.approval);
@@ -72,43 +75,63 @@ export default async function IssuesListPage({
         </Link>
       </form>
 
-      <AdminCard>
-        <AdminTable
-          head={[
-            "Date",
-            "Topic",
-            "Src lang",
-            "Article",
-            "Editorial",
-            "Approval",
-            "Scheduled",
-            "Langs",
-            "Delivery records",
-            "Sent",
-            "Skip",
-            "Fail",
-            "",
-          ]}
-          empty="No issues prepared for this day yet."
-          rows={issues.map((i) => [
-            <span key="d" className="text-ash">{fmtDate(i.date)}</span>,
-            topicBySlug(i.topic)?.label ?? i.topic,
-            <span key="sl" className="text-ash">{i.sourceLanguage}</span>,
-            <span key="a" className="text-ink/90">{i.articleTitle}</span>,
-            <StatusBadge key="s" value={i.status} />,
-            <StatusBadge key="ap" value={i.approvalStatus} />,
-            <span key="sc" className="text-ash">{fmtDateTime(i.scheduledFor)}</span>,
-            <span key="l" className="text-ash">{i.summaryLanguages.join(", ") || "—"}</span>,
-            <span key="rc" title="From DailySend rows for this issue">{i.recipientCount}</span>,
-            i.sentCount,
-            i.skippedCount,
-            <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,
-            <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-ink underline underline-offset-2">
-              View
-            </Link>,
-          ])}
-        />
-      </AdminCard>
+      {issues.length === 0 ? (
+        <AdminCard title="No issue prepared" subtitle={readiness.status} bodyClassName="p-4">
+          <div className="space-y-4 text-[12.5px] font-sans">
+            <p className="text-ash">
+              No issue exists for {iso}. Prepare creates content only; it never sends subscriber email.
+            </p>
+            {[...readiness.blockers, ...readiness.warnings].length > 0 && (
+              <div>
+                <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-fog">Current blockers</div>
+                <ul className="space-y-1 text-dawn">
+                  {[...readiness.blockers, ...readiness.warnings].map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            <p className="text-ash">Next action: {readiness.nextAction}</p>
+            <IssueEmptyActions dateIso={iso} />
+          </div>
+        </AdminCard>
+      ) : (
+        <AdminCard>
+          <AdminTable
+            head={[
+              "Date",
+              "Topic",
+              "Src lang",
+              "Article",
+              "Editorial",
+              "Approval",
+              "Scheduled",
+              "Langs",
+              "Delivery records",
+              "Sent",
+              "Skip",
+              "Fail",
+              "",
+            ]}
+            empty="No issues prepared for this day yet."
+            rows={issues.map((i) => [
+              <span key="d" className="text-ash">{fmtDate(i.date)}</span>,
+              topicBySlug(i.topic)?.label ?? i.topic,
+              <span key="sl" className="text-ash">{i.sourceLanguage}</span>,
+              <span key="a" className="text-ink/90">{i.articleTitle}</span>,
+              <StatusBadge key="s" value={i.status} />,
+              <StatusBadge key="ap" value={i.approvalStatus} />,
+              <span key="sc" className="text-ash">{fmtDateTime(i.scheduledFor)}</span>,
+              <span key="l" className="text-ash">{i.summaryLanguages.join(", ") || "—"}</span>,
+              <span key="rc" title="From DailySend rows for this issue">{i.recipientCount}</span>,
+              i.sentCount,
+              i.skippedCount,
+              <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,
+              <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-ink underline underline-offset-2">
+                View
+              </Link>,
+            ])}
+          />
+        </AdminCard>
+      )}
     </AdminShell>
   );
 }

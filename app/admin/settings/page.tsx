@@ -36,6 +36,7 @@ import {
 } from "@/lib/one-article/verification";
 import {
   nextOneArticleSend,
+  getOneArticleAiStatus,
   oneArticleCronEnabled,
   oneArticleDryRunForced,
 } from "@/lib/admin/one-article-ops";
@@ -59,6 +60,7 @@ export default async function SettingsPage({
   const readiness = getLaunchReadiness();
   const passCount = readiness.filter((c) => c.status === "pass").length;
   const aiStatus = getLlmStatus();
+  const oneArticleAi = getOneArticleAiStatus();
 
   // Next scheduled send date (04:00 UTC = 07:00 Europe/Istanbul).
   const now = new Date();
@@ -122,6 +124,9 @@ export default async function SettingsPage({
   }
   if (!flags.sendActionsEnabled) {
     warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
+  }
+  if (oneArticleAi.blocker) {
+    warnings.push(`${oneArticleAi.statusLabel} — ${oneArticleAi.blocker}.`);
   }
   if (!oneArticleCronEnabled()) {
     warnings.push("ONE_ARTICLE_CRON_ENABLED is false — scheduled OneArticle emails will not send.");
@@ -275,9 +280,13 @@ export default async function SettingsPage({
         <ConfigCard
           title="AI provider (Gemini brain)"
           rows={[
-            ["AI_PROVIDER", aiStatus.provider === "none" ? "Development heuristic fallback" : `Configured: ${aiStatus.provider}`],
-            ["GEMINI_API_KEY", aiStatus.gemini.configured ? "Configured" : "Missing"],
+            ["Production-ready AI", oneArticleAi.productionReady ? "Configured" : oneArticleAi.statusLabel],
+            ["AI_PROVIDER", oneArticleAi.selectedProviderLabel],
+            ["GEMINI_API_KEY", oneArticleAi.geminiKeyConfigured ? "Configured" : "Missing"],
             ["Gemini active provider", aiStatus.gemini.isActiveProvider ? "Yes" : "No"],
+            ["Article scorer", oneArticleAi.scorerEnabled ? "Enabled" : "Blocked"],
+            ["Summary generator", oneArticleAi.summaryGeneratorEnabled ? "Enabled" : "Blocked"],
+            ["Active model", oneArticleAi.activeModel],
             ["Gemini model (fast)", aiStatus.gemini.models.fast],
             ["Gemini model (quality)", aiStatus.gemini.models.quality],
             ["Gemini model (reasoning)", aiStatus.gemini.models.reasoning],
@@ -290,7 +299,7 @@ export default async function SettingsPage({
         <ConfigCard
           title="Per-product AI brain"
           rows={[
-            ["OneArticle", aiBrainStatus(aiStatus)],
+            ["OneArticle", oneArticleAi.statusLabel],
             ["OneLingo", aiBrainStatus(aiStatus)],
             ["OneNews", `Source mode: ${newsSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
             ["OneFilm", `Source mode: ${filmSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
@@ -317,6 +326,27 @@ export default async function SettingsPage({
             ["OneFilm source mode", filmSourceMode()],
             ["Last OneArticle run", lastOneArticleRun ? `${fmtDateTime(lastOneArticleRun.startedAt)} · ${lastOneArticleRun.status}` : "Not tracked yet"],
             ["Last OneArticle error", lastOneArticleRun?.error ?? "None tracked"],
+          ]}
+        />
+        <ConfigCard
+          title="OneArticle production checklist"
+          rows={[
+            ["AI_PROVIDER", oneArticleAi.selectedProviderLabel === "gemini" ? "Configured" : oneArticleAi.statusLabel],
+            ["GEMINI_API_KEY", oneArticleAi.geminiKeyConfigured ? "Configured" : "Missing"],
+            ["GEMINI_MODEL_FAST", aiStatus.gemini.models.fast],
+            ["GEMINI_MODEL_QUALITY", aiStatus.gemini.models.quality],
+            ["GEMINI_MODEL_REASONING", aiStatus.gemini.models.reasoning],
+            ["RESEND_API_KEY", configured(process.env.RESEND_API_KEY)],
+            ["CRON_SECRET", configured(process.env.CRON_SECRET)],
+            ["ONE_ARTICLE_CRON_ENABLED", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
+            ["ONE_ARTICLE_DRY_RUN", oneArticleDryRunForced() ? "Enabled" : "Off"],
+            ["ONE_ARTICLE_REQUIRE_APPROVAL", approvalRequired ? "Enabled" : "Off"],
+            ["ADMIN_SEND_ACTIONS_ENABLED", flags.sendActionsEnabled ? "Enabled" : "Disabled"],
+            ["ADMIN_MUTATIONS_ENABLED", flags.mutationsEnabled ? "Enabled" : "Disabled"],
+            ["POLAR_ONE_ARTICLE_PRODUCT_ID", configured(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)],
+            ["POLAR_WEBHOOK_SECRET", configured(process.env.POLAR_WEBHOOK_SECRET)],
+            ["DATABASE_URL", configured(process.env.DATABASE_URL || process.env.PRISMA_DATABASE_URL)],
+            ["Database connected", "Configured"],
           ]}
         />
         <ConfigCard

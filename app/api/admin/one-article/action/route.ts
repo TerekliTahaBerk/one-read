@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import {
+  createIssueFromArticle,
   createManualOneArticleIssue,
   finishOperationalRun,
+  markOneArticleCandidate,
   prepareOneArticleIssues,
+  rejectOneArticle,
+  rescoreOneArticle,
+  rescorePendingOneArticles,
   startOperationalRun,
 } from "@/lib/admin/one-article-ops";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
@@ -29,7 +34,20 @@ export async function POST(req: Request) {
   }
 
   const action = str(body.action);
-  if (!["prepare-today", "prepare-tomorrow", "pipeline-dry-run", "create-manual-issue"].includes(action)) {
+  if (
+    ![
+      "prepare-today",
+      "prepare-tomorrow",
+      "prepare-date",
+      "pipeline-dry-run",
+      "create-manual-issue",
+      "rescore-article",
+      "rescore-pending",
+      "mark-candidate",
+      "reject-article",
+      "create-issue-from-article",
+    ].includes(action)
+  ) {
     return NextResponse.json({ ok: false, error: "unknown_action" }, { status: 400 });
   }
   const manualDate = action === "create-manual-issue" ? parseDate(body.date) : null;
@@ -47,9 +65,14 @@ export async function POST(req: Request) {
 
   try {
     let result: unknown;
-    if (action === "prepare-today" || action === "prepare-tomorrow") {
+    if (action === "prepare-today" || action === "prepare-tomorrow" || action === "prepare-date") {
       result = await prepareOneArticleIssues({
-        date: action === "prepare-tomorrow" ? addDays(new Date(), 1) : new Date(),
+        date:
+          action === "prepare-tomorrow"
+            ? addDays(new Date(), 1)
+            : action === "prepare-date"
+              ? parseDate(body.date) ?? new Date()
+              : new Date(),
         actor,
       });
       await finishOperationalRun({
@@ -95,6 +118,54 @@ export async function POST(req: Request) {
         id: run.id,
         status: "SUCCESS",
         generatedCount: 1,
+        metadata: result as Prisma.InputJsonObject,
+      });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "rescore-article") {
+      result = await rescoreOneArticle({ actor, articleId: str(body.articleId) });
+      await finishOperationalRun({ id: run.id, status: "SUCCESS", metadata: result as Prisma.InputJsonObject });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "rescore-pending") {
+      result = await rescorePendingOneArticles({ actor });
+      await finishOperationalRun({
+        id: run.id,
+        status: "SUCCESS",
+        generatedCount: (result as { scored?: number }).scored ?? 0,
+        failedCount: (result as { failed?: number }).failed ?? 0,
+        metadata: result as Prisma.InputJsonObject,
+      });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "mark-candidate") {
+      const article = await markOneArticleCandidate({ actor, articleId: str(body.articleId) });
+      result = { articleId: article.id };
+      await finishOperationalRun({ id: run.id, status: "SUCCESS", metadata: result as Prisma.InputJsonObject });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "reject-article") {
+      const article = await rejectOneArticle({
+        actor,
+        articleId: str(body.articleId),
+        reason: str(body.reason) || null,
+      });
+      result = { articleId: article.id, reason: article.rejectionReason };
+      await finishOperationalRun({ id: run.id, status: "SUCCESS", metadata: result as Prisma.InputJsonObject });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "create-issue-from-article") {
+      const date = parseDate(body.date) ?? new Date();
+      result = await createIssueFromArticle({ actor, articleId: str(body.articleId), date });
+      await finishOperationalRun({
+        id: run.id,
+        status: "SUCCESS",
+        generatedCount: (result as { summariesReady?: number }).summariesReady ?? 0,
         metadata: result as Prisma.InputJsonObject,
       });
       return NextResponse.json({ ok: true, result });

@@ -13,6 +13,7 @@ import { loadOneArticleSubs, type SubWithRels } from "@/lib/admin/queries";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, isoDate, sendInstantUtc, todayUtc } from "@/lib/admin/format";
 import { recordAudit } from "@/lib/admin/audit";
 import type { Article, TopicDailyPick } from "@prisma/client";
+import { getLlmStatus } from "@/lib/llm";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,6 +33,64 @@ export function resendConfigured(): boolean {
 
 export function geminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
+
+export interface OneArticleAiStatus {
+  provider: string;
+  selectedProviderLabel: string;
+  geminiKeyConfigured: boolean;
+  activeModel: string;
+  scorerEnabled: boolean;
+  summaryGeneratorEnabled: boolean;
+  productionReady: boolean;
+  statusLabel: string;
+  blocker: string | null;
+  warnings: string[];
+}
+
+export function getOneArticleAiStatus(): OneArticleAiStatus {
+  const status = getLlmStatus();
+  const provider = status.provider;
+  const providerSelected = provider !== "none" && provider !== "off";
+  const geminiSelected = provider === "gemini";
+  const geminiKeyConfigured = status.gemini.configured;
+  const configured = status.configured;
+  const warnings: string[] = [];
+  let statusLabel = "AI disabled";
+  let blocker: string | null = "Set AI_PROVIDER=gemini";
+
+  if (!providerSelected) {
+    if (geminiKeyConfigured) {
+      statusLabel = "Gemini key configured, but AI_PROVIDER is not set";
+      blocker = "Set AI_PROVIDER=gemini";
+    }
+  } else if (geminiSelected && !geminiKeyConfigured) {
+    statusLabel = "Gemini selected, key missing";
+    blocker = "Set GEMINI_API_KEY";
+  } else if (geminiSelected && geminiKeyConfigured && configured) {
+    statusLabel = "Gemini active";
+    blocker = null;
+  } else if (configured) {
+    statusLabel = `AI active (${provider})`;
+    blocker = null;
+    warnings.push("Gemini is not the selected provider.");
+  } else {
+    statusLabel = `AI provider ${provider} is not usable`;
+    blocker = `Configure API key for AI_PROVIDER=${provider}`;
+  }
+
+  return {
+    provider,
+    selectedProviderLabel: providerSelected ? provider : "none",
+    geminiKeyConfigured,
+    activeModel: status.model,
+    scorerEnabled: configured,
+    summaryGeneratorEnabled: configured,
+    productionReady: configured && geminiSelected && geminiKeyConfigured,
+    statusLabel,
+    blocker,
+    warnings,
+  };
 }
 
 export function nextOneArticleSend(now = new Date()): { localLabel: string; utc: Date } {
@@ -138,6 +197,7 @@ export async function getOneArticleIssueReadiness(input: {
   const warnings: string[] = [];
   const cronEnabled = oneArticleCronEnabled();
   const dryRun = oneArticleDryRunForced();
+  const aiStatus = getOneArticleAiStatus();
   const emailProviderConfigured = resendConfigured();
   const generatedContentExists = picks.some((p) => p.summaries.some((s) => s.status === "READY"));
   const approved = picks.some((p) => (SENDABLE_APPROVAL_STATUSES as readonly string[]).includes(p.approvalStatus));
@@ -153,6 +213,7 @@ export async function getOneArticleIssueReadiness(input: {
 
   if (picks.length === 0) blockers.push("No issue prepared for this date.");
   if (picks.length > 0 && !generatedContentExists) blockers.push("No generated or manual email content is ready.");
+  if (!generatedContentExists && aiStatus.blocker) blockers.push(`${aiStatus.blocker}.`);
   if (isApprovalRequired() && !approved) blockers.push("Approval is required but no issue is approved.");
   if (isApprovalRequired() && approved && !sendableReadyContentExists) {
     blockers.push("Approved or scheduled issue has no ready email content.");
@@ -162,7 +223,8 @@ export async function getOneArticleIssueReadiness(input: {
   if (!cronEnabled) warnings.push("Cron is disabled. Scheduled emails will not send.");
   if (dryRun) warnings.push("Dry-run mode is enabled. No real subscriber emails will send.");
   if (primary && !sourceArticleExists) warnings.push("No source article linked.");
-  if (!geminiConfigured()) warnings.push("Gemini is not configured. Generation may fail.");
+  if (!aiStatus.productionReady) warnings.push(aiStatus.statusLabel);
+  for (const warning of aiStatus.warnings) warnings.push(warning);
   if (alreadySentCount > 0) warnings.push(`This issue has already been sent to ${alreadySentCount} subscriber(s).`);
   if (primary?.summaries.some((s) => s.adminEditedAt && primary.approvedAt && s.adminEditedAt > primary.approvedAt)) {
     warnings.push("Issue was manually edited after approval. Re-approval recommended.");
@@ -274,6 +336,190 @@ export async function prepareOneArticleIssues(input: {
   });
 
   return { date: isoDate(day), picks: picks.length, summariesReady: ready, summariesRejected: rejected };
+}
+
+export async function rescoreOneArticle(input: {
+  actor: string;
+  articleId: string;
+}): Promise<{ articleId: string; result: Awaited<ReturnType<typeof extractAndScorePendingArticles>> }> {
+  const article = await prisma.article.findUnique({ where: { id: input.articleId } });
+  if (!article) throw new Error("article_not_found");
+  await prisma.article.update({
+    where: { id: input.articleId },
+    data: {
+      scoringStatus: "PENDING",
+      rejectionReason: null,
+      reasonForSelection: null,
+    },
+  });
+  const result = await extractAndScorePendingArticles({ articleIds: [input.articleId], limit: 1 });
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.article.rescore",
+    targetType: "Article",
+    targetId: input.articleId,
+    metadata: result as unknown as Prisma.InputJsonObject,
+  });
+  return { articleId: input.articleId, result };
+}
+
+export async function rescorePendingOneArticles(input: {
+  actor: string;
+  limit?: number;
+}): Promise<Awaited<ReturnType<typeof extractAndScorePendingArticles>>> {
+  const result = await extractAndScorePendingArticles({ limit: input.limit ?? 60 });
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.article.rescorePending",
+    targetType: "Article",
+    targetId: "pending",
+    metadata: result as unknown as Prisma.InputJsonObject,
+  });
+  return result;
+}
+
+export async function markOneArticleCandidate(input: {
+  actor: string;
+  articleId: string;
+}) {
+  const article = await prisma.article.findUnique({ where: { id: input.articleId } });
+  if (!article) throw new Error("article_not_found");
+  const tags = Array.from(new Set([...article.tags, "admin-candidate"]));
+  const updated = await prisma.article.update({
+    where: { id: input.articleId },
+    data: { tags },
+  });
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.article.markCandidate",
+    targetType: "Article",
+    targetId: input.articleId,
+    metadata: { previousStatus: article.scoringStatus, tags } as Prisma.InputJsonObject,
+  });
+  return updated;
+}
+
+export async function rejectOneArticle(input: {
+  actor: string;
+  articleId: string;
+  reason?: string | null;
+}) {
+  const article = await prisma.article.findUnique({ where: { id: input.articleId } });
+  if (!article) throw new Error("article_not_found");
+  const updated = await prisma.article.update({
+    where: { id: input.articleId },
+    data: {
+      scoringStatus: "REJECTED",
+      rejectionReason: input.reason?.trim() || "Rejected by admin",
+    },
+  });
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.article.reject",
+    targetType: "Article",
+    targetId: input.articleId,
+    metadata: { reason: updated.rejectionReason } as Prisma.InputJsonObject,
+  });
+  return updated;
+}
+
+export async function createIssueFromArticle(input: {
+  actor: string;
+  articleId: string;
+  date: Date;
+}): Promise<{ pickId: string; date: string; summariesReady: number; summariesRejected: number }> {
+  const article = await prisma.article.findUnique({ where: { id: input.articleId } });
+  if (!article) throw new Error("article_not_found");
+  if (article.scoringStatus === "PENDING") throw new Error("article_pending_scoring");
+  if (!article.cleanedText && !article.rawExcerpt) throw new Error("article_has_no_content");
+
+  const day = atUtcMidnight(input.date);
+  const pick = await prisma.topicDailyPick.upsert({
+    where: {
+      date_topic_sourceLanguage: {
+        date: day,
+        topic: article.topic,
+        sourceLanguage: article.sourceLanguage,
+      },
+    },
+    update: {
+      articleId: article.id,
+      articleTitle: article.title,
+      sourceName: article.sourceName,
+      subtopics: article.subtopics,
+      score: article.morningReadScore || article.qualityScore,
+      reasonForSelection:
+        article.reasonForSelection || "Admin selected this article for the issue.",
+      status: "READY",
+      approvalStatus: "PENDING",
+      scheduledFor: null,
+      approvedAt: null,
+      approvedBy: null,
+    },
+    create: {
+      date: day,
+      topic: article.topic,
+      subtopics: article.subtopics,
+      sourceLanguage: article.sourceLanguage,
+      articleId: article.id,
+      articleTitle: article.title,
+      sourceName: article.sourceName,
+      score: article.morningReadScore || article.qualityScore,
+      reasonForSelection:
+        article.reasonForSelection || "Admin selected this article for the issue.",
+      status: "READY",
+      approvalStatus: "PENDING",
+    },
+  });
+
+  const subs = await loadOneArticleSubs();
+  const provider = defaultSummaryProvider();
+  const targets = summaryTargetsForPick({ ...pick, article }, subs);
+  let summariesReady = 0;
+  let summariesRejected = 0;
+
+  for (const target of targets) {
+    const summary = await getOrCreateSummary(
+      {
+        pick: {
+          id: pick.id,
+          topic: pick.topic,
+          subtopics: pick.subtopics,
+          articleTitle: pick.articleTitle,
+          sourceName: pick.sourceName,
+        },
+        article: {
+          title: article.title,
+          url: article.url,
+          rawExcerpt: article.rawExcerpt,
+          cleanedText: article.cleanedText,
+          sourceLanguage: article.sourceLanguage,
+          sourceName: article.sourceName,
+        },
+        summaryLanguage: target.summaryLanguage,
+        primaryTopic: target.primaryTopic,
+        difficulty: target.difficulty,
+      },
+      provider,
+    );
+    if (summary.status === "READY") summariesReady++;
+    else summariesRejected++;
+  }
+
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.issue.createFromArticle",
+    targetType: "TopicDailyPick",
+    targetId: pick.id,
+    metadata: {
+      date: isoDate(day),
+      articleId: article.id,
+      summariesReady,
+      summariesRejected,
+    } as Prisma.InputJsonObject,
+  });
+
+  return { pickId: pick.id, date: isoDate(day), summariesReady, summariesRejected };
 }
 
 export async function createManualOneArticleIssue(input: {

@@ -37,6 +37,8 @@ export async function extractAndScorePendingArticles(opts: {
   llm?: LlmProvider | null;
   /** Cap on number of articles processed in a single run. */
   limit?: number;
+  /** Optional exact article ids to process, used by audited admin rescore actions. */
+  articleIds?: string[];
 } = {}): Promise<ScoreStageResult> {
   const llm = opts.llm === undefined ? getLlmProvider() : opts.llm;
   const limit = opts.limit ?? 60;
@@ -53,7 +55,10 @@ export async function extractAndScorePendingArticles(opts: {
   }
 
   const pending = await prisma.article.findMany({
-    where: { scoringStatus: "PENDING" },
+    where: {
+      scoringStatus: "PENDING",
+      ...(opts.articleIds?.length ? { id: { in: opts.articleIds } } : {}),
+    },
     orderBy: { ingestedAt: "asc" },
     take: limit,
   });
