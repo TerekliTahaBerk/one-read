@@ -103,10 +103,10 @@ export default function HomePage() {
             "
           >
             <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
-              OneRead is the brand. OneArticle is the product available now.
+              Now available from OneRead: OneArticle.
             </p>
             <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
-              No app. No feed. No noise.
+              A focused morning brief built around one worthwhile read.
             </p>
           </div>
         </section>
