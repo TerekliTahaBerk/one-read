@@ -8,6 +8,10 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Abonelik - OneNews",
   description: "OneNews aboneliğini başlat veya yönet.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function NewsSubscribePage({
@@ -29,7 +33,7 @@ export default function NewsSubscribePage({
       }
     >
       <header className="flex w-full justify-center animate-rise">
-        <Logo label="OneNews" href="/news" ariaLabel="OneNews home" />
+        <Logo label="OneNews" href="/" ariaLabel="OneRead home" />
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">
         <h1 className="animate-rise-delayed text-center font-serif text-[2.3rem] font-medium leading-tight text-ink">
@@ -40,7 +44,7 @@ export default function NewsSubscribePage({
         </p>
         <NewsSubscribeLookup initialEmail={searchParams.email ?? ""} />
       </section>
-      <Footer showBackHome backHref="/news" backLabel="Back to OneNews" />
+      <Footer showBackHome backHref="/" backLabel="Back to OneRead" />
     </main>
   );
 }

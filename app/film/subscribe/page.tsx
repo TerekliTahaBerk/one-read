@@ -8,6 +8,10 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Abonelik - OneFilm",
   description: "OneFilm aboneliğini başlat veya yönet.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function FilmSubscribePage({
@@ -29,7 +33,7 @@ export default function FilmSubscribePage({
       }
     >
       <header className="flex w-full justify-center animate-rise">
-        <Logo label="OneFilm" href="/film" ariaLabel="OneFilm home" />
+        <Logo label="OneFilm" href="/" ariaLabel="OneRead home" />
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">
         <h1 className="animate-rise-delayed text-center font-serif text-[2.3rem] font-medium leading-tight text-ink">
@@ -40,7 +44,7 @@ export default function FilmSubscribePage({
         </p>
         <FilmSubscribeLookup initialEmail={searchParams.email ?? ""} />
       </section>
-      <Footer showBackHome backHref="/film" backLabel="Back to OneFilm" />
+      <Footer showBackHome backHref="/" backLabel="Back to OneRead" />
     </main>
   );
 }

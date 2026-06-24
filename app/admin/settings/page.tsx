@@ -120,19 +120,19 @@ export default async function SettingsPage({
     warnings.push("Email verification is configured but RESEND_API_KEY is missing — codes are logged to the server console in development only.");
   }
   if (!lingoBillingConfigured()) {
-    warnings.push("POLAR_ONE_LINGO_PRODUCT_ID is missing — OneLingo public pages work, but checkout is disabled.");
+    warnings.push("POLAR_ONE_LINGO_PRODUCT_ID is missing — OneLingo management checkout is disabled.");
   }
   if (!lingoCronEnabled()) {
     warnings.push("ONELINGO_CRON_ENABLED is not true — the OneLingo cron route will refuse scheduled runs.");
   }
   if (!newsBillingConfigured()) {
-    warnings.push("POLAR_ONENEWS_PRODUCT_ID is missing — OneNews public pages work, but checkout is disabled.");
+    warnings.push("POLAR_ONENEWS_PRODUCT_ID is missing — OneNews management checkout is disabled.");
   }
   if (!newsCronEnabled()) {
     warnings.push("ONENEWS_CRON_ENABLED is not true — the OneNews cron route will refuse scheduled runs.");
   }
   if (!filmBillingConfigured()) {
-    warnings.push("POLAR_ONEFILM_PRODUCT_ID is missing — OneFilm public pages work, but checkout is disabled.");
+    warnings.push("POLAR_ONEFILM_PRODUCT_ID is missing — OneFilm management checkout is disabled.");
   }
   if (!filmCronEnabled()) {
     warnings.push("ONEFILM_CRON_ENABLED is not true — the OneFilm cron route will refuse scheduled runs.");
@@ -304,6 +304,11 @@ export default async function SettingsPage({
           title="Public URLs / waitlist"
           rows={[
             ["PUBLIC_BASE_URL", process.env.PUBLIC_BASE_URL ? "Configured from environment" : "Fallback to https://oneread.app"],
+            ["OneArticle public visibility", "Visible"],
+            ["OneLingo public visibility", "Hidden"],
+            ["OneNews public visibility", "Hidden"],
+            ["OneFilm public visibility", "Hidden"],
+            ["OneDish public visibility", "Hidden"],
             ["POLAR_SUCCESS_URL", configured(process.env.POLAR_SUCCESS_URL)],
             ["TALLY_WAITLIST_URL", WAITLIST_FORM_URL ? "Configured" : "Missing"],
             ["Waitlist counts", "External source not connected"],

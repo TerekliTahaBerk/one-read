@@ -2,56 +2,6 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
-import { WAITLIST_FORM_URL } from "@/lib/options";
-import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
-
-const PRODUCTS = [
-  {
-    name: "OneArticle",
-    description: "One carefully chosen article, every morning.",
-    status: "Available",
-    cta: "Start free trial",
-    href: "/article",
-    theme: "article",
-  },
-  {
-    name: "OneLingo",
-    description: "Small language practice that fits into your inbox.",
-    status: "Available",
-    cta: "Start free trial",
-    note: "One small step at a time.",
-    href: "/lingo",
-    theme: "lingo",
-  },
-  {
-    name: "OneNews",
-    description: "Her sabah 06.30’da 5 dakikalık gündem özeti, e-posta kutunda.",
-    status: "Available",
-    cta: "Start free trial",
-    note: "Piyasalar, ekonomi, politika, teknoloji; kısa, yalın, öz. Sponsor yok.",
-    href: "/news",
-    theme: "news",
-  },
-  {
-    name: "OneFilm",
-    description: "Tek film. Kısa bir not. İzlemeye değer bir sebep.",
-    status: "Available",
-    cta: "Start free trial",
-    note: "Sana tek bir filmi, neden izlemeye değdiğini ve hangi ruh hâline iyi geleceğini kısa bir notla gönderir.",
-    href: "/film",
-    theme: "film",
-  },
-  {
-    name: "OneDish",
-    description: "One simple dish idea for your day.",
-    status: "Coming soon",
-    cta: "Join waitlist",
-    note: "A recipe you can actually make, without another app.",
-    href: WAITLIST_FORM_URL,
-    external: true,
-    theme: "dish",
-  },
-] as const;
 
 export default function HomePage() {
   return (
@@ -88,7 +38,7 @@ export default function HomePage() {
               reveal-item reveal-item-2
             "
           >
-            The things you care about, delivered quietly to your inbox.
+            One good article, before the day gets noisy.
           </h1>
 
           <p
@@ -101,20 +51,63 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead is a family of quiet daily emails for reading, language,
-            news, film, and food. No app. No feed. No noise.
+            OneRead sends you a short, carefully written brief of one article
+            selected around your interests — every morning at 7 AM.
           </p>
 
           <div
             className="
-              mt-6 sm:mt-7 w-full max-w-[34rem]
-              space-y-2
+              mt-7 sm:mt-8 flex w-full flex-col items-center gap-3
+              sm:flex-row sm:justify-center
               reveal-item reveal-item-4
             "
           >
-            {PRODUCTS.map((product) => (
-              <ProductRow key={product.name} product={product} />
-            ))}
+            <Link
+              href="/article"
+              className="
+                focus-ring inline-flex h-12 w-full items-center justify-center
+                rounded-full bg-ink px-6 font-sans text-[14px] font-medium
+                text-white transition-colors duration-200 hover:bg-ink/90
+                sm:w-auto
+              "
+            >
+              Start your 7-day free trial
+            </Link>
+            <Link
+              href="/article#example"
+              className="
+                focus-ring inline-flex h-12 w-full items-center justify-center
+                rounded-full border border-line-strong bg-white/65 px-6
+                font-sans text-[14px] font-medium text-ink
+                transition-colors duration-200 hover:bg-white
+                sm:w-auto
+              "
+            >
+              See an example
+            </Link>
+          </div>
+
+          <p
+            className="
+              mt-5 font-sans text-[12.5px] leading-[1.55] text-fog
+              text-center reveal-item reveal-item-4
+            "
+          >
+            One carefully chosen article brief, every morning at 7 AM.
+          </p>
+
+          <div
+            className="
+              mt-8 sm:mt-10 w-full max-w-[32rem] border-y border-line/80
+              py-5 text-center reveal-item reveal-item-4
+            "
+          >
+            <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
+              OneRead is the brand. OneArticle is the product available now.
+            </p>
+            <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
+              No app. No feed. No noise.
+            </p>
           </div>
         </section>
       </HomeReveal>
@@ -124,93 +117,5 @@ export default function HomePage() {
         showManifesto
       />
     </main>
-  );
-}
-
-function ProductRow({
-  product,
-}: {
-  product: (typeof PRODUCTS)[number];
-}) {
-  const theme = productThemes[product.theme as ProductThemeKey];
-  const note = "note" in product ? product.note : undefined;
-
-  const content = (
-    <>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 className="font-serif font-medium text-[1.1rem] leading-tight text-ink">
-            {product.name}
-          </h2>
-          <span
-            className="product-badge rounded-full border px-2 py-0.5 font-sans text-[11px] leading-none transition-colors duration-200"
-          >
-            {product.status}
-          </span>
-        </div>
-        <p className="mt-1 font-sans text-[13.5px] leading-[1.55] text-ash">
-          {product.description}
-        </p>
-        {note && (
-          <p className="mt-1 font-sans text-[12px] leading-[1.5] text-fog">
-            {note}
-          </p>
-        )}
-      </div>
-
-      <span
-        className={`
-          shrink-0 font-sans text-[12.5px]
-          ${product.href ? "link-underline" : ""}
-        `}
-        style={{ color: product.href ? theme.accent : theme.mutedText }}
-      >
-        {product.cta}
-      </span>
-    </>
-  );
-
-  const className = `
-    product-card group flex flex-col items-start gap-2
-    sm:flex-row sm:items-center sm:justify-between sm:gap-5
-    rounded-lg border px-3 py-3 sm:py-3.5
-  `;
-
-  // Per-card theme tokens drive the hover tint/border (see .product-card in
-  // globals.css). Kept as CSS variables so :hover can swap them — inline
-  // background/border would otherwise win over the hover rule.
-  const themeVars = {
-    "--card-bg": theme.background,
-    "--card-surface": theme.surface,
-    "--card-border": theme.border,
-    "--card-accent": theme.accent,
-  } as React.CSSProperties;
-
-  if (!product.href) {
-    return (
-      <div className={className} aria-disabled="true" style={themeVars}>
-        {content}
-      </div>
-    );
-  }
-
-  if ("external" in product && product.external) {
-    return (
-      <a
-        href={product.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`${className} focus-ring`}
-        style={themeVars}
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link href={product.href} className={`${className} focus-ring`} style={themeVars}>
-      {content}
-    </Link>
   );
 }

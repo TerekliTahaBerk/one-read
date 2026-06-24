@@ -7,7 +7,6 @@ import {
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
-import { productThemes } from "@/lib/product-themes";
 
 /* ----------------------------------------------------------------------- */
 /* Configuration                                                           */
@@ -15,28 +14,17 @@ import { productThemes } from "@/lib/product-themes";
 
 /**
  * The brand wordmark always reads `One` + a changing suffix. Only the suffix
- * is ever typed or deleted — `One` stays fixed. Colors come straight from the
- * existing product theme tokens so the loader can't drift from the brand.
+ * is ever typed — `One` stays fixed. The public site currently introduces only
+ * OneRead, so hidden product names stay out of the opening animation.
  */
-type ColorKey = "read" | "article" | "lingo" | "news" | "film" | "dish";
+type ColorKey = "read";
 
 const SEQUENCE: { suffix: string; color: ColorKey }[] = [
   { suffix: "Read", color: "read" },
-  { suffix: "Article", color: "article" },
-  { suffix: "Lingo", color: "lingo" },
-  { suffix: "News", color: "news" },
-  { suffix: "Film", color: "film" },
-  { suffix: "Dish", color: "dish" },
 ];
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
-  // `Read` stays neutral/dark; the rest use each product's own accent.
   read: "#1A1A1A",
-  article: productThemes.article.accent,
-  lingo: productThemes.lingo.accent,
-  news: productThemes.news.accent,
-  film: productThemes.film.accent,
-  dish: productThemes.dish.accent,
 };
 
 /** Only these public, top-of-funnel pages get the opening animation. */
@@ -49,9 +37,8 @@ const PUBLIC_PATHS = new Set([
 
 const SESSION_KEY = "oneread-opening-loader-shown";
 
-/* Timing (ms) — tuned to keep the six-name sequence around ~5s. */
+/* Timing (ms) — subtle single-brand reveal. */
 const TYPE_MS = 55;
-const DELETE_MS = 34;
 const PAUSE_MS = 300;
 const FINAL_HOLD_MS = 750;
 const FADE_MS = 600;
@@ -73,12 +60,6 @@ function buildFrames(): Frame[] {
     // Hold on the fully-typed word.
     frames[frames.length - 1].hold = isLast ? FINAL_HOLD_MS : PAUSE_MS;
 
-    // Delete the suffix back down to `One` (keep the final word on screen).
-    if (!isLast) {
-      for (let i = suffix.length - 1; i >= 0; i -= 1) {
-        frames.push({ suffix: suffix.slice(0, i), color, hold: DELETE_MS });
-      }
-    }
   });
 
   return frames;

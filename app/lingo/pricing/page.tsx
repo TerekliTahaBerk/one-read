@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
@@ -9,9 +10,17 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Pricing - OneLingo",
   description: "Simple pricing for OneLingo language-practice emails.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function LingoPricingPage() {
+  notFound();
+}
+
+function FutureLingoPricingPage() {
   const theme = productThemes.lingo;
   return (
     <main

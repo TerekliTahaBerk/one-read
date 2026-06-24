@@ -200,7 +200,9 @@ export function ArticleLanding() {
             />
 
             {phase === "email" && (
-              <SampleEmailPreview className="mt-10 sm:mt-12 animate-rise-delayed-4" />
+              <div id="example" className="mt-10 scroll-mt-8 sm:mt-12">
+                <SampleEmailPreview className="animate-rise-delayed-4" />
+              </div>
             )}
           </div>
         )}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
@@ -9,9 +10,17 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Fiyatlandırma - OneNews",
   description: "OneNews sabah gündem özeti için sade fiyatlandırma.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function NewsPricingPage() {
+  notFound();
+}
+
+function FutureNewsPricingPage() {
   const theme = productThemes.news;
   return (
     <main

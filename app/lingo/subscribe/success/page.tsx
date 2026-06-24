@@ -3,6 +3,10 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Checkout received - OneLingo",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function LingoSubscribeSuccessPage() {

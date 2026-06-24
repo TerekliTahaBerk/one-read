@@ -8,6 +8,10 @@ import { productThemes } from "@/lib/product-themes";
 export const metadata: Metadata = {
   title: "Subscribe - OneLingo",
   description: "Manage or start your OneLingo subscription.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function LingoSubscribePage({
@@ -29,7 +33,7 @@ export default function LingoSubscribePage({
       }
     >
       <header className="flex w-full justify-center animate-rise">
-        <Logo label="OneLingo" href="/lingo" ariaLabel="OneLingo home" />
+        <Logo label="OneLingo" href="/" ariaLabel="OneRead home" />
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">
         <h1 className="animate-rise-delayed text-center font-serif text-[2.3rem] font-medium leading-tight text-ink">
@@ -40,7 +44,7 @@ export default function LingoSubscribePage({
         </p>
         <LingoSubscribeLookup initialEmail={searchParams.email ?? ""} />
       </section>
-      <Footer showBackHome backHref="/lingo" backLabel="Back to OneLingo" />
+      <Footer showBackHome backHref="/" backLabel="Back to OneRead" />
     </main>
   );
 }

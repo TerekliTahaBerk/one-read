@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { WAITLIST_FORM_URL } from "@/lib/options";
 
 type Props = {
   /** Show the Pricing link (homepage). Pricing page hides it. */
@@ -13,16 +12,12 @@ type Props = {
   backLabel?: string;
   /** Show the small OneRead brand line (homepage). */
   showManifesto?: boolean;
-  /** Show the product links row: OneArticle · OneLingo · OneNews · OneFilm · OneDish. */
+  /** Show the public product links row. Hidden products stay out of this list. */
   showProducts?: boolean;
 };
 
 const PRODUCT_LINKS = [
   { label: "OneArticle", href: "/article", external: false },
-  { label: "OneLingo", href: "/lingo", external: false },
-  { label: "OneNews", href: "/news", external: false },
-  { label: "OneFilm", href: "/film", external: false },
-  { label: "OneDish", href: WAITLIST_FORM_URL, external: true },
 ] as const;
 
 export function Footer({

@@ -33,7 +33,7 @@ export default async function AdminProductsPage({
     >
       <AdminCard>
         <AdminTable
-          head={["Product", "Status", "Source", "Operational data", "Actions"]}
+          head={["Product", "Status", "Public visibility", "Source", "Operational data", "Actions"]}
           rows={PRODUCTS.map((p) => [
             <span key="n" className="flex items-center gap-2 font-medium text-ink">
               <span className={`h-2.5 w-2.5 rounded-full ${productDotClass(p.key)}`} />
@@ -44,6 +44,11 @@ export default async function AdminProductsPage({
               value={p.status === "live" ? "live" : "waitlist"}
               tone={p.status === "live" ? "good" : "muted"}
             />,
+            <StatusBadge
+              key="v"
+              value={p.publicVisible ? "public" : "hidden"}
+              tone={p.publicVisible ? "good" : "muted"}
+            />,
             p.connected ? (
               <span key="d" className="text-ash">From ProductSubscription</span>
             ) : (
@@ -53,6 +58,8 @@ export default async function AdminProductsPage({
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
             ) : p.key === "one-lingo" ? (
               <span key="c">{`${lingo.subscribers.activeOrTrialing} active/trialing · ${lingo.subscribers.eligible} eligible`}</span>
+            ) : p.connected ? (
+              <span key="c" className="text-fog">Use product operations for detailed metrics</span>
             ) : (
               <span key="c" className="text-fog">Waitlist count not available</span>
             ),
@@ -62,6 +69,14 @@ export default async function AdminProductsPage({
               </Link>
             ) : p.key === "one-lingo" ? (
               <Link key="a" href="/admin/one-lingo" className="text-ink underline underline-offset-2">
+                Operations →
+              </Link>
+            ) : p.key === "one-news" ? (
+              <Link key="a" href="/admin/one-news" className="text-ink underline underline-offset-2">
+                Operations →
+              </Link>
+            ) : p.key === "one-film" ? (
+              <Link key="a" href="/admin/one-film" className="text-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : (
@@ -80,10 +95,9 @@ export default async function AdminProductsPage({
       </AdminCard>
 
       <p className="text-[12.5px] text-fog font-sans">
-        Waitlist collected in Tally. Not connected to admin yet. Signups for
-        OneNews, OneFilm, and OneDish live in an external Tally form and
-        are not yet connected to this database. Counts will appear here once an
-        integration is added.
+        Public visibility is separate from backend availability. Hidden products
+        stay available in admin and backend routes for future relaunch or
+        subscriber management.
       </p>
     </AdminShell>
   );
