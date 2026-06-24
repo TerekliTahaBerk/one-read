@@ -4,9 +4,9 @@
   "private": true,
   "description": "One article. Every morning. Curated for you.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS=--disable-warning=DEP0169 next dev",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "NODE_OPTIONS=--disable-warning=DEP0169 next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
