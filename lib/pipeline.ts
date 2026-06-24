@@ -31,7 +31,9 @@ import {
 import {
   defaultSummaryProvider,
   getOrCreateSummary,
+  summaryResultFromRow,
   type SummaryProvider,
+  type SummaryResult,
 } from "./summarizer";
 import { renderDailyEmail } from "./email-template";
 import { ingestCandidates, type IngestionSource } from "./ingest";
@@ -84,6 +86,8 @@ export interface DailyPipelineOptions {
    * of the global flag.
    */
   requireApproval?: boolean;
+  /** Optional admin send-now scope: send only this TopicDailyPick. */
+  pickId?: string;
 }
 
 export interface SendArgs {
@@ -191,6 +195,7 @@ export async function runDailyPipeline(
     minDeliveryScore: thresholds.minDeliveryScore,
     send: opts.send,
     requireApproval: opts.requireApproval ?? isApprovalRequired(),
+    pickId: opts.pickId,
   });
 
   // Source observability — fetch the rows we just touched.
@@ -537,7 +542,7 @@ function articleRank(a: Article): number {
 export async function selectSubscriberSends(
   date: Date,
   minDeliveryScore: number = MIN_DELIVERY_SCORE,
-  opts: { requireApproval?: boolean } = {},
+  opts: { requireApproval?: boolean; pickId?: string } = {},
 ): Promise<DailySend[]> {
   const day = atUtcMidnight(date);
 
@@ -548,6 +553,7 @@ export async function selectSubscriberSends(
   const requireApproval = opts.requireApproval ?? isApprovalRequired();
   const picks = await prisma.topicDailyPick.findMany({
     where: {
+      ...(opts.pickId ? { id: opts.pickId } : {}),
       date: day,
       status: { in: ["READY", "SENT"] },
       ...(requireApproval
@@ -588,7 +594,7 @@ export async function selectSubscriberSends(
       ...ctx.secondaryInterests,
     ]);
 
-    type PickWithArticle = TopicDailyPick & { article: Article };
+    type PickWithArticle = TopicDailyPick & { article: Article | null };
     const candidates: PickWithArticle[] = [];
     for (const t of userTopics) {
       const arr = picksByTopic.get(t) as PickWithArticle[] | undefined;
@@ -604,7 +610,7 @@ export async function selectSubscriberSends(
     // personalization weights apply correctly (article quality vs.
     // usefulness vs. morning-fit are weighted differently downstream).
     const scored = candidates
-      .map((pick) => ({
+        .map((pick) => ({
         pick,
         breakdown: scorePick(
           {
@@ -612,9 +618,9 @@ export async function selectSubscriberSends(
             subtopics: pick.subtopics,
             sourceLanguage: pick.sourceLanguage,
             sourceName: pick.sourceName,
-            qualityScore: pick.article.qualityScore,
-            usefulnessScore: pick.article.usefulnessScore,
-            morningReadScore: pick.article.morningReadScore,
+            qualityScore: pick.article?.qualityScore ?? pick.score,
+            usefulnessScore: pick.article?.usefulnessScore ?? pick.score,
+            morningReadScore: pick.article?.morningReadScore ?? pick.score,
           },
           ctx,
         ),
@@ -633,9 +639,9 @@ export async function selectSubscriberSends(
         subtopics: winner.pick.subtopics,
         sourceLanguage: winner.pick.sourceLanguage,
         sourceName: winner.pick.sourceName,
-        qualityScore: winner.pick.article.qualityScore,
-        usefulnessScore: winner.pick.article.usefulnessScore,
-        morningReadScore: winner.pick.article.morningReadScore,
+          qualityScore: winner.pick.article?.qualityScore ?? winner.pick.score,
+          usefulnessScore: winner.pick.article?.usefulnessScore ?? winner.pick.score,
+          morningReadScore: winner.pick.article?.morningReadScore ?? winner.pick.score,
       },
       ctx,
     );
@@ -667,6 +673,7 @@ interface FanOutOpts {
   minDeliveryScore?: number;
   send?: (args: SendArgs) => Promise<{ messageId?: string }>;
   requireApproval?: boolean;
+  pickId?: string;
 }
 
 async function fanOutAndSend(
@@ -676,11 +683,16 @@ async function fanOutAndSend(
   // Make sure DailySend rows exist before sending.
   await selectSubscriberSends(date, opts.minDeliveryScore, {
     requireApproval: opts.requireApproval,
+    pickId: opts.pickId,
   });
 
   const day = atUtcMidnight(date);
   const queued = await prisma.dailySend.findMany({
-    where: { date: day, status: "QUEUED" },
+    where: {
+      date: day,
+      status: "QUEUED",
+      ...(opts.pickId ? { topicDailyPickId: opts.pickId } : {}),
+    },
     include: {
       subscriber: true,
       pick: { include: { article: true } },
@@ -695,29 +707,31 @@ async function fanOutAndSend(
     try {
       const sub = send.subscriber;
       const pick = send.pick;
-      const summary = await getOrCreateSummary(
-        {
-          pick: {
-            id: pick.id,
-            topic: pick.topic,
-            subtopics: pick.subtopics,
-            articleTitle: pick.articleTitle,
-            sourceName: pick.sourceName,
-          },
-          article: {
-            title: pick.article.title,
-            url: pick.article.url,
-            rawExcerpt: pick.article.rawExcerpt,
-            cleanedText: pick.article.cleanedText,
-            sourceLanguage: pick.article.sourceLanguage,
-            sourceName: pick.article.sourceName,
-          },
-          summaryLanguage: send.summaryLanguage,
-          primaryTopic: send.matchedTopic,
-          difficulty: sub.preferredDifficulty || "mixed",
-        },
-        opts.summaryProvider,
-      );
+      const summary = pick.article
+        ? await getOrCreateSummary(
+            {
+              pick: {
+                id: pick.id,
+                topic: pick.topic,
+                subtopics: pick.subtopics,
+                articleTitle: pick.articleTitle,
+                sourceName: pick.sourceName,
+              },
+              article: {
+                title: pick.article.title,
+                url: pick.article.url,
+                rawExcerpt: pick.article.rawExcerpt,
+                cleanedText: pick.article.cleanedText,
+                sourceLanguage: pick.article.sourceLanguage,
+                sourceName: pick.article.sourceName,
+              },
+              summaryLanguage: send.summaryLanguage,
+              primaryTopic: send.matchedTopic,
+              difficulty: sub.preferredDifficulty || "mixed",
+            },
+            opts.summaryProvider,
+          )
+        : await loadManualSummaryForSend(pick.id, send.summaryLanguage, send.matchedTopic, sub.preferredDifficulty || "mixed");
 
       // Editorial bar: never send a low-confidence summary. Mark the
       // DailySend as SKIPPED with the rejection reason so we can debug.
@@ -747,7 +761,7 @@ async function fanOutAndSend(
         summaryLanguage: send.summaryLanguage,
         article: {
           title: pick.articleTitle,
-          url: pick.article.url,
+          url: pick.article?.url ?? null,
           sourceName: pick.sourceName,
         },
         summary: {
@@ -796,7 +810,7 @@ async function fanOutAndSend(
               7,
             ),
             recentlySentArticleIds: trimList(
-              [pick.articleId, ...sub.recentlySentArticleIds],
+              [pick.articleId, ...sub.recentlySentArticleIds].filter((id): id is string => Boolean(id)),
               30,
             ),
           },
@@ -818,6 +832,44 @@ async function fanOutAndSend(
   }
 
   return { total: queued.length, sent, skipped, failed };
+}
+
+async function loadManualSummaryForSend(
+  pickId: string,
+  summaryLanguage: string,
+  primaryTopic: string,
+  difficulty: string,
+): Promise<SummaryResult> {
+  const exact = await prisma.summary.findUnique({
+    where: {
+      topicDailyPickId_summaryLanguage_primaryTopic_difficulty: {
+        topicDailyPickId: pickId,
+        summaryLanguage,
+        primaryTopic,
+        difficulty,
+      },
+    },
+  });
+  const fallback =
+    exact ??
+    (await prisma.summary.findFirst({
+      where: { topicDailyPickId: pickId, summaryLanguage },
+      orderBy: { createdAt: "desc" },
+    })) ??
+    (await prisma.summary.findFirst({
+      where: { topicDailyPickId: pickId },
+      orderBy: { createdAt: "desc" },
+    }));
+
+  if (!fallback) {
+    return {
+      bodyText: "",
+      status: "REJECTED",
+      rejectionReason: "manual issue has no summary content",
+      generator: "manual",
+    };
+  }
+  return summaryResultFromRow(fallback);
 }
 
 /* ----------------------------------------------------------------------- */

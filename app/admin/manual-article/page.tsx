@@ -1,6 +1,8 @@
 import { ManualArticleForm } from "@/components/ManualArticleForm";
+import { ManualOneArticleIssueForm } from "@/components/admin/ManualOneArticleIssueForm";
 import { guardAdminPage } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
+import { AdminCard } from "@/components/admin/AdminCard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,7 +35,12 @@ export default function ManualArticlePage({
           network fetch.
         </p>
       </div>
-      <ManualArticleForm />
+      <AdminCard title="Write email issue by hand" subtitle="Creates pending issue content; does not send" bodyClassName="p-4">
+        <ManualOneArticleIssueForm />
+      </AdminCard>
+      <AdminCard title="Add source article candidate" subtitle="Runs through scoring and generation later" bodyClassName="p-4">
+        <ManualArticleForm />
+      </AdminCard>
     </AdminShell>
   );
 }

@@ -7,9 +7,11 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
 import { loadIssueDetail } from "@/lib/admin/issues-read";
 import { IssueActionsBar } from "@/components/admin/IssueActionsBar";
+import { OneArticleIssueEditor } from "@/components/admin/OneArticleIssueEditor";
 import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime } from "@/lib/admin/format";
 import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
+import { getOneArticleIssueReadiness } from "@/lib/admin/one-article-ops";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +30,11 @@ export default async function IssueDetailPage({
   const detail = await loadIssueDetail(params.id);
   if (!detail) notFound();
   const { pick, previews, recipients } = detail;
-  const auditEvents = await loadAuditLogs({ targetType: "TopicDailyPick", q: pick.id }, 20);
+  const [auditEvents, readiness] = await Promise.all([
+    loadAuditLogs({ targetType: "TopicDailyPick", q: pick.id }, 20),
+    getOneArticleIssueReadiness({ pickId: pick.id }),
+  ]);
+  const editablePreview = previews[0] ?? null;
 
   return (
     <AdminShell
@@ -47,8 +53,26 @@ export default async function IssueDetailPage({
           approvalStatus={pick.approvalStatus}
           eligibleCount={detail.eligibleCount}
           segmentLabel={`${topicBySlug(pick.topic)?.label ?? pick.topic} · ${pick.sourceLanguage}`}
-          defaultTestEmail={process.env.FROM_EMAIL ?? ""}
+          defaultTestEmail="tterekli9@gmail.com"
         />
+      </AdminCard>
+
+      <AdminCard title="Readiness" subtitle={readiness.status} bodyClassName="p-4">
+        <MetricGrid>
+          <MetricCard label="Eligible subscribers" value={readiness.eligibleCount} tone={readiness.eligibleCount > 0 ? "good" : "warn"} />
+          <MetricCard label="Generated content" value={readiness.generatedContentExists ? "Yes" : "No"} tone={readiness.generatedContentExists ? "good" : "warn"} />
+          <MetricCard label="Approved" value={readiness.approved ? "Yes" : "No"} tone={readiness.approved ? "good" : "warn"} />
+          <MetricCard label="Scheduled" value={readiness.scheduled ? "Yes" : "No"} tone={readiness.scheduled ? "good" : "default"} />
+        </MetricGrid>
+        {[...readiness.blockers, ...readiness.warnings].length > 0 ? (
+          <ul className="space-y-1 text-[12.5px] text-ash font-sans">
+            {[...readiness.blockers, ...readiness.warnings].map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[12.5px] text-emerald-700 font-sans">Ready for scheduled send.</p>
+        )}
       </AdminCard>
 
       <AdminCard title="Issue" bodyClassName="">
@@ -61,9 +85,13 @@ export default async function IssueDetailPage({
             ["Source", pick.sourceName],
             [
               "Article URL",
-              <a key="u" href={pick.article.url} target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-2 break-all">
-                {pick.article.url}
-              </a>,
+              pick.article?.url ? (
+                <a key="u" href={pick.article.url} target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-2 break-all">
+                  {pick.article.url}
+                </a>
+              ) : (
+                <span key="u" className="text-amber-700">No source article linked</span>
+              ),
             ],
             ["Score", pick.score.toFixed(2)],
             ["Editorial status", <StatusBadge key="s" value={pick.status} />],
@@ -76,6 +104,19 @@ export default async function IssueDetailPage({
           ]}
         />
       </AdminCard>
+
+      {editablePreview && (
+        <AdminCard title="Manual edit" subtitle="Overrides generated content; does not send" bodyClassName="p-4">
+          <OneArticleIssueEditor
+            pickId={pick.id}
+            summaryId={editablePreview.summaryId}
+            initialSubject={editablePreview.subjectOverride ?? editablePreview.subject}
+            initialPreviewText={editablePreview.previewTextOverride ?? editablePreview.previewText}
+            initialBodyText={editablePreview.bodyTextOverride ?? editablePreview.bodyText}
+            initialAdminNotes={pick.adminNotes ?? ""}
+          />
+        </AdminCard>
+      )}
 
       <AdminCard title="Recipients" subtitle="Calculated from ProductSubscription eligibility" bodyClassName="p-4">
         <MetricGrid>

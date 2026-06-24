@@ -2,6 +2,7 @@ import type { Article, Summary, TopicDailyPick } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { renderDailyEmail } from "@/lib/email-template";
 import type { StructuredSummary } from "@/lib/llm";
+import { effectiveStructuredSummary } from "@/lib/summarizer";
 import { loadOneArticleSubs, type SubWithRels } from "@/lib/admin/queries";
 import { evaluateEligibility } from "@/lib/subscriptions";
 import { interestLabelsToSlugs } from "@/lib/topics";
@@ -13,7 +14,7 @@ import { interestLabelsToSlugs } from "@/lib/topics";
  * the rendered email preview. It never sends anything.
  */
 
-export type PickWithArticle = TopicDailyPick & { article: Article };
+export type PickWithArticle = TopicDailyPick & { article: Article | null };
 
 export interface IssueListItem {
   id: string;
@@ -77,6 +78,10 @@ export interface RenderedPreview {
   editorNotes: string | null;
   subjectOverride: string | null;
   previewTextOverride: string | null;
+  bodyTextOverride: string | null;
+  bodyHtmlOverride: string | null;
+  bodyText: string;
+  bodyHtml: string | null;
   subject: string;
   previewText: string;
   html: string;
@@ -124,17 +129,7 @@ export function renderPreviewForSummary(
 ): RenderedPreview {
   const structuredRaw =
     (summary.structuredJson as unknown as StructuredSummary | null) ?? undefined;
-  // Apply admin overrides on top of the LLM structured output without mutating
-  // the body. renderDailyEmail prefers structured.subject for the subject line.
-  // Overrides only take effect when structured output exists (always true for
-  // real LLM summaries); heuristic/dev summaries fall back to the renderer.
-  const structured: StructuredSummary | undefined = structuredRaw
-    ? {
-        ...structuredRaw,
-        ...(summary.subjectOverride ? { subject: summary.subjectOverride } : {}),
-        ...(summary.previewTextOverride ? { preheader: summary.previewTextOverride } : {}),
-      }
-    : undefined;
+  const structured = effectiveStructuredSummary(summary);
 
   const rendered = renderDailyEmail({
     date: pick.date.toISOString().slice(0, 10),
@@ -143,12 +138,12 @@ export function renderPreviewForSummary(
     summaryLanguage: summary.summaryLanguage,
     article: {
       title: pick.articleTitle,
-      url: pick.article.url,
+      url: pick.article?.url ?? null,
       sourceName: pick.sourceName,
     },
     summary: {
-      bodyText: summary.bodyText,
-      bodyHtml: summary.bodyHtml ?? undefined,
+      bodyText: summary.bodyTextOverride?.trim() || summary.bodyText,
+      bodyHtml: summary.bodyHtmlOverride?.trim() || summary.bodyHtml || undefined,
       structured,
     },
     links: previewLinks(),
@@ -164,6 +159,10 @@ export function renderPreviewForSummary(
     editorNotes: structuredRaw?.editorNotes ?? null,
     subjectOverride: summary.subjectOverride,
     previewTextOverride: summary.previewTextOverride,
+    bodyTextOverride: summary.bodyTextOverride,
+    bodyHtmlOverride: summary.bodyHtmlOverride,
+    bodyText: summary.bodyText,
+    bodyHtml: summary.bodyHtml,
     subject: rendered.subject,
     previewText: summary.previewTextOverride ?? structuredRaw?.preheader ?? "",
     html: rendered.html,

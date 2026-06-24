@@ -28,7 +28,7 @@ import {
   type StructuredSummary,
 } from "./llm";
 import { MIN_SUMMARY_CONFIDENCE } from "./thresholds";
-import type { Article, TopicDailyPick } from "@prisma/client";
+import type { Article, Summary, TopicDailyPick } from "@prisma/client";
 
 export interface SummaryRequest {
   pick: Pick<
@@ -57,6 +57,31 @@ export interface SummaryResult {
   generator?: string;
   status: "READY" | "REJECTED";
   rejectionReason?: string;
+}
+
+export function summaryResultFromRow(row: Summary): SummaryResult {
+  return {
+    bodyText: row.bodyTextOverride?.trim() || row.bodyText,
+    bodyHtml: row.bodyHtmlOverride?.trim() || row.bodyHtml || undefined,
+    structured: effectiveStructuredSummary(row),
+    confidence: row.confidence ?? undefined,
+    generator: row.generator ?? undefined,
+    status: (row.status as "READY" | "REJECTED") ?? "READY",
+    rejectionReason: row.rejectionReason ?? undefined,
+  };
+}
+
+export function effectiveStructuredSummary(row: Summary): StructuredSummary | undefined {
+  const base =
+    (row.structuredJson as unknown as StructuredSummary | null) ?? undefined;
+  const override =
+    (row.structuredJsonOverride as unknown as Partial<StructuredSummary> | null) ??
+    undefined;
+  const merged = base || override ? ({ ...(base ?? {}), ...(override ?? {}) } as StructuredSummary) : undefined;
+  if (!merged) return undefined;
+  if (row.subjectOverride?.trim()) merged.subject = row.subjectOverride.trim();
+  if (row.previewTextOverride?.trim()) merged.preheader = row.previewTextOverride.trim();
+  return merged;
 }
 
 export interface SummaryProvider {
@@ -242,17 +267,7 @@ export async function getOrCreateSummary(
     },
   });
   if (cached) {
-    return {
-      bodyText: cached.bodyText,
-      bodyHtml: cached.bodyHtml ?? undefined,
-      structured:
-        (cached.structuredJson as unknown as StructuredSummary | null) ??
-        undefined,
-      confidence: cached.confidence ?? undefined,
-      generator: cached.generator ?? undefined,
-      status: (cached.status as "READY" | "REJECTED") ?? "READY",
-      rejectionReason: cached.rejectionReason ?? undefined,
-    };
+    return summaryResultFromRow(cached);
   }
 
   const generated = await resolvedProvider.generate(req);
@@ -278,17 +293,7 @@ export async function getOrCreateSummary(
       },
     });
     if (fresh) {
-      return {
-        bodyText: fresh.bodyText,
-        bodyHtml: fresh.bodyHtml ?? undefined,
-        structured:
-          (fresh.structuredJson as unknown as StructuredSummary | null) ??
-          undefined,
-        confidence: fresh.confidence ?? undefined,
-        generator: fresh.generator ?? undefined,
-        status: (fresh.status as "READY" | "REJECTED") ?? "READY",
-        rejectionReason: fresh.rejectionReason ?? undefined,
-      };
+      return summaryResultFromRow(fresh);
     }
     throw err;
   }

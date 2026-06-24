@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 type Pending = null | "send-now" | "send-test" | "regenerate" | "schedule";
@@ -32,6 +33,7 @@ export function IssueActionsBar({
   const [dialog, setDialog] = useState<Pending>(null);
   const [testEmail, setTestEmail] = useState(defaultTestEmail);
   const [scheduleDate, setScheduleDate] = useState(dateIso);
+  const [sendConfirmation, setSendConfirmation] = useState("");
 
   async function post(body: Record<string, unknown>): Promise<boolean> {
     setBusy(true);
@@ -66,7 +68,8 @@ export function IssueActionsBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3">
+        <ActionGroup label="Approval">
         <button className={btn} disabled={busy} onClick={() => post({ action: "approve" })}>
           Approve
         </button>
@@ -74,22 +77,29 @@ export function IssueActionsBar({
           Schedule for 7 AM
         </button>
         {(approvalStatus === "APPROVED" || approvalStatus === "SCHEDULED") && (
-          <button className={btn} disabled={busy} onClick={() => post({ action: "cancel" })}>
-            Cancel
+          <button className={btn} disabled={busy} onClick={() => post({ action: "unschedule" })}>
+            Unschedule
           </button>
         )}
         <button className={btn} disabled={busy} onClick={() => post({ action: "needs-review" })}>
           Mark needs review
         </button>
+        </ActionGroup>
+        <ActionGroup label="Test only">
         <button className={btn} disabled={busy} onClick={() => setDialog("send-test")}>
-          Send test to me
+          Send test email
         </button>
+        </ActionGroup>
+        <ActionGroup label="Prepare only">
         <button className={danger} disabled={busy} onClick={() => setDialog("regenerate")}>
           Regenerate
         </button>
+        </ActionGroup>
+        <ActionGroup label="Real send">
         <button className={danger} disabled={busy} onClick={() => setDialog("send-now")}>
-          Send now
+          Send now to eligible subscribers
         </button>
+        </ActionGroup>
       </div>
       {msg && <p className="text-[12.5px] text-ash font-sans">{msg}</p>}
 
@@ -109,6 +119,16 @@ export function IssueActionsBar({
                   <li>Eligible recipients: <strong>{eligibleCount}</strong></li>
                   <li className="text-dawn">Real emails may be sent.</li>
                 </ul>
+                <label className="mt-3 block">
+                  <span className="text-[11px] uppercase tracking-eyebrow text-fog font-sans">
+                    Type SEND ONEARTICLE NOW
+                  </span>
+                  <input
+                    value={sendConfirmation}
+                    onChange={(e) => setSendConfirmation(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                  />
+                </label>
               </>
             )}
             {dialog === "regenerate" && (
@@ -158,7 +178,7 @@ export function IssueActionsBar({
                 className={dialog === "send-now" || dialog === "regenerate" ? danger : btn}
                 disabled={busy}
                 onClick={() => {
-                  if (dialog === "send-now") return void post({ action: "send-now" });
+                  if (dialog === "send-now") return void post({ action: "send-now", confirmation: sendConfirmation });
                   if (dialog === "regenerate") return void post({ action: "regenerate" });
                   if (dialog === "send-test") return void post({ action: "send-test", email: testEmail });
                   if (dialog === "schedule") return void post({ action: "schedule", date: scheduleDate });
@@ -170,6 +190,17 @@ export function IssueActionsBar({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ActionGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="w-24 text-[10px] uppercase tracking-eyebrow text-fog font-sans">
+        {label}
+      </span>
+      {children}
     </div>
   );
 }

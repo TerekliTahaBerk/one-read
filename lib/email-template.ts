@@ -31,7 +31,7 @@ export interface DailyEmailContext {
   summaryLanguage: string;
   article: {
     title: string;
-    url: string;
+    url?: string | null;
     sourceName: string;
   };
   summary: {
@@ -116,7 +116,7 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
     whyThis ? "" : "",
     ctx.summary.bodyText,
     "",
-    `${readLabel}: ${ctx.article.url}`,
+    ctx.article.url ? `${readLabel}: ${ctx.article.url}` : "",
     "",
     `${reactionPrompt}`,
     `  ${reactionLoved}: ${ctx.links.feedbackLoved}`,
@@ -187,11 +187,15 @@ export function renderDailyEmail(ctx: DailyEmailContext): RenderedEmail {
 
     <div>${summaryHtml}</div>
 
-    <div style="margin-top:28px;">
+    ${
+      ctx.article.url
+        ? `<div style="margin-top:28px;">
       <a href="${escapeAttr(ctx.article.url)}" style="display:inline-block;background:#1B1612;color:#FDFBF5;text-decoration:none;padding:12px 18px;border-radius:10px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;">
         ${escapeHtml(readLabel)} →
       </a>
-    </div>
+    </div>`
+        : ""
+    }
 
     <hr style="border:none;border-top:1px solid #E6DCC8;margin:32px 0 22px 0;" />
 

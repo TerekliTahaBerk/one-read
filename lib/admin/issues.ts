@@ -4,6 +4,14 @@ import { sendDailyEmail } from "@/lib/resend";
 import { parseEmail } from "@/lib/options";
 import { sendInstantUtc, isoDate } from "@/lib/admin/format";
 import { renderPreviewForSummary } from "@/lib/admin/issues-read";
+import {
+  getOneArticleIssueReadiness,
+  oneArticleDryRunForced,
+  prepareOneArticleIssues,
+  resendConfigured,
+} from "@/lib/admin/one-article-ops";
+import { SENDABLE_APPROVAL_STATUSES } from "@/lib/admin/issues-config";
+import { Prisma } from "@prisma/client";
 
 /**
  * Mutating admin actions on an "issue" (a TopicDailyPick + its summaries).
@@ -14,7 +22,7 @@ import { renderPreviewForSummary } from "@/lib/admin/issues-read";
 export interface IssueActionResult {
   ok: boolean;
   error?: string;
-  result?: { sent: number; skipped: number; failed: number };
+  result?: { sent: number; skipped: number; failed: number; messageId?: string | null };
 }
 
 async function loadPick(pickId: string) {
@@ -120,17 +128,68 @@ export async function editIssueMeta(
   return { ok: true };
 }
 
+/** Edit final email content without destroying the generated source fields. */
+export async function editIssueContent(
+  pickId: string,
+  input: {
+    summaryId?: string;
+    subjectOverride?: string | null;
+    previewTextOverride?: string | null;
+    bodyTextOverride?: string | null;
+    bodyHtmlOverride?: string | null;
+    structuredJsonOverride?: Prisma.InputJsonObject | null;
+    adminNotes?: string | null;
+  },
+): Promise<IssueActionResult> {
+  const meta = await editIssueMeta(pickId, {
+    summaryId: input.summaryId,
+    subjectOverride: input.subjectOverride,
+    previewTextOverride: input.previewTextOverride,
+    adminNotes: input.adminNotes,
+  });
+  if (!meta.ok) return meta;
+  if (!input.summaryId) return { ok: true };
+
+  const summary = await prisma.summary.findUnique({ where: { id: input.summaryId } });
+  if (!summary || summary.topicDailyPickId !== pickId) return { ok: false, error: "summary_not_found" };
+
+  await prisma.summary.update({
+    where: { id: input.summaryId },
+    data: {
+      ...(input.bodyTextOverride !== undefined
+        ? { bodyTextOverride: input.bodyTextOverride?.trim() || null }
+        : {}),
+      ...(input.bodyHtmlOverride !== undefined
+        ? { bodyHtmlOverride: input.bodyHtmlOverride?.trim() || null }
+        : {}),
+      ...(input.structuredJsonOverride !== undefined
+        ? { structuredJsonOverride: input.structuredJsonOverride ?? Prisma.DbNull }
+        : {}),
+      adminEditedAt: new Date(),
+    },
+  });
+  return { ok: true };
+}
+
 /**
  * Clear this issue's cached summaries so they are regenerated on the next
  * pipeline/dry-run. We deliberately do NOT call the LLM synchronously from an
  * admin request (no surprise cost / latency); regeneration happens on the next
  * run. Safe and reversible.
  */
-export async function regenerateIssue(pickId: string): Promise<IssueActionResult> {
+export async function regenerateIssue(pickId: string, actor: string): Promise<IssueActionResult> {
   const pick = await loadPick(pickId);
   if (!pick) return { ok: false, error: "not_found" };
-  await prisma.summary.deleteMany({ where: { topicDailyPickId: pickId } });
-  return { ok: true };
+  const result = await prepareOneArticleIssues({
+    date: pick.date,
+    regeneratePickId: pickId,
+    actor,
+    skipIngest: true,
+  });
+  return {
+    ok: true,
+    result: { sent: 0, skipped: result.summariesRejected, failed: 0 },
+  };
 }
 
 /**
@@ -156,46 +215,46 @@ export async function sendTestToAdmin(
     pick.summaries.find((s) => s.summaryLanguage === summaryLanguage) ?? pick.summaries[0];
   const rendered = renderPreviewForSummary(pick, summary);
   try {
-    await sendDailyEmail({
+    const sent = await sendDailyEmail({
       to: email,
       subject: `[TEST] ${rendered.subject}`,
       text: rendered.text,
       html: rendered.html,
     });
+    if (!sent.messageId && !resendConfigured()) return { ok: false, error: "resend_not_configured" };
+    return { ok: true, result: { sent: 0, skipped: 0, failed: 0, messageId: sent.messageId ?? null } };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "send_failed" };
   }
-  return { ok: true };
 }
 
 /**
- * Send this issue now. Approves it, then runs the existing daily pipeline for
- * its date with approval required — so only approved issues send, the canonical
- * send path is reused, and DailySend idempotency prevents duplicates (a later
- * cron run skips anyone already sent).
+ * Send this issue now. Requires prior approval/scheduling and strong UI/API
+ * confirmation. Reuses the canonical pipeline send path so eligibility and
+ * DailySend idempotency stay unchanged.
  */
 export async function sendIssueNow(
   pickId: string,
-  actor: string,
-  opts: { dryRun?: boolean } = {},
+  _actor: string,
+  opts: { dryRun?: boolean; confirmation?: string } = {},
 ): Promise<IssueActionResult> {
   const pick = await loadPick(pickId);
   if (!pick) return { ok: false, error: "not_found" };
-
-  // Approve this issue (idempotent) so the approval-gated pipeline will send it.
-  await prisma.topicDailyPick.update({
-    where: { id: pickId },
-    data: {
-      approvalStatus: pick.approvalStatus === "SCHEDULED" ? "SCHEDULED" : "APPROVED",
-      approvedAt: pick.approvedAt ?? new Date(),
-      approvedBy: pick.approvedBy ?? actor,
-    },
-  });
+  if (opts.confirmation !== "SEND ONEARTICLE NOW") return { ok: false, error: "confirmation_required" };
+  if (!(SENDABLE_APPROVAL_STATUSES as readonly string[]).includes(pick.approvalStatus)) {
+    return { ok: false, error: "issue_not_approved" };
+  }
+  const readiness = await getOneArticleIssueReadiness({ pickId });
+  if (readiness.blockers.length > 0) {
+    return { ok: false, error: readiness.blockers.join("; ") };
+  }
+  if (oneArticleDryRunForced() && !opts.dryRun) return { ok: false, error: "dry_run_mode_enabled" };
 
   const result = await runDailyPipeline({
     date: pick.date,
     skipIngest: true,
     requireApproval: true,
+    pickId,
     send: opts.dryRun ? undefined : (args: SendArgs) => sendDailyEmail(args),
   });
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import { recordAudit } from "@/lib/admin/audit";
 import {
@@ -7,6 +8,7 @@ import {
   cancelIssue,
   markNeedsReview,
   editIssueMeta,
+  editIssueContent,
   regenerateIssue,
   sendTestToAdmin,
   sendIssueNow,
@@ -35,6 +37,12 @@ export async function POST(req: Request): Promise<Response> {
   if (denied) return denied;
 
   const action = typeof body.action === "string" ? body.action : "";
+  if (!adminFeatureFlags().mutationsEnabled) {
+    return NextResponse.json(
+      { ok: false, error: "admin_mutations_disabled" },
+      { status: 403 },
+    );
+  }
   if (
     !adminFeatureFlags().sendActionsEnabled &&
     ["send-test", "send-now"].includes(action)
@@ -59,6 +67,7 @@ export async function POST(req: Request): Promise<Response> {
       result = await scheduleIssue(pickId, actor, str("date"));
       auditMeta = { date: str("date") };
       break;
+    case "unschedule":
     case "cancel":
       result = await cancelIssue(pickId);
       break;
@@ -73,30 +82,57 @@ export async function POST(req: Request): Promise<Response> {
         adminNotes: body.adminNotes === undefined ? undefined : str("adminNotes") ?? null,
       });
       break;
+    case "edit-content":
+      result = await editIssueContent(pickId, {
+        summaryId: str("summaryId"),
+        subjectOverride: body.subjectOverride === undefined ? undefined : str("subjectOverride") ?? null,
+        previewTextOverride: body.previewTextOverride === undefined ? undefined : str("previewTextOverride") ?? null,
+        bodyTextOverride: body.bodyTextOverride === undefined ? undefined : str("bodyTextOverride") ?? null,
+        bodyHtmlOverride: body.bodyHtmlOverride === undefined ? undefined : str("bodyHtmlOverride") ?? null,
+        structuredJsonOverride:
+          body.structuredJsonOverride === undefined
+            ? undefined
+            : isJsonObject(body.structuredJsonOverride)
+              ? (JSON.parse(JSON.stringify(body.structuredJsonOverride)) as Prisma.InputJsonObject)
+              : null,
+        adminNotes: body.adminNotes === undefined ? undefined : str("adminNotes") ?? null,
+      });
+      auditMeta = { summaryId: str("summaryId"), edited: true };
+      break;
     case "regenerate":
-      result = await regenerateIssue(pickId);
+      result = await regenerateIssue(pickId, actor);
       break;
     case "send-test":
       result = await sendTestToAdmin(pickId, body.email, str("summaryLanguage"));
       auditMeta = { email: body.email, summaryLanguage: str("summaryLanguage") };
       break;
     case "send-now":
-      result = await sendIssueNow(pickId, actor, { dryRun: body.dryRun === true });
-      auditMeta = { dryRun: body.dryRun === true, result: result.result };
+      result = await sendIssueNow(pickId, actor, {
+        dryRun: body.dryRun === true,
+        confirmation: str("confirmation"),
+      });
+      auditMeta = { dryRun: body.dryRun === true, confirmed: str("confirmation") === "SEND ONEARTICLE NOW", result: result.result };
       break;
     default:
       return NextResponse.json({ ok: false, error: "unknown_action" }, { status: 400 });
   }
 
-  if (result.ok) {
-    await recordAudit({
-      actor,
-      action: `issue.${action}`,
-      targetType: "TopicDailyPick",
-      targetId: pickId,
-      metadata: auditMeta as never,
-    });
-  }
+  await recordAudit({
+    actor,
+    action: `issue.${action}`,
+    targetType: "TopicDailyPick",
+    targetId: pickId,
+    metadata: {
+      ...auditMeta,
+      ok: result.ok,
+      error: result.error,
+      result: result.result,
+    } as never,
+  });
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

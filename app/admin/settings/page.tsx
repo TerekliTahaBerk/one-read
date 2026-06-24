@@ -34,6 +34,11 @@ import {
   verificationConfig,
   verificationEmailConfigured,
 } from "@/lib/one-article/verification";
+import {
+  nextOneArticleSend,
+  oneArticleCronEnabled,
+  oneArticleDryRunForced,
+} from "@/lib/admin/one-article-ops";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +67,7 @@ export default async function SettingsPage({
   const nextSendDate = new Date(now < today4 ? `${todayIso}T00:00:00Z` : Date.now() + 24 * 60 * 60 * 1000);
   nextSendDate.setUTCHours(0, 0, 0, 0);
 
-  const [lastSend, lastFailed, overrideCount, approvedNext] = await Promise.all([
+  const [lastSend, lastFailed, overrideCount, approvedNext, lastOneArticleRun] = await Promise.all([
     prisma.dailySend.findFirst({
       where: { status: "SENT", sentAt: { not: null } },
       orderBy: { sentAt: "desc" },
@@ -76,6 +81,10 @@ export default async function SettingsPage({
     prisma.productSubscription.count({ where: { adminOverride: true } }),
     prisma.topicDailyPick.count({
       where: { date: nextSendDate, approvalStatus: { in: ["APPROVED", "SCHEDULED"] } },
+    }),
+    prisma.operationalRun.findFirst({
+      where: { productKey: "one-article" },
+      orderBy: { startedAt: "desc" },
     }),
   ]);
 
@@ -113,6 +122,12 @@ export default async function SettingsPage({
   }
   if (!flags.sendActionsEnabled) {
     warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
+  }
+  if (!oneArticleCronEnabled()) {
+    warnings.push("ONE_ARTICLE_CRON_ENABLED is false — scheduled OneArticle emails will not send.");
+  }
+  if (oneArticleDryRunForced()) {
+    warnings.push("ONE_ARTICLE_DRY_RUN is true — OneArticle cron will not send real emails.");
   }
   if (!emailVerificationSecretConfigured()) {
     warnings.push("EMAIL_VERIFICATION_SECRET is not set — OneArticle and OneLingo email verification will be unavailable.");
@@ -286,6 +301,10 @@ export default async function SettingsPage({
           rows={[
             ["CRON_SECRET", configured(process.env.CRON_SECRET)],
             ["Schedule source", "vercel.json cron + environment"],
+            ["OneArticle cron enabled", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
+            ["OneArticle dry run forced", oneArticleDryRunForced() ? "Enabled" : "Off"],
+            ["OneArticle approval required", approvalRequired ? "Enabled" : "Off"],
+            ["OneArticle next send", fmtDateTime(nextOneArticleSend().utc)],
             ["OneLingo cron enabled", lingoCronEnabled() ? "Enabled" : "Missing"],
             ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
             ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
@@ -296,8 +315,8 @@ export default async function SettingsPage({
             ["OneFilm cron enabled", filmCronEnabled() ? "Enabled" : "Missing"],
             ["OneFilm approval required", filmRequireApproval() ? "Enabled" : "Off"],
             ["OneFilm source mode", filmSourceMode()],
-            ["Last cron run", "Not tracked yet"],
-            ["Next cron run", "Not tracked by current schema"],
+            ["Last OneArticle run", lastOneArticleRun ? `${fmtDateTime(lastOneArticleRun.startedAt)} · ${lastOneArticleRun.status}` : "Not tracked yet"],
+            ["Last OneArticle error", lastOneArticleRun?.error ?? "None tracked"],
           ]}
         />
         <ConfigCard

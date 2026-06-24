@@ -20,7 +20,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { renderDailyEmail } from "@/lib/email-template";
-import { getOrCreateSummary } from "@/lib/summarizer";
+import { getOrCreateSummary, summaryResultFromRow } from "@/lib/summarizer";
 import { sendDailyEmail, getResendStatus } from "@/lib/resend";
 import { subscriberToContext } from "@/lib/pipeline";
 import { requireAdmin } from "@/lib/admin/auth";
@@ -100,26 +100,36 @@ export async function POST(req: Request) {
   const difficulty =
     overrideDifficulty ?? sub?.preferredDifficulty ?? "mixed";
 
-  const summary = await getOrCreateSummary({
-    pick: {
-      id: pick.id,
-      topic: pick.topic,
-      subtopics: pick.subtopics,
-      articleTitle: pick.articleTitle,
-      sourceName: pick.sourceName,
-    },
-    article: {
-      title: pick.article.title,
-      url: pick.article.url,
-      rawExcerpt: pick.article.rawExcerpt,
-      cleanedText: pick.article.cleanedText,
-      sourceLanguage: pick.article.sourceLanguage,
-      sourceName: pick.article.sourceName,
-    },
-    summaryLanguage,
-    primaryTopic: matchedTopic,
-    difficulty,
-  });
+  const manualSummary = !pick.article
+    ? await prisma.summary.findFirst({
+        where: { topicDailyPickId: pick.id, summaryLanguage },
+        orderBy: { createdAt: "desc" },
+      })
+    : null;
+  const summary = pick.article
+    ? await getOrCreateSummary({
+        pick: {
+          id: pick.id,
+          topic: pick.topic,
+          subtopics: pick.subtopics,
+          articleTitle: pick.articleTitle,
+          sourceName: pick.sourceName,
+        },
+        article: {
+          title: pick.article.title,
+          url: pick.article.url,
+          rawExcerpt: pick.article.rawExcerpt,
+          cleanedText: pick.article.cleanedText,
+          sourceLanguage: pick.article.sourceLanguage,
+          sourceName: pick.article.sourceName,
+        },
+        summaryLanguage,
+        primaryTopic: matchedTopic,
+        difficulty,
+      })
+    : manualSummary
+      ? summaryResultFromRow(manualSummary)
+      : { bodyText: "", status: "REJECTED" as const, rejectionReason: "manual issue has no summary content" };
 
   if (summary.status !== "READY") {
     return NextResponse.json(
@@ -153,7 +163,7 @@ export async function POST(req: Request) {
     summaryLanguage,
     article: {
       title: pick.articleTitle,
-      url: pick.article.url,
+      url: pick.article?.url ?? null,
       sourceName: pick.sourceName,
     },
     summary: {
@@ -172,7 +182,7 @@ export async function POST(req: Request) {
   const pickMeta = {
     id: pick.id,
     topic: pick.topic,
-    article: { title: pick.articleTitle, url: pick.article.url },
+    article: { title: pick.articleTitle, url: pick.article?.url ?? null },
   };
   const overridesMeta = {
     summaryLanguage: overrideLang,

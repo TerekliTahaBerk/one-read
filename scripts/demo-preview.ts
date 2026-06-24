@@ -71,6 +71,7 @@ async function main() {
   });
   let ready = 0;
   for (const pick of picks) {
+    if (!pick.article) continue;
     const result = await getOrCreateSummary({
       pick: {
         id: pick.id,
