@@ -4,12 +4,18 @@
  * unlocks both OneArticle and OneFilm through one Polar checkout.
  */
 
-import { ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
+import {
+  ONE_ARTICLE_PRODUCT_KEY,
+  ONE_FILM_PRODUCT_KEY,
+  ONE_NEWS_PRODUCT_KEY,
+  ONE_READ_PRODUCT_KEY,
+} from "@/lib/options";
 
 /** Product keys included in every OneRead umbrella subscription. */
 export const ONE_READ_INCLUDED_PRODUCT_KEYS = [
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
+  ONE_NEWS_PRODUCT_KEY,
 ] as const;
 
 /** Config-driven pricing — never hardcode this elsewhere. */

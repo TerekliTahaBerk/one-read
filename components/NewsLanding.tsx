@@ -1,11 +1,8 @@
-"use client";
-
-import type { CSSProperties } from "react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { productThemes } from "@/lib/product-themes";
-import { NewsSignupForm } from "./NewsSignupForm";
 import { NewsSampleEmailPreview } from "./NewsSampleEmailPreview";
 
 export function NewsLanding() {
@@ -40,29 +37,45 @@ export function NewsLanding() {
 
       <section className="mx-auto flex w-full max-w-[38rem] flex-1 flex-col items-center justify-center py-6 sm:py-8">
         <h1 className="max-w-[18ch] animate-rise-delayed text-center font-serif text-[2.5rem] font-medium leading-[1.02] tracking-[-0.028em] text-ink sm:text-[3.6rem] sm:leading-[0.98]">
-          Gündem, sabah <em className="font-serif font-normal italic">06.30’da hazır.</em>
+          Your briefing, <em className="font-serif font-normal italic">ready every morning.</em>
         </h1>
         <p className="mt-5 max-w-[46ch] animate-rise-delayed-2 text-center font-sans text-[15px] leading-[1.65] text-ash text-pretty sm:mt-6 sm:text-[16px]">
-          OneNews her sabah 06.30’da 5 dakikalık gündem özetini e-posta kutuna getirir. Piyasalar, ekonomi, iş dünyası, politika, teknoloji ve hafta sonu ekleri; kısa, yalın, öz bir şekilde.
+          OneNews delivers a 5-minute morning briefing to your inbox every day. Markets, economy, business, politics, technology, and weekend extras — short, plain, to the point.
         </p>
         <p className="mt-3 max-w-[42ch] animate-rise-delayed-2 text-center font-serif italic text-[14px] leading-[1.6] text-ash">
-          Sponsor yok. Feed yok. Gürültü yok.
+          No sponsors. No feed. No noise.
         </p>
         <ul className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 animate-rise-delayed-2 text-center text-[12.5px] text-fog">
-          <li>5 dakikada okunur</li>
+          <li>A 5-minute read</li>
           <li aria-hidden>·</li>
-          <li>Her sabah 06.30</li>
+          <li>Every morning</li>
           <li aria-hidden>·</li>
-          <li>Sponsor bölümü yok</li>
+          <li>No sponsor section</li>
         </ul>
-        <NewsSignupForm className="mt-7 animate-rise-delayed-3 sm:mt-8" />
+        <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
+          <Link
+            href="/subscribe"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white transition-colors duration-200 hover:bg-ink/90 sm:w-auto"
+          >
+            Start OneRead
+          </Link>
+          <Link
+            href="/pricing"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-line-strong bg-white/65 px-6 font-sans text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-white sm:w-auto"
+          >
+            See pricing
+          </Link>
+        </div>
+        <p className="mt-5 animate-rise-delayed-3 text-center font-sans text-[12.5px] leading-[1.55] text-fog">
+          Included in OneRead — no separate payment.
+        </p>
         <NewsSampleEmailPreview className="mt-10 animate-rise-delayed-4 sm:mt-12" />
       </section>
 
       <Footer
         showPricing
-        pricingHref="/news/pricing"
-        tagline="Gündem, gürültü olmadan."
+        pricingHref="/pricing"
+        tagline="Your briefing, without the noise."
         xAriaLabel="OneNews on X"
       />
     </main>

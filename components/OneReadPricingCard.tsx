@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ONEREAD_BILLING_LABEL, ONEREAD_PRICE_MONTHLY, ONEREAD_TRUST_NOTES } from "@/lib/oneread/config";
 
 /**
- * OneRead umbrella pricing card. One subscription, one price, includes both
- * OneArticle and OneFilm. Price is config-driven (lib/oneread/config.ts) —
- * never hardcode it elsewhere.
+ * OneRead umbrella pricing card. One subscription, one price, includes every
+ * product in the OneRead family. Price is config-driven (lib/oneread/config.ts)
+ * — never hardcode it elsewhere.
  */
 export function OneReadPricingCard() {
   return (
@@ -22,7 +22,7 @@ export function OneReadPricingCard() {
               <span className="font-sans text-[13.5px] text-ash pb-1.5">per month</span>
             </div>
             <p className="mt-3 font-serif italic text-[13.5px] leading-snug text-ash">
-              One subscription. OneArticle and OneFilm included.
+              One subscription. The whole OneRead family included.
             </p>
           </div>
 
@@ -31,6 +31,7 @@ export function OneReadPricingCard() {
           <ul className="mt-6 space-y-3 text-left">
             {[
               "OneArticle — one article brief every weekday morning",
+              "OneNews — a 5-minute briefing every morning",
               "OneFilm — one film note every Saturday",
               "Edit your preferences anytime",
               "One-click cancel — no questions asked",

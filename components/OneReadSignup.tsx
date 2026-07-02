@@ -11,20 +11,22 @@ import {
   INTERESTS,
   SUMMARY_LANGUAGES,
   SOURCE_LANGUAGES,
+  FILM_GENRES,
+  FILM_EMAIL_LANGUAGES,
+  NEWS_BRIEFING_LANGUAGES,
+  NEWS_REGION_FOCUS,
   isLikelyEmail,
 } from "@/lib/options";
-import { FILM_GENRES, FILM_EMAIL_LANGUAGES } from "@/lib/options";
 
-type Step =
-  | "email"
-  | "verify"
-  | "choose"
-  | "article-prefs"
-  | "film-prefs"
-  | "review"
-  | "done";
+type Product = "article" | "film" | "news";
 
-type Setup = "article" | "film" | "both";
+type Step = "email" | "verify" | "choose" | `${Product}-prefs` | "review" | "done";
+
+const PRODUCT_LABEL: Record<Product, string> = {
+  article: "OneArticle",
+  film: "OneFilm",
+  news: "OneNews",
+};
 
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -43,10 +45,16 @@ export function OneReadSignup() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [setup, setSetup] = useState<Setup | null>(null);
 
-  const [articleDone, setArticleDone] = useState(false);
-  const [filmDone, setFilmDone] = useState(false);
+  // Products left to configure after the one currently on screen (drives the
+  // "set up all" flow — one product's form at a time, then on to the next).
+  const [queue, setQueue] = useState<Product[]>([]);
+
+  const [done, setDone] = useState<Record<Product, boolean>>({
+    article: false,
+    film: false,
+    news: false,
+  });
 
   const [interests, setInterests] = useState<string[]>([]);
   const [summaryLanguage, setSummaryLanguage] = useState<string>("English");
@@ -54,6 +62,9 @@ export function OneReadSignup() {
 
   const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
   const [filmGenres, setFilmGenres] = useState<string[]>([]);
+
+  const [newsBriefingLanguage, setNewsBriefingLanguage] = useState<string>("English");
+  const [newsRegionFocus, setNewsRegionFocus] = useState<string>("Global");
 
   async function submitEmail(e: FormEvent) {
     e.preventDefault();
@@ -95,16 +106,32 @@ export function OneReadSignup() {
       );
       return;
     }
-    setArticleDone(Boolean(data.articlePreferencesComplete));
-    setFilmDone(Boolean(data.filmPreferencesComplete));
+    setDone({
+      article: Boolean(data.articlePreferencesComplete),
+      film: Boolean(data.filmPreferencesComplete),
+      news: Boolean(data.newsPreferencesComplete),
+    });
     setStep("choose");
   }
 
-  function chooseSetup(next: Setup) {
-    setSetup(next);
-    if (next === "article") setStep("article-prefs");
-    else if (next === "film") setStep("film-prefs");
-    else setStep("article-prefs");
+  /** Starts configuring one or more products, one form at a time. */
+  function startFlow(products: Product[]) {
+    if (products.length === 0) return;
+    setQueue(products.slice(1));
+    setStep(`${products[0]}-prefs`);
+  }
+
+  /** After a product's preferences save, move to the next queued one or review. */
+  function advance(justCompleted: Product) {
+    setDone((prev) => ({ ...prev, [justCompleted]: true }));
+    setQueue((prevQueue) => {
+      if (prevQueue.length > 0) {
+        setStep(`${prevQueue[0]}-prefs`);
+        return prevQueue.slice(1);
+      }
+      setStep("review");
+      return prevQueue;
+    });
   }
 
   async function submitArticlePreferences(e: FormEvent) {
@@ -127,9 +154,7 @@ export function OneReadSignup() {
       setError("Something went wrong. Please try again.");
       return;
     }
-    setArticleDone(true);
-    if (setup === "both") setStep("film-prefs");
-    else setStep("review");
+    advance("article");
   }
 
   async function submitFilmPreferences(e: FormEvent) {
@@ -157,8 +182,30 @@ export function OneReadSignup() {
       setError("Something went wrong. Please try again.");
       return;
     }
-    setFilmDone(true);
-    setStep("review");
+    advance("film");
+  }
+
+  async function submitNewsPreferences(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!newsBriefingLanguage || !newsRegionFocus) {
+      setError("Choose a briefing language and region focus.");
+      return;
+    }
+    setBusy(true);
+    const { ok } = await postJson("/api/oneread/news-preferences", {
+      email,
+      briefingLanguage: newsBriefingLanguage,
+      regionFocus: newsRegionFocus,
+      topics: [],
+      excludedTopics: [],
+    });
+    setBusy(false);
+    if (!ok) {
+      setError("Something went wrong. Please try again.");
+      return;
+    }
+    advance("news");
   }
 
   async function startCheckout() {
@@ -183,10 +230,12 @@ export function OneReadSignup() {
       return;
     }
     if (data.action === "needs_setup") {
-      setError("Please finish at least one of OneArticle or OneFilm preferences first.");
+      setError("Please finish at least one product's preferences first.");
       setStep("choose");
     }
   }
+
+  const anyDone = done.article || done.film || done.news;
 
   return (
     <main
@@ -211,7 +260,7 @@ export function OneReadSignup() {
         {step === "email" && (
           <StepShell
             title="Where should we send OneRead?"
-            support="Enter your email and we'll send a 6-digit code before setting up your article and film preferences."
+            support="Enter your email and we'll send a 6-digit code before setting up your OneRead family preferences."
           >
             <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
               <input
@@ -254,29 +303,38 @@ export function OneReadSignup() {
         )}
 
         {step === "choose" && (
-          <StepShell title="What would you like to set up?" support="Set up OneArticle, OneFilm, or both — you can always add the other later.">
+          <StepShell
+            title="What would you like to set up?"
+            support="Set up any product in the OneRead family — you can always add the others later."
+          >
             <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
               <ChoiceCard
                 title="OneArticle"
                 description="A short article brief on weekdays."
-                cta={articleDone ? "Edit article preferences" : "Set article preferences"}
-                onClick={() => chooseSetup("article")}
+                cta={done.article ? "Edit article preferences" : "Set article preferences"}
+                onClick={() => startFlow(["article"])}
+              />
+              <ChoiceCard
+                title="OneNews"
+                description="A 5-minute briefing every morning."
+                cta={done.news ? "Edit news preferences" : "Set news preferences"}
+                onClick={() => startFlow(["news"])}
               />
               <ChoiceCard
                 title="OneFilm"
                 description="One thoughtful film note on Saturdays."
-                cta={filmDone ? "Edit film preferences" : "Set film preferences"}
-                onClick={() => chooseSetup("film")}
+                cta={done.film ? "Edit film preferences" : "Set film preferences"}
+                onClick={() => startFlow(["film"])}
               />
             </div>
             <button
               type="button"
-              onClick={() => chooseSetup("both")}
+              onClick={() => startFlow(["article", "news", "film"])}
               className="focus-ring mt-4 font-sans text-[13.5px] text-ink link-underline"
             >
-              Set up both
+              Set up the whole family
             </button>
-            {(articleDone || filmDone) && (
+            {anyDone && (
               <button
                 type="button"
                 onClick={() => setStep("review")}
@@ -337,6 +395,41 @@ export function OneReadSignup() {
           </StepShell>
         )}
 
+        {step === "news-prefs" && (
+          <StepShell title="Choose your briefing." support="Choose the language and region focus for your morning OneNews briefing.">
+            <form onSubmit={submitNewsPreferences} className="w-full flex flex-col items-center gap-5">
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">Briefing language</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {NEWS_BRIEFING_LANGUAGES.map((lang) => (
+                    <LanguagePill
+                      key={lang}
+                      label={lang}
+                      selected={newsBriefingLanguage === lang}
+                      onClick={() => setNewsBriefingLanguage(lang)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">Region focus</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {NEWS_REGION_FOCUS.map((region) => (
+                    <InterestChip
+                      key={region}
+                      label={region}
+                      selected={newsRegionFocus === region}
+                      onClick={() => setNewsRegionFocus(region)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <SubmitButton busy={busy}>Save news preferences</SubmitButton>
+              {error && <ErrorText>{error}</ErrorText>}
+            </form>
+          </StepShell>
+        )}
+
         {step === "film-prefs" && (
           <StepShell title="Choose the kind of films you want." support="Choose the kind of films you want OneRead to recommend on Saturdays.">
             <form onSubmit={submitFilmPreferences} className="w-full flex flex-col items-center gap-5">
@@ -374,16 +467,18 @@ export function OneReadSignup() {
         )}
 
         {step === "review" && (
-          <StepShell title="Review your OneRead setup." support="At least one of OneArticle or OneFilm should be set up before checkout.">
+          <StepShell title="Review your OneRead setup." support="At least one product in the family should be set up before checkout.">
             <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
               <p className="text-fog text-[12.5px]">Email</p>
               <p className="mb-3">{email}</p>
-              <p className="text-fog text-[12.5px]">OneArticle</p>
-              <p className="mb-3">{articleDone ? "Preferences complete" : "Not set up yet"}</p>
-              <p className="text-fog text-[12.5px]">OneFilm</p>
-              <p className="mb-3">{filmDone ? "Preferences complete" : "Not set up yet"}</p>
+              {(["article", "news", "film"] as Product[]).map((p) => (
+                <div key={p}>
+                  <p className="text-fog text-[12.5px]">{PRODUCT_LABEL[p]}</p>
+                  <p className="mb-3">{done[p] ? "Preferences complete" : "Not set up yet"}</p>
+                </div>
+              ))}
               <p className="text-fog text-[12.5px]">Price</p>
-              <p>{ONEREAD_BILLING_LABEL} — includes OneArticle + OneFilm</p>
+              <p>{ONEREAD_BILLING_LABEL} — the whole OneRead family included</p>
             </div>
             <button
               type="button"
@@ -395,7 +490,7 @@ export function OneReadSignup() {
             <button
               type="button"
               onClick={startCheckout}
-              disabled={busy || (!articleDone && !filmDone)}
+              disabled={busy || !anyDone}
               className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white hover:bg-ink/90 disabled:opacity-50"
             >
               {busy ? "Please wait…" : `Start OneRead for ${ONEREAD_BILLING_LABEL.split(" / ")[0]}`}

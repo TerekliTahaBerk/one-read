@@ -13,10 +13,11 @@ import { UserActionsBar } from "@/components/admin/UserActionsBar";
 import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
 import { INTERESTS, SOURCE_LANGUAGES, SUMMARY_LANGUAGES } from "@/lib/options";
 import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
-import { ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
+import { ONE_FILM_PRODUCT_KEY, ONE_NEWS_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import {
   resolveOneArticleEligibilityForContact,
   resolveOneFilmEligibilityForContact,
+  resolveOneNewsEligibilityForContact,
 } from "@/lib/oneread/access";
 
 export const runtime = "nodejs";
@@ -58,7 +59,7 @@ export default async function AdminUserDetailPage({
     }),
   ]);
 
-  const [oneReadSub, filmHolder, oneReadElig, oneFilmElig] = await Promise.all([
+  const [oneReadSub, filmHolder, newsHolder, oneReadElig, oneFilmElig, oneNewsElig] = await Promise.all([
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_READ_PRODUCT_KEY } },
     }),
@@ -66,8 +67,13 @@ export default async function AdminUserDetailPage({
       where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_FILM_PRODUCT_KEY } },
       include: { filmPreferences: true },
     }),
+    prisma.productSubscription.findUnique({
+      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_NEWS_PRODUCT_KEY } },
+      include: { newsPreferences: true },
+    }),
     resolveOneArticleEligibilityForContact(sub.contactId),
     resolveOneFilmEligibilityForContact(sub.contactId),
+    resolveOneNewsEligibilityForContact(sub.contactId),
   ]);
 
   const [sends, feedback, auditEvents] = await Promise.all([
@@ -151,11 +157,20 @@ export default async function AdminUserDetailPage({
               "OneRead subscription status",
               oneReadSub ? <StatusBadge key="s" value={oneReadSub.status} /> : "No OneRead subscription",
             ],
-            ["Included products", oneReadSub ? "OneArticle, OneFilm" : "—"],
+            ["Included products", oneReadSub ? "OneArticle, OneNews, OneFilm" : "—"],
             [
               "OneArticle eligibility",
               <EligibilityBadge key="a" allowed={oneReadElig.allowed} reason={oneReadElig.reason} />,
             ],
+            [
+              "OneNews subscription status",
+              newsHolder ? <StatusBadge key="ns" value={newsHolder.status} /> : "No OneNews record",
+            ],
+            [
+              "OneNews eligibility",
+              <EligibilityBadge key="n" allowed={oneNewsElig.allowed} reason={oneNewsElig.reason} />,
+            ],
+            ["OneNews preferences complete", yesNo(Boolean(newsHolder?.newsPreferences))],
             [
               "OneFilm subscription status",
               filmHolder ? <StatusBadge key="fs" value={filmHolder.status} /> : "No OneFilm record",

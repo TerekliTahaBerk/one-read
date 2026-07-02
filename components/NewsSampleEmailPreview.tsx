@@ -14,42 +14,42 @@ export function NewsSampleEmailPreview({ className = "" }: { className?: string 
   return (
     <div className={`w-full ${className}`}>
       <div className="rounded-2xl border border-[var(--theme-border)] bg-white/60 p-5 text-left shadow-sm">
-        <div className="text-[11px] uppercase tracking-[0.22em] text-ash">Örnek format</div>
-        <h2 className="mt-3 font-serif text-[24px] leading-tight text-ink">OneNews ile bir sabah</h2>
-        <p className="mt-1 font-serif text-[16px] italic text-ash">5 dakikalık gündem özeti</p>
+        <div className="text-[11px] uppercase tracking-[0.22em] text-ash">Sample format</div>
+        <h2 className="mt-3 font-serif text-[24px] leading-tight text-ink">A morning with OneNews</h2>
+        <p className="mt-1 font-serif text-[16px] italic text-ash">A 5-minute morning briefing</p>
         <p className="mt-3 text-[14px] leading-6 text-ash">
-          Kısa bir sabah başlığı, kısa bir ana özet ve kaynaklara bağlı, sade bir gündem listesi. Aşağıdaki örnek yalnızca biçimi gösterir; gerçek güncel haber değildir.
+          A short morning headline, a brief top summary, and a plain, source-linked rundown. The example below shows the format only — it is not real, live news.
         </p>
-        <p className="mt-2 text-[13px] leading-6 text-fog">Sponsor bölümü yok. Gerçek kaynaklara bağlı.</p>
+        <p className="mt-2 text-[13px] leading-6 text-fog">No sponsor section. Linked to real sources.</p>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="mt-4 rounded-full border border-[var(--theme-border)] bg-white/60 px-4 py-1.5 text-[12.5px] text-ash"
         >
-          {open ? "Örneği gizle" : "Örneği gör"}
+          {open ? "Hide example" : "See example"}
         </button>
 
         {open && (
           <div className="mt-5 space-y-4 border-t border-[var(--theme-border)] pt-5 text-[14px] leading-6 text-ink">
-            <Section title="Sabah başlığı">
-              Günün 1–2 önemli gelişmesini birleştiren kısa, yalın bir başlık. (Örnek biçim)
+            <Section title="Morning headline">
+              A short, plain headline combining the day's 1–2 most important developments. (Sample format)
             </Section>
-            <Section title="Kısa ana özet">
-              Günün öne çıkanlarını 2–4 cümlede özetleyen, sakin bir paragraf.
+            <Section title="Brief top summary">
+              A calm paragraph summarizing the day's highlights in 2–4 sentences.
             </Section>
-            <Section title="Bugünün gündemi">
-              Kategorilere ayrılmış, her biri tek cümlelik 5–8 madde — öncelik sırasıyla:
+            <Section title="Today's rundown">
+              Organized by category, 5–8 one-sentence items — in order of priority:
             </Section>
-            <Bullet label="Piyasalar">Endeksler ve kurlarda günün kısa görünümü.</Bullet>
-            <Bullet label="Ekonomi">Veri ya da politika başlığının tek cümlelik özeti.</Bullet>
-            <Bullet label="İş dünyası">Şirket/sektör gelişmesinin kısa notu.</Bullet>
-            <Bullet label="Politika">Gündemdeki kararın yalın özeti.</Bullet>
-            <Bullet label="Teknoloji">Öne çıkan teknoloji gelişmesi.</Bullet>
-            <Section title="Hafta sonu eki">
-              Yalnızca hafta sonu ya da uygun içerik olduğunda eklenen hafif bir bölüm.
+            <Bullet label="Markets">A brief look at indices and exchange rates for the day.</Bullet>
+            <Bullet label="Economy">A one-sentence summary of a data point or policy headline.</Bullet>
+            <Bullet label="Business">A short note on a company or sector development.</Bullet>
+            <Bullet label="Politics">A plain summary of a current decision.</Bullet>
+            <Bullet label="Technology">A notable technology development.</Bullet>
+            <Section title="Weekend extra">
+              A light section added only on weekends or when relevant content exists.
             </Section>
-            <Section title="Kaynaklar">
-              Her madde gerçek kaynağına bağlanır. OneNews haberi uydurmaz.
+            <Section title="Sources">
+              Every item links to its real source. OneNews never invents news.
             </Section>
           </div>
         )}

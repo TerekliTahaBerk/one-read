@@ -9,7 +9,7 @@ import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
 export const metadata: Metadata = {
   title: "Pricing — OneRead",
   description:
-    "OneRead is one subscription that includes OneArticle on weekdays and OneFilm on Saturdays.",
+    "OneRead is one subscription that includes every product in the OneRead family.",
 };
 
 export default function PricingPage() {
@@ -71,8 +71,8 @@ export default function PricingPage() {
             animate-rise-delayed-2
           "
         >
-          One subscription includes OneArticle on weekdays and OneFilm on
-          Saturdays.
+          One subscription includes the whole OneRead family — OneArticle on
+          weekdays, OneNews every morning, and OneFilm on Saturdays.
         </p>
 
         <OneReadPricingCard />

@@ -5,7 +5,6 @@ import { ONE_FILM_PRODUCT_KEY } from "@/lib/options";
 import { filmRequireApproval } from "./config";
 import { generateFilmIssue } from "./generator";
 import { renderFilmEmail } from "./email-template";
-import { evaluateFilmEligibility } from "./subscriptions";
 import { pickFilmForSegment, markFilmUsed } from "./catalog";
 import { segmentFor, segmentKeyFor, type FilmSegment } from "./segments";
 
@@ -68,10 +67,14 @@ export async function runOneFilmDailyPipeline(
     include: { contact: { select: { id: true, email: true } }, filmPreferences: true },
   });
 
+  // Lazy import avoids a hard circular dependency at module-eval time —
+  // lib/oneread/access.ts imports `filmPreferencesComplete` from ./subscriptions.
+  const { resolveOneFilmEligibilityForContact } = await import("@/lib/oneread/access");
+
   const eligible: FilmSubRow[] = [];
   const skippedReasons: { email: string; reason: string }[] = [];
   for (const sub of subs) {
-    const result = evaluateFilmEligibility(sub);
+    const result = await resolveOneFilmEligibilityForContact(sub.contact.id);
     if (result.allowed && sub.filmPreferences) eligible.push(sub);
     else skippedReasons.push({ email: sub.contact.email, reason: result.reason ?? "missing_film_preferences" });
   }

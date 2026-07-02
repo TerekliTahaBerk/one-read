@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { NewsLanding } from "@/components/NewsLanding";
 
 export const metadata: Metadata = {
-  title: "Not Found",
-  robots: {
-    index: false,
-    follow: false,
+  title: "OneNews — Your morning briefing, ready at 6:30 AM.",
+  description:
+    "OneNews sends a 5-minute morning briefing every day — included in your OneRead subscription.",
+  openGraph: {
+    title: "OneNews",
+    description: "A 5-minute morning briefing every day, included in OneRead.",
+    type: "website",
   },
 };
 
 export default function NewsPage() {
-  notFound();
+  return <NewsLanding />;
 }

@@ -5,7 +5,6 @@ import { ONE_NEWS_PRODUCT_KEY } from "@/lib/options";
 import { newsRequireApproval } from "./config";
 import { generateNewsIssue } from "./generator";
 import { renderNewsEmail } from "./email-template";
-import { evaluateNewsEligibility } from "./subscriptions";
 import { loadNewsSourceStories, markStoriesUsed } from "./sources";
 import { segmentFor, segmentKeyFor, type NewsSegment } from "./segments";
 
@@ -71,10 +70,14 @@ export async function runOneNewsDailyPipeline(
     },
   });
 
+  // Lazy import avoids a hard circular dependency at module-eval time —
+  // lib/oneread/access.ts imports `newsPreferencesComplete` from ./subscriptions.
+  const { resolveOneNewsEligibilityForContact } = await import("@/lib/oneread/access");
+
   const eligible: NewsSubRow[] = [];
   const skippedReasons: { email: string; reason: string }[] = [];
   for (const sub of subs) {
-    const result = evaluateNewsEligibility(sub);
+    const result = await resolveOneNewsEligibilityForContact(sub.contact.id);
     if (result.allowed && sub.newsPreferences) eligible.push(sub);
     else skippedReasons.push({ email: sub.contact.email, reason: result.reason ?? "missing_news_preferences" });
   }

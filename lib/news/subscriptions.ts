@@ -121,17 +121,24 @@ export async function ensureOneNewsSubscription(
   });
 }
 
-/** Builds an email → eligibility map for every OneNews subscription. */
+/**
+ * Builds an email → eligibility map for every OneNews subscription. A
+ * subscriber is eligible either via a legacy standalone OneNews subscription
+ * or via umbrella OneRead access (see lib/oneread/access.ts).
+ */
 export async function getOneNewsEligibilityByEmail(
   now: Date = new Date(),
 ): Promise<Map<string, EligibilityResult>> {
+  // Lazy import avoids a hard circular dependency at module-eval time —
+  // lib/oneread/access.ts imports `newsPreferencesComplete` from this module.
+  const { resolveOneNewsEligibilityForContact } = await import("@/lib/oneread/access");
   const subs = await prisma.productSubscription.findMany({
     where: { productKey: ONE_NEWS_PRODUCT_KEY },
-    include: { newsPreferences: true, contact: { select: { email: true } } },
+    include: { contact: { select: { id: true, email: true } } },
   });
   const map = new Map<string, EligibilityResult>();
   for (const sub of subs) {
-    map.set(sub.contact.email, evaluateNewsEligibility(sub, now));
+    map.set(sub.contact.email, await resolveOneNewsEligibilityForContact(sub.contact.id, now));
   }
   return map;
 }

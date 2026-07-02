@@ -59,7 +59,9 @@ export type EligibilityReason =
   /** A pre-existing standalone OneArticle subscription grants access directly. */
   | "legacy_one_article_access"
   /** A pre-existing standalone OneFilm subscription grants access directly. */
-  | "legacy_one_film_access";
+  | "legacy_one_film_access"
+  /** A pre-existing standalone OneNews subscription grants access directly. */
+  | "legacy_one_news_access";
 
 export interface EligibilityResult {
   allowed: boolean;
