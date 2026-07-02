@@ -55,13 +55,13 @@ export function NewsLanding() {
         <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
           <Link
             href="/subscribe"
-            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white transition-colors duration-200 hover:bg-ink/90 sm:w-auto"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 sm:w-auto"
           >
             Start OneRead
           </Link>
           <Link
             href="/pricing"
-            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-line-strong bg-white/65 px-6 font-sans text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-white sm:w-auto"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-[var(--theme-border)] bg-white/65 px-6 font-sans text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-white sm:w-auto"
           >
             See pricing
           </Link>

@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
-import { productThemes } from "@/lib/product-themes";
+import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
 import {
   INTERESTS,
@@ -28,6 +28,21 @@ const PRODUCT_LABEL: Record<Product, string> = {
   news: "OneNews",
 };
 
+/** Each product's own theme key — lets each step (and its ChoiceCard) "wear" that product's color. */
+const PRODUCT_THEME_KEY: Record<Product, ProductThemeKey> = {
+  article: "article",
+  film: "film",
+  news: "news",
+};
+
+/** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
+function themeForStep(step: Step) {
+  if (step === "article-prefs") return productThemes.article;
+  if (step === "film-prefs") return productThemes.film;
+  if (step === "news-prefs") return productThemes.news;
+  return productThemes.read;
+}
+
 async function postJson(url: string, body: unknown) {
   const res = await fetch(url, {
     method: "POST",
@@ -39,8 +54,8 @@ async function postJson(url: string, body: unknown) {
 }
 
 export function OneReadSignup() {
-  const theme = productThemes.read;
   const [step, setStep] = useState<Step>("email");
+  const theme = themeForStep(step);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -312,18 +327,21 @@ export function OneReadSignup() {
                 title="OneArticle"
                 description="A short article brief on weekdays."
                 cta={done.article ? "Edit article preferences" : "Set article preferences"}
+                themeKey={PRODUCT_THEME_KEY.article}
                 onClick={() => startFlow(["article"])}
               />
               <ChoiceCard
                 title="OneNews"
                 description="A 5-minute briefing every morning."
                 cta={done.news ? "Edit news preferences" : "Set news preferences"}
+                themeKey={PRODUCT_THEME_KEY.news}
                 onClick={() => startFlow(["news"])}
               />
               <ChoiceCard
                 title="OneFilm"
                 description="One thoughtful film note on Saturdays."
                 cta={done.film ? "Edit film preferences" : "Set film preferences"}
+                themeKey={PRODUCT_THEME_KEY.film}
                 onClick={() => startFlow(["film"])}
               />
             </div>
@@ -338,7 +356,7 @@ export function OneReadSignup() {
               <button
                 type="button"
                 onClick={() => setStep("review")}
-                className="focus-ring mt-6 inline-flex h-11 items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white hover:bg-ink/90"
+                className="focus-ring mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95"
               >
                 Continue to review
               </button>
@@ -491,7 +509,7 @@ export function OneReadSignup() {
               type="button"
               onClick={startCheckout}
               disabled={busy || !anyDone}
-              className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white hover:bg-ink/90 disabled:opacity-50"
+              className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95 disabled:opacity-50"
             >
               {busy ? "Please wait…" : `Start OneRead for ${ONEREAD_BILLING_LABEL.split(" / ")[0]}`}
             </button>
@@ -532,7 +550,7 @@ function SubmitButton({ busy, children }: { busy: boolean; children: React.React
     <button
       type="submit"
       disabled={busy}
-      className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white transition-colors duration-200 hover:bg-ink/90 disabled:opacity-50"
+      className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 disabled:opacity-50"
     >
       {busy ? "Please wait…" : children}
     </button>
@@ -547,21 +565,33 @@ function ChoiceCard({
   title,
   description,
   cta,
+  themeKey,
   onClick,
 }: {
   title: string;
   description: string;
   cta: string;
+  themeKey: ProductThemeKey;
   onClick: () => void;
 }) {
+  const cardTheme = productThemes[themeKey];
   return (
-    <div className="flex-1 rounded-2xl border border-[var(--theme-border)] bg-white p-5 text-center">
+    <div
+      className="flex-1 rounded-2xl border bg-white p-5 text-center"
+      style={
+        {
+          borderColor: cardTheme.border,
+          "--card-accent": cardTheme.accent,
+          "--card-surface": cardTheme.surface,
+        } as CSSProperties
+      }
+    >
       <p className="font-serif text-[1.1rem] font-medium text-ink">{title}</p>
       <p className="mt-2 font-sans text-[13px] leading-snug text-ash">{description}</p>
       <button
         type="button"
         onClick={onClick}
-        className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--theme-accent)] px-4 font-sans text-[13px] font-medium text-[var(--theme-accent)] hover:bg-[var(--theme-surface)]"
+        className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--card-accent)] px-4 font-sans text-[13px] font-medium text-[var(--card-accent)] transition-colors duration-200 hover:bg-[var(--card-surface)]"
       >
         {cta}
       </button>
