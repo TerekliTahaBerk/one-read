@@ -3,8 +3,10 @@ import type { MetadataRoute } from "next";
 const PUBLIC_ROUTES = [
   "/",
   "/article",
-  "/article/pricing",
-  "/article/subscribe",
+  "/film",
+  "/pricing",
+  "/subscribe",
+  "/preferences",
   "/terms",
   "/privacy",
 ] as const;

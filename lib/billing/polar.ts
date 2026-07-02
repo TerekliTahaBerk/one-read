@@ -5,10 +5,12 @@ import {
   ONE_LINGO_PRODUCT_KEY,
   ONE_NEWS_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
+  ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
 import { lingoPolarProductId } from "@/lib/lingo/config";
 import { newsPolarProductId } from "@/lib/news/config";
 import { filmPolarProductId } from "@/lib/film/config";
+import { oneReadPolarProductId } from "@/lib/oneread/config";
 import { prisma } from "@/lib/prisma";
 import {
   findOneArticleSubscription,
@@ -72,6 +74,15 @@ export function getPolarProductId(
     }
     return id;
   }
+  if (productKey === ONE_READ_PRODUCT_KEY) {
+    const id = oneReadPolarProductId();
+    if (!id) {
+      throw new Error(
+        "OneRead billing is not configured. Missing: POLAR_ONEREAD_PRODUCT_ID.",
+      );
+    }
+    return id;
+  }
   return (
     process.env.POLAR_ONE_ARTICLE_PRODUCT_ID?.trim() ||
     DEFAULT_ONE_ARTICLE_PRODUCT_ID
@@ -123,6 +134,13 @@ function productPathSegment(productKey: string): string {
 function checkoutReturnUrl(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): string | undefined {
+  if (productKey === ONE_READ_PRODUCT_KEY) {
+    if (has(process.env.POLAR_ONEREAD_RETURN_URL)) {
+      return process.env.POLAR_ONEREAD_RETURN_URL;
+    }
+    const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
+    return base ? `${base}/subscribe` : undefined;
+  }
   if (
     productKey === ONE_ARTICLE_PRODUCT_KEY &&
     has(process.env.POLAR_ONE_ARTICLE_RETURN_URL)
@@ -148,6 +166,13 @@ function checkoutReturnUrl(
 function checkoutSuccessUrl(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): string {
+  if (productKey === ONE_READ_PRODUCT_KEY) {
+    if (has(process.env.POLAR_ONEREAD_SUCCESS_URL)) {
+      return process.env.POLAR_ONEREAD_SUCCESS_URL as string;
+    }
+    const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+    return `${base}/subscribe/success?checkout_id={CHECKOUT_ID}`;
+  }
   // OneArticle honors the explicit POLAR_SUCCESS_URL env (back-compat). Other
   // products build a product-aware URL from PUBLIC_BASE_URL.
   if (productKey === ONE_ARTICLE_PRODUCT_KEY && has(process.env.POLAR_SUCCESS_URL)) {

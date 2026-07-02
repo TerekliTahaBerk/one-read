@@ -1,11 +1,8 @@
-"use client";
-
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { productThemes } from "@/lib/product-themes";
-import { FilmSignupForm } from "./FilmSignupForm";
 import { FilmSampleEmailPreview } from "./FilmSampleEmailPreview";
 
 export function FilmLanding() {
@@ -55,13 +52,29 @@ export function FilmLanding() {
           <li aria-hidden>·</li>
           <li>Liste yok, gürültü yok</li>
         </ul>
-        <FilmSignupForm className="mt-7 animate-rise-delayed-3 sm:mt-8" />
+        <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
+          <Link
+            href="/subscribe"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white transition-colors duration-200 hover:bg-ink/90 sm:w-auto"
+          >
+            Start OneRead
+          </Link>
+          <Link
+            href="/pricing"
+            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-line-strong bg-white/65 px-6 font-sans text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-white sm:w-auto"
+          >
+            See pricing
+          </Link>
+        </div>
+        <p className="mt-5 animate-rise-delayed-3 text-center font-sans text-[12.5px] leading-[1.55] text-fog">
+          Included in OneRead — no separate payment.
+        </p>
         <FilmSampleEmailPreview className="mt-10 animate-rise-delayed-4 sm:mt-12" />
       </section>
 
       <Footer
         showPricing
-        pricingHref="/film/pricing"
+        pricingHref="/pricing"
         tagline="Tek film. Kısa bir not. İzlemeye değer bir sebep."
         xAriaLabel="OneFilm on X"
       />

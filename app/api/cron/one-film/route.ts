@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { filmCronEnabled, filmDryRunForced, filmRequireApproval } from "@/lib/film/config";
+import {
+  filmCronEnabled,
+  filmDryRunForced,
+  filmRequireApproval,
+  filmTimezone,
+} from "@/lib/film/config";
 import { runOneFilmDailyPipeline, type SendArgs } from "@/lib/film/pipeline";
 import { sendDailyEmail } from "@/lib/resend";
+import { isSendDay, oneFilmSendDays } from "@/lib/schedule";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +28,10 @@ async function handler(request: Request): Promise<Response> {
   const dryRun = filmDryRunForced() || url.searchParams.get("dryRun") === "1";
   const dateParam = url.searchParams.get("date");
   const date = dateParam ? new Date(`${dateParam}T00:00:00Z`) : undefined;
+
+  if (!dateParam && !isSendDay(date ?? new Date(), filmTimezone(), oneFilmSendDays())) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "not_scheduled_day" });
+  }
   const segmentKey = url.searchParams.get("segmentKey") || undefined;
   const skipGeneration = url.searchParams.get("skipGeneration") === "1";
   const sendNow = url.searchParams.get("sendNow") === "1";

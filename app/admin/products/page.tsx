@@ -6,6 +6,7 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import { getLingoOverviewMetrics } from "@/lib/admin/lingo-queries";
+import { getOneReadOverviewMetrics } from "@/lib/admin/oneread-queries";
 import { PRODUCTS } from "@/lib/admin/products";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 
@@ -21,9 +22,10 @@ export default async function AdminProductsPage({
   const guard = guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, lingo] = await Promise.all([
+  const [m, lingo, oneRead] = await Promise.all([
     getOverviewMetrics(),
     getLingoOverviewMetrics(),
+    getOneReadOverviewMetrics(),
   ]);
 
   return (
@@ -54,7 +56,9 @@ export default async function AdminProductsPage({
             ) : (
               <span key="d" className="text-fog">External: Tally, not connected</span>
             ),
-            p.key === "one-article" ? (
+            p.key === "one-read" ? (
+              <span key="c">{`${oneRead.activeOrTrialing} active/trialing · ${oneRead.pendingCheckout} pending checkout · ${oneRead.total} total`}</span>
+            ) : p.key === "one-article" ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
             ) : p.key === "one-lingo" ? (
               <span key="c">{`${lingo.subscribers.activeOrTrialing} active/trialing · ${lingo.subscribers.eligible} eligible`}</span>
@@ -63,7 +67,11 @@ export default async function AdminProductsPage({
             ) : (
               <span key="c" className="text-fog">Waitlist count not available</span>
             ),
-            p.key === "one-article" ? (
+            p.key === "one-read" ? (
+              <Link key="a" href="/admin/settings" className="text-ink underline underline-offset-2">
+                Billing settings →
+              </Link>
+            ) : p.key === "one-article" ? (
               <Link key="a" href="/admin/one-article" className="text-ink underline underline-offset-2">
                 Operations →
               </Link>
@@ -105,6 +113,8 @@ export default async function AdminProductsPage({
 
 function productDotClass(key: string): string {
   switch (key) {
+    case "one-read":
+      return "bg-ink";
     case "one-article":
       return "bg-sky-500";
     case "one-lingo":

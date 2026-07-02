@@ -1,14 +1,5 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-
-export const metadata: Metadata = {
-  title: "Not Found",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+import { permanentRedirect } from "next/navigation";
 
 export default function FilmPricingPage() {
-  notFound();
+  permanentRedirect("/pricing");
 }

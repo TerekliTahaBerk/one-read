@@ -113,20 +113,25 @@ export async function ensureOneArticleSubscription(
 
 /**
  * Builds an email → eligibility map for every One Article subscription. The
- * daily pipeline uses this as its single gate: a legacy subscriber is sent an
- * email only if their new-model subscription is eligible right now. Centralizing
- * here keeps eligibility logic out of the pipeline itself.
+ * daily pipeline uses this as its single gate: a subscriber is sent an email
+ * only if they're eligible right now — either via a legacy standalone
+ * OneArticle subscription or via umbrella OneRead access (see
+ * lib/oneread/access.ts). Centralizing here keeps eligibility logic out of
+ * the pipeline itself.
  */
 export async function getOneArticleEligibilityByEmail(
   now: Date = new Date(),
 ): Promise<Map<string, EligibilityResult>> {
+  // Lazy import avoids a hard circular dependency at module-eval time —
+  // lib/oneread/access.ts imports `preferencesComplete` from this module.
+  const { resolveOneArticleEligibilityForContact } = await import("@/lib/oneread/access");
   const subs = await prisma.productSubscription.findMany({
     where: { productKey: ONE_ARTICLE_PRODUCT_KEY },
-    include: { preferences: true, contact: { select: { email: true } } },
+    include: { contact: { select: { id: true, email: true } } },
   });
   const map = new Map<string, EligibilityResult>();
   for (const sub of subs) {
-    map.set(sub.contact.email, canReceiveOneArticleEmail(toEligibilityInput(sub), now));
+    map.set(sub.contact.email, await resolveOneArticleEligibilityForContact(sub.contact.id, now));
   }
   return map;
 }

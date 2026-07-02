@@ -9,6 +9,11 @@ import {
 } from "@/lib/admin/one-article-ops";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { recordAudit } from "@/lib/admin/audit";
+import { isSendDay, oneArticleSendDays } from "@/lib/schedule";
+
+function oneArticleTimezone(): string {
+  return process.env.ONE_ARTICLE_TIMEZONE?.trim() || "Europe/Istanbul";
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +69,22 @@ async function handler(request: Request): Promise<Response> {
       metadata: { reason: "cron_disabled" },
     });
     return NextResponse.json({ ok: true, skipped: true, reason: "cron_disabled" });
+  }
+
+  if (!dateParam && !isSendDay(date ?? new Date(), oneArticleTimezone(), oneArticleSendDays())) {
+    await finishOperationalRun({
+      id: run.id,
+      status: "SKIPPED",
+      error: "not_scheduled_day",
+    });
+    await recordAudit({
+      actor: "cron",
+      action: "oneArticle.cron.skipped",
+      targetType: "OperationalRun",
+      targetId: run.id,
+      metadata: { reason: "not_scheduled_day" },
+    });
+    return NextResponse.json({ ok: true, skipped: true, reason: "not_scheduled_day" });
   }
 
   try {

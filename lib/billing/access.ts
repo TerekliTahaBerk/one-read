@@ -43,6 +43,7 @@ export type EligibilityReason =
   | "missing_language_preferences"
   | "missing_news_preferences"
   | "missing_film_preferences"
+  | "missing_article_preferences"
   | "email_unsubscribed"
   | "email_suppressed"
   | "pending_preferences"
@@ -52,7 +53,13 @@ export type EligibilityReason =
   | "past_due_grace_ended"
   | "canceled_expired"
   | "access_expired"
-  | "unknown_status";
+  | "unknown_status"
+  /** OneRead umbrella access grants this product (see lib/oneread/access.ts). */
+  | "included_in_oneread"
+  /** A pre-existing standalone OneArticle subscription grants access directly. */
+  | "legacy_one_article_access"
+  /** A pre-existing standalone OneFilm subscription grants access directly. */
+  | "legacy_one_film_access";
 
 export interface EligibilityResult {
   allowed: boolean;

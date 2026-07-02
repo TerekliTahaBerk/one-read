@@ -13,10 +13,11 @@ export interface ProductInfo {
 }
 
 export const PRODUCTS: readonly ProductInfo[] = [
+  { key: "one-read", name: "OneRead (umbrella)", status: "live", connected: true, publicVisible: true },
   { key: "one-article", name: "OneArticle", status: "live", connected: true, publicVisible: true },
+  { key: "one-film", name: "OneFilm", status: "live", connected: true, publicVisible: true },
   { key: "one-lingo", name: "OneLingo", status: "live", connected: true, publicVisible: false },
   { key: "one-news", name: "OneNews", status: "live", connected: true, publicVisible: false },
-  { key: "one-film", name: "OneFilm", status: "live", connected: true, publicVisible: false },
   { key: "one-dish", name: "OneDish", status: "waitlist", connected: false, publicVisible: false },
 ];
 

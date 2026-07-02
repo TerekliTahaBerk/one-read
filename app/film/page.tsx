@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { FilmLanding } from "@/components/FilmLanding";
 
 export const metadata: Metadata = {
-  title: "Not Found",
-  robots: {
-    index: false,
-    follow: false,
+  title: "OneFilm — One film worth watching. Every Saturday.",
+  description:
+    "OneFilm sends one carefully chosen film note every Saturday — included in your OneRead subscription.",
+  openGraph: {
+    title: "OneFilm",
+    description: "One film note every Saturday, included in OneRead.",
+    type: "website",
   },
 };
 
 export default function FilmPage() {
-  notFound();
+  return <FilmLanding />;
 }

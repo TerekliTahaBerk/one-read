@@ -101,15 +101,25 @@ export async function ensureOneFilmSubscription(
   });
 }
 
+/**
+ * Builds an email → eligibility map for every OneFilm subscription. A
+ * subscriber is eligible either via a legacy standalone OneFilm subscription
+ * or via umbrella OneRead access (see lib/oneread/access.ts).
+ */
 export async function getOneFilmEligibilityByEmail(
   now: Date = new Date(),
 ): Promise<Map<string, EligibilityResult>> {
+  // Lazy import avoids a hard circular dependency at module-eval time —
+  // lib/oneread/access.ts imports `filmPreferencesComplete` from this module.
+  const { resolveOneFilmEligibilityForContact } = await import("@/lib/oneread/access");
   const subs = await prisma.productSubscription.findMany({
     where: { productKey: ONE_FILM_PRODUCT_KEY },
-    include: { filmPreferences: true, contact: { select: { email: true } } },
+    include: { contact: { select: { id: true, email: true } } },
   });
   const map = new Map<string, EligibilityResult>();
-  for (const sub of subs) map.set(sub.contact.email, evaluateFilmEligibility(sub, now));
+  for (const sub of subs) {
+    map.set(sub.contact.email, await resolveOneFilmEligibilityForContact(sub.contact.id, now));
+  }
   return map;
 }
 

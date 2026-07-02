@@ -147,6 +147,15 @@ export function ArticleLanding() {
           py-4 sm:py-5
         "
       >
+        {phase === "email" && (
+          <p className="mb-5 text-center font-sans text-[12.5px] leading-[1.55] text-fog animate-rise-delayed">
+            Included in{" "}
+            <Link href="/subscribe" className="link-underline text-ink hover:text-ink">
+              OneRead
+            </Link>{" "}
+            — one subscription covers OneArticle and OneFilm.
+          </p>
+        )}
         {phase !== "success" && phase !== "canceled" && (
           <div key={phase} className="contents">
             <h1
@@ -222,7 +231,7 @@ export function ArticleLanding() {
 
       <Footer
         showPricing
-        pricingHref="/article/pricing"
+        pricingHref="/pricing"
         tagline="No feed. No app. One good read before the day gets noisy."
         xAriaLabel="OneArticle on X"
       />

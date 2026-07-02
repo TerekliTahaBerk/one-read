@@ -13,6 +13,11 @@ import { UserActionsBar } from "@/components/admin/UserActionsBar";
 import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
 import { INTERESTS, SOURCE_LANGUAGES, SUMMARY_LANGUAGES } from "@/lib/options";
 import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
+import { ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
+import {
+  resolveOneArticleEligibilityForContact,
+  resolveOneFilmEligibilityForContact,
+} from "@/lib/oneread/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +56,18 @@ export default async function AdminUserDetailPage({
       orderBy: { consumedAt: "desc" },
       select: { consumedAt: true },
     }),
+  ]);
+
+  const [oneReadSub, filmHolder, oneReadElig, oneFilmElig] = await Promise.all([
+    prisma.productSubscription.findUnique({
+      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_READ_PRODUCT_KEY } },
+    }),
+    prisma.productSubscription.findUnique({
+      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_FILM_PRODUCT_KEY } },
+      include: { filmPreferences: true },
+    }),
+    resolveOneArticleEligibilityForContact(sub.contactId),
+    resolveOneFilmEligibilityForContact(sub.contactId),
   ]);
 
   const [sends, feedback, auditEvents] = await Promise.all([
@@ -126,6 +143,31 @@ export default async function AdminUserDetailPage({
           </div>
         </AdminCard>
       </div>
+
+      <AdminCard title="OneRead umbrella">
+        <DefList
+          rows={[
+            [
+              "OneRead subscription status",
+              oneReadSub ? <StatusBadge key="s" value={oneReadSub.status} /> : "No OneRead subscription",
+            ],
+            ["Included products", oneReadSub ? "OneArticle, OneFilm" : "—"],
+            [
+              "OneArticle eligibility",
+              <EligibilityBadge key="a" allowed={oneReadElig.allowed} reason={oneReadElig.reason} />,
+            ],
+            [
+              "OneFilm subscription status",
+              filmHolder ? <StatusBadge key="fs" value={filmHolder.status} /> : "No OneFilm record",
+            ],
+            [
+              "OneFilm eligibility",
+              <EligibilityBadge key="f" allowed={oneFilmElig.allowed} reason={oneFilmElig.reason} />,
+            ],
+            ["OneFilm preferences complete", yesNo(Boolean(filmHolder?.filmPreferences))],
+          ]}
+        />
+      </AdminCard>
 
       <AdminCard title="Subscription">
         <DefList

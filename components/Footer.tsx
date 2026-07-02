@@ -18,6 +18,7 @@ type Props = {
 
 const PRODUCT_LINKS = [
   { label: "OneArticle", href: "/article", external: false },
+  { label: "OneFilm", href: "/film", external: false },
 ] as const;
 
 export function Footer({

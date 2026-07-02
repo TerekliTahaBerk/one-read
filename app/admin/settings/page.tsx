@@ -40,6 +40,8 @@ import {
   oneArticleCronEnabled,
   oneArticleDryRunForced,
 } from "@/lib/admin/one-article-ops";
+import { oneReadBillingConfigured } from "@/lib/oneread/config";
+import { oneArticleSendDays, oneFilmSendDays } from "@/lib/schedule";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -157,6 +159,9 @@ export default async function SettingsPage({
   if (!filmCronEnabled()) {
     warnings.push("ONEFILM_CRON_ENABLED is not true — the OneFilm cron route will refuse scheduled runs.");
   }
+  if (!oneReadBillingConfigured()) {
+    warnings.push("POLAR_ONEREAD_PRODUCT_ID is missing — the OneRead umbrella checkout is disabled until it's set.");
+  }
   warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
 
   const verifyCfg = verificationConfig();
@@ -242,7 +247,10 @@ export default async function SettingsPage({
             ["BILLING_PROVIDER", process.env.BILLING_PROVIDER ? "Configured from environment" : "Development fallback"],
             ["POLAR_ACCESS_TOKEN", configured(process.env.POLAR_ACCESS_TOKEN)],
             ["POLAR_WEBHOOK_SECRET", configured(process.env.POLAR_WEBHOOK_SECRET)],
-            ["POLAR_ONE_ARTICLE_PRODUCT_ID", configured(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)],
+            ["POLAR_ONEREAD_PRODUCT_ID (umbrella)", configured(process.env.POLAR_ONEREAD_PRODUCT_ID)],
+            ["POLAR_ONEREAD_SUCCESS_URL", configured(process.env.POLAR_ONEREAD_SUCCESS_URL)],
+            ["POLAR_ONEREAD_RETURN_URL", configured(process.env.POLAR_ONEREAD_RETURN_URL)],
+            ["POLAR_ONE_ARTICLE_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)],
             ["POLAR_ONE_LINGO_PRODUCT_ID", configured(process.env.POLAR_ONE_LINGO_PRODUCT_ID || process.env.POLAR_ONELINGO_PRODUCT_ID)],
             ["POLAR_ONE_ARTICLE_SUCCESS_URL", configured(process.env.POLAR_ONE_ARTICLE_SUCCESS_URL || process.env.POLAR_SUCCESS_URL)],
             ["POLAR_ONE_ARTICLE_RETURN_URL", configured(process.env.POLAR_ONE_ARTICLE_RETURN_URL)],
@@ -251,7 +259,7 @@ export default async function SettingsPage({
             ["POLAR_ONENEWS_PRODUCT_ID", configured(process.env.POLAR_ONENEWS_PRODUCT_ID || process.env.POLAR_ONE_NEWS_PRODUCT_ID)],
             ["POLAR_ONENEWS_SUCCESS_URL", configured(process.env.POLAR_ONENEWS_SUCCESS_URL)],
             ["POLAR_ONENEWS_RETURN_URL", configured(process.env.POLAR_ONENEWS_RETURN_URL)],
-            ["POLAR_ONEFILM_PRODUCT_ID", configured(process.env.POLAR_ONEFILM_PRODUCT_ID || process.env.POLAR_ONE_FILM_PRODUCT_ID)],
+            ["POLAR_ONEFILM_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONEFILM_PRODUCT_ID || process.env.POLAR_ONE_FILM_PRODUCT_ID)],
             ["POLAR_ONEFILM_SUCCESS_URL", configured(process.env.POLAR_ONEFILM_SUCCESS_URL)],
             ["POLAR_ONEFILM_RETURN_URL", configured(process.env.POLAR_ONEFILM_RETURN_URL)],
             ["POLAR_SERVER", process.env.POLAR_SERVER ? "Configured from environment" : "Development fallback: sandbox"],
@@ -314,6 +322,8 @@ export default async function SettingsPage({
             ["OneArticle dry run forced", oneArticleDryRunForced() ? "Enabled" : "Off"],
             ["OneArticle approval required", approvalRequired ? "Enabled" : "Off"],
             ["OneArticle next send", fmtDateTime(nextOneArticleSend().utc)],
+            ["OneArticle send days", oneArticleSendDays().join(", ")],
+            ["OneFilm send days", oneFilmSendDays().join(", ")],
             ["OneLingo cron enabled", lingoCronEnabled() ? "Enabled" : "Missing"],
             ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
             ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
@@ -353,10 +363,11 @@ export default async function SettingsPage({
           title="Public URLs / waitlist"
           rows={[
             ["PUBLIC_BASE_URL", process.env.PUBLIC_BASE_URL ? "Configured from environment" : "Fallback to https://oneread.app"],
-            ["OneArticle public visibility", "Visible"],
+            ["OneRead (umbrella) public visibility", "Visible"],
+            ["OneArticle public visibility", "Visible — included in OneRead"],
+            ["OneFilm public visibility", "Visible — included in OneRead"],
             ["OneLingo public visibility", "Hidden"],
             ["OneNews public visibility", "Hidden"],
-            ["OneFilm public visibility", "Hidden"],
             ["OneDish public visibility", "Hidden"],
             ["POLAR_SUCCESS_URL", configured(process.env.POLAR_SUCCESS_URL)],
             ["TALLY_WAITLIST_URL", WAITLIST_FORM_URL ? "Configured" : "Missing"],

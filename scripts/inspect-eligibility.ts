@@ -57,3 +57,169 @@ for (const c of cases) {
 }
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exitCode = 1;
+
+/**
+ * OneRead umbrella eligibility matrix. Exercises resolveOneArticleEligibilityForContact
+ * / resolveOneFilmEligibilityForContact (lib/oneread/access.ts) against real DB rows —
+ * covers umbrella access, legacy-only access, both present, and neither present.
+ * Creates its own contacts under the `oneread-fixture-` prefix and cleans them up.
+ */
+async function runOneReadMatrix() {
+  const { prisma } = await import("../lib/prisma");
+  const { resolveOneArticleEligibilityForContact, resolveOneFilmEligibilityForContact } = await import(
+    "../lib/oneread/access"
+  );
+  const { ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } = await import("../lib/options");
+
+  const PREFIX = "oneread-fixture-";
+  const future = new Date(Date.now() + 5 * DAY);
+
+  type Scenario = {
+    name: string;
+    build: (contactId: string) => Promise<void>;
+    expect: { allowed: boolean; reason: string };
+  };
+
+  const scenarios: Scenario[] = [
+    {
+      name: "umbrella active, no legacy row",
+      build: async (contactId) => {
+        await prisma.productSubscription.create({
+          data: { contactId, productKey: ONE_READ_PRODUCT_KEY, status: "ACTIVE_PAID", paymentProvider: "polar" },
+        });
+        await prisma.productSubscription.create({
+          data: {
+            contactId,
+            productKey: ONE_ARTICLE_PRODUCT_KEY,
+            status: "PENDING_PREFERENCES",
+            preferences: { create: { interests: ["Technology"], summaryLanguage: "English" } },
+          },
+        });
+      },
+      expect: { allowed: true, reason: "included_in_oneread" },
+    },
+    {
+      name: "umbrella pending checkout (not yet active)",
+      build: async (contactId) => {
+        await prisma.productSubscription.create({
+          data: { contactId, productKey: ONE_READ_PRODUCT_KEY, status: "PENDING_CHECKOUT" },
+        });
+        await prisma.productSubscription.create({
+          data: {
+            contactId,
+            productKey: ONE_ARTICLE_PRODUCT_KEY,
+            status: "PENDING_PREFERENCES",
+            preferences: { create: { interests: ["Technology"], summaryLanguage: "English" } },
+          },
+        });
+      },
+      expect: { allowed: false, reason: "checkout_required" },
+    },
+    {
+      name: "legacy-only OneArticle active (no umbrella row)",
+      build: async (contactId) => {
+        await prisma.productSubscription.create({
+          data: {
+            contactId,
+            productKey: ONE_ARTICLE_PRODUCT_KEY,
+            status: "ACTIVE_PAID",
+            paymentProvider: "polar",
+            preferences: { create: { interests: ["Technology"], summaryLanguage: "English" } },
+          },
+        });
+      },
+      expect: { allowed: true, reason: "legacy_one_article_access" },
+    },
+    {
+      name: "both legacy and umbrella active (legacy wins)",
+      build: async (contactId) => {
+        await prisma.productSubscription.create({
+          data: { contactId, productKey: ONE_READ_PRODUCT_KEY, status: "ACTIVE_PAID", paymentProvider: "polar" },
+        });
+        await prisma.productSubscription.create({
+          data: {
+            contactId,
+            productKey: ONE_ARTICLE_PRODUCT_KEY,
+            status: "ACTIVE_PAID",
+            paymentProvider: "polar",
+            preferences: { create: { interests: ["Technology"], summaryLanguage: "English" } },
+          },
+        });
+      },
+      expect: { allowed: true, reason: "legacy_one_article_access" },
+    },
+    {
+      name: "neither legacy nor umbrella row exists",
+      build: async () => {},
+      expect: { allowed: false, reason: "missing_article_preferences" },
+    },
+    {
+      name: "prefs complete, no subscription rows at all",
+      build: async (contactId) => {
+        await prisma.productSubscription.create({
+          data: {
+            contactId,
+            productKey: ONE_ARTICLE_PRODUCT_KEY,
+            status: "PENDING_PREFERENCES",
+            preferences: { create: { interests: ["Technology"], summaryLanguage: "English" } },
+          },
+        });
+      },
+      expect: { allowed: false, reason: "checkout_required" },
+    },
+  ];
+
+  console.log("\n=== OneRead umbrella eligibility matrix (resolveOneArticleEligibilityForContact) ===");
+  let oneReadPass = 0;
+  let oneReadFail = 0;
+  for (const scenario of scenarios) {
+    const contact = await prisma.contact.create({ data: { email: `${PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}@example.com` } });
+    try {
+      await scenario.build(contact.id);
+      const result = await resolveOneArticleEligibilityForContact(contact.id, future);
+      const ok = result.allowed === scenario.expect.allowed && result.reason === scenario.expect.reason;
+      if (ok) oneReadPass++;
+      else oneReadFail++;
+      console.log(
+        `${ok ? "PASS" : "FAIL"}  ${scenario.name.padEnd(42)} allowed=${String(result.allowed).padEnd(5)} reason=${result.reason}` +
+          (ok ? "" : `  (expected allowed=${scenario.expect.allowed} reason=${scenario.expect.reason})`),
+      );
+    } finally {
+      await prisma.productSubscription.deleteMany({ where: { contactId: contact.id } });
+      await prisma.contact.delete({ where: { id: contact.id } });
+    }
+  }
+
+  // Sanity-check the OneFilm mirror with a single umbrella-access case.
+  const filmContact = await prisma.contact.create({ data: { email: `${PREFIX}film-${Date.now()}@example.com` } });
+  try {
+    await prisma.productSubscription.create({
+      data: { contactId: filmContact.id, productKey: ONE_READ_PRODUCT_KEY, status: "ACTIVE_PAID", paymentProvider: "polar" },
+    });
+    await prisma.productSubscription.create({
+      data: {
+        contactId: filmContact.id,
+        productKey: ONE_FILM_PRODUCT_KEY,
+        status: "PENDING_PREFERENCES",
+        filmPreferences: {
+          create: { contactId: filmContact.id, emailLanguage: "English", preferredGenres: ["Drama"] },
+        },
+      },
+    });
+    const result = await resolveOneFilmEligibilityForContact(filmContact.id, future);
+    const ok = result.allowed === true && result.reason === "included_in_oneread";
+    if (ok) oneReadPass++;
+    else oneReadFail++;
+    console.log(
+      `${ok ? "PASS" : "FAIL"}  ${"OneFilm: umbrella active".padEnd(42)} allowed=${String(result.allowed).padEnd(5)} reason=${result.reason}`,
+    );
+  } finally {
+    await prisma.productSubscription.deleteMany({ where: { contactId: filmContact.id } });
+    await prisma.contact.delete({ where: { id: filmContact.id } });
+  }
+
+  console.log(`\n${oneReadPass} passed, ${oneReadFail} failed`);
+  if (oneReadFail > 0) process.exitCode = 1;
+}
+
+void runOneReadMatrix();

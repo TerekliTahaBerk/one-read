@@ -38,7 +38,7 @@ export default function HomePage() {
               reveal-item reveal-item-2
             "
           >
-            One good article, before the day gets noisy.
+            One useful email at a time.
           </h1>
 
           <p
@@ -51,8 +51,9 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead sends you a short, carefully written brief of one article
-            selected around your interests — every morning at 7 AM.
+            OneRead brings two quiet notes to your inbox: a weekday article
+            brief and a Saturday film recommendation. No app. No feed. No
+            noise.
           </p>
 
           <div
@@ -63,7 +64,7 @@ export default function HomePage() {
             "
           >
             <Link
-              href="/article"
+              href="/subscribe"
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full bg-ink px-6 font-sans text-[14px] font-medium
@@ -71,10 +72,10 @@ export default function HomePage() {
                 sm:w-auto
               "
             >
-              Start your 7-day free trial
+              Start OneRead
             </Link>
             <Link
-              href="/article#example"
+              href="/pricing"
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full border border-line-strong bg-white/65 px-6
@@ -83,7 +84,7 @@ export default function HomePage() {
                 sm:w-auto
               "
             >
-              See an example
+              See what you'll receive
             </Link>
           </div>
 
@@ -93,7 +94,7 @@ export default function HomePage() {
               text-center reveal-item reveal-item-4
             "
           >
-            One carefully chosen article brief, every morning at 7 AM.
+            One subscription. One dollar. OneArticle and OneFilm included.
           </p>
 
           <div
@@ -103,10 +104,11 @@ export default function HomePage() {
             "
           >
             <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
-              Now available from OneRead: OneArticle.
+              OneArticle on weekdays. OneFilm on Saturdays.
             </p>
             <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
-              A focused morning brief built around one worthwhile read.
+              One focused morning read, and one film worth watching this
+              weekend — both included in OneRead.
             </p>
           </div>
         </section>
@@ -115,6 +117,7 @@ export default function HomePage() {
       <Footer
         tagline="No feed to check. Just something worth opening."
         showManifesto
+        showProducts
       />
     </main>
   );
