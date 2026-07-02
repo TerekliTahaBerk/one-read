@@ -51,9 +51,9 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead brings two quiet notes to your inbox: a weekday article
-            brief and a Saturday film recommendation. No app. No feed. No
-            noise.
+            OneRead is a small family of quiet, single-purpose emails — one
+            subscription unlocks all of them, today and as new ones join. No
+            app. No feed. No noise.
           </p>
 
           <div
@@ -84,7 +84,7 @@ export default function HomePage() {
                 sm:w-auto
               "
             >
-              See what you'll receive
+              See the OneRead family
             </Link>
           </div>
 
@@ -94,7 +94,7 @@ export default function HomePage() {
               text-center reveal-item reveal-item-4
             "
           >
-            One subscription. One dollar. OneArticle and OneFilm included.
+            One subscription. One dollar. The whole OneRead family included.
           </p>
 
           <div
@@ -104,11 +104,11 @@ export default function HomePage() {
             "
           >
             <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
-              OneArticle on weekdays. OneFilm on Saturdays.
+              Today: OneArticle on weekdays, OneFilm on Saturdays.
             </p>
             <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
-              One focused morning read, and one film worth watching this
-              weekend — both included in OneRead.
+              One subscription unlocks every product in the OneRead family —
+              now, and whatever joins next.
             </p>
           </div>
         </section>
