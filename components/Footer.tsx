@@ -5,7 +5,6 @@ type Props = {
   showPricing?: boolean;
   pricingHref?: string;
   tagline?: string;
-  xAriaLabel?: string;
   /** Show a quiet back link (pricing/legal pages). */
   showBackHome?: boolean;
   backHref?: string;
@@ -18,7 +17,6 @@ export function Footer({
   showPricing = false,
   pricingHref = "/pricing",
   tagline = "No feeds. No noise. Just one good read.",
-  xAriaLabel = "OneRead on X",
   showBackHome = false,
   backHref = "/",
   backLabel = "Back to OneRead",
@@ -55,20 +53,13 @@ export function Footer({
         </Link>
         <span aria-hidden="true" className="text-line-strong">·</span>
         <a
-          href="https://tally.so/r/PdPQl1"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="#tally-open=PdPQl1&tally-emoji-text=👋&tally-emoji-animation=wave"
+          data-tally-open="PdPQl1"
+          data-tally-emoji-text="👋"
+          data-tally-emoji-animation="wave"
           className="link-underline transition-colors duration-200 hover:text-ink"
         >
           Feedback
-        </a>
-        <span aria-hidden="true" className="text-line-strong">·</span>
-        <a
-          href="#"
-          className="link-underline transition-colors duration-200 hover:text-ink"
-          aria-label={xAriaLabel}
-        >
-          X
         </a>
         {showPricing && (
           <>

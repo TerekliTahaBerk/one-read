@@ -140,12 +140,6 @@ export function ArticleLanding() {
           >
             Start OneRead
           </Link>
-          <Link
-            href="/pricing"
-            className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-[var(--theme-border)] bg-white/65 px-6 font-sans text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-white sm:w-auto"
-          >
-            See pricing
-          </Link>
         </div>
 
         <dl className="mt-10 w-full max-w-[36rem] space-y-5 animate-rise-delayed-3 sm:mt-12">
@@ -167,10 +161,7 @@ export function ArticleLanding() {
       </section>
 
       <Footer
-        showPricing
-        pricingHref="/pricing"
         tagline="No feed. No app. One good read before the day gets noisy."
-        xAriaLabel="OneArticle on X"
       />
     </main>
   );

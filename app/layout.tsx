@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { OpeningLoader } from "@/components/OpeningLoader";
 
@@ -54,6 +55,10 @@ export default function RootLayout({
       <body className="min-h-svh">
         {children}
         <OpeningLoader />
+        <Script
+          src="https://tally.so/widgets/embed.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

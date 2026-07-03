@@ -96,6 +96,7 @@ export default function HomePage() {
       <Footer
         tagline="No feed to check. Just something worth opening."
         showManifesto
+        showPricing
       />
     </main>
   );

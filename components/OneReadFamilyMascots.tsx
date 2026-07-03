@@ -6,6 +6,7 @@ type MascotProps = {
   description: string;
   index: number;
   href?: string;
+  external?: boolean;
   children: ReactNode;
 };
 
@@ -16,7 +17,14 @@ const mascotStyle = (index: number) =>
     "--family-idle-delay": `${index * -1.3}s`,
   }) as CSSProperties;
 
-function Mascot({ name, description, index, href, children }: MascotProps) {
+function Mascot({
+  name,
+  description,
+  index,
+  href,
+  external = false,
+  children,
+}: MascotProps) {
   const content = (
     <>
       <div className="family-mascot-figure mx-auto h-[8.75rem] w-[8.75rem] sm:h-[9.25rem] sm:w-[9.25rem]">
@@ -35,6 +43,21 @@ function Mascot({ name, description, index, href, children }: MascotProps) {
     "family-mascot rounded-2xl py-2 text-center transition-opacity duration-200";
 
   if (href) {
+    if (external) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${name} — ${description} (opens in a new tab)`}
+          className={`${className} focus-ring group hover:opacity-75`}
+          style={mascotStyle(index)}
+        >
+          {content}
+        </a>
+      );
+    }
+
     return (
       <Link
         href={href}
@@ -170,10 +193,22 @@ export function OneReadFamilyMascots() {
         <Mascot name="OneFilm" description="Saturday film note" index={1} href="/film">
           <FilmMascot />
         </Mascot>
-        <Mascot name="OneGoal" description="Coming soon" index={2}>
+        <Mascot
+          name="OneGoal"
+          description="Coming soon — register interest"
+          index={2}
+          href="https://tally.so/r/WOZWLe"
+          external
+        >
           <GoalMascot />
         </Mascot>
-        <Mascot name="OneNews" description="Coming soon" index={3}>
+        <Mascot
+          name="OneNews"
+          description="Coming soon — register interest"
+          index={3}
+          href="https://tally.so/r/WOZWLe"
+          external
+        >
           <NewsMascot />
         </Mascot>
       </div>

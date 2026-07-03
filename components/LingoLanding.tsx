@@ -53,7 +53,6 @@ export function LingoLanding() {
         showPricing
         pricingHref="/lingo/pricing"
         tagline="No app streaks. No noisy drills. One small practice email each morning."
-        xAriaLabel="OneLingo on X"
       />
     </main>
   );
