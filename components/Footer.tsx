@@ -81,7 +81,7 @@ export function Footer({
         data-tally-emoji-animation="wave"
         aria-label="Open feedback form"
         title="Feedback"
-        className="feedback-launcher focus-ring fixed z-50 inline-flex h-12 w-12 select-none items-center justify-center rounded-full border border-line-strong bg-white shadow-[0_8px_24px_rgba(26,26,26,0.16)] sm:h-[52px] sm:w-[52px]"
+        className="feedback-launcher focus-ring fixed z-50 inline-flex h-12 w-12 select-none items-center justify-center rounded-full sm:h-[52px] sm:w-[52px]"
       >
         <span
           aria-hidden="true"

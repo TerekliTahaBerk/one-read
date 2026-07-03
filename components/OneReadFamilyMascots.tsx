@@ -91,7 +91,7 @@ function Face({ lookX = 0, lookY = 0 }: { lookX?: number; lookY?: number }) {
   );
 }
 
-function ArticleMascot() {
+export function OneArticleMascotArt() {
   return (
     <CharacterSvg>
       <path d="M53 103c-7 13-9 23-9 35M102 106c-7 11-15 20-24 29M44 138l-9 1M78 135l7 5" strokeWidth="3" />
@@ -106,7 +106,7 @@ function ArticleMascot() {
   );
 }
 
-function FilmMascot() {
+export function OneFilmMascotArt() {
   return (
     <CharacterSvg>
       <path d="M55 106c-6 13-7 23-6 34M101 105c9 8 17 14 27 17M49 140l-9 2M128 122l4 8" strokeWidth="3" />
@@ -115,7 +115,7 @@ function FilmMascot() {
       <Face lookY={-2} />
       <g className="family-object">
         <path d="M56 17h47v24H56Z" fill="#E8DFF0" strokeWidth="2.5" />
-        <path d="M54 10l47-5 2 11-47 5Z" fill="#E8DFF0" strokeWidth="2.5" />
+        <path className="film-clapper-top" d="M54 10l47-5 2 11-47 5Z" fill="#E8DFF0" strokeWidth="2.5" />
         <path d="M65 9l7 9M81 7l7 9M68 23v12M84 23v12" strokeWidth="1.8" />
       </g>
     </CharacterSvg>
@@ -171,10 +171,10 @@ export function OneReadFamilyMascots() {
 
       <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-9 sm:mt-10 sm:grid-cols-4 sm:gap-x-4">
         <Mascot name="OneArticle" description="Weekday article brief" index={0} href="/article">
-          <ArticleMascot />
+          <OneArticleMascotArt />
         </Mascot>
         <Mascot name="OneFilm" description="Saturday film note" index={1} href="/film">
-          <FilmMascot />
+          <OneFilmMascotArt />
         </Mascot>
         <Mascot
           name="OneGoal"

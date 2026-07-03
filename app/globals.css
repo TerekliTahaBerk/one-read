@@ -163,9 +163,7 @@
     bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
     touch-action: manipulation;
     -webkit-user-select: none;
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease;
+    transition: transform 180ms ease;
   }
 
   .feedback-launcher:active {
@@ -189,7 +187,6 @@
   @media (hover: hover) and (pointer: fine) {
     .feedback-launcher:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 28px rgba(26, 26, 26, 0.2);
     }
   }
 
@@ -257,6 +254,86 @@
     }
   }
 
+  /* Product-page mascot vignettes share the family artwork but move with
+     distinct, restrained gestures: reading for Article, clapping for Film. */
+  .product-mascot {
+    flex: none;
+  }
+
+  .product-mascot-art {
+    transform-origin: 50% 82%;
+  }
+
+  .product-mascot-article .product-mascot-art {
+    animation: articleMascotRead 6.5s ease-in-out infinite;
+  }
+
+  .product-mascot-article .family-object {
+    transform-box: fill-box;
+    transform-origin: 80% 88%;
+    animation: articlePageBreathe 4.8s ease-in-out infinite;
+  }
+
+  .product-mascot-film .product-mascot-art {
+    animation: filmMascotPoise 7s ease-in-out infinite;
+  }
+
+  .product-mascot-film .film-clapper-top {
+    transform-box: fill-box;
+    transform-origin: 8% 100%;
+    animation: filmClapper 4.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes articleMascotRead {
+    0%,
+    100% {
+      transform: rotate(0deg) translateY(0);
+    }
+    45% {
+      transform: rotate(-1.4deg) translateY(-2px);
+    }
+    55% {
+      transform: rotate(-1.4deg) translateY(-2px);
+    }
+  }
+
+  @keyframes articlePageBreathe {
+    0%,
+    100% {
+      transform: rotate(0deg) translateY(0);
+    }
+    50% {
+      transform: rotate(-2deg) translateY(-1px);
+    }
+  }
+
+  @keyframes filmMascotPoise {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-2.5px);
+    }
+  }
+
+  @keyframes filmClapper {
+    0%,
+    58%,
+    100% {
+      transform: rotate(0deg);
+    }
+    68% {
+      transform: rotate(-11deg) translateY(-1px);
+    }
+    76% {
+      transform: rotate(1deg);
+    }
+    82% {
+      transform: rotate(0deg);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .family-mascot {
       opacity: 1 !important;
@@ -267,7 +344,10 @@
     .family-mascot-figure,
     .family-object,
     .mascot-eyes,
-    .feedback-wave {
+    .feedback-wave,
+    .product-mascot-art,
+    .product-mascot .family-object,
+    .product-mascot .film-clapper-top {
       animation: none !important;
     }
   }

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import { OneArticleMascotArt } from "@/components/OneReadFamilyMascots";
 import { SampleEmailPreview } from "@/components/SampleEmailPreview";
 import { productThemes } from "@/lib/product-themes";
 
@@ -35,6 +36,7 @@ const DETAILS = [
  */
 export function ArticleLanding() {
   const theme = productThemes.article;
+  const pageBackground = productThemes.read.background;
 
   return (
     <main
@@ -47,12 +49,12 @@ export function ArticleLanding() {
       "
       style={
         {
-          backgroundColor: theme.background,
+          backgroundColor: pageBackground,
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,
           "--theme-selected-surface": theme.selectedSurface,
-          "--theme-page": theme.background,
+          "--theme-page": pageBackground,
           "--theme-focus": theme.accent,
         } as CSSProperties
       }
@@ -91,6 +93,15 @@ export function ArticleLanding() {
           py-6 sm:py-8
         "
       >
+        <div
+          aria-hidden="true"
+          className="product-mascot product-mascot-article mb-3 h-[7.5rem] w-[7.5rem] animate-rise-delayed sm:mb-4 sm:h-[8.5rem] sm:w-[8.5rem]"
+        >
+          <div className="product-mascot-art h-full w-full">
+            <OneArticleMascotArt />
+          </div>
+        </div>
+
         <h1
           className="
             font-serif font-medium

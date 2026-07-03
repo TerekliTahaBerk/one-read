@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import { OneFilmMascotArt } from "@/components/OneReadFamilyMascots";
 import { productThemes } from "@/lib/product-themes";
 import { FilmSampleEmailPreview } from "./FilmSampleEmailPreview";
 
@@ -35,17 +36,18 @@ const DETAILS = [
  */
 export function FilmLanding() {
   const theme = productThemes.film;
+  const pageBackground = productThemes.read.background;
   return (
     <main
       className="relative flex min-h-svh w-full flex-col items-center px-5 pb-5 pt-5 sm:px-6 sm:pt-6"
       style={
         {
-          backgroundColor: theme.background,
+          backgroundColor: pageBackground,
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,
           "--theme-selected-surface": theme.surface,
-          "--theme-page": theme.background,
+          "--theme-page": pageBackground,
           "--theme-focus": theme.accent,
         } as CSSProperties
       }
@@ -64,6 +66,15 @@ export function FilmLanding() {
       </header>
 
       <section className="mx-auto flex w-full max-w-[38rem] flex-1 flex-col items-center justify-center py-6 sm:py-8">
+        <div
+          aria-hidden="true"
+          className="product-mascot product-mascot-film mb-3 h-[7.5rem] w-[7.5rem] animate-rise-delayed sm:mb-4 sm:h-[8.5rem] sm:w-[8.5rem]"
+        >
+          <div className="product-mascot-art h-full w-full">
+            <OneFilmMascotArt />
+          </div>
+        </div>
+
         <h1 className="max-w-[17ch] animate-rise-delayed text-center font-serif text-[2.5rem] font-medium leading-[1.02] tracking-[-0.028em] text-ink sm:text-[3.6rem] sm:leading-[0.98]">
           Stop scrolling for something to watch. <em className="font-serif font-normal italic">Just watch this.</em>
         </h1>
