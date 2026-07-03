@@ -123,6 +123,95 @@
     }
   }
 
+  /* Mascot family — staged once, then held in a restrained idle pose. */
+  .family-mascot {
+    opacity: 1;
+  }
+
+  .reveal-scope[data-reveal="armed"] .family-mascot {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .reveal-scope[data-reveal="go"] .family-mascot {
+    animation: familyArrive 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--family-arrival-delay);
+  }
+
+  .family-mascot-figure {
+    animation: familyIdle 7s ease-in-out infinite;
+    animation-delay: var(--family-idle-delay);
+  }
+
+  .reveal-scope[data-reveal="go"] .family-object {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: familyObjectSettle 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--family-object-delay);
+  }
+
+  .mascot-eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: familyBlink 7.5s ease-in-out infinite;
+    animation-delay: calc(1.2s + var(--family-idle-delay));
+  }
+
+  @keyframes familyArrive {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes familyIdle {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-2.5px);
+    }
+  }
+
+  @keyframes familyObjectSettle {
+    0% {
+      transform: rotate(-4deg) translateY(3px);
+    }
+    65% {
+      transform: rotate(1.5deg) translateY(0);
+    }
+    100% {
+      transform: rotate(0) translateY(0);
+    }
+  }
+
+  @keyframes familyBlink {
+    0%,
+    43%,
+    47%,
+    100% {
+      transform: scaleY(1);
+    }
+    45% {
+      transform: scaleY(0.12);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .family-mascot {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .family-mascot,
+    .family-mascot-figure,
+    .family-object,
+    .mascot-eyes {
+      animation: none !important;
+    }
+  }
+
   /* Product cards — calm base, restrained hover. Colors come from per-card
      CSS variables so :hover can shift them (inline styles would override). */
   .product-card {

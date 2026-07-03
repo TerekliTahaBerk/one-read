@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
+import { OneReadFamilyMascots } from "@/components/OneReadFamilyMascots";
 
 export default function HomePage() {
   return (
@@ -23,8 +24,8 @@ export default function HomePage() {
           className="
             flex-1 w-full
             flex flex-col items-center justify-center
-            max-w-[40rem] mx-auto
-            py-4 sm:py-5
+            max-w-[54rem] mx-auto
+            py-10 sm:py-14
           "
         >
           <h1
@@ -51,9 +52,9 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead is a small family of quiet, single-purpose emails — one
-            subscription unlocks all of them, today and as new ones join. No
-            app. No feed. No noise.
+            OneRead brings small, single-purpose notes to your inbox — an
+            article for the morning, a film for the weekend, and more quiet
+            tools as they join the family.
           </p>
 
           <div
@@ -75,7 +76,7 @@ export default function HomePage() {
               Start OneRead
             </Link>
             <Link
-              href="/pricing"
+              href="#family"
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full border border-line-strong bg-white/65 px-6
@@ -84,7 +85,7 @@ export default function HomePage() {
                 sm:w-auto
               "
             >
-              See the OneRead family
+              Meet the family
             </Link>
           </div>
 
@@ -94,22 +95,12 @@ export default function HomePage() {
               text-center reveal-item reveal-item-4
             "
           >
-            One subscription. One dollar. The whole OneRead family included.
+            One subscription. One dollar. Every OneRead product included as the
+            family grows.
           </p>
 
-          <div
-            className="
-              mt-8 sm:mt-10 w-full max-w-[32rem] border-y border-line/80
-              py-5 text-center reveal-item reveal-item-4
-            "
-          >
-            <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
-              Today: OneArticle on weekdays, OneFilm on Saturdays.
-            </p>
-            <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
-              One subscription unlocks every product in the OneRead family —
-              now, and whatever joins next.
-            </p>
+          <div className="w-full reveal-item reveal-item-4">
+            <OneReadFamilyMascots />
           </div>
         </section>
       </HomeReveal>

@@ -20,18 +20,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "OneRead — One useful email at a time.",
   description:
-    "OneRead is a small family of quiet, single-purpose emails — one subscription unlocks all of them, today and as new ones join. No app. No feed. No noise.",
+    "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
   openGraph: {
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead is a small family of quiet, single-purpose emails — one subscription unlocks all of them, today and as new ones join. No app. No feed. No noise.",
+      "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead is a small family of quiet, single-purpose emails — one subscription unlocks all of them, today and as new ones join. No app. No feed. No noise.",
+      "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
   },
 };
 
