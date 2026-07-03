@@ -81,6 +81,38 @@ export function Footer({
           {backLabel}
         </Link>
       )}
+
+      <a
+        href="#tally-open=PdPQl1&tally-emoji-text=👋&tally-emoji-animation=wave"
+        data-tally-open="PdPQl1"
+        data-tally-emoji-text="👋"
+        data-tally-emoji-animation="wave"
+        aria-label="Open feedback form"
+        title="Feedback"
+        className="focus-ring fixed bottom-4 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-ink text-white shadow-[0_8px_24px_rgba(26,26,26,0.18)] transition-[transform,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-90 sm:bottom-6 sm:right-6"
+      >
+        <svg
+          aria-hidden="true"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M5.5 6.75h13a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-7.75L6.5 21v-2.75h-1a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 12.5h.01M12 12.5h.01M16 12.5h.01"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </a>
     </footer>
   );
 }
