@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
 import { OneReadFamilyMascots } from "@/components/OneReadFamilyMascots";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 export default function HomePage() {
+  const { dictionary } = useSiteLanguage();
+
   return (
     <main
       className="
@@ -39,7 +44,7 @@ export default function HomePage() {
               reveal-item reveal-item-2
             "
           >
-            One useful email at a time.
+            {dictionary.home.title}
           </h1>
 
           <p
@@ -52,9 +57,7 @@ export default function HomePage() {
               reveal-item reveal-item-3
             "
           >
-            OneRead brings small, single-purpose notes to your inbox — an
-            article for the morning, a film for the weekend, and more quiet
-            tools as they join the family.
+            {dictionary.home.intro}
           </p>
 
           <div
@@ -73,7 +76,7 @@ export default function HomePage() {
                 sm:w-auto
               "
             >
-              Start OneRead
+              {dictionary.common.startOneRead}
             </Link>
           </div>
 
@@ -83,8 +86,7 @@ export default function HomePage() {
               text-center reveal-item reveal-item-4
             "
           >
-            One subscription. One dollar. Every OneRead product included as the
-            family grows.
+            {dictionary.home.priceNote}
           </p>
 
           <div className="w-full reveal-item reveal-item-4">
@@ -94,7 +96,7 @@ export default function HomePage() {
       </HomeReveal>
 
       <Footer
-        tagline="No feed to check. Just something worth opening."
+        tagline={dictionary.home.tagline}
         showManifesto
         showPricing
       />

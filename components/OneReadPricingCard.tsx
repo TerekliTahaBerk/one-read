@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { ONEREAD_BILLING_LABEL, ONEREAD_PRICE_MONTHLY, ONEREAD_TRUST_NOTES } from "@/lib/oneread/config";
+import { ONEREAD_BILLING_LABEL, ONEREAD_PRICE_MONTHLY } from "@/lib/oneread/config";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 /**
  * OneRead umbrella pricing card. One subscription, one price, includes every
@@ -7,6 +10,8 @@ import { ONEREAD_BILLING_LABEL, ONEREAD_PRICE_MONTHLY, ONEREAD_TRUST_NOTES } fro
  * — never hardcode it elsewhere.
  */
 export function OneReadPricingCard() {
+  const { dictionary } = useSiteLanguage();
+
   return (
     <div className="group relative w-full max-w-[25rem] mt-8 sm:mt-9 animate-rise-delayed-3">
       <div className="relative">
@@ -19,22 +24,17 @@ export function OneReadPricingCard() {
               <span className="font-serif font-medium text-[3.5rem] leading-[0.85] tracking-[-0.02em] text-ink tabular-nums">
                 {ONEREAD_PRICE_MONTHLY}
               </span>
-              <span className="font-sans text-[13.5px] text-ash pb-1.5">per month</span>
+              <span className="font-sans text-[13.5px] text-ash pb-1.5">{dictionary.pricing.perMonth}</span>
             </div>
             <p className="mt-3 font-serif italic text-[13.5px] leading-snug text-ash">
-              One subscription. The whole OneRead family included.
+              {dictionary.pricing.included}
             </p>
           </div>
 
           <div className="mt-7 h-px w-full bg-[var(--theme-border)]" aria-hidden="true" />
 
           <ul className="mt-6 space-y-3 text-left">
-            {[
-              "OneArticle — one article brief every weekday morning",
-              "OneFilm — one film note every Saturday",
-              "Edit your preferences anytime",
-              "One-click cancel — no questions asked",
-            ].map((feature) => (
+            {dictionary.pricing.features.map((feature) => (
               <li
                 key={feature}
                 className="flex items-start gap-3 font-sans text-[14px] leading-snug text-graphite"
@@ -70,7 +70,7 @@ export function OneReadPricingCard() {
               active:scale-[0.99]
             "
           >
-            Start OneRead for {ONEREAD_BILLING_LABEL.split(" / ")[0]}
+            {dictionary.pricing.cta} — {ONEREAD_BILLING_LABEL.split(" / ")[0]}
             <svg
               width="14"
               height="14"
@@ -90,7 +90,7 @@ export function OneReadPricingCard() {
           </Link>
 
           <div className="mt-4 space-y-1.5">
-            {ONEREAD_TRUST_NOTES.map((note) => (
+            {[ONEREAD_BILLING_LABEL, ...dictionary.pricing.trustNotes].map((note) => (
               <p key={note} className="font-sans text-[12.5px] text-fog">
                 {note}
               </p>

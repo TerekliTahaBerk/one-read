@@ -3,6 +3,9 @@ import { Fraunces, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { OpeningLoader } from "@/components/OpeningLoader";
+import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
+import { cookies } from "next/headers";
+import { normalizeSiteLocale, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -47,14 +50,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = normalizeSiteLocale(cookies().get(SITE_LOCALE_COOKIE)?.value);
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${fraunces.variable} ${inter.variable}`}
     >
       <body className="min-h-svh">
-        {children}
-        <OpeningLoader />
+        <SiteLanguageProvider initialLocale={locale}>
+          {children}
+          <OpeningLoader />
+        </SiteLanguageProvider>
         <Script
           src="https://tally.so/widgets/embed.js"
           strategy="afterInteractive"

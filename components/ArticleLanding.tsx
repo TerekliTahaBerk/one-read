@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
@@ -5,29 +7,7 @@ import { Logo } from "@/components/Logo";
 import { OneArticleMascotArt } from "@/components/OneReadFamilyMascots";
 import { SampleEmailPreview } from "@/components/SampleEmailPreview";
 import { productThemes } from "@/lib/product-themes";
-
-const DETAILS = [
-  {
-    title: "One brief, every weekday morning",
-    body: "At 7 AM, one carefully chosen article lands in your inbox — read start to finish in about five minutes, before the rest of the day gets noisy.",
-  },
-  {
-    title: "Chosen around your interests",
-    body: "Pick a handful of topics you actually care about. Every brief is matched to that profile, not to whatever is trending.",
-  },
-  {
-    title: "Distilled, not just forwarded",
-    body: "We don't just link out — we read the source and write a short, clear summary of the one idea worth knowing.",
-  },
-  {
-    title: "Read in your language",
-    body: "Choose your summary language and your preferred source language independently — English, Turkish, Spanish, French, or German.",
-  },
-  {
-    title: "Edit anytime",
-    body: "Change your interests or languages whenever you like. The next morning's brief reflects it immediately.",
-  },
-];
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 /**
  * OneArticle marketing/description page. Purely explanatory — signup itself
@@ -37,6 +17,7 @@ const DETAILS = [
 export function ArticleLanding() {
   const theme = productThemes.article;
   const pageBackground = productThemes.read.background;
+  const { dictionary } = useSiteLanguage();
 
   return (
     <main
@@ -62,7 +43,7 @@ export function ArticleLanding() {
       <header className="relative w-full flex justify-center animate-rise">
         <Link
           href="/"
-          aria-label="Back to OneRead"
+          aria-label={dictionary.common.backToOneRead}
           className="
             focus-ring
             absolute left-0 top-1/2 -translate-y-1/2
@@ -82,7 +63,7 @@ export function ArticleLanding() {
             />
           </svg>
         </Link>
-        <Logo label="OneArticle" href="/article" ariaLabel="OneArticle home" />
+        <Logo label="OneArticle" href="/article" ariaLabel="OneArticle" />
       </header>
 
       <section
@@ -113,8 +94,8 @@ export function ArticleLanding() {
             animate-rise-delayed
           "
         >
-          One article worth reading.{" "}
-          <em className="font-serif italic font-normal text-ink">Every morning.</em>
+          {dictionary.article.title}{" "}
+          <em className="font-serif italic font-normal text-ink">{dictionary.article.titleEmphasis}</em>
         </h1>
 
         <p
@@ -127,21 +108,19 @@ export function ArticleLanding() {
             animate-rise-delayed-2
           "
         >
-          OneArticle sends one carefully chosen article brief to your inbox
-          every weekday morning — picked around your interests and distilled
-          into a short, clear read. No feed to scroll. No app to open.
+          {dictionary.article.intro}
         </p>
 
         <p className="mt-4 text-center font-serif italic text-[14px] leading-[1.6] text-ash animate-rise-delayed-2">
-          One article. One idea worth knowing. Nothing else.
+          {dictionary.article.maxim}
         </p>
 
         <p className="mt-5 text-center font-sans text-[12.5px] leading-[1.55] text-fog animate-rise-delayed-2">
-          Included in{" "}
+          {dictionary.common.includedIn}{" "}
           <Link href="/subscribe" className="link-underline text-ink hover:text-ink">
             OneRead
           </Link>{" "}
-          — one subscription covers OneArticle and OneFilm.
+          — {dictionary.common.subscriptionCovers}
         </p>
 
         <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
@@ -149,18 +128,18 @@ export function ArticleLanding() {
             href="/subscribe"
             className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 sm:w-auto"
           >
-            Start OneRead
+            {dictionary.common.startOneRead}
           </Link>
         </div>
 
         <dl className="mt-10 w-full max-w-[36rem] space-y-5 animate-rise-delayed-3 sm:mt-12">
-          {DETAILS.map((d) => (
-            <div key={d.title} className="border-t border-[var(--theme-border)] pt-4">
+          {dictionary.article.details.map(([title, body]) => (
+            <div key={title} className="border-t border-[var(--theme-border)] pt-4">
               <dt className="font-serif font-medium text-[1.05rem] leading-snug text-ink">
-                {d.title}
+                {title}
               </dt>
               <dd className="mt-1.5 font-sans text-[14px] leading-[1.65] text-ash">
-                {d.body}
+                {body}
               </dd>
             </div>
           ))}
@@ -172,7 +151,7 @@ export function ArticleLanding() {
       </section>
 
       <Footer
-        tagline="No feed. No app. One good read before the day gets noisy."
+        tagline={dictionary.article.tagline}
       />
     </main>
   );

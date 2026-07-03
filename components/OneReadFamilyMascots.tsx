@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 type MascotProps = {
   name: string;
@@ -161,6 +164,8 @@ function NewsMascot() {
 }
 
 export function OneReadFamilyMascots() {
+  const { dictionary } = useSiteLanguage();
+
   return (
     <section
       id="family"
@@ -171,22 +176,22 @@ export function OneReadFamilyMascots() {
         id="family-heading"
         className="font-serif text-[1.8rem] font-medium leading-tight tracking-[-0.02em] text-ink sm:text-[2.15rem]"
       >
-        Meet the OneRead family.
+        {dictionary.family.title}
       </h2>
       <p className="mx-auto mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash sm:text-[15px]">
-        Each one does a single job quietly, then gets out of the way.
+        {dictionary.family.intro}
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-9 sm:mt-10 sm:grid-cols-4 sm:gap-x-4">
-        <Mascot name="OneArticle" description="Weekday article brief" index={0} href="/article">
+        <Mascot name="OneArticle" description={dictionary.family.article} index={0} href="/article">
           <OneArticleMascotArt />
         </Mascot>
-        <Mascot name="OneFilm" description="Saturday film note" index={1} href="/film">
+        <Mascot name="OneFilm" description={dictionary.family.film} index={1} href="/film">
           <OneFilmMascotArt />
         </Mascot>
         <Mascot
           name="OneGoal"
-          description="Coming soon — register interest"
+          description={dictionary.family.comingSoon}
           index={2}
           href="/waitlist?product=onegoal"
         >
@@ -194,7 +199,7 @@ export function OneReadFamilyMascots() {
         </Mascot>
         <Mascot
           name="OneNews"
-          description="Coming soon — register interest"
+          description={dictionary.family.comingSoon}
           index={3}
           href="/waitlist?product=onenews"
         >

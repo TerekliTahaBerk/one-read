@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
@@ -5,29 +7,7 @@ import { Logo } from "@/components/Logo";
 import { OneFilmMascotArt } from "@/components/OneReadFamilyMascots";
 import { productThemes } from "@/lib/product-themes";
 import { FilmSampleEmailPreview } from "./FilmSampleEmailPreview";
-
-const DETAILS = [
-  {
-    title: "One film note, every Saturday",
-    body: "No browsing, no endless scrolling through a streaming menu. One thoughtfully chosen film arrives with a short note on why it's worth your evening.",
-  },
-  {
-    title: "Chosen for mood, not trends",
-    body: "Every pick is matched to what a quiet evening actually calls for — not to what's popular this week or which algorithm is pushing it.",
-  },
-  {
-    title: "Spoiler-light, on purpose",
-    body: "The note tells you enough to decide — tone, mood, why it's worth watching — and never gives away what should stay a surprise.",
-  },
-  {
-    title: "Real, grounded recommendations",
-    body: "No invented ratings, no fake availability claims. Only what's genuinely known about the film makes it into the note.",
-  },
-  {
-    title: "Edit anytime",
-    body: "Change your genres, moods, or spoiler preference whenever you like. It's reflected in the very next note.",
-  },
-];
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 /**
  * OneFilm marketing/description page. Purely explanatory — signup itself
@@ -37,6 +17,7 @@ const DETAILS = [
 export function FilmLanding() {
   const theme = productThemes.film;
   const pageBackground = productThemes.read.background;
+  const { dictionary } = useSiteLanguage();
   return (
     <main
       className="relative flex min-h-svh w-full flex-col items-center px-5 pb-5 pt-5 sm:px-6 sm:pt-6"
@@ -55,7 +36,7 @@ export function FilmLanding() {
       <header className="relative flex w-full justify-center animate-rise">
         <Link
           href="/"
-          aria-label="Back to OneRead"
+          aria-label={dictionary.common.backToOneRead}
           className="focus-ring absolute left-0 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-ash transition-colors hover:bg-[var(--theme-surface)] hover:text-ink"
         >
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -76,23 +57,21 @@ export function FilmLanding() {
         </div>
 
         <h1 className="max-w-[17ch] animate-rise-delayed text-center font-serif text-[2.5rem] font-medium leading-[1.02] tracking-[-0.028em] text-ink sm:text-[3.6rem] sm:leading-[0.98]">
-          Stop scrolling for something to watch. <em className="font-serif font-normal italic">Just watch this.</em>
+          {dictionary.film.title} <em className="font-serif font-normal italic">{dictionary.film.titleEmphasis}</em>
         </h1>
         <p className="mt-5 max-w-[46ch] animate-rise-delayed-2 text-center font-sans text-[15px] leading-[1.65] text-ash text-pretty sm:mt-6 sm:text-[16px]">
-          OneFilm sends you one film every Saturday — why it's worth
-          watching, what mood it suits, and what to know before you press
-          play — in a short, spoiler-light note.
+          {dictionary.film.intro}
         </p>
         <p className="mt-4 max-w-[42ch] animate-rise-delayed-2 text-center font-serif italic text-[14px] leading-[1.6] text-ash">
-          One film. One short note. One reason worth watching.
+          {dictionary.film.maxim}
         </p>
 
         <p className="mt-5 text-center font-sans text-[12.5px] leading-[1.55] text-fog animate-rise-delayed-2">
-          Included in{" "}
+          {dictionary.common.includedIn}{" "}
           <Link href="/subscribe" className="link-underline text-ink hover:text-ink">
             OneRead
           </Link>{" "}
-          — one subscription covers OneArticle and OneFilm.
+          — {dictionary.common.subscriptionCovers}
         </p>
 
         <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
@@ -100,18 +79,18 @@ export function FilmLanding() {
             href="/subscribe"
             className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 sm:w-auto"
           >
-            Start OneRead
+            {dictionary.common.startOneRead}
           </Link>
         </div>
 
         <dl className="mt-10 w-full max-w-[36rem] space-y-5 animate-rise-delayed-3 sm:mt-12">
-          {DETAILS.map((d) => (
-            <div key={d.title} className="border-t border-[var(--theme-border)] pt-4">
+          {dictionary.film.details.map(([title, body]) => (
+            <div key={title} className="border-t border-[var(--theme-border)] pt-4">
               <dt className="font-serif font-medium text-[1.05rem] leading-snug text-ink">
-                {d.title}
+                {title}
               </dt>
               <dd className="mt-1.5 font-sans text-[14px] leading-[1.65] text-ash">
-                {d.body}
+                {body}
               </dd>
             </div>
           ))}
@@ -123,7 +102,7 @@ export function FilmLanding() {
       </section>
 
       <Footer
-        tagline="One film. One short note. One reason worth watching."
+        tagline={dictionary.film.tagline}
       />
     </main>
   );
