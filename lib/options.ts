@@ -42,7 +42,7 @@ export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
 /**
  * External Tally waitlist form for not-yet-launched products (OneLingo,
- * OneNews, OneFilm, OneDish). Frontend-only — no waitlist backend. Swap this
+ * OneDish). Frontend-only — no waitlist backend. Swap this
  * URL when each product gets its own form.
  */
 export const WAITLIST_FORM_URL =
@@ -56,9 +56,6 @@ export const ONE_ARTICLE_PRODUCT_KEY = "one-article";
 
 /** Product slug for OneLingo (the daily language-practice product). */
 export const ONE_LINGO_PRODUCT_KEY = "one-lingo";
-
-/** Product slug for OneNews (the calm morning-briefing product). */
-export const ONE_NEWS_PRODUCT_KEY = "one-news";
 
 /** Product slug for OneFilm (the daily film-note product). */
 export const ONE_FILM_PRODUCT_KEY = "one-film";
@@ -162,69 +159,6 @@ export function parseLingoMinutesPerDay(input: unknown): number {
   return Math.min(20, Math.max(3, Math.round(n)));
 }
 
-/* ----------------------------------------------------------------------- */
-/* OneNews option catalogs + validators                                    */
-/* ----------------------------------------------------------------------- */
-
-export const NEWS_BRIEFING_LANGUAGES = ["English", "Turkish"] as const;
-export type NewsBriefingLanguage = (typeof NEWS_BRIEFING_LANGUAGES)[number];
-
-export const NEWS_REGION_FOCUS = [
-  "Global",
-  "United States",
-  "Europe",
-  "Turkey",
-  "United Kingdom",
-  "Middle East",
-  "Technology-focused",
-  "Business-focused",
-] as const;
-export type NewsRegionFocus = (typeof NEWS_REGION_FOCUS)[number];
-
-export const NEWS_TOPICS = [
-  "World",
-  "Business",
-  "Technology",
-  "Science",
-  "Culture",
-  "Economy",
-  "Climate",
-  "Media",
-  "Sports",
-] as const;
-export type NewsTopic = (typeof NEWS_TOPICS)[number];
-
-export const NEWS_EXCLUDED_TOPICS = [
-  "Politics",
-  "War/conflict",
-  "Crime",
-  "Sports",
-  "Celebrity",
-  "Markets",
-] as const;
-export type NewsExcludedTopic = (typeof NEWS_EXCLUDED_TOPICS)[number];
-
-export const NEWS_TONES = ["Calm", "Brief", "Analytical", "Neutral"] as const;
-export type NewsTone = (typeof NEWS_TONES)[number];
-
-export const NEWS_DEPTHS = ["Short", "Standard", "Deeper"] as const;
-export type NewsDepth = (typeof NEWS_DEPTHS)[number];
-
-export const NEWS_SOURCE_PREFERENCES = [
-  "Balanced",
-  "Business-focused",
-  "Technology-focused",
-  "Global outlets",
-  "Turkish sources where available",
-] as const;
-export type NewsSourcePreference = (typeof NEWS_SOURCE_PREFERENCES)[number];
-
-export const parseNewsBriefingLanguage = makeMemberParser(NEWS_BRIEFING_LANGUAGES);
-export const parseNewsRegionFocus = makeMemberParser(NEWS_REGION_FOCUS);
-export const parseNewsTone = makeMemberParser(NEWS_TONES);
-export const parseNewsDepth = makeMemberParser(NEWS_DEPTHS);
-export const parseNewsSourcePreference = makeMemberParser(NEWS_SOURCE_PREFERENCES);
-
 function makeListParser<T extends string>(
   allowed: readonly T[],
   { allowEmpty = false }: { allowEmpty?: boolean } = {},
@@ -243,11 +177,6 @@ function makeListParser<T extends string>(
     return out.length > 0 || allowEmpty ? out : null;
   };
 }
-
-export const parseNewsTopics = makeListParser(NEWS_TOPICS);
-export const parseNewsExcludedTopics = makeListParser(NEWS_EXCLUDED_TOPICS, {
-  allowEmpty: true,
-});
 
 /* ----------------------------------------------------------------------- */
 /* OneFilm option catalogs + validators                                    */

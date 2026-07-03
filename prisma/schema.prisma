@@ -77,8 +77,6 @@ model Contact {
   subscriptions    ProductSubscription[]
   lingoPreferences LingoPreferences[]
   lingoSends       LingoDailySend[]
-  newsPreferences  NewsPreferences[]
-  newsSends        NewsDailySend[]
   filmPreferences  FilmPreferences[]
   filmSends        FilmDailySend[]
 }
@@ -137,12 +135,10 @@ model ProductSubscription {
 
   preferences      ArticlePreferences?
   lingoPreferences LingoPreferences?
-  newsPreferences  NewsPreferences?
   filmPreferences  FilmPreferences?
   feedbacks        Feedback[]
   sends            DailySend[]
   lingoSends       LingoDailySend[]
-  newsSends        NewsDailySend[]
   filmSends        FilmDailySend[]
 
   @@unique([contactId, productKey])
@@ -456,7 +452,6 @@ model EmailVerificationCode {
   codeHash String
   /// "one-article-signup" | "one-article-preferences"
   /// | "one-lingo-signup" | "one-lingo-preferences"
-  /// | "one-news-signup" | "one-news-preferences"
   /// | "one-film-signup" | "one-film-preferences"
   purpose  String
 
@@ -593,148 +588,6 @@ model LingoDailySend {
   @@unique([lessonDate, contactId])
   @@index([lingoDailyLessonId])
   @@index([status])
-}
-
-// ------------------------------------------------------------------------
-// OneNews — calm morning-briefing product
-// ------------------------------------------------------------------------
-
-/// OneNews-specific preferences for a ProductSubscription (productKey =
-/// "one-news"). Sibling to ArticlePreferences / LingoPreferences; never
-/// overlaps because a ProductSubscription is scoped to one product. Completing
-/// preferences never grants access — Polar remains the source of truth.
-model NewsPreferences {
-  id                    String @id @default(cuid())
-  contactId             String
-  productSubscriptionId String @unique
-
-  /// "English" | "Turkish"
-  briefingLanguage String
-  /// "Global" | "United States" | "Europe" | "Turkey" | "United Kingdom" | "Middle East" | "Technology-focused" | "Business-focused"
-  regionFocus      String
-  topics           String[]
-  excludedTopics   String[]
-  /// "Calm" | "Brief" | "Analytical" | "Neutral"
-  tone             String   @default("calm")
-  /// "Short" | "Standard" | "Deeper"
-  depth            String   @default("short")
-  /// "Balanced" | "Business-focused" | "Technology-focused" | "Global outlets" | "Turkish sources where available"
-  sourcePreference String   @default("balanced")
-
-  wantsWorld      Boolean @default(true)
-  wantsBusiness   Boolean @default(true)
-  wantsTechnology Boolean @default(true)
-  wantsCulture    Boolean @default(false)
-  wantsScience    Boolean @default(false)
-  wantsSports     Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
-
-  @@index([contactId])
-  @@index([briefingLanguage])
-  @@index([regionFocus])
-}
-
-/// A generated daily OneNews briefing, shared across all users in a segment
-/// (briefingLanguage + regionFocus + topic grouping) for a given date. Stored
-/// once and reused; never regenerated unless an admin requests it. OneNews is
-/// source-grounded — contentJson carries only real, cited stories.
-model NewsDailyIssue {
-  id         String   @id @default(cuid())
-  issueDate  DateTime @db.Date
-  segmentKey String
-
-  briefingLanguage String
-  regionFocus      String
-  topics           String[]
-
-  title       String
-  subject     String
-  previewText String?
-  contentJson Json
-  htmlBody    String? @db.Text
-  textBody    String? @db.Text
-
-  /// "GENERATED" | "NOT_GENERATED" | "NO_SOURCES" | "FAILED"
-  status         String    @default("GENERATED")
-  /// "PENDING" | "APPROVED" | "SCHEDULED" | "CANCELED" | "NEEDS_REVIEW"
-  approvalStatus String    @default("PENDING")
-  scheduledFor   DateTime?
-  approvedAt     DateTime?
-  approvedBy     String?
-  adminNotes     String?   @db.Text
-
-  generationProvider String?
-  generationModel    String?
-  generationMetadata Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sends NewsDailySend[]
-
-  @@unique([issueDate, segmentKey])
-  @@index([issueDate])
-  @@index([briefingLanguage, regionFocus])
-  @@index([approvalStatus])
-}
-
-/// One OneNews email per (date, contact). Unique constraint makes daily sends
-/// idempotent — the pipeline can safely retry.
-model NewsDailySend {
-  id                    String   @id @default(cuid())
-  issueDate             DateTime @db.Date
-  contactId             String
-  productSubscriptionId String
-  newsDailyIssueId      String
-
-  /// "QUEUED" | "SENT" | "FAILED" | "SKIPPED"
-  status            String
-  sentAt            DateTime?
-  skippedReason     String?
-  failedReason      String?
-  providerMessageId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
-  issue               NewsDailyIssue      @relation(fields: [newsDailyIssueId], references: [id], onDelete: Cascade)
-
-  @@unique([issueDate, contactId])
-  @@index([newsDailyIssueId])
-  @@index([status])
-}
-
-/// A manually-curated source story for OneNews. The admin adds real headlines +
-/// source URLs; the generator may summarize these but never invents news. When
-/// none exist for a segment/day, the issue is marked NO_SOURCES (no fake news).
-model NewsSourceStory {
-  id         String    @id @default(cuid())
-  headline   String
-  sourceName String
-  sourceUrl  String
-  /// Short excerpt or admin note — never a full copyrighted article.
-  excerpt    String?   @db.Text
-  topic      String
-  region     String
-  /// "English" | "Turkish"
-  language   String
-  storyDate  DateTime  @db.Date
-  /// True once an issue has consumed this story (kept for provenance).
-  usedAt     DateTime?
-  createdBy  String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@index([storyDate])
-  @@index([region, language])
-  @@index([topic])
 }
 
 // ------------------------------------------------------------------------

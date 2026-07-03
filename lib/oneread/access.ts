@@ -1,27 +1,24 @@
-import type { ProductSubscription, ArticlePreferences, FilmPreferences, NewsPreferences } from "@prisma/client";
+import type { ProductSubscription, ArticlePreferences, FilmPreferences } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
-  ONE_NEWS_PRODUCT_KEY,
   isAlwaysSubscribed,
 } from "@/lib/options";
 import { ONE_READ_INCLUDED_PRODUCT_KEYS } from "@/lib/oneread/config";
 import { hasValidAccess, type EligibilityResult } from "@/lib/billing/access";
 import { preferencesComplete } from "@/lib/subscriptions";
 import { filmPreferencesComplete } from "@/lib/film/subscriptions";
-import { newsPreferencesComplete } from "@/lib/news/subscriptions";
 import type { SubscribeLookupResult } from "@/lib/subscriptions";
 
 /**
- * OneRead umbrella access model. A OneRead subscriber holds up to four
+ * OneRead umbrella access model. A OneRead subscriber holds up to three
  * `ProductSubscription` rows per Contact:
  *   - `productKey = "one-read"`   — the billing row (Polar checkout/webhook).
  *   - `productKey = "one-article"` — preferences-holder row; may ALSO be a real
  *     legacy paid subscription for pre-umbrella customers.
  *   - `productKey = "one-film"`    — same idea, for OneFilm.
- *   - `productKey = "one-news"`    — same idea, for OneNews.
  *
  * Access to a product is granted if EITHER that product's own row has valid
  * access (legacy path) OR the contact's `one-read` row has valid access
@@ -30,7 +27,6 @@ import type { SubscribeLookupResult } from "@/lib/subscriptions";
 
 type ArticleHolder = ProductSubscription & { preferences: ArticlePreferences | null };
 type FilmHolder = ProductSubscription & { filmPreferences: FilmPreferences | null };
-type NewsHolder = ProductSubscription & { newsPreferences: NewsPreferences | null };
 
 /** Ensures a Contact + `one-read` ProductSubscription exist for the email. */
 export async function ensureOneReadSubscription(
@@ -95,31 +91,12 @@ export async function ensureFilmPreferencesHolder(contactId: string): Promise<Fi
   });
 }
 
-/** Ensures the OneNews preferences-holder row exists for a contact. */
-export async function ensureNewsPreferencesHolder(contactId: string): Promise<NewsHolder> {
-  const existing = await prisma.productSubscription.findUnique({
-    where: { contactId_productKey: { contactId, productKey: ONE_NEWS_PRODUCT_KEY } },
-    include: { newsPreferences: true },
-  });
-  if (existing) return existing;
-
-  return prisma.productSubscription.create({
-    data: {
-      contactId,
-      productKey: ONE_NEWS_PRODUCT_KEY,
-      status: "PENDING_PREFERENCES",
-    },
-    include: { newsPreferences: true },
-  });
-}
-
 /** Generic dispatcher over the holder-ensure functions above. */
 export async function ensureProductPreferencesHolder(
   contactId: string,
   productKey: string,
 ): Promise<ProductSubscription> {
   if (productKey === ONE_FILM_PRODUCT_KEY) return ensureFilmPreferencesHolder(contactId);
-  if (productKey === ONE_NEWS_PRODUCT_KEY) return ensureNewsPreferencesHolder(contactId);
   return ensureArticlePreferencesHolder(contactId);
 }
 
@@ -213,25 +190,6 @@ export async function resolveOneFilmEligibilityForContact(
   );
 }
 
-export async function resolveOneNewsEligibilityForContact(
-  contactId: string,
-  now: Date = new Date(),
-): Promise<EligibilityResult> {
-  const holder = await prisma.productSubscription.findUnique({
-    where: { contactId_productKey: { contactId, productKey: ONE_NEWS_PRODUCT_KEY } },
-    include: { newsPreferences: true },
-  });
-  const hasCompletePreferences = newsPreferencesComplete(holder?.newsPreferences ?? null);
-  return resolveProductEligibility(
-    contactId,
-    holder,
-    hasCompletePreferences,
-    "missing_news_preferences",
-    "legacy_one_news_access",
-    now,
-  );
-}
-
 /**
  * Once at least one of Article/Film preferences is complete, the `one-read`
  * row can move from PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors
@@ -241,7 +199,7 @@ export async function resolveOneNewsEligibilityForContact(
 export async function markOneReadReadyForCheckoutIfEligible(
   contactId: string,
 ): Promise<ProductSubscription | null> {
-  const [oneRead, articleHolder, filmHolder, newsHolder] = await Promise.all([
+  const [oneRead, articleHolder, filmHolder] = await Promise.all([
     findOneReadRow(contactId),
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
@@ -251,17 +209,12 @@ export async function markOneReadReadyForCheckoutIfEligible(
       where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
       include: { filmPreferences: true },
     }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId, productKey: ONE_NEWS_PRODUCT_KEY } },
-      include: { newsPreferences: true },
-    }),
   ]);
   if (!oneRead) return null;
 
   const anyPrefsComplete =
     preferencesComplete(articleHolder?.preferences ?? null) ||
-    filmPreferencesComplete(filmHolder?.filmPreferences ?? null) ||
-    newsPreferencesComplete(newsHolder?.newsPreferences ?? null);
+    filmPreferencesComplete(filmHolder?.filmPreferences ?? null);
   if (!anyPrefsComplete) return oneRead;
 
   if (

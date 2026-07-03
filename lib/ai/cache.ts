@@ -2,7 +2,7 @@
  * OneRead — AI generation cache helpers.
  *
  * The DB already enforces idempotency per product (unique constraints on
- * Summary, LingoDailyLesson, NewsDailyIssue, FilmDailyIssue). This module adds
+ * Summary, LingoDailyLesson, FilmDailyIssue). This module adds
  * the *content-level* cache identity: a stable hash of the inputs + prompt
  * version + model, so we can detect when a cached record is stale (the source
  * changed) and store provenance for audit.

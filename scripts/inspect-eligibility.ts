@@ -69,9 +69,8 @@ async function runOneReadMatrix() {
   const {
     resolveOneArticleEligibilityForContact,
     resolveOneFilmEligibilityForContact,
-    resolveOneNewsEligibilityForContact,
   } = await import("../lib/oneread/access");
-  const { ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY, ONE_NEWS_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } = await import(
+  const { ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } = await import(
     "../lib/options"
   );
 
@@ -220,34 +219,6 @@ async function runOneReadMatrix() {
   } finally {
     await prisma.productSubscription.deleteMany({ where: { contactId: filmContact.id } });
     await prisma.contact.delete({ where: { id: filmContact.id } });
-  }
-
-  // Sanity-check the OneNews mirror with a single umbrella-access case.
-  const newsContact = await prisma.contact.create({ data: { email: `${PREFIX}news-${Date.now()}@example.com` } });
-  try {
-    await prisma.productSubscription.create({
-      data: { contactId: newsContact.id, productKey: ONE_READ_PRODUCT_KEY, status: "ACTIVE_PAID", paymentProvider: "polar" },
-    });
-    await prisma.productSubscription.create({
-      data: {
-        contactId: newsContact.id,
-        productKey: ONE_NEWS_PRODUCT_KEY,
-        status: "PENDING_PREFERENCES",
-        newsPreferences: {
-          create: { contactId: newsContact.id, briefingLanguage: "English", regionFocus: "Global" },
-        },
-      },
-    });
-    const result = await resolveOneNewsEligibilityForContact(newsContact.id, future);
-    const ok = result.allowed === true && result.reason === "included_in_oneread";
-    if (ok) oneReadPass++;
-    else oneReadFail++;
-    console.log(
-      `${ok ? "PASS" : "FAIL"}  ${"OneNews: umbrella active".padEnd(42)} allowed=${String(result.allowed).padEnd(5)} reason=${result.reason}`,
-    );
-  } finally {
-    await prisma.productSubscription.deleteMany({ where: { contactId: newsContact.id } });
-    await prisma.contact.delete({ where: { id: newsContact.id } });
   }
 
   console.log(`\n${oneReadPass} passed, ${oneReadFail} failed`);

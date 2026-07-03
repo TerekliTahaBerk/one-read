@@ -19,17 +19,6 @@ export function oneLingoTabs() {
   ] as const;
 }
 
-/** Tab definitions for the OneNews section. */
-export function oneNewsTabs() {
-  return [
-    { key: "overview", label: "Overview", href: "/admin/one-news" },
-    { key: "subscribers", label: "Subscribers", href: "/admin/one-news/subscribers" },
-    { key: "issues", label: "Issues", href: "/admin/one-news/issues" },
-    { key: "sources", label: "Sources", href: "/admin/one-news/sources" },
-    { key: "sends", label: "Sends", href: "/admin/one-news/sends" },
-  ] as const;
-}
-
 /** Tab definitions for the OneFilm section. */
 export function oneFilmTabs() {
   return [

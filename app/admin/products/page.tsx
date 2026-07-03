@@ -79,10 +79,6 @@ export default async function AdminProductsPage({
               <Link key="a" href="/admin/one-lingo" className="text-ink underline underline-offset-2">
                 Operations →
               </Link>
-            ) : p.key === "one-news" ? (
-              <Link key="a" href="/admin/one-news" className="text-ink underline underline-offset-2">
-                Operations →
-              </Link>
             ) : p.key === "one-film" ? (
               <Link key="a" href="/admin/one-film" className="text-ink underline underline-offset-2">
                 Operations →
@@ -119,8 +115,6 @@ function productDotClass(key: string): string {
       return "bg-sky-500";
     case "one-lingo":
       return "bg-[#6F5AA8]";
-    case "one-news":
-      return "bg-[#53647A]";
     case "one-film":
       return "bg-[#7B5E8E]";
     case "one-dish":

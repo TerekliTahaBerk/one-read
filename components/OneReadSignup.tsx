@@ -13,33 +13,28 @@ import {
   SOURCE_LANGUAGES,
   FILM_GENRES,
   FILM_EMAIL_LANGUAGES,
-  NEWS_BRIEFING_LANGUAGES,
-  NEWS_REGION_FOCUS,
   isLikelyEmail,
 } from "@/lib/options";
 
-type Product = "article" | "film" | "news";
+type Product = "article" | "film";
 
 type Step = "email" | "verify" | "choose" | `${Product}-prefs` | "review" | "done";
 
 const PRODUCT_LABEL: Record<Product, string> = {
   article: "OneArticle",
   film: "OneFilm",
-  news: "OneNews",
 };
 
 /** Each product's own theme key — lets each step (and its ChoiceCard) "wear" that product's color. */
 const PRODUCT_THEME_KEY: Record<Product, ProductThemeKey> = {
   article: "article",
   film: "film",
-  news: "news",
 };
 
 /** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
 function themeForStep(step: Step) {
   if (step === "article-prefs") return productThemes.article;
   if (step === "film-prefs") return productThemes.film;
-  if (step === "news-prefs") return productThemes.news;
   return productThemes.read;
 }
 
@@ -68,7 +63,6 @@ export function OneReadSignup() {
   const [done, setDone] = useState<Record<Product, boolean>>({
     article: false,
     film: false,
-    news: false,
   });
 
   const [interests, setInterests] = useState<string[]>([]);
@@ -77,9 +71,6 @@ export function OneReadSignup() {
 
   const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
   const [filmGenres, setFilmGenres] = useState<string[]>([]);
-
-  const [newsBriefingLanguage, setNewsBriefingLanguage] = useState<string>("English");
-  const [newsRegionFocus, setNewsRegionFocus] = useState<string>("Global");
 
   async function submitEmail(e: FormEvent) {
     e.preventDefault();
@@ -124,7 +115,6 @@ export function OneReadSignup() {
     setDone({
       article: Boolean(data.articlePreferencesComplete),
       film: Boolean(data.filmPreferencesComplete),
-      news: Boolean(data.newsPreferencesComplete),
     });
     setStep("choose");
   }
@@ -200,29 +190,6 @@ export function OneReadSignup() {
     advance("film");
   }
 
-  async function submitNewsPreferences(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!newsBriefingLanguage || !newsRegionFocus) {
-      setError("Choose a briefing language and region focus.");
-      return;
-    }
-    setBusy(true);
-    const { ok } = await postJson("/api/oneread/news-preferences", {
-      email,
-      briefingLanguage: newsBriefingLanguage,
-      regionFocus: newsRegionFocus,
-      topics: [],
-      excludedTopics: [],
-    });
-    setBusy(false);
-    if (!ok) {
-      setError("Something went wrong. Please try again.");
-      return;
-    }
-    advance("news");
-  }
-
   async function startCheckout() {
     setError(null);
     setBusy(true);
@@ -250,7 +217,7 @@ export function OneReadSignup() {
     }
   }
 
-  const anyDone = done.article || done.film || done.news;
+  const anyDone = done.article || done.film;
 
   return (
     <main
@@ -331,13 +298,6 @@ export function OneReadSignup() {
                 onClick={() => startFlow(["article"])}
               />
               <ChoiceCard
-                title="OneNews"
-                description="A 5-minute briefing every morning."
-                cta={done.news ? "Edit news preferences" : "Set news preferences"}
-                themeKey={PRODUCT_THEME_KEY.news}
-                onClick={() => startFlow(["news"])}
-              />
-              <ChoiceCard
                 title="OneFilm"
                 description="One thoughtful film note on Saturdays."
                 cta={done.film ? "Edit film preferences" : "Set film preferences"}
@@ -347,7 +307,7 @@ export function OneReadSignup() {
             </div>
             <button
               type="button"
-              onClick={() => startFlow(["article", "news", "film"])}
+              onClick={() => startFlow(["article", "film"])}
               className="focus-ring mt-4 font-sans text-[13.5px] text-ink link-underline"
             >
               Set up the whole family
@@ -413,41 +373,6 @@ export function OneReadSignup() {
           </StepShell>
         )}
 
-        {step === "news-prefs" && (
-          <StepShell title="Choose your briefing." support="Choose the language and region focus for your morning OneNews briefing.">
-            <form onSubmit={submitNewsPreferences} className="w-full flex flex-col items-center gap-5">
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">Briefing language</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {NEWS_BRIEFING_LANGUAGES.map((lang) => (
-                    <LanguagePill
-                      key={lang}
-                      label={lang}
-                      selected={newsBriefingLanguage === lang}
-                      onClick={() => setNewsBriefingLanguage(lang)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">Region focus</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {NEWS_REGION_FOCUS.map((region) => (
-                    <InterestChip
-                      key={region}
-                      label={region}
-                      selected={newsRegionFocus === region}
-                      onClick={() => setNewsRegionFocus(region)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <SubmitButton busy={busy}>Save news preferences</SubmitButton>
-              {error && <ErrorText>{error}</ErrorText>}
-            </form>
-          </StepShell>
-        )}
-
         {step === "film-prefs" && (
           <StepShell title="Choose the kind of films you want." support="Choose the kind of films you want OneRead to recommend on Saturdays.">
             <form onSubmit={submitFilmPreferences} className="w-full flex flex-col items-center gap-5">
@@ -489,7 +414,7 @@ export function OneReadSignup() {
             <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
               <p className="text-fog text-[12.5px]">Email</p>
               <p className="mb-3">{email}</p>
-              {(["article", "news", "film"] as Product[]).map((p) => (
+              {(["article", "film"] as Product[]).map((p) => (
                 <div key={p}>
                   <p className="text-fog text-[12.5px]">{PRODUCT_LABEL[p]}</p>
                   <p className="mb-3">{done[p] ? "Preferences complete" : "Not set up yet"}</p>

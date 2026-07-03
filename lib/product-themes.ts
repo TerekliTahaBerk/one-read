@@ -24,15 +24,6 @@ export const productThemes = {
     surface: "#EEE7FB",
     mutedText: "#6B6B6B",
   },
-  news: {
-    name: "OneNews",
-    background: "#F5F7FA",
-    accent: "#53647A",
-    border: "#DCE3EA",
-    surface: "#EEF2F6",
-    hover: "#E7EDF3",
-    mutedText: "#6B6B6B",
-  },
   film: {
     name: "OneFilm",
     background: "#F8F4FA",

@@ -14,37 +14,37 @@ export function FilmSampleEmailPreview({ className = "" }: { className?: string 
   return (
     <div className={`w-full ${className}`}>
       <div className="rounded-2xl border border-[var(--theme-border)] bg-white/60 p-5 text-left shadow-sm">
-        <div className="text-[11px] uppercase tracking-[0.22em] text-ash">Örnek format</div>
-        <h2 className="mt-3 font-serif text-[24px] leading-tight text-ink">OneFilm’den bir not</h2>
-        <p className="mt-1 font-serif text-[16px] italic text-ash">Uzun bir akşam için sakin bir film</p>
+        <div className="text-[11px] uppercase tracking-[0.22em] text-ash">Sample format</div>
+        <h2 className="mt-3 font-serif text-[24px] leading-tight text-ink">A note from OneFilm</h2>
+        <p className="mt-1 font-serif text-[16px] italic text-ash">A quiet film for a long evening</p>
         <p className="mt-3 text-[14px] leading-6 text-ash">
-          Tek bir film, neden izlemeye değer olduğuna dair kısa bir not, hangi ruh hâline iyi geleceği ve başlamadan önce bilmen gerekenler. Aşağıdaki örnek yalnızca biçimi gösterir; gerçek bir film önerisi değildir.
+          One film, a short note on why it's worth watching, what mood it suits, and what to know before you press play. The example below shows the format only — it isn't a real recommendation.
         </p>
-        <p className="mt-2 text-[13px] leading-6 text-fog">Liste yok, gürültü yok. Metadata dışı bilgi uydurmaz.</p>
+        <p className="mt-2 text-[13px] leading-6 text-fog">No lists, no noise. Nothing beyond real metadata is invented.</p>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="mt-4 rounded-full border border-[var(--theme-border)] bg-white/60 px-4 py-1.5 text-[12.5px] text-ash"
         >
-          {open ? "Örneği gizle" : "Örneği gör"}
+          {open ? "Hide example" : "See example"}
         </button>
 
         {open && (
           <div className="mt-5 space-y-4 border-t border-[var(--theme-border)] pt-5 text-[14px] leading-6 text-ink">
-            <Section title="Film notu">
-              Filmi neden bu akşam açmaya değer kıldığına dair kısa, özgün bir not — bir eleştiriden kopyalanmaz.
+            <Section title="The note">
+              A short, original note on why tonight is the night to watch this film — never copied from a review.
             </Section>
-            <Section title="Neden bu film?">
-              Ruh hâline ve ana fikre dayanan, genel geçer olmayan, kısa ve net bir sebep.
+            <Section title="Why this film?">
+              A short, specific reason grounded in mood and premise — never a generic blurb.
             </Section>
-            <Section title="Nasıl hissettiriyor?">
-              Filmin tonu ve dokusu — sakin, gergin, sıcak, ağır ilerleyen — neye hazırlandığını bilesin diye.
+            <Section title="How does it feel?">
+              The film's tone and texture — calm, tense, warm, slow-burning — so you know what to expect.
             </Section>
-            <Section title="Ne zaman iyi gider?">
-              Doğru an için kısa bir öneri — uzun bir günün ardından, telefonu kenara koyabileceğin bir akşamda.
+            <Section title="When it fits best">
+              A short suggestion for the right moment — after a long day, on an evening you can put the phone down.
             </Section>
-            <Section title="Başlamadan önce">
-              Spoiler içermeyen bir hatırlatma. OneFilm, sen istemedikçe sürprizleri açık etmez.
+            <Section title="Before you start">
+              A spoiler-free heads-up. OneFilm never gives away surprises you didn't ask for.
             </Section>
           </div>
         )}

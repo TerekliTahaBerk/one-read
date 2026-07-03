@@ -104,8 +104,7 @@ export default function HomePage() {
             "
           >
             <p className="font-serif text-[1.25rem] font-medium leading-tight text-ink">
-              Today: OneArticle on weekdays, OneNews every morning, OneFilm on
-              Saturdays.
+              Today: OneArticle on weekdays, OneFilm on Saturdays.
             </p>
             <p className="mt-3 font-sans text-[14px] leading-[1.65] text-ash">
               One subscription unlocks every product in the OneRead family —

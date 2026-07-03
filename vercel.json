@@ -14,10 +14,6 @@
       "schedule": "0 4 * * *"
     },
     {
-      "path": "/api/cron/one-news",
-      "schedule": "30 3 * * *"
-    },
-    {
       "path": "/api/cron/one-film",
       "schedule": "0 4 * * *"
     }

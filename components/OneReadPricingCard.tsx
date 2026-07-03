@@ -31,7 +31,6 @@ export function OneReadPricingCard() {
           <ul className="mt-6 space-y-3 text-left">
             {[
               "OneArticle — one article brief every weekday morning",
-              "OneNews — a 5-minute briefing every morning",
               "OneFilm — one film note every Saturday",
               "Edit your preferences anytime",
               "One-click cancel — no questions asked",

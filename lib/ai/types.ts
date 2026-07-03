@@ -3,7 +3,7 @@
  *
  * These types are provider-agnostic on purpose: today the only implementation
  * is Gemini (`lib/ai/gemini.ts`), but every product brain (OneArticle,
- * OneLingo, OneNews, OneFilm) talks to the SAME shared module. There is never
+ * OneLingo, OneFilm) talks to the SAME shared module. There is never
  * more than one Gemini implementation.
  */
 
@@ -11,14 +11,13 @@
 export type GeminiModelTier = "fast" | "quality" | "reasoning";
 
 /** Stable product identifiers used for logging + cache keys. */
-export type AiProductKey = "one-article" | "one-lingo" | "one-news" | "one-film";
+export type AiProductKey = "one-article" | "one-lingo" | "one-film";
 
 /** Coarse task name, for logging + per-task model selection. */
 export type AiTask =
   | "article-brief"
   | "article-score"
   | "lingo-lesson"
-  | "news-briefing"
   | "film-note";
 
 export interface GeminiCallOptions {

@@ -72,7 +72,7 @@ export default function PricingPage() {
           "
         >
           One subscription includes the whole OneRead family — OneArticle on
-          weekdays, OneNews every morning, and OneFilm on Saturdays.
+          weekdays and OneFilm on Saturdays.
         </p>
 
         <OneReadPricingCard />

@@ -10,11 +10,9 @@ import {
   ensureOneReadSubscription,
   ensureArticlePreferencesHolder,
   ensureFilmPreferencesHolder,
-  ensureNewsPreferencesHolder,
 } from "@/lib/oneread/access";
 import { preferencesComplete } from "@/lib/subscriptions";
 import { filmPreferencesComplete } from "@/lib/film/subscriptions";
-import { newsPreferencesComplete } from "@/lib/news/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +29,7 @@ const ERROR_STATUS: Record<string, number> = {
  * Body: { email: string, code: string }
  *
  * Verifies the 6-digit code. On success, sets a short-lived verified-email
- * session cookie, materializes the OneRead subscription + Article/Film/News
+ * session cookie, materializes the OneRead subscription + Article/Film
  * preference holders (no billing/trial started here — Polar remains the
  * source of truth), and reports current preference-completion state so the
  * UI can route to the right onboarding step.
@@ -75,10 +73,9 @@ export async function POST(req: Request) {
   }
 
   const oneRead = await ensureOneReadSubscription(email);
-  const [articleHolder, filmHolder, newsHolder] = await Promise.all([
+  const [articleHolder, filmHolder] = await Promise.all([
     ensureArticlePreferencesHolder(oneRead.contactId),
     ensureFilmPreferencesHolder(oneRead.contactId),
-    ensureNewsPreferencesHolder(oneRead.contactId),
   ]);
 
   const res = NextResponse.json({
@@ -87,7 +84,6 @@ export async function POST(req: Request) {
     email,
     articlePreferencesComplete: preferencesComplete(articleHolder.preferences),
     filmPreferencesComplete: filmPreferencesComplete(filmHolder.filmPreferences),
-    newsPreferencesComplete: newsPreferencesComplete(newsHolder.newsPreferences),
   });
   setVerifiedEmailCookie(res, email, VERIFICATION_PURPOSES.signup);
   return res;

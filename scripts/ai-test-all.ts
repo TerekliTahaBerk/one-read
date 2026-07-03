@@ -1,7 +1,7 @@
 /**
  * OneRead — run all AI brain tests (no emails, no DB writes).
  *
- * Runs ai:test:article, ai:test:lingo, ai:test:news, ai:test:film in sequence.
+ * Runs ai:test:article, ai:test:lingo, ai:test:film in sequence.
  * Each child skips live Gemini calls gracefully when GEMINI_API_KEY is absent.
  * Exits non-zero if any child fails.
  *
@@ -13,7 +13,6 @@ import { spawnSync } from "node:child_process";
 const SCRIPTS = [
   "scripts/ai-test-article.ts",
   "scripts/ai-test-lingo.ts",
-  "scripts/ai-test-news.ts",
   "scripts/ai-test-film.ts",
 ];
 

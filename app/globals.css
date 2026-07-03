@@ -5,11 +5,6 @@
 @layer base {
   :root {
     color-scheme: light;
-    --one-news-bg: #F5F7FA;
-    --one-news-accent: #53647A;
-    --one-news-border: #DCE3EA;
-    --one-news-surface: #EEF2F6;
-    --one-news-hover: #E7EDF3;
     --one-film-bg: #F8F4FA;
     --one-film-accent: #7B5E8E;
     --one-film-border: #E3D6EA;

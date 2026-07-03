@@ -13,7 +13,6 @@ type LookupResult = {
   periodEndsAt?: string;
   articlePreferencesComplete: boolean;
   filmPreferencesComplete: boolean;
-  newsPreferencesComplete: boolean;
 };
 
 const STATE_LABEL: Record<string, string> = {
@@ -96,8 +95,8 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
           Manage your OneRead account.
         </h1>
         <p className="mt-3 font-sans text-[14.5px] leading-[1.6] text-ash text-center max-w-[38ch]">
-          Look up your subscription to check status or edit your OneArticle,
-          OneNews, and OneFilm preferences.
+          Look up your subscription to check status or edit your OneArticle
+          and OneFilm preferences.
         </p>
 
         <form onSubmit={lookup} className="mt-6 w-full flex flex-col items-center gap-3">
@@ -126,9 +125,6 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
 
             <p className="text-fog text-[12.5px]">OneArticle preferences</p>
             <p className="mb-3">{result.articlePreferencesComplete ? "Complete" : "Incomplete"}</p>
-
-            <p className="text-fog text-[12.5px]">OneNews preferences</p>
-            <p className="mb-3">{result.newsPreferencesComplete ? "Complete" : "Incomplete"}</p>
 
             <p className="text-fog text-[12.5px]">OneFilm preferences</p>
             <p className="mb-3">{result.filmPreferencesComplete ? "Complete" : "Incomplete"}</p>

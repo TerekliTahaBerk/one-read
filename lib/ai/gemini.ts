@@ -2,7 +2,7 @@
  * OneRead — shared Gemini provider.
  *
  * THE single Gemini implementation for the whole app. Every product brain
- * (OneArticle, OneLingo, OneNews, OneFilm) calls `generateTextWithGemini` /
+ * (OneArticle, OneLingo, OneFilm) calls `generateTextWithGemini` /
  * `generateJsonWithGemini` here — there are never four separate Gemini clients.
  *
  * Safety:

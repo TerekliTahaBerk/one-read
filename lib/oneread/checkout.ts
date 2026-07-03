@@ -2,7 +2,6 @@ import {
   ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
-  ONE_NEWS_PRODUCT_KEY,
 } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import {
@@ -11,7 +10,6 @@ import {
 } from "@/lib/billing/polar";
 import { preferencesComplete } from "@/lib/subscriptions";
 import { filmPreferencesComplete } from "@/lib/film/subscriptions";
-import { newsPreferencesComplete } from "@/lib/news/subscriptions";
 import { ensureOneReadSubscription } from "@/lib/oneread/access";
 
 export type OneReadCheckoutResult =
@@ -30,7 +28,7 @@ export async function createOneReadCheckoutSession(
 ): Promise<OneReadCheckoutResult> {
   const sub = await ensureOneReadSubscription(email);
 
-  const [articleHolder, filmHolder, newsHolder] = await Promise.all([
+  const [articleHolder, filmHolder] = await Promise.all([
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
       include: { preferences: true },
@@ -39,16 +37,11 @@ export async function createOneReadCheckoutSession(
       where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_FILM_PRODUCT_KEY } },
       include: { filmPreferences: true },
     }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_NEWS_PRODUCT_KEY } },
-      include: { newsPreferences: true },
-    }),
   ]);
 
   const hasAnyPreferences =
     preferencesComplete(articleHolder?.preferences ?? null) ||
-    filmPreferencesComplete(filmHolder?.filmPreferences ?? null) ||
-    newsPreferencesComplete(newsHolder?.newsPreferences ?? null);
+    filmPreferencesComplete(filmHolder?.filmPreferences ?? null);
   if (!hasAnyPreferences) return { kind: "needs_setup" };
 
   if (

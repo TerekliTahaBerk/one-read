@@ -18,12 +18,6 @@ import {
   lingoTimezone,
 } from "@/lib/lingo/config";
 import {
-  newsBillingConfigured,
-  newsCronEnabled,
-  newsRequireApproval,
-  newsSourceMode,
-} from "@/lib/news/config";
-import {
   filmBillingConfigured,
   filmCronEnabled,
   filmRequireApproval,
@@ -147,12 +141,6 @@ export default async function SettingsPage({
   if (!lingoCronEnabled()) {
     warnings.push("ONELINGO_CRON_ENABLED is not true — the OneLingo cron route will refuse scheduled runs.");
   }
-  if (!newsBillingConfigured()) {
-    warnings.push("POLAR_ONENEWS_PRODUCT_ID is missing — OneNews management checkout is disabled.");
-  }
-  if (!newsCronEnabled()) {
-    warnings.push("ONENEWS_CRON_ENABLED is not true — the OneNews cron route will refuse scheduled runs.");
-  }
   if (!filmBillingConfigured()) {
     warnings.push("POLAR_ONEFILM_PRODUCT_ID is missing — OneFilm management checkout is disabled.");
   }
@@ -256,9 +244,6 @@ export default async function SettingsPage({
             ["POLAR_ONE_ARTICLE_RETURN_URL", configured(process.env.POLAR_ONE_ARTICLE_RETURN_URL)],
             ["POLAR_ONE_LINGO_SUCCESS_URL", configured(process.env.POLAR_ONE_LINGO_SUCCESS_URL)],
             ["POLAR_ONE_LINGO_RETURN_URL", configured(process.env.POLAR_ONE_LINGO_RETURN_URL)],
-            ["POLAR_ONENEWS_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONENEWS_PRODUCT_ID || process.env.POLAR_ONE_NEWS_PRODUCT_ID)],
-            ["POLAR_ONENEWS_SUCCESS_URL", configured(process.env.POLAR_ONENEWS_SUCCESS_URL)],
-            ["POLAR_ONENEWS_RETURN_URL", configured(process.env.POLAR_ONENEWS_RETURN_URL)],
             ["POLAR_ONEFILM_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONEFILM_PRODUCT_ID || process.env.POLAR_ONE_FILM_PRODUCT_ID)],
             ["POLAR_ONEFILM_SUCCESS_URL", configured(process.env.POLAR_ONEFILM_SUCCESS_URL)],
             ["POLAR_ONEFILM_RETURN_URL", configured(process.env.POLAR_ONEFILM_RETURN_URL)],
@@ -309,7 +294,6 @@ export default async function SettingsPage({
           rows={[
             ["OneArticle", oneArticleAi.statusLabel],
             ["OneLingo", aiBrainStatus(aiStatus)],
-            ["OneNews", `Source mode: ${newsSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
             ["OneFilm", `Source mode: ${filmSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
           ]}
         />
@@ -328,9 +312,6 @@ export default async function SettingsPage({
             ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
             ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
             ["OneLingo send time", `${String(lingoSendHourLocal()).padStart(2, "0")}:00 ${lingoTimezone()}`],
-            ["OneNews cron enabled", newsCronEnabled() ? "Enabled" : "Missing"],
-            ["OneNews approval required", newsRequireApproval() ? "Enabled" : "Off"],
-            ["OneNews source mode", newsSourceMode()],
             ["OneFilm cron enabled", filmCronEnabled() ? "Enabled" : "Missing"],
             ["OneFilm approval required", filmRequireApproval() ? "Enabled" : "Off"],
             ["OneFilm source mode", filmSourceMode()],
@@ -366,7 +347,6 @@ export default async function SettingsPage({
             ["OneRead (umbrella) public visibility", "Visible"],
             ["OneArticle public visibility", "Visible — included in OneRead"],
             ["OneFilm public visibility", "Visible — included in OneRead"],
-            ["OneNews public visibility", "Visible — included in OneRead"],
             ["OneLingo public visibility", "Hidden"],
             ["OneDish public visibility", "Hidden"],
             ["POLAR_SUCCESS_URL", configured(process.env.POLAR_SUCCESS_URL)],

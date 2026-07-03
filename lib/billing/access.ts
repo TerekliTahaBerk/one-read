@@ -41,7 +41,6 @@ export type EligibilityReason =
   | "ok"
   | "incomplete_preferences"
   | "missing_language_preferences"
-  | "missing_news_preferences"
   | "missing_film_preferences"
   | "missing_article_preferences"
   | "email_unsubscribed"
@@ -59,9 +58,7 @@ export type EligibilityReason =
   /** A pre-existing standalone OneArticle subscription grants access directly. */
   | "legacy_one_article_access"
   /** A pre-existing standalone OneFilm subscription grants access directly. */
-  | "legacy_one_film_access"
-  /** A pre-existing standalone OneNews subscription grants access directly. */
-  | "legacy_one_news_access";
+  | "legacy_one_film_access";
 
 export interface EligibilityResult {
   allowed: boolean;

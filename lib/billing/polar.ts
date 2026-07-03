@@ -3,12 +3,10 @@ import type { BillingInterval } from "@/lib/options";
 import {
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_LINGO_PRODUCT_KEY,
-  ONE_NEWS_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
   ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
 import { lingoPolarProductId } from "@/lib/lingo/config";
-import { newsPolarProductId } from "@/lib/news/config";
 import { filmPolarProductId } from "@/lib/film/config";
 import { oneReadPolarProductId } from "@/lib/oneread/config";
 import { prisma } from "@/lib/prisma";
@@ -52,15 +50,6 @@ export function getPolarProductId(
     if (!id) {
       throw new Error(
         "OneLingo billing is not configured. Missing: POLAR_ONE_LINGO_PRODUCT_ID.",
-      );
-    }
-    return id;
-  }
-  if (productKey === ONE_NEWS_PRODUCT_KEY) {
-    const id = newsPolarProductId();
-    if (!id) {
-      throw new Error(
-        "OneNews billing is not configured. Missing: POLAR_ONENEWS_PRODUCT_ID.",
       );
     }
     return id;
@@ -122,8 +111,6 @@ function productPathSegment(productKey: string): string {
   switch (productKey) {
     case ONE_LINGO_PRODUCT_KEY:
       return "lingo";
-    case ONE_NEWS_PRODUCT_KEY:
-      return "news";
     case ONE_FILM_PRODUCT_KEY:
       return "film";
     default:
@@ -152,9 +139,6 @@ function checkoutReturnUrl(
     has(process.env.POLAR_ONE_LINGO_RETURN_URL)
   ) {
     return process.env.POLAR_ONE_LINGO_RETURN_URL;
-  }
-  if (productKey === ONE_NEWS_PRODUCT_KEY && has(process.env.POLAR_ONENEWS_RETURN_URL)) {
-    return process.env.POLAR_ONENEWS_RETURN_URL;
   }
   if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_RETURN_URL)) {
     return process.env.POLAR_ONEFILM_RETURN_URL;
@@ -189,9 +173,6 @@ function checkoutSuccessUrl(
     has(process.env.POLAR_ONE_LINGO_SUCCESS_URL)
   ) {
     return process.env.POLAR_ONE_LINGO_SUCCESS_URL;
-  }
-  if (productKey === ONE_NEWS_PRODUCT_KEY && has(process.env.POLAR_ONENEWS_SUCCESS_URL)) {
-    return process.env.POLAR_ONENEWS_SUCCESS_URL as string;
   }
   if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_SUCCESS_URL)) {
     return process.env.POLAR_ONEFILM_SUCCESS_URL as string;
