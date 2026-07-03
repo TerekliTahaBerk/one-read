@@ -157,6 +157,65 @@
     animation-delay: calc(1.2s + var(--family-idle-delay));
   }
 
+  /* Fixed feedback launcher — inset from the viewport edge and iOS safe area. */
+  .feedback-launcher {
+    right: calc(0.875rem + env(safe-area-inset-right, 0px));
+    bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .feedback-launcher:active {
+    transform: scale(0.94);
+  }
+
+  .feedback-wave {
+    display: inline-block;
+    transform-origin: 72% 72%;
+    animation: feedbackWave 3.2s ease-in-out infinite;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  }
+
+  @media (min-width: 640px) {
+    .feedback-launcher {
+      right: calc(1.5rem + env(safe-area-inset-right, 0px));
+      bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .feedback-launcher:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(26, 26, 26, 0.2);
+    }
+  }
+
+  @keyframes feedbackWave {
+    0%,
+    55%,
+    100% {
+      transform: rotate(0deg);
+    }
+    62% {
+      transform: rotate(15deg);
+    }
+    69% {
+      transform: rotate(-9deg);
+    }
+    76% {
+      transform: rotate(12deg);
+    }
+    83% {
+      transform: rotate(-5deg);
+    }
+    90% {
+      transform: rotate(0deg);
+    }
+  }
+
   @keyframes familyArrive {
     to {
       opacity: 1;
@@ -207,7 +266,8 @@
     .family-mascot,
     .family-mascot-figure,
     .family-object,
-    .mascot-eyes {
+    .mascot-eyes,
+    .feedback-wave {
       animation: none !important;
     }
   }
