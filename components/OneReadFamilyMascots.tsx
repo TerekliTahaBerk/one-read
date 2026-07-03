@@ -85,8 +85,8 @@ function Face({ lookX = 0, lookY = 0 }: { lookX?: number; lookY?: number }) {
     <g className="mascot-eyes">
       <ellipse cx="66" cy="75" rx="11" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
       <ellipse cx="91" cy="75" rx="11" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
-      <circle cx={68 + lookX} cy={78 + lookY} r="3.8" fill="#1A1A1A" stroke="none" />
-      <circle cx={89 + lookX} cy={78 + lookY} r="3.8" fill="#1A1A1A" stroke="none" />
+      <circle className="mascot-pupil" cx={68 + lookX} cy={78 + lookY} r="3.8" fill="#1A1A1A" stroke="none" />
+      <circle className="mascot-pupil" cx={89 + lookX} cy={78 + lookY} r="3.8" fill="#1A1A1A" stroke="none" />
     </g>
   );
 }
@@ -94,10 +94,13 @@ function Face({ lookX = 0, lookY = 0 }: { lookX?: number; lookY?: number }) {
 export function OneArticleMascotArt() {
   return (
     <CharacterSvg>
-      <path d="M53 103c-7 13-9 23-9 35M102 106c-7 11-15 20-24 29M44 138l-9 1M78 135l7 5" strokeWidth="3" />
+      <path d="M53 103c-7 13-9 23-9 35M44 138l-9 1" strokeWidth="3" />
+      <path d="M102 106c-7 11-15 20-24 29" strokeWidth="3" />
+      <path className="article-foot-tap" d="M78 135l7 5" strokeWidth="3" />
       <path d="M48 93C34 88 32 72 41 63c-5-12 5-23 18-21 5-13 20-16 29-7 12-7 25 1 24 15 12 4 16 18 8 27 7 11 0 25-13 27-7 12-23 13-32 4-11 7-25 0-27-15Z" fill="#1A1A1A" strokeWidth="2.5" />
       <Face lookX={-1.5} lookY={2} />
-      <path d="M49 91c-8 3-13 9-16 17M107 92c-12 4-20 11-25 22" strokeWidth="3" />
+      <path className="article-arm-left" d="M49 91c-8 3-13 9-16 17" strokeWidth="3" />
+      <path className="article-arm-right" d="M107 92c-12 4-20 11-25 22" strokeWidth="3" />
       <g className="family-object">
         <path d="M24 100l22-7 10 31-22 7Z" fill="#DCEAF5" strokeWidth="2.5" />
         <path d="M46 93l-4 8 10-3M33 108l13-4M36 115l12-4M38 122l10-3" strokeWidth="1.8" />
@@ -110,13 +113,18 @@ export function OneFilmMascotArt() {
   return (
     <CharacterSvg>
       <path d="M55 106c-6 13-7 23-6 34M101 105c9 8 17 14 27 17M49 140l-9 2M128 122l4 8" strokeWidth="3" />
-      <path d="M51 54c-3-12 2-22 12-29M108 53c2-13-2-23-12-31" strokeWidth="3" />
+      <path className="film-arms" d="M51 54c-3-12 2-22 12-29M108 53c2-13-2-23-12-31" strokeWidth="3" />
       <path d="M46 103c-12-6-14-21-6-30-7-10 0-23 12-24 1-14 15-21 27-14 10-10 27-5 30 9 14 0 21 15 13 26 9 10 4 26-9 30-4 13-20 18-31 10-10 9-27 5-31-8Z" fill="#1A1A1A" strokeWidth="2.5" />
       <Face lookY={-2} />
       <g className="family-object">
         <path d="M56 17h47v24H56Z" fill="#E8DFF0" strokeWidth="2.5" />
         <path className="film-clapper-top" d="M54 10l47-5 2 11-47 5Z" fill="#E8DFF0" strokeWidth="2.5" />
         <path d="M65 9l7 9M81 7l7 9M68 23v12M84 23v12" strokeWidth="1.8" />
+      </g>
+      <g className="film-action-lines" strokeWidth="2">
+        <path d="M47 6l-5-5" />
+        <path d="M108 4l4-6" />
+        <path d="M113 13l7-1" />
       </g>
     </CharacterSvg>
   );

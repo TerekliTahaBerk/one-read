@@ -265,23 +265,60 @@
   }
 
   .product-mascot-article .product-mascot-art {
-    animation: articleMascotRead 6.5s ease-in-out infinite;
+    animation: articleMascotRead 7.2s ease-in-out infinite;
   }
 
   .product-mascot-article .family-object {
     transform-box: fill-box;
     transform-origin: 80% 88%;
-    animation: articlePageBreathe 4.8s ease-in-out infinite;
+    animation: articlePageTurn 7.2s ease-in-out infinite;
+  }
+
+  .product-mascot-article .mascot-pupil {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: articleEyeScan 7.2s ease-in-out infinite;
+  }
+
+  .product-mascot-article .article-arm-right {
+    transform-box: fill-box;
+    transform-origin: 100% 0%;
+    animation: articleHandFollow 7.2s ease-in-out infinite;
+  }
+
+  .product-mascot-article .article-foot-tap {
+    transform-box: fill-box;
+    transform-origin: 0% 0%;
+    animation: articleFootTap 7.2s ease-in-out infinite;
   }
 
   .product-mascot-film .product-mascot-art {
-    animation: filmMascotPoise 7s ease-in-out infinite;
+    animation: filmMascotPoise 6.4s ease-in-out infinite;
   }
 
   .product-mascot-film .film-clapper-top {
     transform-box: fill-box;
     transform-origin: 8% 100%;
-    animation: filmClapper 4.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    animation: filmClapper 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  .product-mascot-film .mascot-pupil {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: filmLookUp 6.4s ease-in-out infinite;
+  }
+
+  .product-mascot-film .film-arms {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: filmArmsReact 6.4s ease-in-out infinite;
+  }
+
+  .product-mascot-film .film-action-lines {
+    stroke: var(--theme-accent);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: filmActionLines 6.4s ease-out infinite;
   }
 
   @keyframes articleMascotRead {
@@ -289,21 +326,90 @@
     100% {
       transform: rotate(0deg) translateY(0);
     }
-    45% {
-      transform: rotate(-1.4deg) translateY(-2px);
+    28% {
+      transform: rotate(-0.8deg) translateY(-1px);
     }
-    55% {
-      transform: rotate(-1.4deg) translateY(-2px);
+    48% {
+      transform: rotate(-1.3deg) translateY(-2px);
+    }
+    68% {
+      transform: rotate(-0.4deg) translateY(-1px);
     }
   }
 
-  @keyframes articlePageBreathe {
+  @keyframes articlePageTurn {
     0%,
+    18%,
     100% {
       transform: rotate(0deg) translateY(0);
     }
-    50% {
-      transform: rotate(-2deg) translateY(-1px);
+    32% {
+      transform: rotate(-3.2deg) translate(-1px, -1px);
+    }
+    48% {
+      transform: rotate(-1deg) translateY(-2px);
+    }
+    62% {
+      transform: rotate(-2.4deg) translateY(-1px);
+    }
+    76% {
+      transform: rotate(0deg) translateY(0);
+    }
+  }
+
+  @keyframes articleEyeScan {
+    0%,
+    20%,
+    76%,
+    100% {
+      transform: translateX(0);
+    }
+    30% {
+      transform: translateX(-1.5px);
+    }
+    42% {
+      transform: translateX(1.8px);
+    }
+    54% {
+      transform: translateX(-1px);
+    }
+    66% {
+      transform: translateX(1.2px);
+    }
+  }
+
+  @keyframes articleHandFollow {
+    0%,
+    20%,
+    76%,
+    100% {
+      transform: translate(0, 0);
+    }
+    42% {
+      transform: translate(-1px, 1px);
+    }
+    62% {
+      transform: translate(1px, 0);
+    }
+  }
+
+  @keyframes articleFootTap {
+    0%,
+    68%,
+    100% {
+      transform: rotate(0deg);
+    }
+    75% {
+      transform: rotate(-8deg);
+    }
+    82% {
+      transform: rotate(0deg);
+    }
+    88% {
+      transform: rotate(-5deg);
+    }
+    94% {
+      transform: rotate(0deg);
     }
   }
 
@@ -312,25 +418,82 @@
     100% {
       transform: translateY(0);
     }
-    50% {
-      transform: translateY(-2.5px);
+    48% {
+      transform: translateY(0) scale(1);
+    }
+    57% {
+      transform: translateY(-2px) rotate(0.4deg) scale(1.01);
+    }
+    64% {
+      transform: translateY(0) scale(1, 0.985);
+    }
+    72% {
+      transform: translateY(-1px) scale(1);
     }
   }
 
   @keyframes filmClapper {
     0%,
-    58%,
+    48%,
     100% {
       transform: rotate(0deg);
     }
-    68% {
-      transform: rotate(-11deg) translateY(-1px);
+    57% {
+      transform: rotate(-17deg) translateY(-2px);
     }
-    76% {
+    64% {
       transform: rotate(1deg);
     }
-    82% {
+    68% {
       transform: rotate(0deg);
+    }
+    75% {
+      transform: rotate(-5deg) translateY(-1px);
+    }
+    80% {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes filmLookUp {
+    0%,
+    45%,
+    72%,
+    100% {
+      transform: translateY(0);
+    }
+    53%,
+    61% {
+      transform: translateY(-2.5px);
+    }
+  }
+
+  @keyframes filmArmsReact {
+    0%,
+    48%,
+    72%,
+    100% {
+      transform: scaleY(1);
+    }
+    57% {
+      transform: scaleY(1.035);
+    }
+    64% {
+      transform: scaleY(0.99);
+    }
+  }
+
+  @keyframes filmActionLines {
+    0%,
+    58%,
+    68%,
+    100% {
+      opacity: 0;
+      transform: scale(0.88);
+    }
+    63% {
+      opacity: 0.75;
+      transform: scale(1);
     }
   }
 
@@ -347,7 +510,12 @@
     .feedback-wave,
     .product-mascot-art,
     .product-mascot .family-object,
-    .product-mascot .film-clapper-top {
+    .product-mascot .film-clapper-top,
+    .product-mascot .mascot-pupil,
+    .product-mascot .article-arm-right,
+    .product-mascot .article-foot-tap,
+    .product-mascot .film-arms,
+    .product-mascot .film-action-lines {
       animation: none !important;
     }
   }
