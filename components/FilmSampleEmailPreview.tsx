@@ -12,7 +12,7 @@ export function FilmSampleEmailPreview({ className = "" }: { className?: string 
   return (
     <div className={`w-full max-w-[30rem] ${className}`}>
       <p className="text-center font-sans text-[11px] uppercase tracking-eyebrow text-fog">
-        What you'll receive
+        What you&apos;ll receive
       </p>
 
       <div className="mt-3 rounded-2xl border border-[var(--theme-border)] bg-white/70 p-5 sm:p-6 text-left">

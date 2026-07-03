@@ -112,7 +112,7 @@ export function FilmSampleIssuePreview() {
 
           <div className="mt-4 rounded-xl border border-[var(--theme-border)] bg-white/60 p-4">
             <p className="font-sans text-[11px] uppercase tracking-eyebrow text-[var(--theme-accent)]">
-              Tonight's pick
+              Tonight&apos;s pick
             </p>
             <p className="mt-1.5 font-sans text-[13.5px] leading-[1.55] text-graphite">
               {SOURCE.pick}
@@ -160,7 +160,7 @@ export function FilmSampleIssuePreview() {
           </div>
 
           <p className="mt-5 font-serif italic text-[14px] leading-[1.6] text-ash">
-            Enjoy the evening. We'll be back Saturday with one more film worth
+            Enjoy the evening. We&apos;ll be back Saturday with one more film worth
             watching.
           </p>
 
