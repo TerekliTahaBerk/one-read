@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { FilmSubscribeLookup } from "@/components/FilmSubscribeLookup";
@@ -32,7 +33,8 @@ export default function FilmSubscribePage({
         } as CSSProperties
       }
     >
-      <header className="flex w-full justify-center animate-rise">
+      <header className="relative flex w-full justify-center animate-rise">
+        <BackButton href="/" label="Back to OneRead" />
         <Logo label="OneFilm" href="/" ariaLabel="OneRead home" />
       </header>
       <section className="mx-auto my-auto flex w-full max-w-[36rem] flex-col items-center py-8 sm:py-10">

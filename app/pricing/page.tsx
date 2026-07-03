@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { OneReadPricingCard } from "@/components/OneReadPricingCard";
@@ -35,7 +36,8 @@ export default function PricingPage() {
         } as CSSProperties
       }
     >
-      <header className="w-full flex justify-center animate-rise">
+      <header className="relative w-full flex justify-center animate-rise">
+        <BackButton href="/" label="Back to OneRead" />
         <Logo href="/" ariaLabel="OneRead home" />
       </header>
 

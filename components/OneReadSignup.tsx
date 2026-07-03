@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { InterestChip } from "@/components/InterestChip";
@@ -234,7 +235,8 @@ export function OneReadSignup() {
         } as CSSProperties
       }
     >
-      <header className="w-full flex justify-center animate-rise">
+      <header className="relative w-full flex justify-center animate-rise">
+        <BackButton href="/" label="Back to OneRead" />
         <Logo href="/" ariaLabel="OneRead home" />
       </header>
 

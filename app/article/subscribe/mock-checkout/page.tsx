@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { MockCheckout } from "@/components/MockCheckout";
@@ -40,7 +41,8 @@ export default function MockCheckoutPage({
         } as CSSProperties
       }
     >
-      <header className="w-full flex justify-center">
+      <header className="relative w-full flex justify-center">
+        <BackButton href="/article/subscribe" label="Back to subscribe" />
         <Logo label="OneArticle" href="/" ariaLabel="OneArticle — OneRead home" />
       </header>
 

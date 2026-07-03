@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { productThemes } from "@/lib/product-themes";
@@ -32,7 +33,8 @@ export default function SubscribeSuccessPage({
         } as CSSProperties
       }
     >
-      <header className="w-full flex justify-center animate-rise">
+      <header className="relative w-full flex justify-center animate-rise">
+        <BackButton href="/article" label="Back to OneArticle" />
         <Logo label="OneArticle" href="/" ariaLabel="OneArticle — OneRead home" />
       </header>
 

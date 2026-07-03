@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { BackButton } from "@/components/BackButton";
 import { Logo } from "@/components/Logo";
 import { Footer } from "@/components/Footer";
 
@@ -29,7 +30,8 @@ export function LegalLayout({ title, lastUpdated, children }: Props) {
         pb-5 sm:pb-6
       "
     >
-      <header className="w-full flex justify-center">
+      <header className="relative w-full flex justify-center">
+        <BackButton href="/" label="Back to OneRead" />
         <Logo />
       </header>
 
