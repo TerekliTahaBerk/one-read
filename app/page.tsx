@@ -75,18 +75,6 @@ export default function HomePage() {
             >
               Start OneRead
             </Link>
-            <Link
-              href="#family"
-              className="
-                focus-ring inline-flex h-12 w-full items-center justify-center
-                rounded-full border border-line-strong bg-white/65 px-6
-                font-sans text-[14px] font-medium text-ink
-                transition-colors duration-200 hover:bg-white
-                sm:w-auto
-              "
-            >
-              Meet the family
-            </Link>
           </div>
 
           <p
@@ -108,7 +96,6 @@ export default function HomePage() {
       <Footer
         tagline="No feed to check. Just something worth opening."
         showManifesto
-        showProducts
       />
     </main>
   );
