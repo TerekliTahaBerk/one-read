@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { isLikelyEmail, type BillingInterval } from "@/lib/options";
+import { LEGACY_SUBSCRIBE_DICTIONARIES, type LegacySubscribeDict } from "@/lib/legacy-subscribe-i18n";
 import type { SubscribeState } from "@/lib/subscriptions";
 
 interface LookupResult {
@@ -37,6 +39,8 @@ function present(
   r: LookupResult,
   email: string,
   billingEnabled: boolean,
+  t: LegacySubscribeDict,
+  locale: string,
 ): { title: string; body: string; ctas: Cta[] } {
   const q = `?email=${encodeURIComponent(email)}`;
   const pricing = `/article/pricing${q}`;
@@ -49,78 +53,78 @@ function present(
   switch (r.state) {
     case "new":
       return {
-        title: "Set up OneArticle first.",
-        body: "Choose your reading interests and language preferences before starting your free trial.",
-        ctas: [{ kind: "link", label: "Set up OneArticle", href: `/article`, primary: true }],
+        title: t.states.new.title,
+        body: t.states.new.body,
+        ctas: [{ kind: "link", label: t.cta.setupFirst, href: `/article`, primary: true }],
       };
     case "incomplete":
       return {
-        title: "Finish your setup.",
-        body: "Complete your preferences so OneArticle knows what to look for.",
-        ctas: [{ kind: "link", label: "Finish setup", href: `/article${q}`, primary: true }],
+        title: t.states.incomplete.title,
+        body: t.states.incomplete.body,
+        ctas: [{ kind: "link", label: t.cta.finishSetup, href: `/article${q}`, primary: true }],
       };
     case "checkout_needed":
       return {
-        title: "Your preferences are ready.",
-        body: "Start your 7-day free trial with Polar to begin receiving OneArticle at 7 AM.",
-        ctas: [buy("Start 7-day free trial", "monthly", true)],
+        title: t.states.checkout_needed.title,
+        body: t.states.checkout_needed.body,
+        ctas: [buy(t.cta.startTrial, "monthly", true)],
       };
     case "trialing":
       return {
-        title: `Your OneArticle is active${
-          r.daysLeft != null ? ` — ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"} left` : ""
-        }.`,
-        body: "You’re set to receive one carefully chosen article brief every morning at 7 AM.",
-        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
+        title: `${t.states.trialing.titleBase}${r.daysLeft != null ? t.states.trialing.daysSuffix(r.daysLeft) : ""}.`,
+        body: t.states.trialing.body,
+        ctas: [manage(t.cta.manageBilling, true), { kind: "link", label: t.cta.goToProduct, href: `/article` }],
       };
     case "trial_expired":
       return {
-        title: "Your free trial has ended.",
-        body: "Restart your subscription to keep receiving OneArticle — $2/month.",
-        ctas: [buy("Restart subscription", "monthly", true)],
+        title: t.states.trial_expired.title,
+        body: t.states.trial_expired.body,
+        ctas: [buy(t.cta.restartSubscription, "monthly", true)],
       };
     case "active_paid":
       return {
-        title: "Your OneArticle is active.",
-        body: "You’re set to receive one carefully chosen article brief every morning at 7 AM.",
-        ctas: [manage("Manage billing", true), { kind: "link", label: "Go to OneArticle", href: `/article` }],
+        title: t.states.active_paid.title,
+        body: t.states.active_paid.body,
+        ctas: [manage(t.cta.manageBilling, true), { kind: "link", label: t.cta.goToProduct, href: `/article` }],
       };
     case "canceled_active":
       return {
         title: r.periodEndsAt
-          ? `Your subscription is active until ${new Date(r.periodEndsAt).toLocaleDateString()}.`
-          : "Your subscription is active until the end of the period.",
-        body: "You’ll continue receiving OneArticle until the end of your current billing period.",
-        ctas: [manage("Manage billing", true), manage("Resume subscription")],
+          ? t.states.canceled_active.titleUntil(new Date(r.periodEndsAt).toLocaleDateString(locale))
+          : t.states.canceled_active.titleFallback,
+        body: t.states.canceled_active.body,
+        ctas: [manage(t.cta.manageBilling, true), manage(t.cta.resumeSubscription)],
       };
     case "expired":
       return {
-        title: "Your subscription has ended.",
-        body: "Restart your subscription to receive OneArticle again.",
-        ctas: [buy("Restart subscription", "monthly", true)],
+        title: t.states.expired.title,
+        body: t.states.expired.body,
+        ctas: [buy(t.cta.restartSubscription, "monthly", true)],
       };
     case "past_due":
       return {
-        title: "Payment needs attention.",
-        body: "Update your billing details to keep receiving OneArticle.",
-        ctas: [manage("Manage billing", true)],
+        title: t.states.past_due.title,
+        body: t.states.past_due.body,
+        ctas: [manage(t.cta.manageBilling, true)],
       };
     case "active_email_paused":
       return {
-        title: "Your emails are paused.",
-        body: "Your subscription is still active. Resume emails when you want OneArticle back in your inbox.",
-        ctas: [{ kind: "resume-emails", label: "Resume emails", primary: true }, manage("Manage billing")],
+        title: t.states.active_email_paused.title,
+        body: t.states.active_email_paused.body,
+        ctas: [{ kind: "resume-emails", label: t.cta.resumeEmails, primary: true }, manage(t.cta.manageBilling)],
       };
     case "suppressed":
       return {
-        title: "We can’t set up email for this address.",
-        body: "Something’s preventing delivery to this inbox. Please contact support and we’ll sort it out.",
-        ctas: [{ kind: "link", label: "Contact support", href: "mailto:hello@oneread.app", primary: true }],
+        title: t.states.suppressed.title,
+        body: t.states.suppressed.body,
+        ctas: [{ kind: "link", label: t.cta.contactSupport, href: "mailto:hello@oneread.app", primary: true }],
       };
   }
 }
 
 export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: boolean }) {
+  const { locale } = useSiteLanguage();
+  const t = LEGACY_SUBSCRIBE_DICTIONARIES.article[locale];
   const [email, setEmail] = useState("");
   const [result, setResult] = useState<LookupResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -144,12 +148,12 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(data.error ?? t.genericError);
       } else {
         setResult({ state: data.state, daysLeft: data.daysLeft, periodEndsAt: data.periodEndsAt });
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.genericError);
     } finally {
       setLoading(false);
     }
@@ -185,7 +189,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setError(data.error ?? "Could not start checkout.");
+        setError(data.error ?? t.couldNotCheckout);
       } else if (data.action === "redirect" || data.action === "already_active") {
         redirected = true;
         if (checkoutWindow) {
@@ -200,7 +204,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       }
     } catch {
       checkoutWindow?.close();
-      setError("Could not start checkout.");
+      setError(t.couldNotCheckout);
     } finally {
       if (!redirected) checkoutWindow?.close();
       setLoading(false);
@@ -226,16 +230,16 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
       } else if (data.action === "needs_checkout") {
         await onCheckout("monthly");
       } else {
-        setError(data.error ?? "Could not open billing.");
+        setError(data.error ?? t.couldNotOpenBilling);
       }
     } catch {
-      setError("Could not open billing.");
+      setError(t.couldNotOpenBilling);
     } finally {
       setLoading(false);
     }
   }
 
-  const view = result ? present(result, email, billingEnabled) : null;
+  const view = result ? present(result, email, billingEnabled, t, locale) : null;
   const emailsResumed = resumed && result?.state === "active_email_paused";
 
   const primaryBtn =
@@ -280,14 +284,14 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
           type="email"
           inputMode="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t.placeholder}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="flex-1 rounded-xl border border-[var(--theme-border)] bg-white px-4 py-3 font-sans text-[15px] text-ink outline-none focus:border-[var(--theme-focus)]"
-          aria-label="Your email"
+          aria-label={t.emailAriaLabel}
         />
         <button type="submit" disabled={!canSubmit} className={primaryBtn}>
-          {loading ? "Checking…" : "Check status"}
+          {loading ? t.checking : t.checkStatus}
         </button>
       </form>
 
@@ -301,7 +305,7 @@ export function SubscribeLookup({ billingEnabled = false }: { billingEnabled?: b
         >
           <h2 className="font-serif font-medium text-[1.4rem] leading-[1.2] text-ink">{view.title}</h2>
           <p className="font-sans text-[15px] leading-[1.6] text-ash mt-3">
-            {emailsResumed ? "Done — your daily emails are back on." : view.body}
+            {emailsResumed ? t.states.active_email_paused.resumedBody : view.body}
           </p>
 
           {!emailsResumed ? (

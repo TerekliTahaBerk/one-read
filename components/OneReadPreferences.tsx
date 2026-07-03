@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes } from "@/lib/product-themes";
 import { isLikelyEmail } from "@/lib/options";
 
@@ -16,21 +17,9 @@ type LookupResult = {
   filmPreferencesComplete: boolean;
 };
 
-const STATE_LABEL: Record<string, string> = {
-  new: "No OneRead account yet",
-  incomplete: "Preferences not started",
-  checkout_needed: "Checkout not started",
-  trialing: "Trial active",
-  trial_expired: "Trial expired",
-  active_paid: "Active",
-  canceled_active: "Canceled — active until period ends",
-  expired: "Expired",
-  past_due: "Payment needs attention",
-  active_email_paused: "Active — emails paused",
-  suppressed: "Emails suppressed (bounced)",
-};
-
 export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: string }) {
+  const { dictionary } = useSiteLanguage();
+  const t = dictionary.preferences;
   const theme = productThemes.read;
   const [email, setEmail] = useState(initialEmail);
   const [result, setResult] = useState<LookupResult | null>(null);
@@ -41,7 +30,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     e.preventDefault();
     setError(null);
     if (!isLikelyEmail(email)) {
-      setError("Please enter a valid email.");
+      setError(t.errors.invalidEmail);
       return;
     }
     setBusy(true);
@@ -53,7 +42,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok || !data.ok) {
-      setError("Something went wrong. Please try again.");
+      setError(t.errors.generic);
       return;
     }
     setResult(data);
@@ -88,17 +77,16 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
       }
     >
       <header className="relative w-full flex justify-center animate-rise">
-        <BackButton href="/" label="Back to OneRead" />
-        <Logo href="/" ariaLabel="OneRead home" />
+        <BackButton href="/" label={dictionary.common.backToOneRead} />
+        <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
       </header>
 
       <section className="w-full flex flex-col items-center max-w-[30rem] mx-auto py-8 sm:py-10 my-auto">
         <h1 className="font-serif font-medium text-[1.9rem] sm:text-[2.3rem] leading-[1.08] text-ink text-center">
-          Manage your OneRead account.
+          {t.title}
         </h1>
         <p className="mt-3 font-sans text-[14.5px] leading-[1.6] text-ash text-center max-w-[38ch]">
-          Look up your subscription to check status or edit your OneArticle
-          and OneFilm preferences.
+          {t.support}
         </p>
 
         <form onSubmit={lookup} className="mt-6 w-full flex flex-col items-center gap-3">
@@ -106,7 +94,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t.placeholder}
             autoComplete="email"
             className="focus-ring h-12 w-full rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink"
           />
@@ -115,28 +103,28 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
             disabled={busy}
             className="focus-ring inline-flex h-11 items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-white hover:bg-ink/90 disabled:opacity-50"
           >
-            {busy ? "Looking up…" : "Look up account"}
+            {busy ? t.lookingUp : t.lookupCta}
           </button>
           {error && <p className="font-sans text-[13px] text-red-600">{error}</p>}
         </form>
 
         {result && (
           <div className="mt-8 w-full rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
-            <p className="text-fog text-[12.5px]">OneRead status</p>
-            <p className="mb-3">{STATE_LABEL[result.state] ?? result.state}</p>
+            <p className="text-fog text-[12.5px]">{t.statusLabel}</p>
+            <p className="mb-3">{t.states[result.state as keyof typeof t.states] ?? result.state}</p>
 
-            <p className="text-fog text-[12.5px]">OneArticle preferences</p>
-            <p className="mb-3">{result.articlePreferencesComplete ? "Complete" : "Incomplete"}</p>
+            <p className="text-fog text-[12.5px]">{t.articleLabel}</p>
+            <p className="mb-3">{result.articlePreferencesComplete ? t.complete : t.incomplete}</p>
 
-            <p className="text-fog text-[12.5px]">OneFilm preferences</p>
-            <p className="mb-3">{result.filmPreferencesComplete ? "Complete" : "Incomplete"}</p>
+            <p className="text-fog text-[12.5px]">{t.filmLabel}</p>
+            <p className="mb-3">{result.filmPreferencesComplete ? t.complete : t.incomplete}</p>
 
             <div className="mt-4 flex flex-col gap-2">
               <Link
                 href="/subscribe"
                 className="focus-ring inline-flex h-10 items-center justify-center rounded-full border border-[var(--theme-accent)] px-4 font-sans text-[13px] font-medium text-[var(--theme-accent)] hover:bg-[var(--theme-surface)]"
               >
-                Edit preferences
+                {t.editPreferences}
               </Link>
               {(result.state === "trialing" ||
                 result.state === "active_paid" ||
@@ -149,7 +137,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
                   disabled={busy}
                   className="focus-ring inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 font-sans text-[13px] font-medium text-white hover:bg-ink/90 disabled:opacity-50"
                 >
-                  Manage billing
+                  {t.manageBilling}
                 </button>
               )}
               {(result.state === "checkout_needed" || result.state === "incomplete") && (
@@ -157,7 +145,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
                   href="/subscribe"
                   className="focus-ring inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 font-sans text-[13px] font-medium text-white hover:bg-ink/90"
                 >
-                  Start checkout
+                  {t.startCheckout}
                 </Link>
               )}
             </div>
@@ -165,7 +153,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
         )}
       </section>
 
-      <Footer showBackHome backHref="/" backLabel="Back to OneRead" />
+      <Footer showBackHome backHref="/" backLabel={dictionary.common.backToOneRead} />
     </main>
   );
 }

@@ -7,18 +7,20 @@ import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes } from "@/lib/product-themes";
+import { LEGACY_SUBSCRIBE_DICTIONARIES } from "@/lib/legacy-subscribe-i18n";
 
-export default function SubscribeSuccessPage({
+export function ArticleSubscribeSuccessContent({
   searchParams,
 }: {
   searchParams: { checkout_id?: string; email?: string };
 }) {
-  const { dictionary } = useSiteLanguage();
-  const t = dictionary.subscribeSuccess;
-  const theme = productThemes.read;
-  const preferencesHref = searchParams.email
-    ? `/preferences?email=${encodeURIComponent(searchParams.email)}`
-    : "/preferences";
+  const { locale } = useSiteLanguage();
+  const dict = LEGACY_SUBSCRIBE_DICTIONARIES.article[locale];
+  const t = dict.success;
+  const theme = productThemes.article;
+  const subscribeHref = searchParams.email
+    ? `/article/subscribe?email=${encodeURIComponent(searchParams.email)}`
+    : "/article/subscribe";
 
   return (
     <main
@@ -33,8 +35,8 @@ export default function SubscribeSuccessPage({
       }
     >
       <header className="relative w-full flex justify-center animate-rise">
-        <BackButton href="/" label={dictionary.common.backToOneRead} />
-        <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
+        <BackButton href="/article" label={dict.page.backLabel ?? "Back to OneArticle"} />
+        <Logo label="OneArticle" href="/" ariaLabel={dict.page.ariaLabel ?? "OneArticle — OneRead home"} />
       </header>
 
       <section className="w-full flex flex-col items-center max-w-[34rem] mx-auto py-8 sm:py-10 my-auto text-center">
@@ -53,14 +55,14 @@ export default function SubscribeSuccessPage({
           </p>
         ) : null}
         <Link
-          href={preferencesHref}
+          href={subscribeHref}
           className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-[var(--theme-accent)] px-5 font-sans text-[15px] text-white"
         >
           {t.cta}
         </Link>
       </section>
 
-      <Footer showBackHome backHref="/" backLabel={dictionary.common.backToOneRead} />
+      <Footer showBackHome backHref="/article" backLabel={dict.page.backLabel ?? "Back to OneArticle"} />
     </main>
   );
 }

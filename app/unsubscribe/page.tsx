@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { normalizeSiteLocale, SITE_DICTIONARIES, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,16 +26,17 @@ export default async function UnsubscribePage({
 }: {
   searchParams: { send?: string; email?: string; subscription?: string; preview?: string };
 }) {
+  const locale = normalizeSiteLocale(cookies().get(SITE_LOCALE_COOKIE)?.value);
+  const t = SITE_DICTIONARIES[locale].unsubscribe;
+
   const isPreview = searchParams.preview === "1";
   const message: UnsubscribeResult = isPreview
-    ? {
-        headline: "Preview mode.",
-        body: "This is a preview. Real subscribers would now be unsubscribed.",
-      }
+    ? t.preview
     : await applyUnsubscribe(
         searchParams.send,
         searchParams.email,
         searchParams.subscription,
+        t,
       );
 
   return (
@@ -87,7 +90,7 @@ export default async function UnsubscribePage({
             fontSize: 13,
           }}
         >
-          One article. Every morning. Curated for you.
+          {t.tagline}
         </div>
       </div>
     </main>
@@ -103,6 +106,7 @@ async function applyUnsubscribe(
   sendId: string | undefined,
   email: string | undefined,
   subscriptionToken: string | undefined,
+  t: (typeof SITE_DICTIONARIES)["en"]["unsubscribe"],
 ): Promise<UnsubscribeResult> {
   try {
     if (subscriptionToken) {
@@ -111,24 +115,18 @@ async function applyUnsubscribe(
         select: { id: true, emailDeliveryStatus: true, productKey: true },
       });
       if (!sub) {
-        return {
-          headline: "We couldn't find that subscription.",
-          body: "If this is unexpected, reply to any OneRead email and we'll fix it.",
-        };
+        return t.notFound;
       }
       if (sub.emailDeliveryStatus === "UNSUBSCRIBED") {
-        return {
-          headline: "You're already unsubscribed.",
-          body: "No further emails will arrive. Take care.",
-        };
+        return t.alreadyDone;
       }
       await prisma.productSubscription.update({
         where: { id: sub.id },
         data: { emailDeliveryStatus: "UNSUBSCRIBED" },
       });
       return {
-        headline: "You're unsubscribed.",
-        body: `No more ${productLabel(sub.productKey)} emails. If you change your mind, you can resume emails from the subscribe page.`,
+        headline: t.doneProduct.headline,
+        body: t.doneProduct.body.replace("{product}", productLabel(sub.productKey)),
       };
     }
 
@@ -149,10 +147,7 @@ async function applyUnsubscribe(
     }
 
     if (!subscriberId) {
-      return {
-        headline: "We couldn't find that subscription.",
-        body: "If this is unexpected, reply to any OneRead email and we'll fix it.",
-      };
+      return t.notFound;
     }
 
     const before = await prisma.subscriber.findUnique({
@@ -160,10 +155,7 @@ async function applyUnsubscribe(
       select: { status: true },
     });
     if (before?.status === "UNSUBSCRIBED") {
-      return {
-        headline: "You're already unsubscribed.",
-        body: "No further emails will arrive. Take care.",
-      };
+      return t.alreadyDone;
     }
 
     await prisma.subscriber.update({
@@ -171,16 +163,10 @@ async function applyUnsubscribe(
       data: { status: "UNSUBSCRIBED", unsubscribedAt: new Date() },
     });
 
-    return {
-      headline: "You're unsubscribed.",
-      body: "No more emails from OneRead. If you change your mind, you can sign up again any morning.",
-    };
+    return t.doneGeneric;
   } catch (err) {
     console.error("[/unsubscribe] error:", err);
-    return {
-      headline: "Something went wrong.",
-      body: "We've logged it. Please try again, or reply to any OneRead email.",
-    };
+    return t.error;
   }
 }
 

@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
 import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
 import {
@@ -50,6 +51,8 @@ async function postJson(url: string, body: unknown) {
 }
 
 export function OneReadSignup() {
+  const { dictionary } = useSiteLanguage();
+  const t = dictionary.signup;
   const [step, setStep] = useState<Step>("email");
   const theme = themeForStep(step);
   const [email, setEmail] = useState("");
@@ -77,14 +80,14 @@ export function OneReadSignup() {
     e.preventDefault();
     setError(null);
     if (!isLikelyEmail(email)) {
-      setError("Please enter a valid email.");
+      setError(t.errors.invalidEmail);
       return;
     }
     setBusy(true);
     const { ok, data } = await postJson("/api/oneread/verification/request", { email });
     setBusy(false);
     if (!ok && data.error && data.error !== "invalid_request") {
-      setError("Something went wrong. Please try again.");
+      setError(t.errors.generic);
       return;
     }
     setStep("verify");
@@ -94,7 +97,7 @@ export function OneReadSignup() {
     e.preventDefault();
     setError(null);
     if (!/^\d{6}$/.test(code.trim())) {
-      setError("Enter the 6-digit code.");
+      setError(t.errors.invalidCode);
       return;
     }
     setBusy(true);
@@ -106,10 +109,10 @@ export function OneReadSignup() {
     if (!ok) {
       setError(
         data.error === "incorrect"
-          ? "That code isn't right. Try again."
+          ? t.errors.codeIncorrect
           : data.error === "expired"
-            ? "That code expired. Request a new one."
-            : "Something went wrong. Please try again.",
+            ? t.errors.codeExpired
+            : t.errors.generic,
       );
       return;
     }
@@ -144,7 +147,7 @@ export function OneReadSignup() {
     e.preventDefault();
     setError(null);
     if (interests.length === 0) {
-      setError("Choose at least one interest.");
+      setError(t.errors.chooseInterest);
       return;
     }
     setBusy(true);
@@ -157,7 +160,7 @@ export function OneReadSignup() {
     });
     setBusy(false);
     if (!ok) {
-      setError("Something went wrong. Please try again.");
+      setError(t.errors.generic);
       return;
     }
     advance("article");
@@ -167,7 +170,7 @@ export function OneReadSignup() {
     e.preventDefault();
     setError(null);
     if (filmGenres.length === 0) {
-      setError("Choose at least one genre.");
+      setError(t.errors.chooseGenre);
       return;
     }
     setBusy(true);
@@ -185,7 +188,7 @@ export function OneReadSignup() {
     });
     setBusy(false);
     if (!ok) {
-      setError("Something went wrong. Please try again.");
+      setError(t.errors.generic);
       return;
     }
     advance("film");
@@ -200,7 +203,7 @@ export function OneReadSignup() {
       setError(
         typeof data.error === "string"
           ? data.error
-          : "Something went wrong. Please try again.",
+          : t.errors.generic,
       );
       return;
     }
@@ -213,7 +216,7 @@ export function OneReadSignup() {
       return;
     }
     if (data.action === "needs_setup") {
-      setError("Please finish at least one product's preferences first.");
+      setError(t.errors.needsSetup);
       setStep("choose");
     }
   }
@@ -236,33 +239,33 @@ export function OneReadSignup() {
       }
     >
       <header className="relative w-full flex justify-center animate-rise">
-        <BackButton href="/" label="Back to OneRead" />
-        <Logo href="/" ariaLabel="OneRead home" />
+        <BackButton href="/" label={dictionary.common.backToOneRead} />
+        <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
       </header>
 
       <section className="flex-1 w-full flex flex-col items-center justify-center max-w-[36rem] mx-auto py-6 sm:py-8">
         {step === "email" && (
           <StepShell
-            title="Where should we send OneRead?"
-            support="Enter your email and we'll send a 6-digit code before setting up your OneRead family preferences."
+            title={t.email.title}
+            support={t.email.support}
           >
             <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t.email.placeholder}
                 autoComplete="email"
                 className="focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink"
               />
-              <SubmitButton busy={busy}>Send verification code</SubmitButton>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.email.cta}</SubmitButton>
               {error && <ErrorText>{error}</ErrorText>}
             </form>
           </StepShell>
         )}
 
         {step === "verify" && (
-          <StepShell title="Check your inbox." support={`Enter the 6-digit code we sent to ${email} to continue setting up OneRead.`}>
+          <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
             <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
               <input
                 type="text"
@@ -273,14 +276,14 @@ export function OneReadSignup() {
                 maxLength={6}
                 className="focus-ring h-12 w-full max-w-[14rem] rounded-full border border-[var(--theme-border)] bg-white px-5 text-center font-sans text-[18px] tracking-[0.3em] text-ink"
               />
-              <SubmitButton busy={busy}>Verify</SubmitButton>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.verify.cta}</SubmitButton>
               {error && <ErrorText>{error}</ErrorText>}
               <button
                 type="button"
                 onClick={() => setStep("email")}
                 className="link-underline mt-1 font-sans text-[12.5px] text-fog"
               >
-                Use a different email
+                {t.verify.useDifferentEmail}
               </button>
             </form>
           </StepShell>
@@ -288,21 +291,21 @@ export function OneReadSignup() {
 
         {step === "choose" && (
           <StepShell
-            title="What would you like to set up?"
-            support="Set up any product in the OneRead family — you can always add the others later."
+            title={t.choose.title}
+            support={t.choose.support}
           >
             <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
               <ChoiceCard
                 title="OneArticle"
-                description="A short article brief on weekdays."
-                cta={done.article ? "Edit article preferences" : "Set article preferences"}
+                description={t.choose.articleDescription}
+                cta={done.article ? t.choose.articleCtaEdit : t.choose.articleCta}
                 themeKey={PRODUCT_THEME_KEY.article}
                 onClick={() => startFlow(["article"])}
               />
               <ChoiceCard
                 title="OneFilm"
-                description="One thoughtful film note on Saturdays."
-                cta={done.film ? "Edit film preferences" : "Set film preferences"}
+                description={t.choose.filmDescription}
+                cta={done.film ? t.choose.filmCtaEdit : t.choose.filmCta}
                 themeKey={PRODUCT_THEME_KEY.film}
                 onClick={() => startFlow(["film"])}
               />
@@ -312,7 +315,7 @@ export function OneReadSignup() {
               onClick={() => startFlow(["article", "film"])}
               className="focus-ring mt-4 font-sans text-[13.5px] text-ink link-underline"
             >
-              Set up the whole family
+              {t.choose.setupAll}
             </button>
             {anyDone && (
               <button
@@ -320,14 +323,14 @@ export function OneReadSignup() {
                 onClick={() => setStep("review")}
                 className="focus-ring mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95"
               >
-                Continue to review
+                {t.choose.continueReview}
               </button>
             )}
           </StepShell>
         )}
 
         {step === "article-prefs" && (
-          <StepShell title="Choose your reading interests." support="Choose the topics and reading style for your weekday article brief.">
+          <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
             <form onSubmit={submitArticlePreferences} className="w-full flex flex-col items-center gap-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {INTERESTS.map((label) => (
@@ -344,7 +347,7 @@ export function OneReadSignup() {
                 ))}
               </div>
               <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">Summary language</p>
+                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.summaryLanguage}</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {SUMMARY_LANGUAGES.map((lang) => (
                     <LanguagePill
@@ -357,7 +360,7 @@ export function OneReadSignup() {
                 </div>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">Source language</p>
+                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.sourceLanguage}</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {SOURCE_LANGUAGES.map((lang) => (
                     <LanguagePill
@@ -369,14 +372,14 @@ export function OneReadSignup() {
                   ))}
                 </div>
               </div>
-              <SubmitButton busy={busy}>Save article preferences</SubmitButton>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.articlePrefs.cta}</SubmitButton>
               {error && <ErrorText>{error}</ErrorText>}
             </form>
           </StepShell>
         )}
 
         {step === "film-prefs" && (
-          <StepShell title="Choose the kind of films you want." support="Choose the kind of films you want OneRead to recommend on Saturdays.">
+          <StepShell title={t.filmPrefs.title} support={t.filmPrefs.support}>
             <form onSubmit={submitFilmPreferences} className="w-full flex flex-col items-center gap-5">
               <div className="flex flex-wrap justify-center gap-2">
                 {FILM_GENRES.map((genre) => (
@@ -393,7 +396,7 @@ export function OneReadSignup() {
                 ))}
               </div>
               <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">Email language</p>
+                <p className="font-sans text-[12.5px] text-fog">{t.filmPrefs.emailLanguage}</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {FILM_EMAIL_LANGUAGES.map((lang) => (
                     <LanguagePill
@@ -405,32 +408,32 @@ export function OneReadSignup() {
                   ))}
                 </div>
               </div>
-              <SubmitButton busy={busy}>Save film preferences</SubmitButton>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.filmPrefs.cta}</SubmitButton>
               {error && <ErrorText>{error}</ErrorText>}
             </form>
           </StepShell>
         )}
 
         {step === "review" && (
-          <StepShell title="Review your OneRead setup." support="At least one product in the family should be set up before checkout.">
+          <StepShell title={t.review.title} support={t.review.support}>
             <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
-              <p className="text-fog text-[12.5px]">Email</p>
+              <p className="text-fog text-[12.5px]">{t.review.emailLabel}</p>
               <p className="mb-3">{email}</p>
               {(["article", "film"] as Product[]).map((p) => (
                 <div key={p}>
                   <p className="text-fog text-[12.5px]">{PRODUCT_LABEL[p]}</p>
-                  <p className="mb-3">{done[p] ? "Preferences complete" : "Not set up yet"}</p>
+                  <p className="mb-3">{done[p] ? t.review.complete : t.review.notSetUp}</p>
                 </div>
               ))}
-              <p className="text-fog text-[12.5px]">Price</p>
-              <p>{ONEREAD_BILLING_LABEL} — the whole OneRead family included</p>
+              <p className="text-fog text-[12.5px]">{t.review.priceLabel}</p>
+              <p>{ONEREAD_BILLING_LABEL} — {t.review.priceIncluded}</p>
             </div>
             <button
               type="button"
               onClick={() => setStep("choose")}
               className="focus-ring mt-4 font-sans text-[13px] text-ash link-underline"
             >
-              Edit preferences
+              {t.review.editPreferences}
             </button>
             <button
               type="button"
@@ -438,14 +441,14 @@ export function OneReadSignup() {
               disabled={busy || !anyDone}
               className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95 disabled:opacity-50"
             >
-              {busy ? "Please wait…" : `Start OneRead for ${ONEREAD_BILLING_LABEL.split(" / ")[0]}`}
+              {busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}
             </button>
             {error && <ErrorText>{error}</ErrorText>}
           </StepShell>
         )}
       </section>
 
-      <Footer showBackHome backHref="/" backLabel="Back to OneRead" />
+      <Footer showBackHome backHref="/" backLabel={dictionary.common.backToOneRead} />
     </main>
   );
 }
@@ -472,14 +475,22 @@ function StepShell({
   );
 }
 
-function SubmitButton({ busy, children }: { busy: boolean; children: React.ReactNode }) {
+function SubmitButton({
+  busy,
+  waitLabel,
+  children,
+}: {
+  busy: boolean;
+  waitLabel: string;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="submit"
       disabled={busy}
       className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 disabled:opacity-50"
     >
-      {busy ? "Please wait…" : children}
+      {busy ? waitLabel : children}
     </button>
   );
 }
