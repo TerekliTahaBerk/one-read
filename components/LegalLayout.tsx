@@ -6,6 +6,8 @@ import { Footer } from "@/components/Footer";
 type Props = {
   title: string;
   lastUpdated: string;
+  backLabel?: string;
+  ariaLabel?: string;
   children: ReactNode;
 };
 
@@ -19,7 +21,13 @@ type Props = {
  * Prose styling is applied to the children container via arbitrary child
  * selectors so each page can be written as plain semantic HTML (h2 / p / ul).
  */
-export function LegalLayout({ title, lastUpdated, children }: Props) {
+export function LegalLayout({
+  title,
+  lastUpdated,
+  backLabel = "Back to OneRead",
+  ariaLabel,
+  children,
+}: Props) {
   return (
     <main
       className="
@@ -31,8 +39,8 @@ export function LegalLayout({ title, lastUpdated, children }: Props) {
       "
     >
       <header className="relative w-full flex justify-center">
-        <BackButton href="/" label="Back to OneRead" />
-        <Logo />
+        <BackButton href="/" label={backLabel} />
+        <Logo ariaLabel={ariaLabel} />
       </header>
 
       <article className="flex-1 w-full max-w-[42rem] mx-auto pt-10 sm:pt-14">
@@ -60,7 +68,7 @@ export function LegalLayout({ title, lastUpdated, children }: Props) {
         </div>
       </article>
 
-      <Footer showBackHome />
+      <Footer showBackHome backLabel={backLabel} />
     </main>
   );
 }
