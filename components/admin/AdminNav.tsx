@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { PRODUCTS } from "@/lib/admin/products";
 
 /**
  * Left navigation for the admin. Highlights the active section and expands the
@@ -19,6 +20,19 @@ type NavItem = {
   /** Placeholder entry — rendered disabled, never navigates (future phase). */
   disabled?: boolean;
 };
+
+/**
+ * Derive a product's nav badge from the canonical catalog so it never goes
+ * stale: "Waitlist" for pre-launch, "Hidden" for a live product not shown on
+ * the public site, and no badge for a fully live + public product.
+ */
+function productBadge(key: string): string | undefined {
+  const p = PRODUCTS.find((x) => x.key === key);
+  if (!p) return undefined;
+  if (p.status === "waitlist") return "Waitlist";
+  if (!p.publicVisible) return "Hidden";
+  return undefined;
+}
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
@@ -42,14 +56,14 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         href: "/admin/one-lingo",
         label: "OneLingo",
         matchPrefix: "/admin/one-lingo",
-        badge: "Hidden",
+        badge: productBadge("one-lingo"),
         icon: "chat",
       },
       {
         href: "/admin/one-film",
         label: "OneFilm",
         matchPrefix: "/admin/one-film",
-        badge: "Hidden",
+        badge: productBadge("one-film"),
         icon: "film",
       },
     ],
