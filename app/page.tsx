@@ -30,9 +30,10 @@ export default function HomePage() {
               aria-label={dictionary.common.adminLogin}
               title={dictionary.common.adminLogin}
               className="
-                focus-ring group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
+                focus-ring group hidden items-center gap-1.5 rounded-full px-2.5 py-1
                 font-sans text-[13px] text-ash
                 transition-colors duration-200 hover:text-ink
+                sm:inline-flex
               "
             >
               <svg
