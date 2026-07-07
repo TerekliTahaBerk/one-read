@@ -25,12 +25,14 @@ export function ArticleSubscribePageContent({ billingEnabled }: { billingEnabled
       "
       style={
         {
-          backgroundColor: theme.background,
+          // White canvas like the rest of the site — OneArticle blue now shows
+          // only through the accent / border / surface tokens, not the page.
+          backgroundColor: productThemes.read.background,
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,
           "--theme-selected-surface": theme.selectedSurface,
-          "--theme-page": theme.background,
+          "--theme-page": productThemes.read.background,
           "--theme-focus": theme.accent,
         } as CSSProperties
       }

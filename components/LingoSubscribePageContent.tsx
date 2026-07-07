@@ -18,7 +18,9 @@ export function LingoSubscribePageContent({ initialEmail }: { initialEmail: stri
       className="relative flex min-h-svh w-full flex-col items-center px-5 pb-6 pt-7 sm:px-6 sm:pt-9"
       style={
         {
-          backgroundColor: theme.background,
+          // White canvas like the rest of the site — OneLingo purple stays only
+          // in the accent / border / surface tokens, not the page background.
+          backgroundColor: productThemes.read.background,
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import {
+  OneArticleMascotArt,
+  OneFilmMascotArt,
+} from "@/components/OneReadFamilyMascots";
 import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
@@ -228,12 +232,14 @@ export function OneReadSignup() {
       className="relative min-h-svh w-full flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5"
       style={
         {
-          backgroundColor: theme.background,
+          // Page stays white on every step — product identity now lives only in
+          // the accent / border / surface tokens, matching the rest of the site.
+          backgroundColor: productThemes.read.background,
           "--theme-accent": theme.accent,
           "--theme-border": theme.border,
           "--theme-surface": theme.surface,
           "--theme-selected-surface": theme.surface,
-          "--theme-page": theme.background,
+          "--theme-page": productThemes.read.background,
           "--theme-focus": theme.accent,
         } as CSSProperties
       }
@@ -300,6 +306,9 @@ export function OneReadSignup() {
                 description={t.choose.articleDescription}
                 cta={done.article ? t.choose.articleCtaEdit : t.choose.articleCta}
                 themeKey={PRODUCT_THEME_KEY.article}
+                mascot={<OneArticleMascotArt />}
+                idleDelay="0s"
+                done={done.article}
                 onClick={() => startFlow(["article"])}
               />
               <ChoiceCard
@@ -307,6 +316,9 @@ export function OneReadSignup() {
                 description={t.choose.filmDescription}
                 cta={done.film ? t.choose.filmCtaEdit : t.choose.filmCta}
                 themeKey={PRODUCT_THEME_KEY.film}
+                mascot={<OneFilmMascotArt />}
+                idleDelay="-1.6s"
+                done={done.film}
                 onClick={() => startFlow(["film"])}
               />
             </div>
@@ -504,18 +516,26 @@ function ChoiceCard({
   description,
   cta,
   themeKey,
+  mascot,
+  idleDelay = "0s",
+  done = false,
   onClick,
 }: {
   title: string;
   description: string;
   cta: string;
   themeKey: ProductThemeKey;
+  mascot: ReactNode;
+  idleDelay?: string;
+  done?: boolean;
   onClick: () => void;
 }) {
   const cardTheme = productThemes[themeKey];
   return (
-    <div
-      className="flex-1 rounded-2xl border bg-white p-5 text-center"
+    <button
+      type="button"
+      onClick={onClick}
+      className="focus-ring group relative flex-1 rounded-2xl border bg-white p-5 pt-4 text-center transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[var(--card-accent)] hover:shadow-[0_16px_36px_-22px_rgba(27,22,18,0.42)]"
       style={
         {
           borderColor: cardTheme.border,
@@ -524,15 +544,37 @@ function ChoiceCard({
         } as CSSProperties
       }
     >
-      <p className="font-serif text-[1.1rem] font-medium text-ink">{title}</p>
-      <p className="mt-2 font-sans text-[13px] leading-snug text-ash">{description}</p>
-      <button
-        type="button"
-        onClick={onClick}
-        className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--card-accent)] px-4 font-sans text-[13px] font-medium text-[var(--card-accent)] transition-colors duration-200 hover:bg-[var(--card-surface)]"
+      {done && (
+        <span
+          aria-hidden="true"
+          className="absolute right-3.5 top-3.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-white"
+          style={{ backgroundColor: cardTheme.accent }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M2.5 7.5 6 11l5.5-7"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      )}
+
+      <div
+        className="family-mascot-figure mx-auto h-[5.75rem] w-[5.75rem] sm:h-[6.25rem] sm:w-[6.25rem]"
+        style={{ "--family-idle-delay": idleDelay } as CSSProperties}
       >
+        {mascot}
+      </div>
+
+      <p className="mt-1 font-serif text-[1.15rem] font-medium text-ink">{title}</p>
+      <p className="mt-1.5 font-sans text-[13px] leading-snug text-ash">{description}</p>
+
+      <span className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--card-accent)] px-4 font-sans text-[13px] font-medium text-[var(--card-accent)] transition-colors duration-200 group-hover:bg-[var(--card-surface)]">
         {cta}
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }
