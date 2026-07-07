@@ -24,7 +24,7 @@ const en = {
     startOneRead: "Start OneRead",
     includedIn: "Included in",
     subscriptionCovers: "one subscription covers OneArticle and OneFilm.",
-    login: "Log in",
+    adminLogin: "Admin",
     blog: "Blog",
   },
   language: { label: "Language", menu: "Choose language" },
@@ -237,7 +237,7 @@ const en = {
 export type SiteDictionary = typeof en;
 
 const tr: SiteDictionary = {
-  common: { backToOneRead: "OneRead’e dön", oneReadHome: "OneRead ana sayfası", startOneRead: "OneRead’i başlat", includedIn: "Şuna dahil:", subscriptionCovers: "tek abonelik OneArticle ve OneFilm’i kapsar.", login: "Giriş", blog: "Blog" },
+  common: { backToOneRead: "OneRead’e dön", oneReadHome: "OneRead ana sayfası", startOneRead: "OneRead’i başlat", includedIn: "Şuna dahil:", subscriptionCovers: "tek abonelik OneArticle ve OneFilm’i kapsar.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Dil", menu: "Dil seç" },
   footer: { terms: "Koşullar", privacy: "Gizlilik", pricing: "Fiyatlandırma", navigation: "Alt menü", feedback: "Geri bildirim formunu aç", manifesto: "Daha iyi içerik isteyen ama açacak yeni bir uygulama istemeyenler için.", defaultTagline: "Akış yok. Gürültü yok. Yalnızca iyi bir okuma." },
   home: { title: "Her seferinde tek bir faydalı e-posta.", intro: "OneRead, küçük ve tek amaçlı notları gelen kutuna getirir — sabah için bir makale, hafta sonu için bir film ve aileye katıldıkça daha fazla sakin araç.", priceNote: "Tek abonelik. Bir dolar. Aile büyüdükçe her OneRead ürünü dahil.", tagline: "Kontrol edilecek bir akış yok. Yalnızca açmaya değer bir şey." },
@@ -304,7 +304,7 @@ const tr: SiteDictionary = {
 };
 
 const de: SiteDictionary = {
-  common: { backToOneRead: "Zurück zu OneRead", oneReadHome: "OneRead-Startseite", startOneRead: "OneRead starten", includedIn: "Enthalten in", subscriptionCovers: "ein Abo umfasst OneArticle und OneFilm.", login: "Anmelden", blog: "Blog" },
+  common: { backToOneRead: "Zurück zu OneRead", oneReadHome: "OneRead-Startseite", startOneRead: "OneRead starten", includedIn: "Enthalten in", subscriptionCovers: "ein Abo umfasst OneArticle und OneFilm.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Sprache", menu: "Sprache wählen" },
   footer: { terms: "Bedingungen", privacy: "Datenschutz", pricing: "Preise", navigation: "Fußzeile", feedback: "Feedback-Formular öffnen", manifesto: "Für Menschen, die bessere Impulse wollen, ohne noch eine App zu öffnen.", defaultTagline: "Kein Feed. Kein Lärm. Nur ein guter Text." },
   home: { title: "Eine nützliche E-Mail nach der anderen.", intro: "OneRead bringt kleine, fokussierte Notizen in dein Postfach — einen Artikel für den Morgen, einen Film fürs Wochenende und weitere ruhige Werkzeuge, sobald sie zur Familie stoßen.", priceNote: "Ein Abo. Ein Dollar. Jedes OneRead-Produkt ist dabei, während die Familie wächst.", tagline: "Kein Feed zum Prüfen. Nur etwas, das sich zu öffnen lohnt." },
@@ -371,7 +371,7 @@ const de: SiteDictionary = {
 };
 
 const fr: SiteDictionary = {
-  common: { backToOneRead: "Retour à OneRead", oneReadHome: "Accueil OneRead", startOneRead: "Commencer OneRead", includedIn: "Inclus dans", subscriptionCovers: "un abonnement couvre OneArticle et OneFilm.", login: "Connexion", blog: "Blog" },
+  common: { backToOneRead: "Retour à OneRead", oneReadHome: "Accueil OneRead", startOneRead: "Commencer OneRead", includedIn: "Inclus dans", subscriptionCovers: "un abonnement couvre OneArticle et OneFilm.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Langue", menu: "Choisir la langue" },
   footer: { terms: "Conditions", privacy: "Confidentialité", pricing: "Tarifs", navigation: "Pied de page", feedback: "Ouvrir le formulaire de retour", manifesto: "Pour celles et ceux qui veulent de meilleures sources sans ouvrir une autre application.", defaultTagline: "Aucun fil. Aucun bruit. Juste une bonne lecture." },
   home: { title: "Un e-mail utile à la fois.", intro: "OneRead dépose dans votre boîte de réception de petites notes à usage unique — un article pour le matin, un film pour le week-end et d’autres outils discrets à mesure que la famille s’agrandit.", priceNote: "Un abonnement. Un dollar. Chaque produit OneRead est inclus à mesure que la famille grandit.", tagline: "Aucun fil à consulter. Juste quelque chose qui mérite d’être ouvert." },

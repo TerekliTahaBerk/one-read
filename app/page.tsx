@@ -26,14 +26,40 @@ export default function HomePage() {
 
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
             <Link
-              href="/preferences"
+              href="/admin/login"
+              aria-label={dictionary.common.adminLogin}
+              title={dictionary.common.adminLogin}
               className="
-                focus-ring link-underline rounded-full px-2.5 py-1
+                focus-ring group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
                 font-sans text-[13px] text-ash
                 transition-colors duration-200 hover:text-ink
               "
             >
-              {dictionary.common.login}
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                className="text-fog transition-colors duration-200 group-hover:text-ink"
+              >
+                <rect
+                  x="3.25"
+                  y="7"
+                  width="9.5"
+                  height="6.25"
+                  rx="1.5"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                />
+                <path
+                  d="M5.5 7V5.25a2.5 2.5 0 0 1 5 0V7"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="link-underline">{dictionary.common.adminLogin}</span>
             </Link>
             <Link
               href="/blog"
