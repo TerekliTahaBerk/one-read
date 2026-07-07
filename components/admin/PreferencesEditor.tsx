@@ -87,7 +87,7 @@ export function PreferencesEditor({
               type="button"
               onClick={() => toggle(label)}
               className={`rounded-full border px-2.5 py-1 text-[12px] ${
-                on ? "border-admin-ink bg-admin-ink text-admin-surface" : "border-admin-line text-admin-body hover:border-admin-line-strong"
+                on ? "border-admin-accent bg-admin-accent text-white" : "border-admin-line text-admin-body hover:border-admin-line-strong"
               }`}
             >
               {label}

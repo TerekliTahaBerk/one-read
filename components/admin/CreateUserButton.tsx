@@ -36,7 +36,7 @@ export function CreateUserButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full bg-admin-ink px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-ink/90"
+        className="rounded-full bg-admin-accent px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-accent-strong"
       >
         + Add user
       </button>
@@ -60,7 +60,7 @@ export function CreateUserButton() {
               <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy}>
                 Cancel
               </button>
-              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-full bg-admin-ink px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-ink/90 disabled:opacity-40">
+              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-full bg-admin-accent px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-accent-strong disabled:opacity-40">
                 {busy ? "Creating…" : "Create"}
               </button>
             </div>

@@ -29,27 +29,29 @@ const config: Config = {
         // Warm OneRead brand palette, scoped to the /admin surface. These are
         // additive: no public-site class references them, so restyling the
         // admin never repaints the marketing site. Single accent = dawn amber.
-        // Values taken verbatim from the public OneRead brand (landing page +
-        // email templates) so the admin sits on the same line: ivory canvas,
-        // warm paper, sand hairlines, warm near-black ink, dawn-amber accent.
+        // Neutral white base — matches the public site chrome (see the "read"
+        // theme in lib/product-themes.ts). The single accent is driven by a CSS
+        // variable so each product section can recolour it (OneArticle blue,
+        // OneLingo purple, OneFilm mauve); the fallback is OneRead ink for
+        // top-level pages and any surface outside the shell (e.g. login).
         admin: {
-          bg: "#F6F1E6", // ivory canvas
-          surface: "#FDFBF5", // warm paper — cards / panels
-          sink: "#EFE8D6", // recessed fill / hover
-          line: "#E6DCC8", // sand hairline
-          "line-strong": "#D4C8B0",
-          ink: "#1B1612", // warm near-black — headings / primary
-          body: "#6B5F50", // warm brown body text
-          muted: "#9C8F7E", // warm taupe — captions / eyebrow
-          amber: "#C97A2C", // dawn amber accent
-          "amber-strong": "#A96521",
-          "amber-tint": "#F0E6D2", // active/selected wash
+          bg: "#FFFFFF", // page canvas — white, like the site
+          surface: "#FFFFFF", // cards / panels
+          sink: "#F6F6F7", // recessed fill / table head / hover
+          line: "#EAEAEA", // neutral hairline
+          "line-strong": "#DADADA",
+          ink: "#111111", // near-black — headings / neutral primary
+          body: "#52525B", // body text
+          muted: "#6B6B6B", // captions / eyebrow
+          accent: "var(--admin-accent, #111111)",
+          "accent-strong": "var(--admin-accent-strong, #000000)",
+          "accent-tint": "var(--admin-accent-tint, #F2F2F2)", // active/selected wash
         },
       },
       boxShadow: {
-        admin: "0 1px 2px rgba(42,33,23,0.04), 0 1px 3px rgba(42,33,23,0.03)",
+        admin: "0 1px 2px rgba(17,17,17,0.04), 0 1px 3px rgba(17,17,17,0.03)",
         "admin-md":
-          "0 1px 2px rgba(42,33,23,0.05), 0 8px 24px -12px rgba(42,33,23,0.18)",
+          "0 1px 2px rgba(17,17,17,0.05), 0 10px 28px -14px rgba(17,17,17,0.16)",
       },
       fontFamily: {
         serif: ['var(--font-fraunces)', 'ui-serif', 'Georgia', 'Cambria', 'serif'],

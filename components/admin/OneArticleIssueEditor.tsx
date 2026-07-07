@@ -78,7 +78,7 @@ export function OneArticleIssueEditor({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-full bg-admin-ink px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-ink/90 disabled:opacity-40"
+          className="rounded-full bg-admin-accent px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-accent-strong disabled:opacity-40"
         >
           {busy ? "Saving..." : "Save manual edits"}
         </button>

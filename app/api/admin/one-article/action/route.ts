@@ -10,6 +10,7 @@ import {
   rejectOneArticle,
   rescoreOneArticle,
   rescorePendingOneArticles,
+  setOneArticleIssueStatus,
   startOperationalRun,
 } from "@/lib/admin/one-article-ops";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
       "prepare-date",
       "pipeline-dry-run",
       "create-manual-issue",
+      "set-issue-status",
       "rescore-article",
       "rescore-pending",
       "mark-candidate",
@@ -112,12 +114,33 @@ export async function POST(req: Request) {
         bodyText: str(body.bodyText),
         adminNotes: str(body.adminNotes) || null,
         acknowledgeNoSource: body.acknowledgeNoSource === true,
+        draft: body.draft === true,
+        generator: str(body.generator) || null,
       });
-      result = { pickId: pick.id, date: pick.date.toISOString().slice(0, 10) };
+      result = {
+        pickId: pick.id,
+        date: pick.date.toISOString().slice(0, 10),
+        status: pick.status,
+      };
       await finishOperationalRun({
         id: run.id,
         status: "SUCCESS",
         generatedCount: 1,
+        metadata: result as Prisma.InputJsonObject,
+      });
+      return NextResponse.json({ ok: true, result });
+    }
+
+    if (action === "set-issue-status") {
+      const status = str(body.status) === "READY" ? "READY" : "DRAFT";
+      result = await setOneArticleIssueStatus({
+        actor,
+        pickId: str(body.pickId),
+        status,
+      });
+      await finishOperationalRun({
+        id: run.id,
+        status: "SUCCESS",
         metadata: result as Prisma.InputJsonObject,
       });
       return NextResponse.json({ ok: true, result });

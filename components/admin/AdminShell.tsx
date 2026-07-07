@@ -1,21 +1,46 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { AdminNav } from "./AdminNav";
 
 /**
- * Page chrome for every admin screen: a warm, persistent left sidebar
+ * Page chrome for every admin screen: a white, persistent left sidebar
  * (OneRead wordmark + grouped nav + logout), a sticky top bar with breadcrumb,
  * search and today's date, and a titled content column. Desktop shows the
  * sidebar inline; on small screens it collapses into a slide-in drawer.
  *
- * All colours come from the additive `admin-*` Tailwind tokens (warm ivory,
- * dawn-amber accent) so the admin can be rebranded without touching the public
- * marketing site.
+ * The base palette is neutral white (matching the public site chrome); the
+ * single accent is a CSS variable that the shell recolours per product section
+ * (OneArticle blue, OneLingo purple, OneFilm mauve, OneRead ink) from the
+ * canonical values in lib/product-themes.ts. Accent-driven `admin-*` tokens
+ * pick up the variable automatically, so nothing else needs to know the theme.
  */
+
+/** accent / hover-strong / tint (active-selected wash) per section. */
+const ADMIN_THEMES = {
+  read: { accent: "#111111", strong: "#000000", tint: "#F2F2F2" },
+  article: { accent: "#3F6FA8", strong: "#345C8C", tint: "#DDEEFF" },
+  lingo: { accent: "#6F5AA8", strong: "#5B4890", tint: "#EEE7FB" },
+  film: { accent: "#7B5E8E", strong: "#664B77", tint: "#F1E8F5" },
+} as const;
+
+function adminThemeVars(pathname: string): CSSProperties {
+  const t = pathname.startsWith("/admin/one-article")
+    ? ADMIN_THEMES.article
+    : pathname.startsWith("/admin/one-lingo")
+      ? ADMIN_THEMES.lingo
+      : pathname.startsWith("/admin/one-film")
+        ? ADMIN_THEMES.film
+        : ADMIN_THEMES.read;
+  return {
+    "--admin-accent": t.accent,
+    "--admin-accent-strong": t.strong,
+    "--admin-accent-tint": t.tint,
+  } as CSSProperties;
+}
 
 const CRUMB_LABELS: Record<string, string> = {
   admin: "Admin",
@@ -27,6 +52,7 @@ const CRUMB_LABELS: Record<string, string> = {
   settings: "Settings",
   audit: "Audit log",
   "manual-article": "Manual article",
+  new: "New article",
   subscribers: "Subscribers",
   issues: "Issues",
   articles: "Articles",
@@ -66,10 +92,13 @@ export function AdminShell({
   }));
 
   return (
-    <div className="min-h-svh bg-admin-bg text-admin-body font-sans">
+    <div
+      style={adminThemeVars(pathname)}
+      className="min-h-svh bg-admin-bg text-admin-body font-sans"
+    >
       <div className="flex min-h-svh">
         {/* Desktop sidebar */}
-        <aside className="hidden w-[248px] shrink-0 flex-col border-r border-admin-line bg-admin-surface/60 lg:flex">
+        <aside className="hidden w-[248px] shrink-0 flex-col border-r border-admin-line bg-admin-sink/50 lg:flex">
           <SidebarContent />
         </aside>
 
@@ -305,7 +334,7 @@ function CalendarIcon() {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className="text-admin-amber"
+      className="text-admin-accent"
     >
       <rect
         x="3.5"

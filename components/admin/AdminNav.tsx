@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 
 /**
  * Left navigation for the admin. Highlights the active section and expands the
- * matching sub-nav. Intentionally unlinked from any public UI. Warm OneRead
- * palette via the `admin-*` tokens; the single accent (dawn amber) marks the
- * active row.
+ * matching sub-nav. Intentionally unlinked from any public UI. Neutral white
+ * palette via the `admin-*` tokens; the active row is marked with the section's
+ * accent (`admin-accent`), which the shell recolours per product.
  */
 type NavItem = {
   href: string;
@@ -80,6 +80,7 @@ const NAV = NAV_GROUPS.flatMap((group) => group.items);
 const SUB_NAV: Record<string, { href: string; label: string }[]> = {
   "/admin/one-article": [
     { href: "/admin/one-article", label: "Overview" },
+    { href: "/admin/one-article/new", label: "New article" },
     { href: "/admin/one-article/subscribers", label: "Subscribers" },
     { href: "/admin/one-article/issues", label: "Issues" },
     { href: "/admin/one-article/articles", label: "Articles" },
@@ -149,14 +150,14 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={active ? "page" : undefined}
                       className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
                         active
-                          ? "bg-admin-amber-tint font-medium text-admin-ink"
+                          ? "bg-admin-accent-tint font-medium text-admin-ink"
                           : "text-admin-body hover:bg-admin-sink hover:text-admin-ink"
                       }`}
                     >
                       {active && (
-                        <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-admin-amber" />
+                        <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-admin-accent" />
                       )}
-                      <span className={active ? "text-admin-amber" : "text-admin-muted"}>
+                      <span className={active ? "text-admin-accent" : "text-admin-muted"}>
                         {Icon}
                       </span>
                       <span className="flex-1">{item.label}</span>
@@ -174,7 +175,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                                 onClick={onNavigate}
                                 className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors ${
                                   subActive
-                                    ? "font-medium text-admin-amber-strong"
+                                    ? "font-medium text-admin-accent-strong"
                                     : "text-admin-muted hover:text-admin-ink"
                                 }`}
                               >

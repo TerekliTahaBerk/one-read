@@ -128,7 +128,7 @@ export function ManualOneArticleIssueForm() {
       <button
         type="submit"
         disabled={busy || !form.acknowledgeNoSource}
-        className="h-10 px-5 rounded-full bg-admin-ink text-white font-sans text-[13px] hover:bg-admin-ink/90 disabled:opacity-40"
+        className="h-10 px-5 rounded-full bg-admin-accent text-white font-sans text-[13px] hover:bg-admin-accent-strong disabled:opacity-40"
       >
         {busy ? "Creating..." : "Create manual issue"}
       </button>

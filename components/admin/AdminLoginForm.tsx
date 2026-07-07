@@ -53,7 +53,7 @@ export function AdminLoginForm({ next }: { next: string }) {
           autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="block h-11 w-full rounded-lg border border-admin-line bg-admin-bg px-3 text-[14px] text-admin-ink outline-none focus:border-admin-amber"
+          className="block h-11 w-full rounded-lg border border-admin-line bg-admin-bg px-3 text-[14px] text-admin-ink outline-none focus:border-admin-accent"
           required
         />
       </label>
@@ -67,7 +67,7 @@ export function AdminLoginForm({ next }: { next: string }) {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="block h-11 w-full rounded-lg border border-admin-line bg-admin-bg px-3 text-[14px] text-admin-ink outline-none focus:border-admin-amber"
+          className="block h-11 w-full rounded-lg border border-admin-line bg-admin-bg px-3 text-[14px] text-admin-ink outline-none focus:border-admin-accent"
           required
         />
       </label>
@@ -77,7 +77,7 @@ export function AdminLoginForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy}
-        className="h-12 w-full rounded-full bg-admin-ink px-6 text-[14px] font-medium text-white transition-colors hover:bg-admin-ink/90 disabled:opacity-50"
+        className="h-12 w-full rounded-full bg-admin-accent px-6 text-[14px] font-medium text-white transition-colors hover:bg-admin-accent-strong disabled:opacity-50"
       >
         {busy ? "Signing in..." : "Sign in"}
       </button>

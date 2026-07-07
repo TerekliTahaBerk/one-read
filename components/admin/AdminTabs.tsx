@@ -21,7 +21,7 @@ export function AdminTabs({
             href={t.href}
             className={`-mb-px border-b-2 px-3 py-2 font-sans text-[13px] transition-colors ${
               isActive
-                ? "border-admin-amber font-medium text-admin-ink"
+                ? "border-admin-accent font-medium text-admin-ink"
                 : "border-transparent text-admin-muted hover:text-admin-ink"
             }`}
           >

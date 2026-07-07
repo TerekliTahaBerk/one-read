@@ -4,7 +4,12 @@ import { ingestCandidates } from "@/lib/ingest";
 import { rssSource } from "@/lib/rss-source";
 import { extractAndScorePendingArticles } from "@/lib/scorer";
 import { selectTopicDailyPicks } from "@/lib/pipeline";
-import { defaultSummaryProvider, getOrCreateSummary } from "@/lib/summarizer";
+import {
+  defaultSummaryProvider,
+  getOrCreateSummary,
+  type SummaryRequest,
+  type SummaryResult,
+} from "@/lib/summarizer";
 import { ONE_ARTICLE_PRODUCT_KEY, SUMMARY_LANGUAGES } from "@/lib/options";
 import { evaluateEligibility } from "@/lib/subscriptions";
 import { ALL_TOPIC_SLUGS, interestLabelsToSlugs } from "@/lib/topics";
@@ -535,12 +540,29 @@ export async function createManualOneArticleIssue(input: {
   bodyText: string;
   adminNotes?: string | null;
   acknowledgeNoSource: boolean;
+  /**
+   * When true the issue is saved in the DRAFT editorial state (pick + summary
+   * status = DRAFT) so it never enters the send path until an admin promotes
+   * it to READY. Defaults to false (the historical behaviour: create as READY).
+   */
+  draft?: boolean;
+  /**
+   * Source label for the generated content: "manual" for hand-written, or the
+   * AI provider id when the body came from `generateOneArticleDraft`. Purely
+   * informational — surfaced in the authoring list.
+   */
+  generator?: string | null;
 }) {
   if (!input.acknowledgeNoSource) throw new Error("manual_issue_requires_no_source_ack");
   if (!ALL_TOPIC_SLUGS.includes(input.topic as never)) throw new Error("invalid_topic");
   if (!input.title.trim()) throw new Error("title_required");
-  if (!input.subject.trim()) throw new Error("subject_required");
-  if (!input.bodyText.trim()) throw new Error("body_required");
+  // Drafts may be saved incomplete; a READY issue needs subject + body.
+  if (!input.draft) {
+    if (!input.subject.trim()) throw new Error("subject_required");
+    if (!input.bodyText.trim()) throw new Error("body_required");
+  }
+  const editorialStatus = input.draft ? "DRAFT" : "READY";
+  const generator = input.generator?.trim() || "manual";
   const day = atUtcMidnight(input.date);
   const pick = await prisma.topicDailyPick.create({
     data: {
@@ -553,7 +575,7 @@ export async function createManualOneArticleIssue(input: {
       sourceName: input.sourceName?.trim() || "Manual",
       score: 1,
       reasonForSelection: "Manual OneArticle issue without source article.",
-      status: "READY",
+      status: editorialStatus,
       approvalStatus: "PENDING",
       adminNotes: input.adminNotes?.trim() || null,
     },
@@ -574,15 +596,15 @@ export async function createManualOneArticleIssue(input: {
         oneLineHook: "",
         whyThisArticle: "",
         readingTime: "",
-        threeSentenceSummary: [input.bodyText.trim()],
+        threeSentenceSummary: input.bodyText.trim() ? [input.bodyText.trim()] : [],
         keyTakeaways: [],
         oneThingToRemember: "",
         confidence: 100,
       } as Prisma.InputJsonObject,
       confidence: 100,
-      status: "READY",
-      generator: "manual",
-      subjectOverride: input.subject.trim(),
+      status: editorialStatus,
+      generator,
+      subjectOverride: input.subject.trim() || null,
       previewTextOverride: input.previewText?.trim() || null,
       adminEditedAt: new Date(),
     },
@@ -592,9 +614,93 @@ export async function createManualOneArticleIssue(input: {
     action: "oneArticle.manualIssue.create",
     targetType: "TopicDailyPick",
     targetId: pick.id,
-    metadata: { date: isoDate(day), topic: input.topic, summaryLanguage: input.summaryLanguage },
+    metadata: {
+      date: isoDate(day),
+      topic: input.topic,
+      summaryLanguage: input.summaryLanguage,
+      draft: Boolean(input.draft),
+      generator,
+    },
   });
   return pick;
+}
+
+/**
+ * Promote or demote an authored issue between DRAFT and READY. Only ever moves
+ * DRAFT↔READY summaries; REJECTED summaries are left untouched. Never approves,
+ * schedules, or sends — that stays with the approval workflow.
+ */
+export async function setOneArticleIssueStatus(input: {
+  actor: string;
+  pickId: string;
+  status: "DRAFT" | "READY";
+}): Promise<{ pickId: string; status: "DRAFT" | "READY" }> {
+  const pick = await prisma.topicDailyPick.findUnique({ where: { id: input.pickId } });
+  if (!pick) throw new Error("issue_not_found");
+  await prisma.topicDailyPick.update({
+    where: { id: input.pickId },
+    data: { status: input.status },
+  });
+  await prisma.summary.updateMany({
+    where: { topicDailyPickId: input.pickId, status: { in: ["DRAFT", "READY"] } },
+    data: { status: input.status },
+  });
+  await recordAudit({
+    actor: input.actor,
+    action: "oneArticle.issue.setStatus",
+    targetType: "TopicDailyPick",
+    targetId: input.pickId,
+    metadata: { from: pick.status, to: input.status },
+  });
+  return { pickId: input.pickId, status: input.status };
+}
+
+/**
+ * Generate an editable draft from a topic + pasted source text using the
+ * configured summary provider — WITHOUT persisting anything. Reuses the exact
+ * production summarizer, so with GEMINI_API_KEY set the admin sees real model
+ * output; locally (no key) it falls back to the dev heuristic. The caller
+ * populates the authoring form with the returned fields, then saves via
+ * `createManualOneArticleIssue`.
+ */
+export async function generateOneArticleDraft(input: {
+  title: string;
+  sourceText: string;
+  sourceName?: string | null;
+  url?: string | null;
+  sourceLanguage: string;
+  summaryLanguage: string;
+  topic: string;
+  difficulty?: string;
+}): Promise<{ result: SummaryResult; aiStatus: OneArticleAiStatus }> {
+  if (!input.title.trim()) throw new Error("title_required");
+  if (!input.sourceText.trim()) throw new Error("source_text_required");
+  if (!ALL_TOPIC_SLUGS.includes(input.topic as never)) throw new Error("invalid_topic");
+
+  const req: SummaryRequest = {
+    // The provider never reads `pick`; a placeholder id keeps the type honest.
+    pick: {
+      id: "draft-preview",
+      topic: input.topic,
+      subtopics: [],
+      articleTitle: input.title.trim(),
+      sourceName: input.sourceName?.trim() || "Manual",
+    },
+    article: {
+      title: input.title.trim(),
+      url: input.url?.trim() || "https://oneread.email/manual-draft",
+      rawExcerpt: input.sourceText.trim(),
+      cleanedText: input.sourceText.trim(),
+      sourceLanguage: input.sourceLanguage,
+      sourceName: input.sourceName?.trim() || "Manual",
+    },
+    summaryLanguage: validSummaryLanguage(input.summaryLanguage),
+    primaryTopic: input.topic,
+    difficulty: input.difficulty?.trim() || "mixed",
+  };
+
+  const result = await defaultSummaryProvider().generate(req);
+  return { result, aiStatus: getOneArticleAiStatus() };
 }
 
 function summaryTargetsForPick(pick: PickWithArticle, subs: SubWithRels[]) {

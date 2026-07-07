@@ -105,7 +105,7 @@ export function ActionButton({
                   type="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-admin-line bg-admin-bg px-2.5 py-1.5 text-[13px] text-admin-ink outline-none focus:border-admin-amber"
+                  className="mt-1 w-full rounded-lg border border-admin-line bg-admin-bg px-2.5 py-1.5 text-[13px] text-admin-ink outline-none focus:border-admin-accent"
                   autoFocus
                 />
                 {requireExact && (
@@ -134,7 +134,7 @@ export function ActionButton({
                 className={`rounded-full px-4 py-1.5 text-[12.5px] disabled:opacity-40 ${
                   danger
                     ? "border border-dawn/50 text-dawn hover:bg-dawn/5"
-                    : "bg-admin-ink text-white hover:bg-admin-ink/90"
+                    : "bg-admin-accent text-white hover:bg-admin-accent-strong"
                 }`}
               >
                 {busy ? "Working…" : "Confirm"}

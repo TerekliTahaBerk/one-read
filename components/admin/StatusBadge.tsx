@@ -11,7 +11,7 @@ type Tone = "good" | "wait" | "bad" | "muted" | "neutral";
 
 const TONE_CLASS: Record<Tone, string> = {
   good: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  wait: "bg-admin-amber/10 text-admin-amber-strong border-admin-amber/25",
+  wait: "bg-admin-accent-tint text-admin-accent-strong border-transparent",
   bad: "bg-admin-surface text-dawn border-dawn/40",
   muted: "bg-admin-sink text-admin-muted border-admin-line",
   neutral: "bg-admin-surface text-admin-body border-admin-line",
