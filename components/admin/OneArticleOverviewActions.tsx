@@ -36,12 +36,12 @@ export function OneArticleOverviewActions() {
     }
   }
 
-  const btn = "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40";
+  const btn = "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-24 text-[10px] uppercase tracking-eyebrow text-fog font-sans">Prepare only</span>
+        <span className="w-24 text-[10px] uppercase tracking-eyebrow text-admin-muted font-sans">Prepare only</span>
         <button className={btn} disabled={!!busy} onClick={() => run("prepare-today")}>
           {busy === "prepare-today" ? "Preparing..." : "Generate today's issue"}
         </button>
@@ -50,12 +50,12 @@ export function OneArticleOverviewActions() {
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-24 text-[10px] uppercase tracking-eyebrow text-fog font-sans">Dry run</span>
+        <span className="w-24 text-[10px] uppercase tracking-eyebrow text-admin-muted font-sans">Dry run</span>
         <button className={btn} disabled={!!busy} onClick={() => run("pipeline-dry-run")}>
           {busy === "pipeline-dry-run" ? "Running..." : "Pipeline dry-run"}
         </button>
       </div>
-      {msg && <p className="text-[12.5px] text-ash font-sans">{msg}</p>}
+      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
     </div>
   );
 }

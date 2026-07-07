@@ -12,17 +12,17 @@ export function AdminTabs({
   active: string;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap gap-1 border-b border-line">
+    <div className="mb-6 flex flex-wrap gap-1 border-b border-admin-line">
       {tabs.map((t) => {
         const isActive = t.key === active;
         return (
           <Link
             key={t.key}
             href={t.href}
-            className={`-mb-px border-b-2 px-3 py-2 text-[13px] font-sans transition-colors ${
+            className={`-mb-px border-b-2 px-3 py-2 font-sans text-[13px] transition-colors ${
               isActive
-                ? "border-ink text-ink font-medium"
-                : "border-transparent text-ash hover:text-ink"
+                ? "border-admin-amber font-medium text-admin-ink"
+                : "border-transparent text-admin-muted hover:text-admin-ink"
             }`}
           >
             {t.label}

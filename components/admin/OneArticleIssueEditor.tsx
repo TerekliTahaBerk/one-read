@@ -78,13 +78,13 @@ export function OneArticleIssueEditor({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg border border-line-strong bg-ink px-3 py-1.5 text-[12.5px] text-paper hover:bg-ink/90 disabled:opacity-40"
+          className="rounded-lg border border-admin-line-strong bg-admin-ink px-3 py-1.5 text-[12.5px] text-admin-surface hover:bg-admin-ink/90 disabled:opacity-40"
         >
           {busy ? "Saving..." : "Save manual edits"}
         </button>
-        {msg && <span className="text-[12.5px] text-ash font-sans">{msg}</span>}
+        {msg && <span className="text-[12.5px] text-admin-body font-sans">{msg}</span>}
       </div>
-      <p className="text-[11.5px] text-fog font-sans">
+      <p className="text-[11.5px] text-admin-muted font-sans">
         Saves as overrides. This does not approve, schedule, or send the issue.
       </p>
     </form>
@@ -92,12 +92,12 @@ export function OneArticleIssueEditor({
 }
 
 const inputCls =
-  "block w-full rounded-lg bg-paper/80 border border-line px-3 py-2 text-[13px] text-ink focus:border-ink focus:outline-none";
+  "block w-full rounded-lg bg-admin-surface/80 border border-admin-line px-3 py-2 text-[13px] text-admin-ink focus:border-admin-ink focus:outline-none";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[11px] uppercase tracking-eyebrow text-fog font-sans mb-1.5">
+      <span className="block text-[11px] uppercase tracking-eyebrow text-admin-muted font-sans mb-1.5">
         {label}
       </span>
       {children}

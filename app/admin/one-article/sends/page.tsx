@@ -43,12 +43,12 @@ export default async function SendsPage({
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">Date</span>
-          <input type="date" name="date" defaultValue={searchParams.date ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink" />
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Date</span>
+          <input type="date" name="date" defaultValue={searchParams.date ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">Status</span>
-          <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink">
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Status</span>
+          <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
             <option value="">Any</option>
             {["QUEUED", "SENT", "SKIPPED", "FAILED"].map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -56,11 +56,11 @@ export default async function SendsPage({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">Email</span>
-          <input type="text" name="email" defaultValue={searchParams.email ?? ""} placeholder="contains…" className="w-44 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink" />
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Email</span>
+          <input type="text" name="email" defaultValue={searchParams.email ?? ""} placeholder="contains…" className="w-44 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink" />
         </label>
-        <button type="submit" className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream">Apply</button>
-        <Link href="/admin/one-article/sends" className="px-2 py-1.5 text-fog hover:text-ink">Reset</Link>
+        <button type="submit" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink">Apply</button>
+        <Link href="/admin/one-article/sends" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">Reset</Link>
       </form>
 
       <AdminCard>
@@ -68,13 +68,13 @@ export default async function SendsPage({
           head={["Date", "Email", "Status", "Topic", "Lang", "Score", "Sent at", "Message ID", "Reason / error"]}
           empty="No send records match these filters."
           rows={sends.map((s) => [
-            <span key="d" className="text-ash">{fmtDate(s.date)}</span>,
-            <span key="e" className="text-ink">{s.subscriber.email}</span>,
+            <span key="d" className="text-admin-body">{fmtDate(s.date)}</span>,
+            <span key="e" className="text-admin-ink">{s.subscriber.email}</span>,
             <StatusBadge key="s" value={s.status} />,
             topicBySlug(s.matchedTopic)?.label ?? s.matchedTopic,
-            <span key="l" className="text-ash">{s.summaryLanguage}</span>,
+            <span key="l" className="text-admin-body">{s.summaryLanguage}</span>,
             s.personalizedScore.toFixed(2),
-            <span key="sa" className="text-ash">{fmtDateTime(s.sentAt)}</span>,
+            <span key="sa" className="text-admin-body">{fmtDateTime(s.sentAt)}</span>,
             <MonoShort key="m" value={s.emailMessageId} />,
             <span key="r" className="text-[11.5px] text-dawn">{s.error ?? "—"}</span>,
           ])}

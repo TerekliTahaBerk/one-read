@@ -101,11 +101,11 @@ export default async function OneFilmIssueDetailPage({
       )}
       {rendered && (
         <AdminCard title="Text preview" bodyClassName="p-4">
-          <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-ink">{rendered.text}</pre>
+          <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-admin-ink">{rendered.text}</pre>
         </AdminCard>
       )}
       <AdminCard title="Structured JSON" bodyClassName="p-4">
-        <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-[12px] leading-5 text-ink">
+        <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-[12px] leading-5 text-admin-ink">
           {JSON.stringify(issue.contentJson, null, 2)}
         </pre>
       </AdminCard>

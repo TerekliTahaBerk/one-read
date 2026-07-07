@@ -26,7 +26,7 @@ export default async function OneFilmIssuesPage({
           <AdminEmptyState>No OneFilm notes generated yet.</AdminEmptyState>
         ) : (
           <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-line text-fog">
+            <thead className="border-b border-admin-line text-admin-muted">
               <tr>
                 <th className="px-4 py-2">Date</th>
                 <th className="px-4 py-2">Subject</th>
@@ -37,20 +37,20 @@ export default async function OneFilmIssuesPage({
                 <th className="px-4 py-2">Sends</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
+            <tbody className="divide-y divide-admin-line/70">
               {issues.map((issue) => (
                 <tr key={issue.id}>
-                  <td className="px-4 py-2 text-ash">{issue.issueDate.toISOString().slice(0, 10)}</td>
-                  <td className="px-4 py-2 text-ink">
+                  <td className="px-4 py-2 text-admin-body">{issue.issueDate.toISOString().slice(0, 10)}</td>
+                  <td className="px-4 py-2 text-admin-ink">
                     <Link className="link-underline" href={`/admin/one-film/issues/${issue.id}`}>
                       {issue.subject}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-ash">{issue.filmTitle ?? "—"}</td>
-                  <td className="px-4 py-2 text-ash">{issue.segmentKey}</td>
-                  <td className="px-4 py-2 text-ash">{issue.status}</td>
-                  <td className="px-4 py-2 text-ash">{issue.approvalStatus}</td>
-                  <td className="px-4 py-2 text-ash">{issue._count.sends}</td>
+                  <td className="px-4 py-2 text-admin-body">{issue.filmTitle ?? "—"}</td>
+                  <td className="px-4 py-2 text-admin-body">{issue.segmentKey}</td>
+                  <td className="px-4 py-2 text-admin-body">{issue.status}</td>
+                  <td className="px-4 py-2 text-admin-body">{issue.approvalStatus}</td>
+                  <td className="px-4 py-2 text-admin-body">{issue._count.sends}</td>
                 </tr>
               ))}
             </tbody>

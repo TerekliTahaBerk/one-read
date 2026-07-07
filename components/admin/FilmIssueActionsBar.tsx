@@ -47,8 +47,8 @@ export function FilmIssueActionsBar({
     }
   }
 
-  const btn = "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40";
-  const danger = "rounded-lg border border-dawn/50 bg-paper px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
+  const btn = "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
+  const danger = "rounded-lg border border-dawn/50 bg-admin-surface px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
 
   return (
     <div className="flex flex-col gap-3">
@@ -61,15 +61,15 @@ export function FilmIssueActionsBar({
         <button className={danger} disabled={busy} onClick={() => setDialog("regenerate")}>Regenerate</button>
         <button className={danger} disabled={busy} onClick={() => setDialog("send-now")}>Send now</button>
       </div>
-      {msg && <p className="text-[12.5px] text-ash font-sans">{msg}</p>}
+      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
 
       {dialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4">
-          <div className="w-full max-w-md rounded-xl border border-line-strong bg-paper p-5 shadow-lg">
-            <h3 className="font-serif text-[17px] text-ink">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4">
+          <div className="w-full max-w-md rounded-xl border border-admin-line-strong bg-admin-surface p-5 shadow-lg">
+            <h3 className="font-serif text-[17px] text-admin-ink">
               {dialog === "send-now" ? "Send now" : dialog === "send-test" ? "Send test" : dialog === "regenerate" ? "Regenerate note" : "Schedule note"}
             </h3>
-            <p className="mt-2 text-[13px] text-ash font-sans">
+            <p className="mt-2 text-[13px] text-admin-body font-sans">
               {dialog === "send-now"
                 ? `This sends OneFilm for segment ${segmentKey}. Existing sent rows are skipped.`
                 : dialog === "send-test"
@@ -83,7 +83,7 @@ export function FilmIssueActionsBar({
                 type="email"
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
-                className="mt-3 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                className="mt-3 w-full rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
               />
             )}
             {dialog === "schedule" && (
@@ -91,11 +91,11 @@ export function FilmIssueActionsBar({
                 type="date"
                 value={scheduleDate}
                 onChange={(e) => setScheduleDate(e.target.value)}
-                className="mt-3 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                className="mt-3 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
               />
             )}
             <div className="mt-5 flex justify-end gap-2">
-              <button className="rounded-lg px-3 py-1.5 text-[12.5px] text-ash hover:text-ink" disabled={busy} onClick={() => setDialog(null)}>
+              <button className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy} onClick={() => setDialog(null)}>
                 Cancel
               </button>
               <button

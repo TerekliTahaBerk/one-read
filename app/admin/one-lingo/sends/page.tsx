@@ -25,7 +25,7 @@ export default async function OneLingoSendsPage({
           <AdminEmptyState>No OneLingo send rows yet.</AdminEmptyState>
         ) : (
           <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-line text-fog">
+            <thead className="border-b border-admin-line text-admin-muted">
               <tr>
                 <th className="px-4 py-2">Date</th>
                 <th className="px-4 py-2">Email</th>
@@ -34,14 +34,14 @@ export default async function OneLingoSendsPage({
                 <th className="px-4 py-2">Reason</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
+            <tbody className="divide-y divide-admin-line/70">
               {sends.map((send) => (
                 <tr key={send.id}>
-                  <td className="px-4 py-2 text-ash">{send.lessonDate.toISOString().slice(0, 10)}</td>
-                  <td className="px-4 py-2 text-ink">{send.contact.email}</td>
-                  <td className="px-4 py-2 text-ash">{send.lesson.title}</td>
-                  <td className="px-4 py-2 text-ash">{send.status}</td>
-                  <td className="px-4 py-2 text-ash">{send.skippedReason ?? send.failedReason ?? ""}</td>
+                  <td className="px-4 py-2 text-admin-body">{send.lessonDate.toISOString().slice(0, 10)}</td>
+                  <td className="px-4 py-2 text-admin-ink">{send.contact.email}</td>
+                  <td className="px-4 py-2 text-admin-body">{send.lesson.title}</td>
+                  <td className="px-4 py-2 text-admin-body">{send.status}</td>
+                  <td className="px-4 py-2 text-admin-body">{send.skippedReason ?? send.failedReason ?? ""}</td>
                 </tr>
               ))}
             </tbody>

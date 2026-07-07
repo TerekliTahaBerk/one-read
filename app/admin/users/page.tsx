@@ -58,7 +58,7 @@ export default async function AdminUsersPage({
             name="q"
             defaultValue={f.q ?? ""}
             placeholder="email contains…"
-            className="w-48 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="w-48 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
         </FilterField>
         <FilterSelect name="status" label="Access" value={f.status} options={ACCESS_OPTIONS} />
@@ -68,11 +68,11 @@ export default async function AdminUsersPage({
         <FilterSelect name="suppressed" label="Suppressed" value={f.suppressed} options={YESNO_OPTIONS} />
         <button
           type="submit"
-          className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream"
+          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink"
         >
           Apply
         </button>
-        <Link href="/admin/users" className="px-2 py-1.5 text-fog hover:text-ink">
+        <Link href="/admin/users" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
           Reset
         </Link>
       </form>
@@ -92,7 +92,7 @@ export default async function AdminUsersPage({
           ]}
           empty="No users match these filters."
           rows={rows.map((r) => [
-            <span key="e" className="text-ink">
+            <span key="e" className="text-admin-ink">
               {r.email}
               {r.adminOverride && (
                 <span className="ml-1.5 text-[10px] uppercase tracking-eyebrow text-amber-700">
@@ -102,15 +102,15 @@ export default async function AdminUsersPage({
             </span>,
             <StatusBadge key="s" value={r.status} />,
             <StatusBadge key="d" value={r.emailDeliveryStatus} />,
-            <span key="pv" className="text-ash">{r.provider ?? "—"}</span>,
-            <span key="pl" className="text-ash">{r.plan ?? "—"}</span>,
-            <span key="pe" className="text-ash">{fmtDate(r.currentPeriodEnd)}</span>,
-            <span key="c" className="text-ash">{fmtDate(r.createdAt)}</span>,
+            <span key="pv" className="text-admin-body">{r.provider ?? "—"}</span>,
+            <span key="pl" className="text-admin-body">{r.plan ?? "—"}</span>,
+            <span key="pe" className="text-admin-body">{fmtDate(r.currentPeriodEnd)}</span>,
+            <span key="c" className="text-admin-body">{fmtDate(r.createdAt)}</span>,
             <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,
             <Link
               key="v"
               href={`/admin/users/${r.id}`}
-              className="text-ink underline underline-offset-2"
+              className="text-admin-ink underline underline-offset-2"
             >
               View
             </Link>,
@@ -124,7 +124,7 @@ export default async function AdminUsersPage({
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-eyebrow text-fog">{label}</span>
+      <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">{label}</span>
       {children}
     </label>
   );
@@ -146,7 +146,7 @@ function FilterSelect({
       <select
         name={name}
         defaultValue={value ?? ""}
-        className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+        className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
       >
         <option value="">Any</option>
         {options.map((o) => (

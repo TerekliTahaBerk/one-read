@@ -45,9 +45,9 @@ export default async function OneLingoOverviewPage({
         </MetricGrid>
       </AdminCard>
       <div className="flex flex-wrap gap-3 text-[13px] font-sans">
-        <Link href="/admin/one-lingo/lessons" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Lessons</Link>
-        <Link href="/admin/one-lingo/subscribers" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Subscribers</Link>
-        <Link href="/admin/one-lingo/sends" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Send logs</Link>
+        <Link href="/admin/one-lingo/lessons" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Lessons</Link>
+        <Link href="/admin/one-lingo/subscribers" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Subscribers</Link>
+        <Link href="/admin/one-lingo/sends" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Send logs</Link>
       </div>
     </AdminShell>
   );

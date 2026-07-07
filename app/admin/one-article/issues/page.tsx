@@ -40,7 +40,7 @@ export default async function IssuesListPage({
       actions={
         <Link
           href="/admin/manual-article"
-          className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream"
+          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
         >
           + Create issue from article
         </Link>
@@ -50,27 +50,27 @@ export default async function IssuesListPage({
 
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">Date</span>
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Date</span>
           <input
             type="date"
             name="date"
             defaultValue={iso}
-            className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">Approval</span>
-          <select name="approval" defaultValue={searchParams.approval ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink">
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Approval</span>
+          <select name="approval" defaultValue={searchParams.approval ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
             <option value="">Any</option>
             {["PENDING", "APPROVED", "SCHEDULED", "CANCELED"].map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </label>
-        <button type="submit" className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream">
+        <button type="submit" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink">
           Apply
         </button>
-        <Link href="/admin/one-article/issues" className="px-2 py-1.5 text-fog hover:text-ink">
+        <Link href="/admin/one-article/issues" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
           Today
         </Link>
       </form>
@@ -78,18 +78,18 @@ export default async function IssuesListPage({
       {issues.length === 0 ? (
         <AdminCard title="No issue prepared" subtitle={readiness.status} bodyClassName="p-4">
           <div className="space-y-4 text-[12.5px] font-sans">
-            <p className="text-ash">
+            <p className="text-admin-body">
               No issue exists for {iso}. Prepare creates content only; it never sends subscriber email.
             </p>
             {[...readiness.blockers, ...readiness.warnings].length > 0 && (
               <div>
-                <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-fog">Current blockers</div>
+                <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-admin-muted">Current blockers</div>
                 <ul className="space-y-1 text-dawn">
                   {[...readiness.blockers, ...readiness.warnings].map((item) => <li key={item}>{item}</li>)}
                 </ul>
               </div>
             )}
-            <p className="text-ash">Next action: {readiness.nextAction}</p>
+            <p className="text-admin-body">Next action: {readiness.nextAction}</p>
             <IssueEmptyActions dateIso={iso} />
           </div>
         </AdminCard>
@@ -113,19 +113,19 @@ export default async function IssuesListPage({
             ]}
             empty="No issues prepared for this day yet."
             rows={issues.map((i) => [
-              <span key="d" className="text-ash">{fmtDate(i.date)}</span>,
+              <span key="d" className="text-admin-body">{fmtDate(i.date)}</span>,
               topicBySlug(i.topic)?.label ?? i.topic,
-              <span key="sl" className="text-ash">{i.sourceLanguage}</span>,
-              <span key="a" className="text-ink/90">{i.articleTitle}</span>,
+              <span key="sl" className="text-admin-body">{i.sourceLanguage}</span>,
+              <span key="a" className="text-admin-ink/90">{i.articleTitle}</span>,
               <StatusBadge key="s" value={i.status} />,
               <StatusBadge key="ap" value={i.approvalStatus} />,
-              <span key="sc" className="text-ash">{fmtDateTime(i.scheduledFor)}</span>,
-              <span key="l" className="text-ash">{i.summaryLanguages.join(", ") || "—"}</span>,
+              <span key="sc" className="text-admin-body">{fmtDateTime(i.scheduledFor)}</span>,
+              <span key="l" className="text-admin-body">{i.summaryLanguages.join(", ") || "—"}</span>,
               <span key="rc" title="From DailySend rows for this issue">{i.recipientCount}</span>,
               i.sentCount,
               i.skippedCount,
               <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,
-              <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-ink underline underline-offset-2">
+              <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-admin-ink underline underline-offset-2">
                 View
               </Link>,
             ])}

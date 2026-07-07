@@ -38,11 +38,11 @@ export function ArticleBulkActions() {
         type="button"
         disabled={busy}
         onClick={rescorePending}
-        className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream disabled:opacity-40"
+        className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink disabled:opacity-40"
       >
         {busy ? "Rescoring..." : "Rescore pending"}
       </button>
-      {msg && <span className="text-[11.5px] text-ash">{msg}</span>}
+      {msg && <span className="text-[11.5px] text-admin-body">{msg}</span>}
     </div>
   );
 }

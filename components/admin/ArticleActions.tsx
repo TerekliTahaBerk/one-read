@@ -41,9 +41,9 @@ export function ArticleActions({
   }
 
   const button =
-    "rounded-md border border-line bg-paper px-2 py-1 text-[11.5px] text-ink hover:bg-cream disabled:opacity-40";
+    "rounded-md border border-admin-line bg-admin-surface px-2 py-1 text-[11.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
   const danger =
-    "rounded-md border border-dawn/40 bg-paper px-2 py-1 text-[11.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
+    "rounded-md border border-dawn/40 bg-admin-surface px-2 py-1 text-[11.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
 
   return (
     <div className="flex max-w-[260px] flex-wrap items-center gap-1.5">
@@ -65,7 +65,7 @@ export function ArticleActions({
         type="date"
         value={issueDate}
         onChange={(e) => setIssueDate(e.target.value)}
-        className="w-[124px] rounded-md border border-line bg-paper px-2 py-1 text-[11.5px] text-ash"
+        className="w-[124px] rounded-md border border-admin-line bg-admin-surface px-2 py-1 text-[11.5px] text-admin-body"
       />
       <button
         className={danger}
@@ -74,7 +74,7 @@ export function ArticleActions({
       >
         Reject
       </button>
-      {msg && <span className="basis-full text-[11px] text-ash">{msg}</span>}
+      {msg && <span className="basis-full text-[11px] text-admin-body">{msg}</span>}
     </div>
   );
 }

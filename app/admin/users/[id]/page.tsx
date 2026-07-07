@@ -102,7 +102,7 @@ export default async function AdminUserDetailPage({
       title={sub.contact.email}
       subtitle="OneArticle subscription detail"
       actions={
-        <Link href="/admin/users" className="text-[13px] text-ash hover:text-ink">
+        <Link href="/admin/users" className="text-[13px] text-admin-body hover:text-admin-ink">
           ← All users
         </Link>
       }
@@ -135,7 +135,7 @@ export default async function AdminUserDetailPage({
         <AdminCard title="Eligibility">
           <div className="px-4 py-4">
             <EligibilityBadge allowed={elig.allowed} reason={elig.reason} />
-            <p className="mt-3 text-[12.5px] text-ash font-sans">
+            <p className="mt-3 text-[12.5px] text-admin-body font-sans">
               {elig.allowed
                 ? "This subscriber will receive the daily OneArticle email when an issue matches their segment."
                 : "This subscriber is not receiving emails. The reason above is the canonical verdict from canReceiveOneArticleEmail."}
@@ -195,7 +195,7 @@ export default async function AdminUserDetailPage({
       </AdminCard>
 
       <AdminCard title="OneArticle preferences">
-        <div className="p-4 border-b border-line">
+        <div className="p-4 border-b border-admin-line">
           <PreferencesEditor
             subId={sub.id}
             interests={INTERESTS}
@@ -226,7 +226,7 @@ export default async function AdminUserDetailPage({
             ]}
           />
         ) : (
-          <div className="px-4 py-6 text-[13px] text-fog">
+          <div className="px-4 py-6 text-[13px] text-admin-muted">
             Preferences saved, checkout not completed — or preferences not yet set.
           </div>
         )}
@@ -240,12 +240,12 @@ export default async function AdminUserDetailPage({
           head={["Date", "Status", "Topic", "Language", "Score", "Sent at", "Note"]}
           empty="No sends recorded for this subscriber yet."
           rows={sends.map((s) => [
-            <span key="d" className="text-ash">{fmtDate(s.date)}</span>,
+            <span key="d" className="text-admin-body">{fmtDate(s.date)}</span>,
             <StatusBadge key="s" value={s.status} />,
             topicBySlug(s.matchedTopic)?.label ?? s.matchedTopic,
-            <span key="l" className="text-ash">{s.summaryLanguage}</span>,
+            <span key="l" className="text-admin-body">{s.summaryLanguage}</span>,
             s.personalizedScore.toFixed(2),
-            <span key="sa" className="text-ash">{fmtDateTime(s.sentAt)}</span>,
+            <span key="sa" className="text-admin-body">{fmtDateTime(s.sentAt)}</span>,
             <span key="n" className="text-[11.5px] text-dawn">{s.error ?? "—"}</span>,
           ])}
         />
@@ -256,7 +256,7 @@ export default async function AdminUserDetailPage({
           head={["Date", "Reaction", "Topic", "Source"]}
           empty="No feedback recorded yet."
           rows={feedback.map((fb) => [
-            <span key="d" className="text-ash">{fmtDate(fb.createdAt)}</span>,
+            <span key="d" className="text-admin-body">{fmtDate(fb.createdAt)}</span>,
             fb.reaction,
             fb.topic ? topicBySlug(fb.topic)?.label ?? fb.topic : "—",
             fb.sourceName ?? "—",
@@ -269,10 +269,10 @@ export default async function AdminUserDetailPage({
           head={["Date", "Action", "Actor", "Metadata"]}
           empty="No audit events for this user yet."
           rows={auditEvents.map((event) => [
-            <span key="d" className="text-ash">{fmtDateTime(event.createdAt)}</span>,
+            <span key="d" className="text-admin-body">{fmtDateTime(event.createdAt)}</span>,
             <StatusBadge key="a" value={event.action} tone="neutral" />,
-            <span key="actor" className="font-mono text-[11.5px] text-ash">{event.actor}</span>,
-            <span key="m" className="text-[11.5px] text-ash">
+            <span key="actor" className="font-mono text-[11.5px] text-admin-body">{event.actor}</span>,
+            <span key="m" className="text-[11.5px] text-admin-body">
               {summarizeAuditMetadata(event.metadata)}
             </span>,
           ])}

@@ -33,7 +33,7 @@ export default async function AuditPage({
             name="q"
             defaultValue={searchParams.q ?? ""}
             placeholder="actor, action, target"
-            className="w-52 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="w-52 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
         </FilterField>
         <FilterField label="Date">
@@ -41,7 +41,7 @@ export default async function AuditPage({
             type="date"
             name="date"
             defaultValue={searchParams.date ?? ""}
-            className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
         </FilterField>
         <FilterField label="Action">
@@ -50,14 +50,14 @@ export default async function AuditPage({
             name="action"
             defaultValue={searchParams.action ?? ""}
             placeholder="user.pause"
-            className="w-40 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="w-40 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
         </FilterField>
         <FilterField label="Target">
           <select
             name="targetType"
             defaultValue={searchParams.targetType ?? ""}
-            className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink"
+            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           >
             <option value="">Any</option>
             <option value="ProductSubscription">ProductSubscription</option>
@@ -66,11 +66,11 @@ export default async function AuditPage({
         </FilterField>
         <button
           type="submit"
-          className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream"
+          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink"
         >
           Apply
         </button>
-        <Link href="/admin/audit" className="px-2 py-1.5 text-fog hover:text-ink">
+        <Link href="/admin/audit" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
           Reset
         </Link>
       </form>
@@ -83,12 +83,12 @@ export default async function AuditPage({
           head={["Created", "Action", "Target", "Target ID", "Actor", "Metadata"]}
           empty="No audit events match these filters."
           rows={logs.map((log) => [
-            <span key="d" className="text-ash">{fmtDateTime(log.createdAt)}</span>,
+            <span key="d" className="text-admin-body">{fmtDateTime(log.createdAt)}</span>,
             <StatusBadge key="a" value={log.action} tone="neutral" />,
-            <span key="t" className="text-ash">{log.targetType}</span>,
+            <span key="t" className="text-admin-body">{log.targetType}</span>,
             <MonoShort key="id" value={log.targetId} />,
-            <span key="actor" className="font-mono text-[11.5px] text-ash">{log.actor}</span>,
-            <span key="m" className="text-[11.5px] text-ash">
+            <span key="actor" className="font-mono text-[11.5px] text-admin-body">{log.actor}</span>,
+            <span key="m" className="text-[11.5px] text-admin-body">
               {summarizeAuditMetadata(log.metadata)}
             </span>,
           ])}
@@ -101,7 +101,7 @@ export default async function AuditPage({
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-eyebrow text-fog">{label}</span>
+      <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">{label}</span>
       {children}
     </label>
   );

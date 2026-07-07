@@ -75,7 +75,7 @@ export default async function AdminOverviewPage({
             ])}
         />
         {Object.keys(m.access).length === 0 && (
-          <div className="px-4 py-6 text-[13px] text-fog">No subscriptions yet.</div>
+          <div className="px-4 py-6 text-[13px] text-admin-muted">No subscriptions yet.</div>
         )}
       </AdminCard>
 
@@ -113,7 +113,7 @@ export default async function AdminOverviewPage({
             <span key="n" className="flex items-center gap-2">
               <Link
                 href={p.connected ? `/admin/${p.key}` : "/admin/products"}
-                className="text-ink underline underline-offset-2 hover:text-graphite"
+                className="text-admin-ink underline underline-offset-2 hover:text-admin-body"
               >
                 {p.name}
               </Link>
@@ -129,7 +129,7 @@ export default async function AdminOverviewPage({
                   : "connected"}
               </span>
             ) : (
-              <span key="v" className="text-fog">{WAITLIST_NOTE}</span>
+              <span key="v" className="text-admin-muted">{WAITLIST_NOTE}</span>
             ),
           ])}
         />
@@ -155,7 +155,7 @@ export default async function AdminOverviewPage({
             ["Last successful send recorded", fmtDateTime(m.ops.lastSendAt)],
             [
               "Today's issues",
-              <Link key="l" href="/admin/one-article/issues" className="text-ink underline underline-offset-2">
+              <Link key="l" href="/admin/one-article/issues" className="text-admin-ink underline underline-offset-2">
                 View issues →
               </Link>,
             ],
@@ -170,7 +170,7 @@ export default async function AdminOverviewPage({
           <MetricCard label="Summaries generated" value={m.content.summaries} />
           <MetricCard label="Audit events" value={m.content.auditEvents} />
         </MetricGrid>
-        <Link href="/admin/audit" className="text-[13px] text-ink underline underline-offset-2">
+        <Link href="/admin/audit" className="text-[13px] text-admin-ink underline underline-offset-2">
           View audit log →
         </Link>
       </AdminCard>
@@ -181,17 +181,17 @@ export default async function AdminOverviewPage({
 function SmallBreakdown({ title, data }: { title: string; data: Record<string, number> }) {
   const entries = Object.entries(data);
   return (
-    <div className="border border-line rounded-xl bg-paper/60 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-eyebrow text-fog font-sans mb-2">
+    <div className="border border-admin-line rounded-xl bg-admin-surface/60 px-4 py-3">
+      <div className="text-[11px] uppercase tracking-eyebrow text-admin-muted font-sans mb-2">
         {title}
       </div>
       {entries.length === 0 ? (
-        <div className="text-[12.5px] text-fog">None</div>
+        <div className="text-[12.5px] text-admin-muted">None</div>
       ) : (
         <ul className="space-y-1">
           {entries.map(([k, v]) => (
-            <li key={k} className="flex justify-between text-[12.5px] text-ink/90">
-              <span className="font-mono text-ash">{k}</span>
+            <li key={k} className="flex justify-between text-[12.5px] text-admin-ink/90">
+              <span className="font-mono text-admin-body">{k}</span>
               <span>{v}</span>
             </li>
           ))}

@@ -36,15 +36,15 @@ export function CreateUserButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream"
+        className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
       >
         + Add user
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4">
-          <div className="w-full max-w-md rounded-xl border border-line-strong bg-paper p-5 shadow-lg">
-            <h3 className="font-serif text-[17px] text-ink">Add user</h3>
-            <p className="mt-1 text-[12.5px] text-ash">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4">
+          <div className="w-full max-w-md rounded-xl border border-admin-line-strong bg-admin-surface p-5 shadow-lg">
+            <h3 className="font-serif text-[17px] text-admin-ink">Add user</h3>
+            <p className="mt-1 text-[12.5px] text-admin-body">
               Creates a OneArticle subscription in PENDING_PREFERENCES. No email is sent.
             </p>
             <input
@@ -53,14 +53,14 @@ export function CreateUserButton() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
               autoFocus
-              className="mt-3 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+              className="mt-3 w-full rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
             />
             {msg && <p className="mt-2 text-[12.5px] text-dawn">{msg}</p>}
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[12.5px] text-ash hover:text-ink" disabled={busy}>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy}>
                 Cancel
               </button>
-              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-lg border border-line-strong px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40">
+              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-lg border border-admin-line-strong px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40">
                 {busy ? "Creating…" : "Create"}
               </button>
             </div>

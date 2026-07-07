@@ -26,7 +26,7 @@ export default async function OneFilmSubscribersPage({
           <AdminEmptyState>No OneFilm subscribers yet.</AdminEmptyState>
         ) : (
           <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-line text-fog">
+            <thead className="border-b border-admin-line text-admin-muted">
               <tr>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Status</th>
@@ -36,20 +36,20 @@ export default async function OneFilmSubscribersPage({
                 <th className="px-4 py-2">Eligible</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
+            <tbody className="divide-y divide-admin-line/70">
               {subs.map((sub) => {
                 const eligible = evaluateFilmEligibility(sub);
                 const prefs = sub.filmPreferences;
                 return (
                   <tr key={sub.id}>
-                    <td className="px-4 py-2 text-ink">{sub.contact.email}</td>
-                    <td className="px-4 py-2 text-ash">{sub.status}</td>
-                    <td className="px-4 py-2 text-ash">{sub.emailDeliveryStatus}</td>
-                    <td className="px-4 py-2 text-ash">
+                    <td className="px-4 py-2 text-admin-ink">{sub.contact.email}</td>
+                    <td className="px-4 py-2 text-admin-body">{sub.status}</td>
+                    <td className="px-4 py-2 text-admin-body">{sub.emailDeliveryStatus}</td>
+                    <td className="px-4 py-2 text-admin-body">
                       {prefs ? `${prefs.emailLanguage} / ${prefs.preferredGenres.slice(0, 3).join(", ") || "—"}` : "Missing"}
                     </td>
-                    <td className="px-4 py-2 text-ash">{sub.paymentProvider ?? "—"}</td>
-                    <td className="px-4 py-2 text-ash">{eligible.allowed ? "Yes" : eligible.reason}</td>
+                    <td className="px-4 py-2 text-admin-body">{sub.paymentProvider ?? "—"}</td>
+                    <td className="px-4 py-2 text-admin-body">{eligible.allowed ? "Yes" : eligible.reason}</td>
                   </tr>
                 );
               })}

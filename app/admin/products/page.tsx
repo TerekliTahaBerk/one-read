@@ -37,7 +37,7 @@ export default async function AdminProductsPage({
         <AdminTable
           head={["Product", "Status", "Public visibility", "Source", "Operational data", "Actions"]}
           rows={PRODUCTS.map((p) => [
-            <span key="n" className="flex items-center gap-2 font-medium text-ink">
+            <span key="n" className="flex items-center gap-2 font-medium text-admin-ink">
               <span className={`h-2.5 w-2.5 rounded-full ${productDotClass(p.key)}`} />
               {p.name}
             </span>,
@@ -52,9 +52,9 @@ export default async function AdminProductsPage({
               tone={p.publicVisible ? "good" : "muted"}
             />,
             p.connected ? (
-              <span key="d" className="text-ash">From ProductSubscription</span>
+              <span key="d" className="text-admin-body">From ProductSubscription</span>
             ) : (
-              <span key="d" className="text-fog">External: Tally, not connected</span>
+              <span key="d" className="text-admin-muted">External: Tally, not connected</span>
             ),
             p.key === "one-read" ? (
               <span key="c">{`${oneRead.activeOrTrialing} active/trialing · ${oneRead.pendingCheckout} pending checkout · ${oneRead.total} total`}</span>
@@ -63,24 +63,24 @@ export default async function AdminProductsPage({
             ) : p.key === "one-lingo" ? (
               <span key="c">{`${lingo.subscribers.activeOrTrialing} active/trialing · ${lingo.subscribers.eligible} eligible`}</span>
             ) : p.connected ? (
-              <span key="c" className="text-fog">Use product operations for detailed metrics</span>
+              <span key="c" className="text-admin-muted">Use product operations for detailed metrics</span>
             ) : (
-              <span key="c" className="text-fog">Waitlist count not available</span>
+              <span key="c" className="text-admin-muted">Waitlist count not available</span>
             ),
             p.key === "one-read" ? (
-              <Link key="a" href="/admin/settings" className="text-ink underline underline-offset-2">
+              <Link key="a" href="/admin/settings" className="text-admin-ink underline underline-offset-2">
                 Billing settings →
               </Link>
             ) : p.key === "one-article" ? (
-              <Link key="a" href="/admin/one-article" className="text-ink underline underline-offset-2">
+              <Link key="a" href="/admin/one-article" className="text-admin-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : p.key === "one-lingo" ? (
-              <Link key="a" href="/admin/one-lingo" className="text-ink underline underline-offset-2">
+              <Link key="a" href="/admin/one-lingo" className="text-admin-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : p.key === "one-film" ? (
-              <Link key="a" href="/admin/one-film" className="text-ink underline underline-offset-2">
+              <Link key="a" href="/admin/one-film" className="text-admin-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : (
@@ -89,7 +89,7 @@ export default async function AdminProductsPage({
                 href={WAITLIST_FORM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-ash underline underline-offset-2"
+                className="text-admin-body underline underline-offset-2"
               >
                 Tally form ↗
               </a>
@@ -98,7 +98,7 @@ export default async function AdminProductsPage({
         />
       </AdminCard>
 
-      <p className="text-[12.5px] text-fog font-sans">
+      <p className="text-[12.5px] text-admin-muted font-sans">
         Public visibility is separate from backend availability. Hidden products
         stay available in admin and backend routes for future relaunch or
         subscriber management.
@@ -110,7 +110,7 @@ export default async function AdminProductsPage({
 function productDotClass(key: string): string {
   switch (key) {
     case "one-read":
-      return "bg-ink";
+      return "bg-admin-ink";
     case "one-article":
       return "bg-sky-500";
     case "one-lingo":
@@ -120,6 +120,6 @@ function productDotClass(key: string): string {
     case "one-dish":
       return "bg-[#B96A4B]";
     default:
-      return "bg-fog";
+      return "bg-admin-muted";
   }
 }

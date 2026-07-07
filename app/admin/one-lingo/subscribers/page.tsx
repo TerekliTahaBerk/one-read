@@ -26,7 +26,7 @@ export default async function OneLingoSubscribersPage({
           <AdminEmptyState>No OneLingo subscribers yet.</AdminEmptyState>
         ) : (
           <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-line text-fog">
+            <thead className="border-b border-admin-line text-admin-muted">
               <tr>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Status</th>
@@ -35,19 +35,19 @@ export default async function OneLingoSubscribersPage({
                 <th className="px-4 py-2">Eligible</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
+            <tbody className="divide-y divide-admin-line/70">
               {subs.map((sub) => {
                 const eligible = evaluateLingoEligibility(sub);
                 const prefs = sub.lingoPreferences;
                 return (
                   <tr key={sub.id}>
-                    <td className="px-4 py-2 text-ink">{sub.contact.email}</td>
-                    <td className="px-4 py-2 text-ash">{sub.status}</td>
-                    <td className="px-4 py-2 text-ash">{sub.emailDeliveryStatus}</td>
-                    <td className="px-4 py-2 text-ash">
+                    <td className="px-4 py-2 text-admin-ink">{sub.contact.email}</td>
+                    <td className="px-4 py-2 text-admin-body">{sub.status}</td>
+                    <td className="px-4 py-2 text-admin-body">{sub.emailDeliveryStatus}</td>
+                    <td className="px-4 py-2 text-admin-body">
                       {prefs ? `${prefs.targetLanguage} / ${prefs.nativeLanguage} / ${prefs.level}` : "Missing"}
                     </td>
-                    <td className="px-4 py-2 text-ash">{eligible.allowed ? "Yes" : eligible.reason}</td>
+                    <td className="px-4 py-2 text-admin-body">{eligible.allowed ? "Yes" : eligible.reason}</td>
                   </tr>
                 );
               })}

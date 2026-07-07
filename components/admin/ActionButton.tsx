@@ -72,8 +72,8 @@ export function ActionButton({
   }
 
   const buttonClass = danger
-    ? "rounded-lg border border-dawn/50 bg-paper px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5"
-    : "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream";
+    ? "rounded-lg border border-dawn/50 bg-admin-surface px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5"
+    : "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink";
 
   const exactOk = !requireExact || value.trim().toLowerCase() === requireExact.toLowerCase();
   const promptOk = !promptField || (value.trim().length > 0 && exactOk);
@@ -90,39 +90,39 @@ export function ActionButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4">
-          <div className="w-full max-w-md rounded-xl border border-line-strong bg-paper p-5 shadow-lg">
-            <h3 className="font-serif text-[17px] text-ink">{label}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4 backdrop-blur-[1px]">
+          <div className="w-full max-w-md rounded-2xl border border-admin-line-strong bg-admin-surface p-5 shadow-admin-md">
+            <h3 className="font-serif text-[17px] text-admin-ink">{label}</h3>
             {confirm && (
-              <p className="mt-2 text-[13px] text-ash font-sans">{confirm}</p>
+              <p className="mt-2 font-sans text-[13px] text-admin-body">{confirm}</p>
             )}
             {promptField && (
               <label className="mt-3 block">
-                <span className="text-[11px] uppercase tracking-eyebrow text-fog">
+                <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">
                   {promptLabel ?? promptField}
                 </span>
                 <input
                   type="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                  className="mt-1 w-full rounded-lg border border-admin-line bg-admin-bg px-2.5 py-1.5 text-[13px] text-admin-ink outline-none focus:border-admin-amber"
                   autoFocus
                 />
                 {requireExact && (
-                  <span className="mt-1 block text-[11.5px] text-fog">
+                  <span className="mt-1 block text-[11.5px] text-admin-muted">
                     Type <code className="font-mono">{requireExact}</code> to confirm.
                   </span>
                 )}
               </label>
             )}
             {error && (
-              <p className="mt-3 text-[12.5px] text-dawn font-sans">Error: {error}</p>
+              <p className="mt-3 font-sans text-[12.5px] text-dawn">Error: {error}</p>
             )}
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => { setOpen(false); setError(null); }}
-                className="rounded-lg px-3 py-1.5 text-[12.5px] text-ash hover:text-ink"
+                className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink"
                 disabled={busy}
               >
                 Cancel
@@ -134,7 +134,7 @@ export function ActionButton({
                 className={`rounded-lg border px-3 py-1.5 text-[12.5px] disabled:opacity-40 ${
                   danger
                     ? "border-dawn/50 text-dawn hover:bg-dawn/5"
-                    : "border-line-strong text-ink hover:bg-cream"
+                    : "border-transparent bg-admin-amber text-white hover:bg-admin-amber-strong"
                 }`}
               >
                 {busy ? "Working…" : "Confirm"}

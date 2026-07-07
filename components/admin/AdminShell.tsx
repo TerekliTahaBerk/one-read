@@ -1,11 +1,46 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { AdminNav } from "./AdminNav";
 
 /**
- * Page chrome for every admin screen: wordmark, left nav (token-preserving),
- * and a titled content column. Desktop-first but degrades to a stacked layout
- * on small screens.
+ * Page chrome for every admin screen: a warm, persistent left sidebar
+ * (OneRead wordmark + grouped nav + logout), a sticky top bar with breadcrumb,
+ * search and today's date, and a titled content column. Desktop shows the
+ * sidebar inline; on small screens it collapses into a slide-in drawer.
+ *
+ * All colours come from the additive `admin-*` Tailwind tokens (warm ivory,
+ * dawn-amber accent) so the admin can be rebranded without touching the public
+ * marketing site.
  */
+
+const CRUMB_LABELS: Record<string, string> = {
+  admin: "Admin",
+  "one-article": "OneArticle",
+  "one-lingo": "OneLingo",
+  "one-film": "OneFilm",
+  users: "Users",
+  products: "Products",
+  settings: "Settings",
+  audit: "Audit log",
+  "manual-article": "Manual article",
+  subscribers: "Subscribers",
+  issues: "Issues",
+  articles: "Articles",
+  sends: "Sends",
+  lessons: "Lessons",
+  catalog: "Catalog",
+};
+
+function labelFor(segment: string): string {
+  return (
+    CRUMB_LABELS[segment] ??
+    segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
+
 export function AdminShell({
   title,
   subtitle,
@@ -17,30 +52,148 @@ export function AdminShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname() ?? "/admin";
+
+  // Breadcrumb: "Admin" root, then intermediate sections, then the page title
+  // as the current (leaf) crumb. Using the title prop for the leaf keeps id /
+  // detail routes readable instead of showing a raw cuid.
+  const segments = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+  const middle = segments.slice(1, -1).map((seg, i) => ({
+    label: labelFor(seg),
+    href: "/" + segments.slice(0, i + 2).join("/"),
+  }));
+
   return (
-    <main className="min-h-svh w-full bg-[#fbfaf7]">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8 py-8">
-        <div className="mb-8 flex items-center justify-between border-b border-line pb-4">
-          <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">
-            OneRead · admin
-          </span>
-          <span className="text-[11px] uppercase tracking-eyebrow text-fog">
-            Internal operations
-          </span>
-        </div>
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-48 lg:shrink-0">
-            <div className="lg:sticky lg:top-8">
-              <AdminNav />
+    <div className="min-h-svh bg-admin-bg text-admin-body font-sans">
+      <div className="flex min-h-svh">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-[248px] shrink-0 flex-col border-r border-admin-line bg-admin-surface/60 lg:flex">
+          <SidebarContent />
+        </aside>
+
+        {/* Mobile drawer */}
+        {drawerOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setDrawerOpen(false)}
+              className="absolute inset-0 bg-admin-ink/30 backdrop-blur-[1px]"
+            />
+            <aside className="absolute inset-y-0 left-0 flex w-[264px] flex-col border-r border-admin-line bg-admin-surface shadow-admin-md">
+              <SidebarContent onNavigate={() => setDrawerOpen(false)} />
+            </aside>
+          </div>
+        )}
+
+        {/* Main column */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-admin-line bg-admin-bg/85 px-5 backdrop-blur sm:px-8">
+            <button
+              type="button"
+              aria-label="Open menu"
+              onClick={() => setDrawerOpen(true)}
+              className="-ml-1 grid h-9 w-9 place-items-center rounded-lg text-admin-body hover:bg-admin-sink lg:hidden"
+            >
+              <MenuIcon />
+            </button>
+
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 items-center gap-1.5 text-[13px]"
+            >
+              <Link
+                href="/admin"
+                className="shrink-0 text-admin-muted transition-colors hover:text-admin-ink"
+              >
+                Admin
+              </Link>
+              {middle.map((c) => (
+                <span key={c.href} className="flex min-w-0 items-center gap-1.5">
+                  <ChevronIcon />
+                  <Link
+                    href={c.href}
+                    className="truncate text-admin-muted transition-colors hover:text-admin-ink"
+                  >
+                    {c.label}
+                  </Link>
+                </span>
+              ))}
+              <ChevronIcon />
+              <span className="truncate font-medium text-admin-ink">
+                {title}
+              </span>
+            </nav>
+
+            <div className="ml-auto flex items-center gap-3">
+              <SearchAffordance />
+              <DateChip />
             </div>
-          </aside>
-          <div className="min-w-0 flex-1">
+          </header>
+
+          <main className="flex-1 px-5 py-8 sm:px-8">
             <AdminHeader title={title} subtitle={subtitle} actions={actions} />
             {children}
-          </div>
+          </main>
         </div>
       </div>
-    </main>
+    </div>
+  );
+}
+
+/** Brand block + navigation + logout — shared by the desktop rail and the
+ *  mobile drawer. */
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      <Link
+        href="/admin"
+        onClick={onNavigate}
+        className="flex items-center gap-2.5 border-b border-admin-line px-5 py-[18px]"
+      >
+        <SunMark />
+        <span className="leading-tight">
+          <span className="block font-serif text-[15px] tracking-tight text-admin-ink">
+            OneRead
+          </span>
+          <span className="block text-[10px] uppercase tracking-eyebrow text-admin-muted">
+            Admin panel
+          </span>
+        </span>
+      </Link>
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <AdminNav onNavigate={onNavigate} />
+      </div>
+    </>
+  );
+}
+
+/** Presentational search box. Wiring lands in a later iteration, so it renders
+ *  disabled rather than pretending to work. */
+function SearchAffordance() {
+  return (
+    <div
+      title="Search — coming in the next iteration"
+      className="hidden h-9 w-56 items-center gap-2 rounded-lg border border-admin-line bg-admin-surface px-3 text-[13px] text-admin-muted md:flex"
+    >
+      <SearchIcon />
+      <span>Search…</span>
+    </div>
+  );
+}
+
+function DateChip() {
+  const today = new Date().toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return (
+    <span className="hidden items-center gap-2 rounded-lg border border-admin-line bg-admin-surface px-3 py-[7px] text-[12.5px] text-admin-body sm:flex">
+      <CalendarIcon />
+      {today}
+    </span>
   );
 }
 
@@ -56,9 +209,13 @@ export function AdminHeader({
   return (
     <header className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
       <div>
-        <h1 className="font-serif text-2xl tracking-tight text-ink">{title}</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-admin-ink">
+          {title}
+        </h1>
         {subtitle && (
-          <p className="mt-1 text-[13px] text-ash font-sans">{subtitle}</p>
+          <p className="mt-1 font-sans text-[13px] text-admin-body/80">
+            {subtitle}
+          </p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -72,16 +229,108 @@ export function AdminHeader({
  */
 export function AdminNotConfigured() {
   return (
-    <main className="min-h-svh w-full px-5 sm:px-8 py-16">
+    <main className="min-h-svh w-full bg-admin-bg px-5 py-16 sm:px-8">
       <div className="mx-auto max-w-prose text-center">
-        <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-ink/85">
+        <span className="font-serif italic uppercase tracking-wordmark text-[12px] text-admin-ink/85">
           OneRead · admin
         </span>
-        <p className="mt-6 text-ash text-sm font-sans">
+        <p className="mt-6 font-sans text-sm text-admin-body">
           Set <code className="font-mono">ADMIN_TOKEN</code> in your environment
           plus admin login credentials to enable the admin panel.
         </p>
       </div>
     </main>
+  );
+}
+
+/* ---- icons (inline, no external deps) --------------------------------- */
+
+function SunMark() {
+  return (
+    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-admin-amber/12 text-admin-amber">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+        <g stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+          <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="shrink-0 text-admin-muted/70"
+    >
+      <path
+        d="M9 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M20 20l-3.5-3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="text-admin-amber"
+    >
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="15"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M3.5 9.5h17M8 3.5v3M16 3.5v3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

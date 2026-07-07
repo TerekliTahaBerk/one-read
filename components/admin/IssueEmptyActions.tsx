@@ -38,7 +38,7 @@ export function IssueEmptyActions({ dateIso }: { dateIso: string }) {
   }
 
   const button =
-    "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40";
+    "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -54,7 +54,7 @@ export function IssueEmptyActions({ dateIso }: { dateIso: string }) {
       <button className={button} disabled={!!busy} onClick={() => run("pipeline-dry-run")}>
         {busy === "pipeline-dry-run" ? "Running..." : "Pipeline dry-run"}
       </button>
-      {msg && <span className="basis-full text-[12px] text-ash">{msg}</span>}
+      {msg && <span className="basis-full text-[12px] text-admin-body">{msg}</span>}
     </div>
   );
 }

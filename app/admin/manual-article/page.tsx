@@ -24,11 +24,11 @@ export default function ManualArticlePage({
       <div className="mb-6">
         <a
           href="/admin"
-          className="text-[12px] text-fog hover:text-ink font-sans"
+          className="text-[12px] text-admin-muted hover:text-admin-ink font-sans"
         >
           ← Back to admin
         </a>
-        <p className="text-[13.5px] text-ash font-sans mt-2 max-w-2xl">
+        <p className="text-[13.5px] text-admin-body font-sans mt-2 max-w-2xl">
           Saved as <code>PENDING</code> and deduped by URL. Run{" "}
           <code>npm run score</code> (or the daily pipeline) to score and
           summarize it. The scorer trusts the body you paste here and skips the

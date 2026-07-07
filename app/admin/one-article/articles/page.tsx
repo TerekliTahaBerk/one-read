@@ -84,7 +84,7 @@ export default async function ArticlesPage({
           <Metric label="Extraction failed" value={extractionFailed} />
           <Metric label="Scoring rejected" value={scoringRejected} />
         </div>
-        <div className="mt-4 space-y-1 text-[12.5px] text-ash font-sans">
+        <div className="mt-4 space-y-1 text-[12.5px] text-admin-body font-sans">
           <p>Scorer: {aiStatus.scorerEnabled ? `${aiStatus.statusLabel} · ${aiStatus.activeModel}` : `${aiStatus.statusLabel} — scoring is disabled`}</p>
           <p>Last ingest: {lastArticle ? fmtDate(lastArticle.ingestedAt) : "No articles ingested yet"}. Last scoring activity: {lastScoredArticle ? fmtDate(lastScoredArticle.ingestedAt) : "No scored/rejected article yet"}.</p>
           <p>Next action: {nextAction}</p>
@@ -95,21 +95,21 @@ export default async function ArticlesPage({
       <div className="mb-6 flex flex-wrap items-center gap-3 text-[12.5px] font-sans">
         <form method="get" className="flex items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] uppercase tracking-eyebrow text-fog">Scoring status</span>
-            <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-line bg-paper px-2.5 py-1.5 text-ink">
+            <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Scoring status</span>
+            <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
               <option value="">Any</option>
               {["PENDING", "SCORED", "REJECTED"].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </label>
-          <button type="submit" className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream">
+          <button type="submit" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink">
             Apply
           </button>
         </form>
         <Link
           href="/admin/manual-article"
-          className="rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-ink hover:bg-cream"
+          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink"
         >
           + Add article manually
         </Link>
@@ -122,7 +122,7 @@ export default async function ArticlesPage({
           empty="No articles ingested yet."
           rows={articles.map((a) => [
             <span key="t" className="block min-w-[180px]">
-              <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-ink hover:underline">
+              <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-admin-ink hover:underline">
                 {a.title}
               </a>
               {isDemoOrManual(a) && (
@@ -131,22 +131,22 @@ export default async function ArticlesPage({
                 </span>
               )}
             </span>,
-            <span key="s" className="text-ash">{a.sourceName}</span>,
+            <span key="s" className="text-admin-body">{a.sourceName}</span>,
             topicBySlug(a.topic)?.label ?? a.topic,
-            <span key="l" className="text-ash">{a.sourceLanguage}</span>,
+            <span key="l" className="text-admin-body">{a.sourceLanguage}</span>,
             <StatusBadge key="st" value={a.scoringStatus} />,
             a.qualityScore.toFixed(2),
-            <span key="ex" className="text-[11.5px] text-ash">
+            <span key="ex" className="text-[11.5px] text-admin-body">
               {extractionStatus(a.rejectionReason, a.extractionConfidence)}
             </span>,
-            usedIds.has(a.id) ? <StatusBadge key="u" value="used" tone="good" /> : <span key="u" className="text-fog">—</span>,
-            <span key="i" className="text-ash">{fmtDate(a.ingestedAt)}</span>,
-            <span key="r" className="block max-w-[260px] text-[11.5px] text-ash">
+            usedIds.has(a.id) ? <StatusBadge key="u" value="used" tone="good" /> : <span key="u" className="text-admin-muted">—</span>,
+            <span key="i" className="text-admin-body">{fmtDate(a.ingestedAt)}</span>,
+            <span key="r" className="block max-w-[260px] text-[11.5px] text-admin-body">
               {articleReason(a.rejectionReason, a.reasonForSelection, aiStatus)}
               {(a.rawExcerpt || a.cleanedText) && (
                 <details className="mt-1">
-                  <summary className="cursor-pointer text-fog">Excerpt/text</summary>
-                  <p className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap rounded-md border border-line bg-paper/70 p-2 font-mono text-[10.5px] text-ink/80">
+                  <summary className="cursor-pointer text-admin-muted">Excerpt/text</summary>
+                  <p className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap rounded-md border border-admin-line bg-admin-surface/70 p-2 font-mono text-[10.5px] text-admin-ink/80">
                     {(a.cleanedText ?? a.rawExcerpt ?? "").slice(0, 1200)}
                   </p>
                 </details>
@@ -167,9 +167,9 @@ export default async function ArticlesPage({
 
 function Metric({ label, value, tone = "" }: { label: string; value: number; tone?: string }) {
   return (
-    <div className="rounded-lg border border-line bg-paper/70 p-3">
-      <div className="text-[10px] uppercase tracking-eyebrow text-fog">{label}</div>
-      <div className={`mt-1 font-serif text-[22px] ${tone || "text-ink"}`}>{value}</div>
+    <div className="rounded-lg border border-admin-line bg-admin-surface/70 p-3">
+      <div className="text-[10px] uppercase tracking-eyebrow text-admin-muted">{label}</div>
+      <div className={`mt-1 font-serif text-[22px] ${tone || "text-admin-ink"}`}>{value}</div>
     </div>
   );
 }

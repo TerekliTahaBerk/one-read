@@ -157,9 +157,9 @@ export default async function SettingsPage({
   return (
     <AdminShell title="Settings" subtitle="Configuration & launch readiness">
       <AdminCard title="Notices">
-        <ul className="divide-y divide-line/70">
+        <ul className="divide-y divide-admin-line/70">
           {warnings.map((w, i) => (
-            <li key={i} className="px-4 py-2.5 text-[12.5px] text-ink/90 font-sans">
+            <li key={i} className="px-4 py-2.5 text-[12.5px] text-admin-ink/90 font-sans">
               {w}
             </li>
           ))}
@@ -360,14 +360,14 @@ export default async function SettingsPage({
         <AdminTable
           head={["Variable", "Status", "Explanation"]}
           rows={readiness.map((c) => [
-            <span key="k" className="font-mono text-[11.5px] text-ash">{c.key}</span>,
+            <span key="k" className="font-mono text-[11.5px] text-admin-body">{c.key}</span>,
             <StatusBadge key="s" value={c.status.toUpperCase()} tone={tone(c.status)} />,
-            <span key="e" className="text-[12.5px] text-ink/80">{c.explanation}</span>,
+            <span key="e" className="text-[12.5px] text-admin-ink/80">{c.explanation}</span>,
           ])}
         />
       </AdminCard>
 
-      <p className="text-[12.5px] text-fog font-sans">
+      <p className="text-[12.5px] text-admin-muted font-sans">
         Secret values are never shown here — only whether each integration is
         configured. Update them through your hosting provider&apos;s environment
         settings.
@@ -397,7 +397,7 @@ function ConfigCard({
     <AdminCard title={title} subtitle="Secret values hidden">
       <DefList
         rows={rows.map(([key, value]) => [
-          <span key="k" className="font-mono text-[11.5px] text-ash">{key}</span>,
+          <span key="k" className="font-mono text-[11.5px] text-admin-body">{key}</span>,
           <StatusBadge
             key="v"
             value={value}

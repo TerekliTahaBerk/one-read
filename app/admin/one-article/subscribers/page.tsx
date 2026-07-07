@@ -56,17 +56,17 @@ export default async function OneArticleSubscribersPage({
           ]}
           empty="No subscribers match."
           rows={rows.map((r) => [
-            <span key="e" className="text-ink">{r.email}</span>,
+            <span key="e" className="text-admin-ink">{r.email}</span>,
             <StatusBadge key="s" value={r.status} />,
             <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,
-            <span key="pl" className="text-ash">{r.plan ?? "—"}</span>,
-            <span key="pv" className="text-ash">{r.provider ?? "—"}</span>,
-            <span key="pe" className="text-ash">{fmtDate(r.currentPeriodEnd)}</span>,
-            <span key="l" className="text-ash">
+            <span key="pl" className="text-admin-body">{r.plan ?? "—"}</span>,
+            <span key="pv" className="text-admin-body">{r.provider ?? "—"}</span>,
+            <span key="pe" className="text-admin-body">{fmtDate(r.currentPeriodEnd)}</span>,
+            <span key="l" className="text-admin-body">
               {(r.sourceLanguage ?? "—") + " → " + (r.summaryLanguage ?? "—")}
             </span>,
-            <span key="i" className="text-ash">{r.interestsCount}</span>,
-            <Link key="v" href={`/admin/users/${r.id}`} className="text-ink underline underline-offset-2">
+            <span key="i" className="text-admin-body">{r.interestsCount}</span>,
+            <Link key="v" href={`/admin/users/${r.id}`} className="text-admin-ink underline underline-offset-2">
               View
             </Link>,
           ])}

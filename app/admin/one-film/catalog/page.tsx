@@ -29,7 +29,7 @@ export default async function OneFilmCatalogPage({
           <AdminEmptyState>No films in the catalog yet. Add real films above before generating notes.</AdminEmptyState>
         ) : (
           <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-line text-fog">
+            <thead className="border-b border-admin-line text-admin-muted">
               <tr>
                 <th className="px-4 py-2">Title</th>
                 <th className="px-4 py-2">Year</th>
@@ -39,15 +39,15 @@ export default async function OneFilmCatalogPage({
                 <th className="px-4 py-2">Used</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
+            <tbody className="divide-y divide-admin-line/70">
               {films.map((f) => (
                 <tr key={f.id}>
-                  <td className="px-4 py-2 text-ink">{f.title}</td>
-                  <td className="px-4 py-2 text-ash">{f.year ?? "—"}</td>
-                  <td className="px-4 py-2 text-ash">{f.director ?? "—"}</td>
-                  <td className="px-4 py-2 text-ash">{f.genres.join(", ") || "—"}</td>
-                  <td className="px-4 py-2 text-ash">{f.spoilerLevel}</td>
-                  <td className="px-4 py-2 text-ash">{f.usedAt ? f.usedAt.toISOString().slice(0, 10) : "—"}</td>
+                  <td className="px-4 py-2 text-admin-ink">{f.title}</td>
+                  <td className="px-4 py-2 text-admin-body">{f.year ?? "—"}</td>
+                  <td className="px-4 py-2 text-admin-body">{f.director ?? "—"}</td>
+                  <td className="px-4 py-2 text-admin-body">{f.genres.join(", ") || "—"}</td>
+                  <td className="px-4 py-2 text-admin-body">{f.spoilerLevel}</td>
+                  <td className="px-4 py-2 text-admin-body">{f.usedAt ? f.usedAt.toISOString().slice(0, 10) : "—"}</td>
                 </tr>
               ))}
             </tbody>

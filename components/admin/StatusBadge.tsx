@@ -11,10 +11,10 @@ type Tone = "good" | "wait" | "bad" | "muted" | "neutral";
 
 const TONE_CLASS: Record<Tone, string> = {
   good: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  wait: "bg-amber-50 text-amber-700 border-amber-200",
-  bad: "bg-paper text-dawn border-dawn/40",
-  muted: "bg-cream text-fog border-line",
-  neutral: "bg-paper text-ash border-line",
+  wait: "bg-admin-amber/10 text-admin-amber-strong border-admin-amber/25",
+  bad: "bg-admin-surface text-dawn border-dawn/40",
+  muted: "bg-admin-sink text-admin-muted border-admin-line",
+  neutral: "bg-admin-surface text-admin-body border-admin-line",
 };
 
 const TONE_BY_VALUE: Record<string, Tone> = {
@@ -90,7 +90,7 @@ export function EligibilityBadge({
         title={reason}
       />
       {!allowed && (
-        <span className="font-mono text-[10.5px] text-fog">{reason}</span>
+        <span className="font-mono text-[10.5px] text-admin-muted">{reason}</span>
       )}
     </span>
   );

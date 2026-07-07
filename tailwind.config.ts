@@ -25,6 +25,28 @@ const config: Config = {
         dawn: "#C0362C",
         "dawn-soft": "#E5B274",
         glow: "#F2D8A8",
+        // --- Admin panel only ---------------------------------------------
+        // Warm OneRead brand palette, scoped to the /admin surface. These are
+        // additive: no public-site class references them, so restyling the
+        // admin never repaints the marketing site. Single accent = dawn amber.
+        admin: {
+          bg: "#F6F1E6", // ivory canvas
+          surface: "#FFFDF8", // warm card / panel
+          sink: "#EFE8D8", // recessed fill / hover
+          line: "#E7DDCB", // warm hairline
+          "line-strong": "#DBCFB8",
+          ink: "#2A2117", // warm near-black — headings
+          body: "#5E5648", // body text
+          muted: "#9B917E", // captions / eyebrow
+          amber: "#C97A2C", // dawn amber accent
+          "amber-strong": "#AC6520",
+          "amber-tint": "#F1E5D1", // active/selected wash
+        },
+      },
+      boxShadow: {
+        admin: "0 1px 2px rgba(42,33,23,0.04), 0 1px 3px rgba(42,33,23,0.03)",
+        "admin-md":
+          "0 1px 2px rgba(42,33,23,0.05), 0 8px 24px -12px rgba(42,33,23,0.18)",
       },
       fontFamily: {
         serif: ['var(--font-fraunces)', 'ui-serif', 'Georgia', 'Cambria', 'serif'],

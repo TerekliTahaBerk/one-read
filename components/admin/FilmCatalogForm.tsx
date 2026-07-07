@@ -68,8 +68,8 @@ export function FilmCatalogForm() {
     }
   }
 
-  const input = "w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink";
-  const btn = "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40";
+  const input = "w-full rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink";
+  const btn = "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -93,7 +93,7 @@ export function FilmCatalogForm() {
       </div>
       <div className="flex items-center gap-3">
         <button className={btn} disabled={busy} onClick={submit}>{busy ? "Adding..." : "Add to catalog"}</button>
-        {msg && <span className="text-[12.5px] text-ash font-sans">{msg}</span>}
+        {msg && <span className="text-[12.5px] text-admin-body font-sans">{msg}</span>}
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export default async function OneFilmOverviewPage({
           <MetricCard label="Streaming availability" value="Never invented" />
           <MetricCard label="Prompt version" value={FILM_PROMPT_VERSION} />
         </MetricGrid>
-        <p className="mt-3 text-[12px] text-ash font-sans">
+        <p className="mt-3 text-[12px] text-admin-body font-sans">
           Factual fields (title, year, director, runtime, language) are copied from the catalog entry — never written by the model. Ratings, awards, and streaming availability are never invented.
         </p>
       </AdminCard>
@@ -70,10 +70,10 @@ export default async function OneFilmOverviewPage({
         </MetricGrid>
       </AdminCard>
       <div className="flex flex-wrap gap-3 text-[13px] font-sans">
-        <Link href="/admin/one-film/issues" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Notes</Link>
-        <Link href="/admin/one-film/catalog" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Catalog</Link>
-        <Link href="/admin/one-film/subscribers" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Subscribers</Link>
-        <Link href="/admin/one-film/sends" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">Send logs</Link>
+        <Link href="/admin/one-film/issues" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Notes</Link>
+        <Link href="/admin/one-film/catalog" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Catalog</Link>
+        <Link href="/admin/one-film/subscribers" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Subscribers</Link>
+        <Link href="/admin/one-film/sends" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">Send logs</Link>
       </div>
     </AdminShell>
   );

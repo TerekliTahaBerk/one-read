@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 /**
- * Dense, calm, editorial table. Header row in eyebrow caps; hairline row
- * dividers; subtle hover. Generic over whatever cells the caller passes.
+ * Dense, calm, editorial table. Header row in eyebrow caps on a warm tint;
+ * hairline row dividers; subtle amber-free hover. Generic over whatever cells
+ * the caller passes.
  */
 export function AdminTable({
   head,
@@ -16,7 +17,7 @@ export function AdminTable({
 }) {
   if (rows.length === 0 && empty != null) {
     return (
-      <div className="px-5 py-10 text-center text-[13px] text-fog font-sans">
+      <div className="px-5 py-10 text-center font-sans text-[13px] text-admin-muted">
         {empty}
       </div>
     );
@@ -25,11 +26,11 @@ export function AdminTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-[13px]">
         <thead>
-          <tr className="text-[11px] uppercase tracking-eyebrow text-fog">
+          <tr className="bg-admin-sink/50 text-[11px] uppercase tracking-eyebrow text-admin-muted">
             {head.map((h, i) => (
               <th
                 key={i}
-                className="px-4 py-3 font-sans font-normal whitespace-nowrap border-b border-line"
+                className="whitespace-nowrap border-b border-admin-line px-4 py-3 font-sans font-normal"
               >
                 {h}
               </th>
@@ -40,12 +41,12 @@ export function AdminTable({
           {rows.map((row, i) => (
             <tr
               key={i}
-              className="border-b border-line/60 last:border-b-0 hover:bg-cream/40 transition-colors"
+              className="border-b border-admin-line/60 transition-colors last:border-b-0 hover:bg-admin-sink/40"
             >
               {row.map((cell, j) => (
                 <td
                   key={j}
-                  className="px-4 py-3 align-top text-ink/90 font-sans"
+                  className="px-4 py-3 align-top font-sans text-admin-ink/90"
                 >
                   {cell}
                 </td>
@@ -65,7 +66,7 @@ export function MonoShort({ value }: { value: string | null | undefined }) {
   return (
     <span
       title={v === "—" ? undefined : v}
-      className="font-mono text-[10.5px] text-fog"
+      className="font-mono text-[10.5px] text-admin-muted"
     >
       {display}
     </span>

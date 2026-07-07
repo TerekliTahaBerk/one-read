@@ -41,7 +41,7 @@ export default async function IssueDetailPage({
       title={topicBySlug(pick.topic)?.label ?? pick.topic}
       subtitle={`${fmtDate(pick.date)} · ${pick.sourceLanguage} source`}
       actions={
-        <Link href={`/admin/one-article/issues?date=${fmtDate(pick.date)}`} className="text-[13px] text-ash hover:text-ink">
+        <Link href={`/admin/one-article/issues?date=${fmtDate(pick.date)}`} className="text-[13px] text-admin-body hover:text-admin-ink">
           ← All issues
         </Link>
       }
@@ -65,7 +65,7 @@ export default async function IssueDetailPage({
           <MetricCard label="Scheduled" value={readiness.scheduled ? "Yes" : "No"} tone={readiness.scheduled ? "good" : "default"} />
         </MetricGrid>
         {[...readiness.blockers, ...readiness.warnings].length > 0 ? (
-          <ul className="space-y-1 text-[12.5px] text-ash font-sans">
+          <ul className="space-y-1 text-[12.5px] text-admin-body font-sans">
             {[...readiness.blockers, ...readiness.warnings].map((w) => (
               <li key={w}>{w}</li>
             ))}
@@ -86,7 +86,7 @@ export default async function IssueDetailPage({
             [
               "Article URL",
               pick.article?.url ? (
-                <a key="u" href={pick.article.url} target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-2 break-all">
+                <a key="u" href={pick.article.url} target="_blank" rel="noopener noreferrer" className="text-admin-ink underline underline-offset-2 break-all">
                   {pick.article.url}
                 </a>
               ) : (
@@ -129,40 +129,40 @@ export default async function IssueDetailPage({
           head={["Email", "Eligibility", "Language", "Interests", "Already sent"]}
           empty="No eligible recipients match this segment right now."
           rows={recipients.map((r) => [
-            <Link key="e" href={`/admin/users/${r.subscriptionId}`} className="text-ink underline underline-offset-2">
+            <Link key="e" href={`/admin/users/${r.subscriptionId}`} className="text-admin-ink underline underline-offset-2">
               {r.email}
             </Link>,
             <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,
-            <span key="l" className="text-ash">{r.summaryLanguage ?? "—"}</span>,
-            <span key="i" className="text-ash">{r.interestsCount}</span>,
-            r.alreadySent ? <StatusBadge key="s" value="SENT" /> : <span key="s" className="text-fog">—</span>,
+            <span key="l" className="text-admin-body">{r.summaryLanguage ?? "—"}</span>,
+            <span key="i" className="text-admin-body">{r.interestsCount}</span>,
+            r.alreadySent ? <StatusBadge key="s" value="SENT" /> : <span key="s" className="text-admin-muted">—</span>,
           ])}
         />
       </AdminCard>
 
       <AdminCard title="Email preview" subtitle={`${previews.length} Summary row(s) · rendering only, no send`}>
         {previews.length === 0 ? (
-          <div className="px-4 py-8 text-[13px] text-fog">
+          <div className="px-4 py-8 text-[13px] text-admin-muted">
             No summary generated for this issue yet.
           </div>
         ) : (
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-admin-line">
             {previews.map((p) => (
               <div key={p.summaryId} className="p-4">
                 <div className="mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12.5px]">
-                  <span className="font-serif text-ink text-[15px]">{p.subject}</span>
-                  <span className="text-fog">{p.summaryLanguage}</span>
+                  <span className="font-serif text-admin-ink text-[15px]">{p.subject}</span>
+                  <span className="text-admin-muted">{p.summaryLanguage}</span>
                   <StatusBadge value={p.status} />
-                  <span className="text-ash">confidence {p.confidence ?? "—"}</span>
-                  <span className="font-mono text-[11px] text-ash">{p.generator ?? "—"}</span>
+                  <span className="text-admin-body">confidence {p.confidence ?? "—"}</span>
+                  <span className="font-mono text-[11px] text-admin-body">{p.generator ?? "—"}</span>
                   {(p.subjectOverride || p.previewTextOverride) && (
                     <span className="text-[10px] uppercase tracking-eyebrow text-amber-700">admin-edited</span>
                   )}
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-line text-[10px] uppercase tracking-eyebrow text-fog">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-admin-line text-[10px] uppercase tracking-eyebrow text-admin-muted">
                     render-only · not sent
                   </span>
                 </div>
-                <div className="mb-2 text-[11.5px] text-ash font-sans">
+                <div className="mb-2 text-[11.5px] text-admin-body font-sans">
                   Generation: provider/model/prompt ·{" "}
                   <span className="font-mono">{p.generator ?? "—"}</span> · validation{" "}
                   <span className={p.status === "READY" ? "text-emerald-700" : "text-amber-700"}>
@@ -176,26 +176,26 @@ export default async function IssueDetailPage({
                 )}
                 {p.editorNotes && (
                   <details className="mb-2">
-                    <summary className="cursor-pointer text-[11.5px] text-fog font-sans">
+                    <summary className="cursor-pointer text-[11.5px] text-admin-muted font-sans">
                       Editor / quality-gate notes
                     </summary>
-                    <pre className="mt-1 p-2 bg-paper/70 rounded-lg border border-line text-[11px] text-ink/80 whitespace-pre-wrap font-mono">
+                    <pre className="mt-1 p-2 bg-admin-surface/70 rounded-lg border border-admin-line text-[11px] text-admin-ink/80 whitespace-pre-wrap font-mono">
                       {p.editorNotes}
                     </pre>
                   </details>
                 )}
                 {p.previewText && (
-                  <div className="mb-2 text-[12px] text-fog font-sans">Preview text: {p.previewText}</div>
+                  <div className="mb-2 text-[12px] text-admin-muted font-sans">Preview text: {p.previewText}</div>
                 )}
                 <iframe
                   title={`email-${p.summaryId}`}
                   srcDoc={p.html}
                   sandbox=""
-                  className="w-full h-[460px] rounded-lg border border-line bg-white"
+                  className="w-full h-[460px] rounded-lg border border-admin-line bg-white"
                 />
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[12px] text-fog font-sans">Plain-text version</summary>
-                  <pre className="mt-2 p-3 bg-paper/70 rounded-lg border border-line text-[11.5px] text-ink/80 whitespace-pre-wrap font-mono overflow-x-auto">
+                  <summary className="cursor-pointer text-[12px] text-admin-muted font-sans">Plain-text version</summary>
+                  <pre className="mt-2 p-3 bg-admin-surface/70 rounded-lg border border-admin-line text-[11.5px] text-admin-ink/80 whitespace-pre-wrap font-mono overflow-x-auto">
                     {p.text}
                   </pre>
                 </details>
@@ -210,10 +210,10 @@ export default async function IssueDetailPage({
           head={["Date", "Action", "Actor", "Metadata"]}
           empty="No audit events for this issue yet."
           rows={auditEvents.map((event) => [
-            <span key="d" className="text-ash">{fmtDateTime(event.createdAt)}</span>,
+            <span key="d" className="text-admin-body">{fmtDateTime(event.createdAt)}</span>,
             <StatusBadge key="a" value={event.action} tone="neutral" />,
-            <span key="actor" className="font-mono text-[11.5px] text-ash">{event.actor}</span>,
-            <span key="m" className="text-[11.5px] text-ash">
+            <span key="actor" className="font-mono text-[11.5px] text-admin-body">{event.actor}</span>,
+            <span key="m" className="text-[11.5px] text-admin-body">
               {summarizeAuditMetadata(event.metadata)}
             </span>,
           ])}

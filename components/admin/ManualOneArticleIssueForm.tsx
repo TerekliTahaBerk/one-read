@@ -117,7 +117,7 @@ export function ManualOneArticleIssueForm() {
       <Field label="Admin notes">
         <textarea className={`${inputCls} h-20`} value={form.adminNotes} onChange={(e) => set("adminNotes", e.target.value)} />
       </Field>
-      <label className="flex items-center gap-2 text-[12.5px] text-ash font-sans">
+      <label className="flex items-center gap-2 text-[12.5px] text-admin-body font-sans">
         <input
           type="checkbox"
           checked={form.acknowledgeNoSource}
@@ -128,22 +128,22 @@ export function ManualOneArticleIssueForm() {
       <button
         type="submit"
         disabled={busy || !form.acknowledgeNoSource}
-        className="h-10 px-4 rounded-lg bg-ink text-paper font-sans text-[13px] disabled:opacity-40"
+        className="h-10 px-4 rounded-lg bg-admin-ink text-admin-surface font-sans text-[13px] disabled:opacity-40"
       >
         {busy ? "Creating..." : "Create manual issue"}
       </button>
-      {msg && <p className="text-[12.5px] text-ash font-sans">{msg}</p>}
+      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
     </form>
   );
 }
 
 const inputCls =
-  "block w-full rounded-lg bg-paper/80 border border-line px-3 py-2 text-[13px] text-ink focus:border-ink focus:outline-none";
+  "block w-full rounded-lg bg-admin-surface/80 border border-admin-line px-3 py-2 text-[13px] text-admin-ink focus:border-admin-ink focus:outline-none";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[11px] uppercase tracking-eyebrow text-fog font-sans mb-1.5">
+      <span className="block text-[11px] uppercase tracking-eyebrow text-admin-muted font-sans mb-1.5">
         {label}
       </span>
       {children}

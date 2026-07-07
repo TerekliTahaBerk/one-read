@@ -67,8 +67,8 @@ export function IssueActionsBar({
     }
   }
 
-  const btn = "rounded-lg border border-line-strong bg-paper px-3 py-1.5 text-[12.5px] text-ink hover:bg-cream disabled:opacity-40";
-  const danger = "rounded-lg border border-dawn/50 bg-paper px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
+  const btn = "rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40";
+  const danger = "rounded-lg border border-dawn/50 bg-admin-surface px-3 py-1.5 text-[12.5px] text-dawn hover:bg-dawn/5 disabled:opacity-40";
 
   return (
     <div className="flex flex-col gap-3">
@@ -105,40 +105,40 @@ export function IssueActionsBar({
         </button>
         </ActionGroup>
       </div>
-      {msg && <p className="text-[12.5px] text-ash font-sans">{msg}</p>}
+      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
 
       {dialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4">
-          <div className="w-full max-w-md rounded-xl border border-line-strong bg-paper p-5 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4">
+          <div className="w-full max-w-md rounded-xl border border-admin-line-strong bg-admin-surface p-5 shadow-lg">
             {dialog === "send-now" && (
               <>
-                <h3 className="font-serif text-[17px] text-ink">Send now</h3>
-                <p className="mt-2 text-[13px] text-ash font-sans">
+                <h3 className="font-serif text-[17px] text-admin-ink">Send now</h3>
+                <p className="mt-2 text-[13px] text-admin-body font-sans">
                   This will send the approved issue to eligible OneArticle subscribers
                   in this segment ({segmentLabel}). Users who already received it will
                   be skipped.
                 </p>
-                <ul className="mt-3 text-[12.5px] text-ink/90 space-y-1">
+                <ul className="mt-3 text-[12.5px] text-admin-ink/90 space-y-1">
                   <li>Segment: <strong>{segmentLabel}</strong></li>
                   <li>Eligible recipients: <strong>{eligibleCount}</strong></li>
                   <li className="text-dawn">Real emails may be sent.</li>
                 </ul>
                 <label className="mt-3 block">
-                  <span className="text-[11px] uppercase tracking-eyebrow text-fog font-sans">
+                  <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted font-sans">
                     Type SEND ONEARTICLE NOW
                   </span>
                   <input
                     value={sendConfirmation}
                     onChange={(e) => setSendConfirmation(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                    className="mt-1 w-full rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
                   />
                 </label>
               </>
             )}
             {dialog === "regenerate" && (
               <>
-                <h3 className="font-serif text-[17px] text-ink">Regenerate issue</h3>
-                <p className="mt-2 text-[13px] text-ash font-sans">
+                <h3 className="font-serif text-[17px] text-admin-ink">Regenerate issue</h3>
+                <p className="mt-2 text-[13px] text-admin-body font-sans">
                   Clears the cached summaries for this issue. They will be regenerated
                   on the next pipeline or dry-run. No email is sent.
                 </p>
@@ -146,22 +146,22 @@ export function IssueActionsBar({
             )}
             {dialog === "send-test" && (
               <>
-                <h3 className="font-serif text-[17px] text-ink">Send test</h3>
-                <p className="mt-2 text-[13px] text-ash font-sans">
+                <h3 className="font-serif text-[17px] text-admin-ink">Send test</h3>
+                <p className="mt-2 text-[13px] text-admin-body font-sans">
                   Renders this issue and emails it to one address. No DailySend is written.
                 </p>
                 <input
                   type="email"
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
-                  className="mt-3 w-full rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                  className="mt-3 w-full rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
                 />
               </>
             )}
             {dialog === "schedule" && (
               <>
-                <h3 className="font-serif text-[17px] text-ink">Schedule for 7 AM</h3>
-                <p className="mt-2 text-[13px] text-ash font-sans">
+                <h3 className="font-serif text-[17px] text-admin-ink">Schedule for 7 AM</h3>
+                <p className="mt-2 text-[13px] text-admin-body font-sans">
                   Marks the issue SCHEDULED for 07:00 Europe/Istanbul on the selected
                   date. The existing daily cron sends scheduled, approved issues.
                 </p>
@@ -169,13 +169,13 @@ export function IssueActionsBar({
                   type="date"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
-                  className="mt-3 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-[13px] text-ink"
+                  className="mt-3 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
                 />
               </>
             )}
             {msg && <p className="mt-3 text-[12.5px] text-dawn">{msg}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button className="rounded-lg px-3 py-1.5 text-[12.5px] text-ash hover:text-ink" disabled={busy} onClick={() => { setDialog(null); setMsg(null); }}>
+              <button className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy} onClick={() => { setDialog(null); setMsg(null); }}>
                 Cancel
               </button>
               <button
@@ -201,7 +201,7 @@ export function IssueActionsBar({
 function ActionGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-24 text-[10px] uppercase tracking-eyebrow text-fog font-sans">
+      <span className="w-24 text-[10px] uppercase tracking-eyebrow text-admin-muted font-sans">
         {label}
       </span>
       {children}

@@ -116,7 +116,7 @@ export default async function OneArticleOverviewPage({
           <MetricCard label="Today issue" value={todayReadiness.issueExists ? todayReadiness.status : "Missing"} tone={todayReadiness.issueExists ? "good" : "warn"} />
           <MetricCard label="Tomorrow issue" value={tomorrowReadiness.issueExists ? tomorrowReadiness.status : "Missing"} />
         </MetricGrid>
-        <div className="space-y-1 text-[12.5px] text-ash font-sans">
+        <div className="space-y-1 text-[12.5px] text-admin-body font-sans">
           <p>Next action: {critical[0] ?? todayReadiness.nextAction}</p>
           <p>Next send: {nextSend.localLabel} · {fmtDateTime(nextSend.utc)}</p>
           <p>Last run: {lastRun ? `${fmtDateTime(lastRun.startedAt)} · ${lastRun.status}` : "No cron run recorded yet"}</p>
@@ -155,7 +155,7 @@ export default async function OneArticleOverviewPage({
           <div className="space-y-4 text-[12.5px] font-sans">
             <WarningGroup title="Critical blockers" tone="text-dawn" items={dedupe(critical)} />
             <WarningGroup title="Warnings" tone="text-amber-700" items={dedupe(warnings)} />
-            <WarningGroup title="Info" tone="text-ash" items={dedupe(info)} />
+            <WarningGroup title="Info" tone="text-admin-body" items={dedupe(info)} />
           </div>
         ) : (
           <p className="text-[12.5px] text-emerald-700 font-sans">No blockers for today.</p>
@@ -182,7 +182,7 @@ export default async function OneArticleOverviewPage({
           <MetricCard label="Suppressed" value={m.users.suppressed} tone={m.users.suppressed > 0 ? "warn" : "default"} />
         </MetricGrid>
         {topSkipReasons.length > 0 && (
-          <p className="text-[12.5px] text-ash font-sans">
+          <p className="text-[12.5px] text-admin-body font-sans">
             Top ineligible reasons: {topSkipReasons.map(([reason, count]) => `${reason} (${count})`).join(" · ")}
           </p>
         )}
@@ -196,7 +196,7 @@ export default async function OneArticleOverviewPage({
           <MetricCard label="Skipped" value={m.ops.skippedToday} />
           <MetricCard label="Failed" value={m.ops.failedToday} tone={m.ops.failedToday > 0 ? "warn" : "default"} />
         </MetricGrid>
-        <p className="text-[12.5px] text-ash font-sans">
+        <p className="text-[12.5px] text-admin-body font-sans">
           Last successful send: {fmtDateTime(m.ops.lastSendAt)}. Last provider
           message id: {lastProviderSend?.emailMessageId ?? "Not tracked yet"}.
         </p>
@@ -207,13 +207,13 @@ export default async function OneArticleOverviewPage({
       </AdminCard>
 
       <div className="flex flex-wrap gap-3 text-[13px] font-sans">
-        <Link href="/admin/one-article/issues" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/issues" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">
           Prepared issues →
         </Link>
-        <Link href="/admin/one-article/subscribers" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/subscribers" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">
           Subscribers →
         </Link>
-        <Link href="/admin/one-article/sends" className="rounded-lg border border-line-strong bg-paper px-3 py-2 text-ink hover:bg-cream">
+        <Link href="/admin/one-article/sends" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-admin-ink hover:bg-admin-sink">
           Send logs →
         </Link>
       </div>
@@ -225,7 +225,7 @@ function WarningGroup({ title, tone, items }: { title: string; tone: string; ite
   if (items.length === 0) return null;
   return (
     <div>
-      <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-fog">{title}</div>
+      <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-admin-muted">{title}</div>
       <ul className={`space-y-1 ${tone}`}>
         {items.map((item) => <li key={item}>{item}</li>)}
       </ul>
@@ -253,13 +253,13 @@ function IssueReadinessMetrics({
         <MetricCard label="Already sent" value={readiness.alreadySentCount} />
         <MetricCard label="Failed" value={readiness.failedCount} tone={readiness.failedCount > 0 ? "warn" : "default"} />
       </MetricGrid>
-      <div className="space-y-2 text-[12.5px] text-ash font-sans">
+      <div className="space-y-2 text-[12.5px] text-admin-body font-sans">
         <p>Subject: {readiness.subject ?? "Unknown"}</p>
         <p>Preview: {readiness.previewText ?? "Unknown"}</p>
         <p>Scheduled for: {fmtDateTime(readiness.scheduledFor)}</p>
         <p>Next action: {readiness.nextAction}</p>
         {readiness.pickId && (
-          <Link href={`/admin/one-article/issues/${readiness.pickId}`} className="text-ink underline underline-offset-2">
+          <Link href={`/admin/one-article/issues/${readiness.pickId}`} className="text-admin-ink underline underline-offset-2">
             Open issue
           </Link>
         )}
