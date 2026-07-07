@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { AdminNav } from "./AdminNav";
 
 /**
@@ -150,16 +151,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         href="/admin"
         onClick={onNavigate}
+        aria-label="OneRead admin — overview"
         className="flex items-center gap-2.5 border-b border-admin-line px-5 py-[18px]"
       >
-        <SunMark />
-        <span className="leading-tight">
-          <span className="block font-serif text-[15px] tracking-tight text-admin-ink">
-            OneRead
-          </span>
-          <span className="block text-[10px] uppercase tracking-eyebrow text-admin-muted">
-            Admin panel
-          </span>
+        <Image
+          src="/oneread-logo.png"
+          alt="OneRead"
+          width={1057}
+          height={250}
+          priority
+          className="h-[24px] w-auto select-none"
+        />
+        <span className="rounded-full border border-admin-line-strong px-2 py-0.5 text-[9.5px] uppercase tracking-eyebrow text-admin-muted">
+          Admin
         </span>
       </Link>
       <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -175,7 +179,7 @@ function SearchAffordance() {
   return (
     <div
       title="Search — coming in the next iteration"
-      className="hidden h-9 w-56 items-center gap-2 rounded-lg border border-admin-line bg-admin-surface px-3 text-[13px] text-admin-muted md:flex"
+      className="hidden h-9 w-56 items-center gap-2 rounded-full border border-admin-line bg-admin-surface px-4 text-[13px] text-admin-muted md:flex"
     >
       <SearchIcon />
       <span>Search…</span>
@@ -190,7 +194,7 @@ function DateChip() {
     year: "numeric",
   });
   return (
-    <span className="hidden items-center gap-2 rounded-lg border border-admin-line bg-admin-surface px-3 py-[7px] text-[12.5px] text-admin-body sm:flex">
+    <span className="hidden items-center gap-2 rounded-full border border-admin-line bg-admin-surface px-3.5 py-[7px] text-[12.5px] text-admin-body sm:flex">
       <CalendarIcon />
       {today}
     </span>
@@ -209,11 +213,11 @@ export function AdminHeader({
   return (
     <header className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
       <div>
-        <h1 className="font-serif text-2xl tracking-tight text-admin-ink">
+        <h1 className="font-serif text-[27px] font-medium leading-none tracking-[-0.02em] text-admin-ink">
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-1 font-sans text-[13px] text-admin-body/80">
+          <p className="mt-2 font-sans text-[13px] text-admin-body/85">
             {subtitle}
           </p>
         )}
@@ -244,19 +248,6 @@ export function AdminNotConfigured() {
 }
 
 /* ---- icons (inline, no external deps) --------------------------------- */
-
-function SunMark() {
-  return (
-    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-admin-amber/12 text-admin-amber">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <circle cx="12" cy="12" r="4.2" fill="currentColor" />
-        <g stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-          <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" />
-        </g>
-      </svg>
-    </span>
-  );
-}
 
 function MenuIcon() {
   return (

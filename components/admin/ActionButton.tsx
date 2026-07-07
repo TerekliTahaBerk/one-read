@@ -131,10 +131,10 @@ export function ActionButton({
                 type="button"
                 onClick={run}
                 disabled={busy || !promptOk}
-                className={`rounded-lg border px-3 py-1.5 text-[12.5px] disabled:opacity-40 ${
+                className={`rounded-full px-4 py-1.5 text-[12.5px] disabled:opacity-40 ${
                   danger
-                    ? "border-dawn/50 text-dawn hover:bg-dawn/5"
-                    : "border-transparent bg-admin-amber text-white hover:bg-admin-amber-strong"
+                    ? "border border-dawn/50 text-dawn hover:bg-dawn/5"
+                    : "bg-admin-ink text-white hover:bg-admin-ink/90"
                 }`}
               >
                 {busy ? "Working…" : "Confirm"}

@@ -36,13 +36,13 @@ export function CreateUserButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
+        className="rounded-full bg-admin-ink px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-ink/90"
       >
         + Add user
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4">
-          <div className="w-full max-w-md rounded-xl border border-admin-line-strong bg-admin-surface p-5 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4 backdrop-blur-[1px]">
+          <div className="w-full max-w-md rounded-2xl border border-admin-line-strong bg-admin-surface p-5 shadow-admin-md">
             <h3 className="font-serif text-[17px] text-admin-ink">Add user</h3>
             <p className="mt-1 text-[12.5px] text-admin-body">
               Creates a OneArticle subscription in PENDING_PREFERENCES. No email is sent.
@@ -60,7 +60,7 @@ export function CreateUserButton() {
               <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy}>
                 Cancel
               </button>
-              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-lg border border-admin-line-strong px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink disabled:opacity-40">
+              <button type="button" onClick={submit} disabled={busy || !email.includes("@")} className="rounded-full bg-admin-ink px-4 py-1.5 text-[12.5px] text-white hover:bg-admin-ink/90 disabled:opacity-40">
                 {busy ? "Creating…" : "Create"}
               </button>
             </div>

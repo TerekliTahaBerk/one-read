@@ -29,18 +29,21 @@ const config: Config = {
         // Warm OneRead brand palette, scoped to the /admin surface. These are
         // additive: no public-site class references them, so restyling the
         // admin never repaints the marketing site. Single accent = dawn amber.
+        // Values taken verbatim from the public OneRead brand (landing page +
+        // email templates) so the admin sits on the same line: ivory canvas,
+        // warm paper, sand hairlines, warm near-black ink, dawn-amber accent.
         admin: {
           bg: "#F6F1E6", // ivory canvas
-          surface: "#FFFDF8", // warm card / panel
-          sink: "#EFE8D8", // recessed fill / hover
-          line: "#E7DDCB", // warm hairline
-          "line-strong": "#DBCFB8",
-          ink: "#2A2117", // warm near-black — headings
-          body: "#5E5648", // body text
-          muted: "#9B917E", // captions / eyebrow
+          surface: "#FDFBF5", // warm paper — cards / panels
+          sink: "#EFE8D6", // recessed fill / hover
+          line: "#E6DCC8", // sand hairline
+          "line-strong": "#D4C8B0",
+          ink: "#1B1612", // warm near-black — headings / primary
+          body: "#6B5F50", // warm brown body text
+          muted: "#9C8F7E", // warm taupe — captions / eyebrow
           amber: "#C97A2C", // dawn amber accent
-          "amber-strong": "#AC6520",
-          "amber-tint": "#F1E5D1", // active/selected wash
+          "amber-strong": "#A96521",
+          "amber-tint": "#F0E6D2", // active/selected wash
         },
       },
       boxShadow: {

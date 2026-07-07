@@ -77,7 +77,7 @@ export function AdminLoginForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy}
-        className="h-11 w-full rounded-lg bg-admin-amber px-4 text-[14px] font-medium text-white transition-colors hover:bg-admin-amber-strong disabled:opacity-50"
+        className="h-12 w-full rounded-full bg-admin-ink px-6 text-[14px] font-medium text-white transition-colors hover:bg-admin-ink/90 disabled:opacity-50"
       >
         {busy ? "Signing in..." : "Sign in"}
       </button>
