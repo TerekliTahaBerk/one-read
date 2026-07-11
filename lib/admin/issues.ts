@@ -6,10 +6,10 @@ import { sendInstantUtc, isoDate, todayUtc } from "@/lib/admin/format";
 import { renderPreviewForSummary } from "@/lib/admin/issues-read";
 import {
   getOneArticleIssueReadiness,
-  oneArticleDryRunForced,
   prepareOneArticleIssues,
   resendConfigured,
 } from "@/lib/admin/one-article-ops";
+import { getControls } from "@/lib/admin/settings-store";
 import { SENDABLE_APPROVAL_STATUSES } from "@/lib/admin/issues-config";
 import { Prisma } from "@prisma/client";
 
@@ -279,7 +279,7 @@ export async function sendIssueNow(
   if (readiness.blockers.length > 0) {
     return { ok: false, error: readiness.blockers.join("; ") };
   }
-  if (oneArticleDryRunForced() && !opts.dryRun) return { ok: false, error: "dry_run_mode_enabled" };
+  if ((await getControls()).oneArticle.dryRun && !opts.dryRun) return { ok: false, error: "dry_run_mode_enabled" };
 
   const result = await runDailyPipeline({
     date: pick.date,

@@ -14,11 +14,11 @@ import { getOneReadOverviewMetrics } from "@/lib/admin/oneread-queries";
 import {
   getOneArticleIssueReadiness,
   getOneArticleAiStatus,
-  oneArticleCronEnabled,
   nextOneArticleSend,
 } from "@/lib/admin/one-article-ops";
-import { filmCronEnabled } from "@/lib/film/config";
-import { lingoCronEnabled } from "@/lib/lingo/config";
+import { getControls } from "@/lib/admin/settings-store";
+import { getRunSnapshot, runStatusLabel, type RunSnapshot } from "@/lib/admin/operational-runs";
+import { ONE_FILM_PRODUCT_KEY, ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
 import { getLlmStatus } from "@/lib/llm";
 import { fmtAgo, fmtWhen, todayUtc } from "@/lib/admin/format";
 
@@ -55,7 +55,7 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
     getOneArticleIssueReadiness({ date: todayUtc() }),
     latestSentAt("dailySend"),
   ]);
-  const cronOn = oneArticleCronEnabled();
+  const cronOn = (await getControls()).oneArticle.cronEnabled;
   const aiOk = getOneArticleAiStatus().blocker === null;
   const next = nextOneArticleSend();
 
@@ -100,19 +100,23 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
 }
 
 export async function getFilmHealth(): Promise<ProductHealthSummary> {
-  const [f, lastSent] = await Promise.all([
+  const [f, lastSent, run] = await Promise.all([
     getFilmOverviewMetrics(),
     latestSentAt("filmDailySend"),
+    getRunSnapshot(ONE_FILM_PRODUCT_KEY),
   ]);
-  const cronOn = filmCronEnabled();
+  const cronOn = (await getControls()).film.cronEnabled;
   const todayReady = f.issues.approvedOrScheduled > 0;
+  const runFailed = run.last?.status === "FAILED";
 
-  const health: Health = !cronOn ? "attention" : todayReady ? "ok" : "attention";
-  const headline = !cronOn
-    ? "Automatic sending is off"
-    : todayReady
-      ? "Today's note is ready"
-      : "No note prepared yet";
+  const health: Health = runFailed ? "problem" : !cronOn ? "attention" : todayReady ? "ok" : "attention";
+  const headline = runFailed
+    ? "Last run failed"
+    : !cronOn
+      ? "Automatic sending is off"
+      : todayReady
+        ? "Today's note is ready"
+        : "No note prepared yet";
 
   return {
     key: "one-film",
@@ -123,27 +127,31 @@ export async function getFilmHealth(): Promise<ProductHealthSummary> {
     facts: [
       ["Today's note", todayReady ? "Ready" : f.issues.total > 0 ? "Being prepared" : "Nothing yet"],
       ["Automatic sending", cronOn ? "On" : "Off"],
+      ["Last run", runFact(run)],
       ["Subscribers", `${f.subscribers.eligible} ready to receive`],
-      ["Films in library", `${f.catalog.total}`],
       ["Last delivered", fmtAgo(lastSent)],
     ],
   };
 }
 
 export async function getLingoHealth(): Promise<ProductHealthSummary> {
-  const [l, lastSent] = await Promise.all([
+  const [l, lastSent, run] = await Promise.all([
     getLingoOverviewMetrics(),
     latestSentAt("lingoDailySend"),
+    getRunSnapshot(ONE_LINGO_PRODUCT_KEY),
   ]);
-  const cronOn = lingoCronEnabled();
+  const cronOn = (await getControls()).lingo.cronEnabled;
   const todayReady = l.lessons.approvedOrScheduled > 0;
+  const runFailed = run.last?.status === "FAILED";
 
-  const health: Health = !cronOn ? "attention" : todayReady ? "ok" : "attention";
-  const headline = !cronOn
-    ? "Automatic sending is off"
-    : todayReady
-      ? "Today's lesson is ready"
-      : "No lesson prepared yet";
+  const health: Health = runFailed ? "problem" : !cronOn ? "attention" : todayReady ? "ok" : "attention";
+  const headline = runFailed
+    ? "Last run failed"
+    : !cronOn
+      ? "Automatic sending is off"
+      : todayReady
+        ? "Today's lesson is ready"
+        : "No lesson prepared yet";
 
   return {
     key: "one-lingo",
@@ -154,10 +162,17 @@ export async function getLingoHealth(): Promise<ProductHealthSummary> {
     facts: [
       ["Today's lesson", todayReady ? "Ready" : l.lessons.total > 0 ? "Being prepared" : "Nothing yet"],
       ["Automatic sending", cronOn ? "On" : "Off"],
+      ["Last run", runFact(run)],
       ["Subscribers", `${l.subscribers.eligible} ready to receive`],
       ["Last delivered", fmtAgo(lastSent)],
     ],
   };
+}
+
+/** Plain "when · outcome" for a run snapshot, or "Never run yet". */
+function runFact(run: RunSnapshot): string {
+  if (!run.last) return "Never run yet";
+  return `${fmtAgo(run.last.startedAt)} · ${runStatusLabel(run.last.status)}`;
 }
 
 export async function getOneReadHealth(): Promise<ProductHealthSummary> {

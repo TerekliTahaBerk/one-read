@@ -88,6 +88,8 @@ export interface DailyPipelineOptions {
   requireApproval?: boolean;
   /** Optional admin send-now scope: send only this TopicDailyPick. */
   pickId?: string;
+  /** Panel-resolved production thresholds. Demo mode still takes precedence in development. */
+  thresholds?: { minArticleScore: number; minDeliveryScore: number; minSummaryConfidence: number };
 }
 
 export interface SendArgs {
@@ -155,6 +157,7 @@ export async function runDailyPipeline(
 
   // Resolve effective thresholds. Demo mode is hard-disabled in production.
   const thresholds = getEffectiveThresholds(opts.demo);
+  if (!thresholds.demo && opts.thresholds) Object.assign(thresholds, opts.thresholds);
 
   console.log(
     `[pipeline] ▶ start  date=${toIsoDate(date)}  dryRun=${opts.dryRun ?? false}  skipIngest=${opts.skipIngest ?? false}  demo=${thresholds.demo}`,
@@ -680,6 +683,12 @@ async function fanOutAndSend(
   date: Date,
   opts: FanOutOpts,
 ): Promise<{ total: number; sent: number; skipped: number; failed: number }> {
+  // A previous provider failure is safe to retry: SENT rows remain immutable,
+  // while FAILED rows are returned to the queue for this explicit rerun.
+  await prisma.dailySend.updateMany({
+    where: { date: atUtcMidnight(date), status: "FAILED", ...(opts.pickId ? { topicDailyPickId: opts.pickId } : {}) },
+    data: { status: "QUEUED", error: null },
+  });
   // Make sure DailySend rows exist before sending.
   await selectSubscriberSends(date, opts.minDeliveryScore, {
     requireApproval: opts.requireApproval,

@@ -15,12 +15,11 @@ import {
   getOneArticleAiStatus,
   getOneArticleIssueReadiness,
   nextOneArticleSend,
-  oneArticleCronEnabled,
-  oneArticleDryRunForced,
 } from "@/lib/admin/one-article-ops";
+import { getControls } from "@/lib/admin/settings-store";
 import { getResendStatus } from "@/lib/resend";
-import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { prisma } from "@/lib/prisma";
+import { ProductRunActions } from "@/components/admin/ProductRunActions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +69,7 @@ export default async function OneArticleOverviewPage({
     }),
   ]);
   const flags = adminFeatureFlags();
+  const controls = (await getControls()).oneArticle;
   const resend = getResendStatus();
   const aiStatus = getOneArticleAiStatus();
   const subRows = subs.map((s) => toSubRow(s));
@@ -95,10 +95,10 @@ export default async function OneArticleOverviewPage({
     ...(pendingCheckout > 0 ? [`${pendingCheckout} subscribers are pending checkout.`] : []),
   ];
   const info = [
-    oneArticleCronEnabled()
+    controls.cronEnabled
       ? `Cron enabled. Next expected run: ${nextSend.localLabel} · ${fmtDateTime(nextSend.utc)}.`
       : "Cron disabled.",
-    oneArticleDryRunForced() ? "Dry-run mode on." : "Dry-run mode off.",
+    controls.dryRun ? "Dry-run mode on." : "Dry-run mode off.",
   ];
   const currentState = todayReadiness.alreadySentCount > 0
     ? "Sent today"
@@ -137,7 +137,7 @@ export default async function OneArticleOverviewPage({
             rows={[
               ["Today's issue", todayReadiness.issueExists ? todayReadiness.status : "Nothing yet"],
               ["Tomorrow's issue", tomorrowReadiness.issueExists ? tomorrowReadiness.status : "Nothing yet"],
-              ["Automatic sending", oneArticleCronEnabled() ? "On" : "Off"],
+              ["Automatic sending", controls.cronEnabled ? "On" : "Off"],
               ["Next send", nextSend.localLabel],
             ]}
           />
@@ -150,6 +150,10 @@ export default async function OneArticleOverviewPage({
             ]}
           />
         </div>
+      </AdminCard>
+
+      <AdminCard title="Run now" subtitle="Generate or send today's issue on demand" bodyClassName="p-4">
+        <ProductRunActions endpoint="/api/admin/one-article/action" productName="OneArticle" />
       </AdminCard>
 
       {critical.length + warnings.length > 0 && (
@@ -211,10 +215,10 @@ export default async function OneArticleOverviewPage({
                 ["Article scorer", aiStatus.scorerEnabled ? "Enabled" : "Blocked"],
                 ["Summary generator", aiStatus.summaryGeneratorEnabled ? "Enabled" : "Blocked"],
                 ["Email provider", resend.hasApiKey ? "Resend configured" : "Resend missing"],
-                ["Cron enabled", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
-                ["Approval required", isApprovalRequired() ? "Yes" : "No"],
+                ["Cron enabled", controls.cronEnabled ? "Enabled" : "Disabled"],
+                ["Approval required", controls.requireApproval ? "Yes" : "No"],
                 ["Admin send actions", flags.sendActionsEnabled ? "Enabled" : "Disabled"],
-                ["Dry-run mode", oneArticleDryRunForced() ? "On" : "Off"],
+                ["Dry-run mode", controls.dryRun ? "On" : "Off"],
                 ["Timezone", SEND_TIMEZONE],
                 ["Send time", "07:00 Europe/Istanbul"],
                 ["Next scheduled send", `${nextSend.localLabel} · ${fmtDateTime(nextSend.utc)}`],

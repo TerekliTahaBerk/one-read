@@ -71,19 +71,14 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Customers",
     items: [
-      {
-        href: "#",
-        label: "Analytics",
-        badge: "Soon",
-        icon: "chart",
-        disabled: true,
-      },
+      { href: "/admin/analytics", label: "Analytics", icon: "chart" },
     ],
   },
   {
     label: "System",
     items: [
       { href: "/admin/settings", label: "Settings", icon: "gear" },
+      { href: "/admin/runs", label: "Run history", matchPrefix: "/admin/runs", icon: "list" },
       { href: "/admin/audit", label: "Audit log", matchPrefix: "/admin/audit", icon: "list" },
     ],
   },

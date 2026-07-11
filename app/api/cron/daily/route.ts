@@ -3,13 +3,12 @@ import { runDailyPipeline, type SendArgs } from "@/lib/pipeline";
 import { sendDailyEmail } from "@/lib/resend";
 import {
   finishOperationalRun,
-  oneArticleCronEnabled,
-  oneArticleDryRunForced,
   startOperationalRun,
 } from "@/lib/admin/one-article-ops";
-import { isApprovalRequired } from "@/lib/admin/issues-config";
+import { getRuntimeSettings } from "@/lib/admin/settings-store";
 import { recordAudit } from "@/lib/admin/audit";
 import { isSendDay, oneArticleSendDays } from "@/lib/schedule";
+import { notifyRunFailure, notifyZeroDelivery } from "@/lib/admin/operational-runs";
 
 function oneArticleTimezone(): string {
   return process.env.ONE_ARTICLE_TIMEZONE?.trim() || "Europe/Istanbul";
@@ -43,19 +42,21 @@ async function handler(request: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  const runtimeSettings = await getRuntimeSettings();
+  const controls = runtimeSettings.controls.oneArticle;
   const url = new URL(request.url);
-  const dryRun = url.searchParams.get("dryRun") === "1" || oneArticleDryRunForced();
+  const dryRun = url.searchParams.get("dryRun") === "1" || controls.dryRun;
   const dateParam = url.searchParams.get("date");
   const date = dateParam ? new Date(dateParam + "T00:00:00Z") : undefined;
-  const requireApproval = isApprovalRequired();
+  const requireApproval = controls.requireApproval;
   const run = await startOperationalRun({
     route: "/api/cron/daily",
     dryRun,
     requireApproval,
-    metadata: { date: dateParam ?? null, cronEnabled: oneArticleCronEnabled() },
+    metadata: { date: dateParam ?? null, cronEnabled: controls.cronEnabled },
   });
 
-  if (!oneArticleCronEnabled()) {
+  if (!controls.cronEnabled) {
     await finishOperationalRun({
       id: run.id,
       status: "SKIPPED",
@@ -71,7 +72,7 @@ async function handler(request: Request): Promise<Response> {
     return NextResponse.json({ ok: true, skipped: true, reason: "cron_disabled" });
   }
 
-  if (!dateParam && !isSendDay(date ?? new Date(), oneArticleTimezone(), oneArticleSendDays())) {
+  if (!dateParam && !isSendDay(date ?? new Date(), oneArticleTimezone(), oneArticleSendDays(runtimeSettings.oneArticleSendDays))) {
     await finishOperationalRun({
       id: run.id,
       status: "SKIPPED",
@@ -92,6 +93,11 @@ async function handler(request: Request): Promise<Response> {
       date,
       dryRun,
       requireApproval,
+      thresholds: {
+        minArticleScore: runtimeSettings.minArticleScore,
+        minDeliveryScore: runtimeSettings.minDeliveryScore,
+        minSummaryConfidence: runtimeSettings.minSummaryConfidence,
+      },
       send: dryRun ? undefined : (args: SendArgs) => sendDailyEmail(args),
     });
     await finishOperationalRun({
@@ -103,6 +109,9 @@ async function handler(request: Request): Promise<Response> {
       failedCount: result.sends.failed,
       metadata: result as never,
     });
+    if (!dryRun && result.subscribers.active > 0 && result.sends.sent === 0) {
+      await notifyZeroDelivery({ productName: "OneArticle", route: "/api/cron/daily", eligible: result.subscribers.active });
+    }
     await recordAudit({
       actor: "cron",
       action: "oneArticle.cron.run",
@@ -125,6 +134,7 @@ async function handler(request: Request): Promise<Response> {
       status: "FAILED",
       error: message,
     });
+    await notifyRunFailure({ productName: "OneArticle", route: "/api/cron/daily", error: message });
     await recordAudit({
       actor: "cron",
       action: "oneArticle.cron.failure",

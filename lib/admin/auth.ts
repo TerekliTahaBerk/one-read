@@ -83,7 +83,10 @@ export function guardAdminPage(
   pathname: string,
   searchParams?: Record<string, string | string[] | undefined>,
 ): AdminPageGuard {
-  const queryToken = readTokenFromSearchParams(searchParams);
+  // Query-string credentials leak through browser history, logs and referrers.
+  // Keep the local-development shortcut, but production pages require the
+  // signed, httpOnly admin session cookie.
+  const queryToken = process.env.NODE_ENV === "production" ? "" : readTokenFromSearchParams(searchParams);
   const queryTokenAuthorized = Boolean(queryToken && isAdminTokenValueAuthorized(queryToken));
   if (!adminLoginConfigured() && !queryTokenAuthorized) {
     adminAuthDebug({ path: pathname, cookie: "n/a", verify: "skipped", reason: "not_configured", redirect: "no" });

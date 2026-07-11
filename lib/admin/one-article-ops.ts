@@ -13,7 +13,9 @@ import {
 import { ONE_ARTICLE_PRODUCT_KEY, SUMMARY_LANGUAGES } from "@/lib/options";
 import { evaluateEligibility } from "@/lib/subscriptions";
 import { ALL_TOPIC_SLUGS, interestLabelsToSlugs } from "@/lib/topics";
-import { isApprovalRequired, SENDABLE_APPROVAL_STATUSES } from "@/lib/admin/issues-config";
+import { SENDABLE_APPROVAL_STATUSES } from "@/lib/admin/issues-config";
+import { getControls } from "@/lib/admin/settings-store";
+import { startRun, finishRun, type FinishRunInput } from "@/lib/admin/operational-runs";
 import { loadOneArticleSubs, type SubWithRels } from "@/lib/admin/queries";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, isoDate, sendInstantUtc, todayUtc } from "@/lib/admin/format";
 import { recordAudit } from "@/lib/admin/audit";
@@ -114,40 +116,11 @@ export async function startOperationalRun(input: {
   requireApproval: boolean;
   metadata?: Prisma.InputJsonValue;
 }) {
-  return prisma.operationalRun.create({
-    data: {
-      productKey: ONE_ARTICLE_PRODUCT_KEY,
-      route: input.route,
-      dryRun: input.dryRun,
-      requireApproval: input.requireApproval,
-      metadata: input.metadata,
-    },
-  });
+  return startRun({ productKey: ONE_ARTICLE_PRODUCT_KEY, ...input });
 }
 
-export async function finishOperationalRun(input: {
-  id: string;
-  status: "SUCCESS" | "FAILED" | "SKIPPED";
-  generatedCount?: number;
-  sentCount?: number;
-  skippedCount?: number;
-  failedCount?: number;
-  error?: string | null;
-  metadata?: Prisma.InputJsonValue;
-}) {
-  return prisma.operationalRun.update({
-    where: { id: input.id },
-    data: {
-      status: input.status,
-      finishedAt: new Date(),
-      generatedCount: input.generatedCount ?? 0,
-      sentCount: input.sentCount ?? 0,
-      skippedCount: input.skippedCount ?? 0,
-      failedCount: input.failedCount ?? 0,
-      error: input.error ?? null,
-      ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
-    },
-  });
+export async function finishOperationalRun(input: FinishRunInput) {
+  return finishRun(input);
 }
 
 export interface OneArticleReadiness {
@@ -200,8 +173,10 @@ export async function getOneArticleIssueReadiness(input: {
 
   const blockers: string[] = [];
   const warnings: string[] = [];
-  const cronEnabled = oneArticleCronEnabled();
-  const dryRun = oneArticleDryRunForced();
+  const controls = (await getControls()).oneArticle;
+  const cronEnabled = controls.cronEnabled;
+  const dryRun = controls.dryRun;
+  const requireApproval = controls.requireApproval;
   const aiStatus = getOneArticleAiStatus();
   const emailProviderConfigured = resendConfigured();
   const generatedContentExists = picks.some((p) => p.summaries.some((s) => s.status === "READY"));
@@ -209,7 +184,7 @@ export async function getOneArticleIssueReadiness(input: {
   const scheduled = picks.some((p) => p.approvalStatus === "SCHEDULED" && p.scheduledFor);
   const sendableReadyContentExists = picks.some(
     (p) =>
-      (!isApprovalRequired() || (SENDABLE_APPROVAL_STATUSES as readonly string[]).includes(p.approvalStatus)) &&
+      (!requireApproval || (SENDABLE_APPROVAL_STATUSES as readonly string[]).includes(p.approvalStatus)) &&
       p.summaries.some((s) => s.status === "READY"),
   );
   const sourceArticleExists = Boolean(primary?.articleId);
@@ -219,8 +194,8 @@ export async function getOneArticleIssueReadiness(input: {
   if (picks.length === 0) blockers.push("No issue prepared for this date.");
   if (picks.length > 0 && !generatedContentExists) blockers.push("No generated or manual email content is ready.");
   if (!generatedContentExists && aiStatus.blocker) blockers.push(`${aiStatus.blocker}.`);
-  if (isApprovalRequired() && !approved) blockers.push("Approval is required but no issue is approved.");
-  if (isApprovalRequired() && approved && !sendableReadyContentExists) {
+  if (requireApproval && !approved) blockers.push("Approval is required but no issue is approved.");
+  if (requireApproval && approved && !sendableReadyContentExists) {
     blockers.push("Approved or scheduled issue has no ready email content.");
   }
   if (!emailProviderConfigured) blockers.push("Resend is not configured.");

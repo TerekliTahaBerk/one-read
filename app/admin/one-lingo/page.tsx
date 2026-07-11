@@ -6,10 +6,15 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { HealthHeadline, FactList, type Health } from "@/components/admin/HealthCard";
 import { Details } from "@/components/admin/Details";
 import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
+import { ProductRunActions } from "@/components/admin/ProductRunActions";
 import { oneLingoTabs } from "@/lib/admin/nav";
 import { getLingoOverviewMetrics } from "@/lib/admin/lingo-queries";
 import { getLingoHealth, aiBrainWorking } from "@/lib/admin/health";
-import { lingoBillingConfigured, lingoCronEnabled, lingoRequireApproval } from "@/lib/lingo/config";
+import { lingoBillingConfigured } from "@/lib/lingo/config";
+import { getControls } from "@/lib/admin/settings-store";
+import { getRunSnapshot, runStatusLabel } from "@/lib/admin/operational-runs";
+import { ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
+import { fmtWhen } from "@/lib/admin/format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,8 +27,13 @@ export default async function OneLingoOverviewPage({
   const guard = guardAdminPage("/admin/one-lingo", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, health] = await Promise.all([getLingoOverviewMetrics(), getLingoHealth()]);
-  const cronOn = lingoCronEnabled();
+  const [m, health, run] = await Promise.all([
+    getLingoOverviewMetrics(),
+    getLingoHealth(),
+    getRunSnapshot(ONE_LINGO_PRODUCT_KEY),
+  ]);
+  const controls = (await getControls()).lingo;
+  const cronOn = controls.cronEnabled;
   const aiOk = aiBrainWorking();
 
   const nextAction = !cronOn
@@ -53,7 +63,7 @@ export default async function OneLingoOverviewPage({
             rows={[
               ["Subscribers ready", `${m.subscribers.eligible}`],
               ["Payments", lingoBillingConfigured() ? "Connected" : "Needs setup"],
-              ["Approval required", lingoRequireApproval() ? "Yes" : "No"],
+              ["Approval required", controls.requireApproval ? "Yes" : "No"],
             ]}
           />
         </div>
@@ -81,6 +91,20 @@ export default async function OneLingoOverviewPage({
           <MetricCard label="Skipped" value={m.sends.skipped} />
           <MetricCard label="Failed" value={m.sends.failed} tone={m.sends.failed > 0 ? "warn" : "default"} />
         </MetricGrid>
+      </AdminCard>
+
+      <AdminCard title="Run now" subtitle="Generate or send today's lesson on demand" bodyClassName="p-4">
+        <ProductRunActions endpoint="/api/admin/lingo/lessons/action" productName="OneLingo" />
+      </AdminCard>
+
+      <AdminCard title="Automatic runs" subtitle="The daily job that generates and sends" bodyClassName="p-4">
+        <FactList
+          rows={[
+            ["Last run", run.last ? `${fmtWhen(run.last.startedAt)} · ${runStatusLabel(run.last.status)}` : "Never run yet"],
+            ["Last successful run", run.lastSuccessAt ? fmtWhen(run.lastSuccessAt) : "None yet"],
+            ["Last error", run.lastFailure ? `${fmtWhen(run.lastFailure.startedAt)} — ${run.lastFailure.error ?? "unknown"}` : "None"],
+          ]}
+        />
       </AdminCard>
 
       <AdminCard title="Approvals" subtitle="Clear today's review queue in one click" bodyClassName="p-4">

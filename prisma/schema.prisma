@@ -335,12 +335,12 @@ model Summary {
 
   /// Optional admin overrides for the rendered email. Overrides preserve the
   /// generated fields, and the send path applies them at render time.
-  subjectOverride     String?
-  previewTextOverride String?
-  bodyTextOverride    String? @db.Text
-  bodyHtmlOverride    String? @db.Text
+  subjectOverride        String?
+  previewTextOverride    String?
+  bodyTextOverride       String?   @db.Text
+  bodyHtmlOverride       String?   @db.Text
   structuredJsonOverride Json?
-  adminEditedAt       DateTime?
+  adminEditedAt          DateTime?
 
   createdAt DateTime @default(now())
 
@@ -727,4 +727,15 @@ model FilmCatalogEntry {
   updatedAt      DateTime  @updatedAt
 
   @@index([usedAt])
+}
+
+/// Mutable, panel-editable runtime configuration. One row per setting key.
+/// The value is stored as a string (booleans as "true"/"false", numbers as
+/// their decimal text); env vars remain the fallback default when a key has no
+/// row, so an empty table reproduces the original env-only behaviour.
+model Setting {
+  key       String   @id
+  value     String
+  updatedBy String?
+  updatedAt DateTime @default(now()) @updatedAt
 }

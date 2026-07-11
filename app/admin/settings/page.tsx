@@ -8,20 +8,17 @@ import { Details } from "@/components/admin/Details";
 import { getLaunchReadiness } from "@/lib/launch-readiness";
 import { getLlmStatus } from "@/lib/llm";
 import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime, fmtAgo } from "@/lib/admin/format";
-import { isApprovalRequired } from "@/lib/admin/issues-config";
+import { getRuntimeSettings, SETTING_KEYS } from "@/lib/admin/settings-store";
+import { SettingToggle } from "@/components/admin/SettingToggle";
+import { SettingField } from "@/components/admin/SettingField";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 import {
   lingoBillingConfigured,
-  lingoCronEnabled,
-  lingoDryRunForced,
-  lingoRequireApproval,
   lingoSendHourLocal,
   lingoTimezone,
 } from "@/lib/lingo/config";
 import {
   filmBillingConfigured,
-  filmCronEnabled,
-  filmRequireApproval,
   filmSourceMode,
 } from "@/lib/film/config";
 import {
@@ -32,8 +29,6 @@ import {
 import {
   nextOneArticleSend,
   getOneArticleAiStatus,
-  oneArticleCronEnabled,
-  oneArticleDryRunForced,
   resendConfigured,
 } from "@/lib/admin/one-article-ops";
 import { oneReadBillingConfigured } from "@/lib/oneread/config";
@@ -88,7 +83,9 @@ export default async function SettingsPage({
     }),
   ]);
 
-  const approvalRequired = isApprovalRequired();
+  const runtimeSettings = await getRuntimeSettings();
+  const controls = runtimeSettings.controls;
+  const approvalRequired = controls.oneArticle.requireApproval;
   const flags = adminFeatureFlags();
   const tone = (s: string): "good" | "muted" => (s === "pass" ? "good" : "muted");
 
@@ -124,10 +121,10 @@ export default async function SettingsPage({
   if (oneArticleAi.blocker) {
     warnings.push("The AI brain needs setup before it can generate content.");
   }
-  if (!oneArticleCronEnabled()) {
+  if (!controls.oneArticle.cronEnabled) {
     warnings.push("OneArticle automatic sending is off — scheduled emails won't send.");
   }
-  if (oneArticleDryRunForced()) {
+  if (controls.oneArticle.dryRun) {
     warnings.push("OneArticle is in test mode — the daily run won't send real emails.");
   }
   if (!emailVerificationSecretConfigured()) {
@@ -138,13 +135,13 @@ export default async function SettingsPage({
   if (!lingoBillingConfigured()) {
     warnings.push("OneLingo checkout is disabled until its payment product is set.");
   }
-  if (!lingoCronEnabled()) {
+  if (!controls.lingo.cronEnabled) {
     warnings.push("OneLingo automatic sending is off.");
   }
   if (!filmBillingConfigured()) {
     warnings.push("OneFilm checkout is disabled until its payment product is set.");
   }
-  if (!filmCronEnabled()) {
+  if (!controls.film.cronEnabled) {
     warnings.push("OneFilm automatic sending is off.");
   }
   if (!oneReadBillingConfigured()) {
@@ -167,10 +164,28 @@ export default async function SettingsPage({
     ],
   ];
 
-  const sendingRows: [string, boolean][] = [
-    ["OneArticle automatic sending", oneArticleCronEnabled()],
-    ["OneFilm automatic sending", filmCronEnabled()],
-    ["OneLingo automatic sending", lingoCronEnabled()],
+  const productControls = [
+    {
+      name: "OneArticle",
+      c: controls.oneArticle,
+      cronKey: SETTING_KEYS.oneArticleCron,
+      dryKey: SETTING_KEYS.oneArticleDryRun,
+      apprKey: SETTING_KEYS.oneArticleApproval,
+    },
+    {
+      name: "OneFilm",
+      c: controls.film,
+      cronKey: SETTING_KEYS.filmCron,
+      dryKey: SETTING_KEYS.filmDryRun,
+      apprKey: SETTING_KEYS.filmApproval,
+    },
+    {
+      name: "OneLingo",
+      c: controls.lingo,
+      cronKey: SETTING_KEYS.lingoCron,
+      dryKey: SETTING_KEYS.lingoDryRun,
+      apprKey: SETTING_KEYS.lingoApproval,
+    },
   ];
 
   return (
@@ -184,13 +199,60 @@ export default async function SettingsPage({
         />
       </AdminCard>
 
-      <AdminCard title="Automatic sending" subtitle="Every delivery goes out at 07:00 Europe/Istanbul" bodyClassName="p-4">
-        <DefList
-          rows={sendingRows.map(([label, on]) => [
-            label,
-            <StatusBadge key="v" value={on ? "On" : "Off"} tone={on ? "good" : "muted"} />,
-          ])}
-        />
+      <AdminCard title="Quality & schedule" subtitle="Validated runtime values — no redeploy needed" bodyClassName="p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <SettingField settingKey={SETTING_KEYS.minArticleScore} initial={runtimeSettings.minArticleScore} type="number" min={0} max={1} step={0.05} label="Minimum article score (0–1)" />
+          <SettingField settingKey={SETTING_KEYS.minDeliveryScore} initial={runtimeSettings.minDeliveryScore} type="number" min={0} max={1} step={0.05} label="Minimum delivery score (0–1)" />
+          <SettingField settingKey={SETTING_KEYS.minSummaryConfidence} initial={runtimeSettings.minSummaryConfidence} type="number" min={0} max={100} step={1} label="Summary confidence (0–100)" />
+          <SettingField settingKey={SETTING_KEYS.oneArticleSendDays} initial={runtimeSettings.oneArticleSendDays} label="OneArticle days" />
+          <SettingField settingKey={SETTING_KEYS.filmSendDays} initial={runtimeSettings.filmSendDays} label="OneFilm days" />
+          <SettingField settingKey={SETTING_KEYS.lingoSendDays} initial={runtimeSettings.lingoSendDays} label="OneLingo days" />
+        </div>
+        <p className="mt-3 text-[12px] text-admin-muted">Use comma-separated day codes: MON,TUE,WED,THU,FRI,SAT,SUN.</p>
+      </AdminCard>
+
+      <AdminCard title="Controls" subtitle="Turn each product on or off — changes take effect on the next run" bodyClassName="p-4">
+        <div className="space-y-5">
+          {productControls.map((p) => (
+            <div key={p.name} className="rounded-xl border border-admin-line bg-admin-surface/60 p-4">
+              <div className="mb-3 font-serif text-[15px] text-admin-ink">{p.name}</div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-eyebrow text-admin-muted">Automatic sending</div>
+                  <SettingToggle
+                    settingKey={p.cronKey}
+                    initial={p.c.cronEnabled}
+                    confirmOn={`Turn ON automatic sending for ${p.name}? Approved content will email subscribers on the daily schedule.`}
+                  />
+                </div>
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-eyebrow text-admin-muted">Test mode</div>
+                  <SettingToggle
+                    settingKey={p.dryKey}
+                    initial={p.c.dryRun}
+                    onLabel="Test only"
+                    offLabel="Live"
+                    confirmOff={`Turn OFF test mode for ${p.name}? The next run will send real emails to subscribers.`}
+                  />
+                </div>
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-eyebrow text-admin-muted">Approval required</div>
+                  <SettingToggle
+                    settingKey={p.apprKey}
+                    initial={p.c.requireApproval}
+                    onLabel="Required"
+                    offLabel="Auto-send"
+                    confirmOff={`Turn OFF approval for ${p.name}? Ready content will send without manual review.`}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[12px] text-admin-muted font-sans">
+          Every delivery goes out at 07:00 Europe/Istanbul. &quot;Test mode&quot; prepares
+          and logs but never emails subscribers.
+        </p>
       </AdminCard>
 
       {warnings.length > 0 && (
@@ -288,7 +350,7 @@ export default async function SettingsPage({
             ["POLAR_ONEFILM_SUCCESS_URL", configured(process.env.POLAR_ONEFILM_SUCCESS_URL)],
             ["POLAR_ONEFILM_RETURN_URL", configured(process.env.POLAR_ONEFILM_RETURN_URL)],
             ["POLAR_SERVER", process.env.POLAR_SERVER ? "Configured from environment" : "Development fallback: sandbox"],
-            ["Revenue reporting", "Not tracked yet"],
+            ["Billing events", "Available in the database and audit log"],
           ]}
         />
         <ConfigCard
@@ -296,8 +358,7 @@ export default async function SettingsPage({
           rows={[
             ["RESEND_API_KEY", configured(process.env.RESEND_API_KEY)],
             ["FROM_EMAIL / RESEND_FROM", configured(process.env.FROM_EMAIL || process.env.RESEND_FROM)],
-            ["Open tracking", "Not implemented"],
-            ["Click tracking", "Not implemented"],
+            ["Delivery tracking", "Provider message IDs and failures recorded"],
           ]}
         />
         <ConfigCard
@@ -342,18 +403,18 @@ export default async function SettingsPage({
           rows={[
             ["CRON_SECRET", configured(process.env.CRON_SECRET)],
             ["Schedule source", "vercel.json cron + environment"],
-            ["OneArticle cron enabled", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
-            ["OneArticle dry run forced", oneArticleDryRunForced() ? "Enabled" : "Off"],
+            ["OneArticle cron enabled", controls.oneArticle.cronEnabled ? "Enabled" : "Disabled"],
+            ["OneArticle dry run forced", controls.oneArticle.dryRun ? "Enabled" : "Off"],
             ["OneArticle approval required", approvalRequired ? "Enabled" : "Off"],
             ["OneArticle next send", fmtDateTime(nextOneArticleSend().utc)],
             ["OneArticle send days", oneArticleSendDays().join(", ")],
             ["OneFilm send days", oneFilmSendDays().join(", ")],
-            ["OneLingo cron enabled", lingoCronEnabled() ? "Enabled" : "Missing"],
-            ["OneLingo dry run forced", lingoDryRunForced() ? "Enabled" : "Off"],
-            ["OneLingo approval required", lingoRequireApproval() ? "Enabled" : "Off"],
+            ["OneLingo cron enabled", controls.lingo.cronEnabled ? "Enabled" : "Missing"],
+            ["OneLingo dry run forced", controls.lingo.dryRun ? "Enabled" : "Off"],
+            ["OneLingo approval required", controls.lingo.requireApproval ? "Enabled" : "Off"],
             ["OneLingo send time", `${String(lingoSendHourLocal()).padStart(2, "0")}:00 ${lingoTimezone()}`],
-            ["OneFilm cron enabled", filmCronEnabled() ? "Enabled" : "Missing"],
-            ["OneFilm approval required", filmRequireApproval() ? "Enabled" : "Off"],
+            ["OneFilm cron enabled", controls.film.cronEnabled ? "Enabled" : "Missing"],
+            ["OneFilm approval required", controls.film.requireApproval ? "Enabled" : "Off"],
             ["OneFilm source mode", filmSourceMode()],
             ["Last OneArticle run", lastOneArticleRun ? `${fmtDateTime(lastOneArticleRun.startedAt)} · ${lastOneArticleRun.status}` : "Not tracked yet"],
             ["Last OneArticle error", lastOneArticleRun?.error ?? "None tracked"],
@@ -369,8 +430,8 @@ export default async function SettingsPage({
             ["GEMINI_MODEL_REASONING", aiStatus.gemini.models.reasoning],
             ["RESEND_API_KEY", configured(process.env.RESEND_API_KEY)],
             ["CRON_SECRET", configured(process.env.CRON_SECRET)],
-            ["ONE_ARTICLE_CRON_ENABLED", oneArticleCronEnabled() ? "Enabled" : "Disabled"],
-            ["ONE_ARTICLE_DRY_RUN", oneArticleDryRunForced() ? "Enabled" : "Off"],
+            ["ONE_ARTICLE_CRON_ENABLED", controls.oneArticle.cronEnabled ? "Enabled" : "Disabled"],
+            ["ONE_ARTICLE_DRY_RUN", controls.oneArticle.dryRun ? "Enabled" : "Off"],
             ["ONE_ARTICLE_REQUIRE_APPROVAL", approvalRequired ? "Enabled" : "Off"],
             ["ADMIN_SEND_ACTIONS_ENABLED", flags.sendActionsEnabled ? "Enabled" : "Disabled"],
             ["ADMIN_MUTATIONS_ENABLED", flags.mutationsEnabled ? "Enabled" : "Disabled"],

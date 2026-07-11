@@ -157,7 +157,6 @@ export function AdminShell({
             </nav>
 
             <div className="ml-auto flex items-center gap-3">
-              <SearchAffordance />
               <DateChip />
             </div>
           </header>
@@ -202,19 +201,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Presentational search box. Wiring lands in a later iteration, so it renders
- *  disabled rather than pretending to work. */
-function SearchAffordance() {
-  return (
-    <div
-      title="Search — coming in the next iteration"
-      className="hidden h-9 w-56 items-center gap-2 rounded-full border border-admin-line bg-admin-surface px-4 text-[13px] text-admin-muted md:flex"
-    >
-      <SearchIcon />
-      <span>Search…</span>
-    </div>
-  );
-}
 
 function DateChip() {
   const today = new Date().toLocaleDateString("en-GB", {

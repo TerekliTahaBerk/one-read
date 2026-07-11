@@ -4,9 +4,11 @@ import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/au
 import { recordAudit } from "@/lib/admin/audit";
 import { generateLingoLesson } from "@/lib/lingo/generator";
 import { renderLingoEmail } from "@/lib/lingo/email-template";
-import { runOneLingoDailyPipeline } from "@/lib/lingo/pipeline";
+import { runOneLingoDailyPipeline, type SendArgs } from "@/lib/lingo/pipeline";
 import { sendDailyEmail } from "@/lib/resend";
-import { parseEmail } from "@/lib/options";
+import { parseEmail, ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
+import { getControls } from "@/lib/admin/settings-store";
+import { startRun, finishRun, notifyRunFailure } from "@/lib/admin/operational-runs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +45,67 @@ export async function POST(req: Request) {
       metadata: { approved: res.count } as never,
     });
     return NextResponse.json({ ok: true, result: { approved: res.count } });
+  }
+
+  // Product-level run triggers — generate/send today, no lessonId.
+  if (action === "run-dry" || action === "run-live") {
+    if (!adminFeatureFlags().mutationsEnabled) {
+      return NextResponse.json({ ok: false, error: "admin_mutations_disabled" }, { status: 403 });
+    }
+    if (action === "run-live" && !adminFeatureFlags().sendActionsEnabled) {
+      return NextResponse.json({ ok: false, error: "admin_send_actions_disabled" }, { status: 403 });
+    }
+    const controls = (await getControls()).lingo;
+    const dryRun = action === "run-dry" || controls.dryRun;
+    const dateIso = typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
+    const routeLabel = `/api/admin/lingo/lessons/action:${action}`;
+    const run = await startRun({
+      productKey: ONE_LINGO_PRODUCT_KEY,
+      route: routeLabel,
+      dryRun,
+      requireApproval: controls.requireApproval,
+      metadata: { manual: true, date: dateIso },
+    });
+    try {
+      const r = await runOneLingoDailyPipeline({
+        date: new Date(`${dateIso}T00:00:00Z`),
+        dryRun,
+        requireApproval: controls.requireApproval,
+        send: dryRun ? undefined : (a: SendArgs) => sendDailyEmail(a),
+      });
+      await finishRun({
+        id: run.id,
+        status: "SUCCESS",
+        generatedCount: r.segments.generated,
+        sentCount: r.sends.sent,
+        skippedCount: r.sends.skipped,
+        failedCount: r.sends.failed,
+        metadata: r as never,
+      });
+      await recordAudit({
+        actor,
+        action: `lingo.run.${action}`,
+        targetType: "LingoDailyLesson",
+        targetId: dateIso,
+        metadata: { mode: dryRun ? "dry" : "live", ...r.sends } as never,
+      });
+      return NextResponse.json({
+        ok: true,
+        result: {
+          generated: r.segments.generated,
+          sent: r.sends.sent,
+          skipped: r.sends.skipped,
+          failed: r.sends.failed,
+          wouldSend: r.sends.dryRun,
+          dryRun,
+        },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "run_failed";
+      await finishRun({ id: run.id, status: "FAILED", error: message });
+      await notifyRunFailure({ productName: "OneLingo", route: routeLabel, error: message });
+      return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    }
   }
 
   const lesson = await prisma.lingoDailyLesson.findUnique({ where: { id: lessonId } });

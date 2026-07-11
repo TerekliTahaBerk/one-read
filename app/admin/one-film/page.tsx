@@ -6,10 +6,15 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { HealthHeadline, FactList, type Health } from "@/components/admin/HealthCard";
 import { Details } from "@/components/admin/Details";
 import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
+import { ProductRunActions } from "@/components/admin/ProductRunActions";
 import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmOverviewMetrics } from "@/lib/admin/film-queries";
 import { getFilmHealth, aiBrainWorking } from "@/lib/admin/health";
-import { filmBillingConfigured, filmCronEnabled, filmRequireApproval, filmSourceMode } from "@/lib/film/config";
+import { filmBillingConfigured, filmSourceMode } from "@/lib/film/config";
+import { getControls } from "@/lib/admin/settings-store";
+import { getRunSnapshot, runStatusLabel } from "@/lib/admin/operational-runs";
+import { ONE_FILM_PRODUCT_KEY } from "@/lib/options";
+import { fmtWhen } from "@/lib/admin/format";
 import { getLlmStatus } from "@/lib/llm";
 import { FILM_PROMPT_VERSION } from "@/lib/film/prompts";
 
@@ -24,9 +29,14 @@ export default async function OneFilmOverviewPage({
   const guard = guardAdminPage("/admin/one-film", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, health] = await Promise.all([getFilmOverviewMetrics(), getFilmHealth()]);
+  const [m, health, run] = await Promise.all([
+    getFilmOverviewMetrics(),
+    getFilmHealth(),
+    getRunSnapshot(ONE_FILM_PRODUCT_KEY),
+  ]);
   const llm = getLlmStatus();
-  const cronOn = filmCronEnabled();
+  const controls = (await getControls()).film;
+  const cronOn = controls.cronEnabled;
   const aiOk = aiBrainWorking();
 
   const nextAction = !cronOn
@@ -85,6 +95,20 @@ export default async function OneFilmOverviewPage({
         </MetricGrid>
       </AdminCard>
 
+      <AdminCard title="Run now" subtitle="Generate or send today's note on demand" bodyClassName="p-4">
+        <ProductRunActions endpoint="/api/admin/film/issues/action" productName="OneFilm" />
+      </AdminCard>
+
+      <AdminCard title="Automatic runs" subtitle="The daily job that generates and sends" bodyClassName="p-4">
+        <FactList
+          rows={[
+            ["Last run", run.last ? `${fmtWhen(run.last.startedAt)} · ${runStatusLabel(run.last.status)}` : "Never run yet"],
+            ["Last successful run", run.lastSuccessAt ? fmtWhen(run.lastSuccessAt) : "None yet"],
+            ["Last error", run.lastFailure ? `${fmtWhen(run.lastFailure.startedAt)} — ${run.lastFailure.error ?? "unknown"}` : "None"],
+          ]}
+        />
+      </AdminCard>
+
       <AdminCard title="Approvals" subtitle="Clear today's review queue in one click" bodyClassName="p-4">
         <p className="mb-3 text-[12.5px] text-admin-body font-sans">
           Approves every film note that&apos;s ready for today. Anything not
@@ -107,7 +131,7 @@ export default async function OneFilmOverviewPage({
             <MetricGrid>
               <MetricCard label="Polar product" value={filmBillingConfigured() ? "Configured" : "Missing"} tone={filmBillingConfigured() ? "good" : "warn"} />
               <MetricCard label="Cron" value={cronOn ? "Enabled" : "Disabled"} />
-              <MetricCard label="Approval required" value={filmRequireApproval() ? "Yes" : "No"} />
+              <MetricCard label="Approval required" value={controls.requireApproval ? "Yes" : "No"} />
               <MetricCard label="Source mode" value={filmSourceMode()} />
             </MetricGrid>
           </div>

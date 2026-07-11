@@ -13,8 +13,9 @@ import {
   setOneArticleIssueStatus,
   startOperationalRun,
 } from "@/lib/admin/one-article-ops";
-import { isApprovalRequired } from "@/lib/admin/issues-config";
-import { runDailyPipeline } from "@/lib/pipeline";
+import { getControls, getRuntimeSettings } from "@/lib/admin/settings-store";
+import { runDailyPipeline, type SendArgs } from "@/lib/pipeline";
+import { sendDailyEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,8 @@ export async function POST(req: Request) {
       "prepare-tomorrow",
       "prepare-date",
       "pipeline-dry-run",
+      "run-dry",
+      "run-live",
       "create-manual-issue",
       "set-issue-status",
       "rescore-article",
@@ -52,6 +55,9 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ ok: false, error: "unknown_action" }, { status: 400 });
   }
+  if (action === "run-live" && !adminFeatureFlags().sendActionsEnabled) {
+    return NextResponse.json({ ok: false, error: "admin_send_actions_disabled" }, { status: 403 });
+  }
   const manualDate = action === "create-manual-issue" ? parseDate(body.date) : null;
   if (action === "create-manual-issue" && !manualDate) {
     return NextResponse.json({ ok: false, error: "invalid_date" }, { status: 400 });
@@ -60,8 +66,8 @@ export async function POST(req: Request) {
   const actor = adminActorLabel(req, body);
   const run = await startOperationalRun({
     route: `/api/admin/one-article/action:${action || "unknown"}`,
-    dryRun: action === "pipeline-dry-run",
-    requireApproval: isApprovalRequired(),
+    dryRun: action === "pipeline-dry-run" || action === "run-dry",
+    requireApproval: (await getControls()).oneArticle.requireApproval,
     metadata: { action } as Prisma.InputJsonObject,
   });
 
@@ -86,8 +92,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, result });
     }
 
-    if (action === "pipeline-dry-run") {
-      const result = await runDailyPipeline({ dryRun: true, date: parseDate(body.date) ?? undefined });
+    if (["pipeline-dry-run", "run-dry", "run-live"].includes(action)) {
+      const settings = await getRuntimeSettings();
+      const dryRun = action !== "run-live";
+      const result = await runDailyPipeline({
+        dryRun, date: parseDate(body.date) ?? undefined,
+        requireApproval: settings.controls.oneArticle.requireApproval,
+        thresholds: { minArticleScore: settings.minArticleScore, minDeliveryScore: settings.minDeliveryScore, minSummaryConfidence: settings.minSummaryConfidence },
+        send: dryRun ? undefined : (args: SendArgs) => sendDailyEmail(args),
+      });
       await finishOperationalRun({
         id: run.id,
         status: "SUCCESS",
