@@ -5,6 +5,7 @@ import { AdminCard, MetricCard, MetricGrid } from "@/components/admin/AdminCard"
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { HealthHeadline, FactList, type Health } from "@/components/admin/HealthCard";
 import { Details } from "@/components/admin/Details";
+import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
 import { oneLingoTabs } from "@/lib/admin/nav";
 import { getLingoOverviewMetrics } from "@/lib/admin/lingo-queries";
 import { getLingoHealth, aiBrainWorking } from "@/lib/admin/health";
@@ -80,6 +81,14 @@ export default async function OneLingoOverviewPage({
           <MetricCard label="Skipped" value={m.sends.skipped} />
           <MetricCard label="Failed" value={m.sends.failed} tone={m.sends.failed > 0 ? "warn" : "default"} />
         </MetricGrid>
+      </AdminCard>
+
+      <AdminCard title="Approvals" subtitle="Clear today's review queue in one click" bodyClassName="p-4">
+        <p className="mb-3 text-[12.5px] text-admin-body font-sans">
+          Approves every lesson that&apos;s ready for today. Anything not
+          generated stays in review.
+        </p>
+        <ApproveAllButton endpoint="/api/admin/lingo/lessons/action" label="Approve all ready today" />
       </AdminCard>
 
       <div className="flex flex-wrap gap-3 text-[13px] font-sans">

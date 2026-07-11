@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { HealthHeadline, FactList, type Health } from "@/components/admin/HealthCard";
 import { Details } from "@/components/admin/Details";
 import { OneArticleOverviewActions } from "@/components/admin/OneArticleOverviewActions";
+import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
 import { getOverviewMetrics, loadOneArticleSubs, toSubRow } from "@/lib/admin/queries";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { SEND_TIMEZONE, fmtDateTime, fmtWhen, fmtAgo, isoDate, todayUtc } from "@/lib/admin/format";
@@ -168,6 +169,14 @@ export default async function OneArticleOverviewPage({
           <MetricCard label="Skipped" value={m.ops.skippedToday} />
           <MetricCard label="Failed" value={m.ops.failedToday} tone={m.ops.failedToday > 0 ? "warn" : "default"} />
         </MetricGrid>
+      </AdminCard>
+
+      <AdminCard title="Approvals" subtitle="Clear today's review queue in one click" bodyClassName="p-4">
+        <p className="mb-3 text-[12.5px] text-admin-body font-sans">
+          Approves every issue that&apos;s ready for today. Anything still being
+          prepared stays in review.
+        </p>
+        <ApproveAllButton endpoint="/api/admin/issues/action" label="Approve all ready today" />
       </AdminCard>
 
       <AdminCard title="Quick actions" subtitle="These prepare content — they never email subscribers" bodyClassName="p-4">

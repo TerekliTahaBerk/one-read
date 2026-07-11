@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { runDailyPipeline, type SendArgs } from "@/lib/pipeline";
 import { sendDailyEmail } from "@/lib/resend";
 import { parseEmail } from "@/lib/options";
-import { sendInstantUtc, isoDate } from "@/lib/admin/format";
+import { sendInstantUtc, isoDate, todayUtc } from "@/lib/admin/format";
 import { renderPreviewForSummary } from "@/lib/admin/issues-read";
 import {
   getOneArticleIssueReadiness,
@@ -74,6 +74,37 @@ export async function cancelIssue(pickId: string): Promise<IssueActionResult> {
     data: { approvalStatus: "CANCELED", scheduledFor: null },
   });
   return { ok: true };
+}
+
+/**
+ * One-click bulk approval: approve every pick for a date (default today) that
+ * still needs review AND already has sendable, ready content. Picks without a
+ * READY summary are left in review (counted as `skipped`) so weak/empty output
+ * never gets waved through. Keeps the human gate but clears the queue in one go.
+ */
+export async function approveAllReady(
+  actor: string,
+  dateIso?: string,
+): Promise<{ ok: true; approved: number; skipped: number }> {
+  const day = dateIso ? new Date(`${dateIso}T00:00:00Z`) : todayUtc();
+  const picks = await prisma.topicDailyPick.findMany({
+    where: { date: day, approvalStatus: "PENDING" },
+    include: { summaries: { select: { status: true } } },
+  });
+  let approved = 0;
+  let skipped = 0;
+  for (const pick of picks) {
+    if (pick.summaries.some((s) => s.status === "READY")) {
+      await prisma.topicDailyPick.update({
+        where: { id: pick.id },
+        data: { approvalStatus: "APPROVED", approvedAt: new Date(), approvedBy: actor },
+      });
+      approved++;
+    } else {
+      skipped++;
+    }
+  }
+  return { ok: true, approved, skipped };
 }
 
 /** Return an issue to PENDING (needs review). */

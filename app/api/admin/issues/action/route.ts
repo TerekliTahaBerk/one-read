@@ -4,6 +4,7 @@ import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/au
 import { recordAudit } from "@/lib/admin/audit";
 import {
   approveIssue,
+  approveAllReady,
   scheduleIssue,
   cancelIssue,
   markNeedsReview,
@@ -55,6 +56,19 @@ export async function POST(req: Request): Promise<Response> {
   const pickId = typeof body.pickId === "string" ? body.pickId : "";
   const actor = adminActorLabel(req, body);
   const str = (k: string) => (typeof body[k] === "string" ? (body[k] as string) : undefined);
+
+  // Bulk approve operates over many picks, so it never carries a pickId.
+  if (action === "approve-all") {
+    const bulk = await approveAllReady(actor, str("date"));
+    await recordAudit({
+      actor,
+      action: "issue.approve-all",
+      targetType: "TopicDailyPick",
+      targetId: str("date") ?? new Date().toISOString().slice(0, 10),
+      metadata: bulk as never,
+    });
+    return NextResponse.json({ ok: true, result: bulk });
+  }
 
   let result: IssueActionResult;
   let auditMeta: Record<string, unknown> = {};

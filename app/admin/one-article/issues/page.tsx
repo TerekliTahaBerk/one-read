@@ -6,6 +6,7 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { IssueEmptyActions } from "@/components/admin/IssueEmptyActions";
+import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
 import { loadIssues } from "@/lib/admin/issues-read";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { topicBySlug } from "@/lib/topics";
@@ -39,12 +40,15 @@ export default async function IssuesListPage({
       title="Issues"
       subtitle={`Prepared issues for ${iso}`}
       actions={
-        <Link
-          href="/admin/manual-article"
-          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
-        >
-          + Create issue from article
-        </Link>
+        <div className="flex items-center gap-2">
+          <ApproveAllButton endpoint="/api/admin/issues/action" date={iso} label={`Approve all ready · ${iso}`} />
+          <Link
+            href="/admin/manual-article"
+            className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
+          >
+            + Create issue from article
+          </Link>
+        </div>
       }
     >
       <AdminTabs tabs={oneArticleTabs()} active="issues" />

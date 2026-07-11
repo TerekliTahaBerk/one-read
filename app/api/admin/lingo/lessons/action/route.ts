@@ -26,6 +26,25 @@ export async function POST(req: Request) {
   const lessonId = typeof body.lessonId === "string" ? body.lessonId : "";
   const action = typeof body.action === "string" ? body.action : "";
   const actor = adminActorLabel(req, body);
+
+  // Bulk approve targets many lessons for a date, so it carries no lessonId.
+  if (action === "approve-all") {
+    const dateIso = typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
+    const day = new Date(`${dateIso}T00:00:00Z`);
+    const res = await prisma.lingoDailyLesson.updateMany({
+      where: { lessonDate: day, status: "GENERATED", approvalStatus: { in: ["PENDING", "NEEDS_REVIEW"] } },
+      data: { approvalStatus: "APPROVED", approvedAt: new Date(), approvedBy: actor },
+    });
+    await recordAudit({
+      actor,
+      action: "lingo.lesson.approve-all",
+      targetType: "LingoDailyLesson",
+      targetId: dateIso,
+      metadata: { approved: res.count } as never,
+    });
+    return NextResponse.json({ ok: true, result: { approved: res.count } });
+  }
+
   const lesson = await prisma.lingoDailyLesson.findUnique({ where: { id: lessonId } });
   if (!lesson) {
     return NextResponse.json({ ok: false, error: "lesson_not_found" }, { status: 404 });

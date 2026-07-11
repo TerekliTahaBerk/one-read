@@ -28,6 +28,25 @@ export async function POST(req: Request) {
   const issueId = typeof body.issueId === "string" ? body.issueId : "";
   const action = typeof body.action === "string" ? body.action : "";
   const actor = adminActorLabel(req, body);
+
+  // Bulk approve targets many notes for a date, so it carries no issueId.
+  if (action === "approve-all") {
+    const dateIso = typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
+    const day = new Date(`${dateIso}T00:00:00Z`);
+    const res = await prisma.filmDailyIssue.updateMany({
+      where: { issueDate: day, status: "GENERATED", approvalStatus: { in: ["PENDING", "NEEDS_REVIEW"] } },
+      data: { approvalStatus: "APPROVED", approvedAt: new Date(), approvedBy: actor },
+    });
+    await recordAudit({
+      actor,
+      action: "film.issue.approve-all",
+      targetType: "FilmDailyIssue",
+      targetId: dateIso,
+      metadata: { approved: res.count } as never,
+    });
+    return NextResponse.json({ ok: true, result: { approved: res.count } });
+  }
+
   const issue = await prisma.filmDailyIssue.findUnique({ where: { id: issueId } });
   if (!issue) {
     return NextResponse.json({ ok: false, error: "issue_not_found" }, { status: 404 });
