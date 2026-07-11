@@ -7,6 +7,8 @@ import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmIssue } from "@/lib/admin/film-queries";
 import { renderFilmEmail } from "@/lib/film/email-template";
 import { FilmIssueActionsBar } from "@/components/admin/FilmIssueActionsBar";
+import { FilmIssueEditor } from "@/components/admin/FilmIssueEditor";
+import type { FilmIssueContent } from "@/lib/film/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +46,7 @@ export default async function OneFilmIssueDetailPage({
           emailLanguage: issue.emailLanguage,
           links: { unsubscribe: "https://oneread.app/unsubscribe?preview=1" },
         });
+  const content = issue.contentJson as unknown as FilmIssueContent;
 
   return (
     <AdminShell title={issue.subject} subtitle={issue.segmentKey}>
@@ -100,8 +103,14 @@ export default async function OneFilmIssueDetailPage({
         </AdminCard>
       )}
       {rendered && (
-        <AdminCard title="Text preview" bodyClassName="p-4">
-          <pre className="whitespace-pre-wrap text-[12.5px] leading-6 text-admin-ink">{rendered.text}</pre>
+        <AdminCard title="Edit note" subtitle="Every save resets approval so edited copy is reviewed again" bodyClassName="p-4">
+          <FilmIssueEditor issueId={issue.id} initialSubject={issue.subject} initialPreviewText={issue.previewText ?? ""} initialContent={content} />
+        </AdminCard>
+      )}
+      {rendered && (
+        <AdminCard title="Email preview" subtitle="Render-only preview; no email is sent" bodyClassName="p-4">
+          <iframe title="OneFilm email preview" srcDoc={rendered.html} sandbox="" className="h-[640px] w-full rounded-xl border border-admin-line bg-white" />
+          <details className="mt-3"><summary className="cursor-pointer text-[12px] text-admin-muted">Plain-text version</summary><pre className="mt-2 whitespace-pre-wrap rounded-lg bg-admin-sink/60 p-3 text-[12px] leading-6 text-admin-ink">{rendered.text}</pre></details>
         </AdminCard>
       )}
       <AdminCard title="Structured JSON" bodyClassName="p-4">

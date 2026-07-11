@@ -29,12 +29,15 @@ export function getLaunchReadiness(): ReadinessCheck[] {
   const provider = (process.env.AI_PROVIDER || "").toLowerCase();
   const hasOpenAi = has(process.env.OPENAI_API_KEY);
   const hasAnthropic = has(process.env.ANTHROPIC_API_KEY);
+  const hasGemini = has(process.env.GEMINI_API_KEY);
   const providerKeyOk =
-    provider === "openai"
+    provider === "gemini"
+      ? hasGemini
+      : provider === "openai"
       ? hasOpenAi
       : provider === "anthropic"
         ? hasAnthropic
-        : hasOpenAi || hasAnthropic;
+        : hasGemini || hasOpenAi || hasAnthropic;
 
   const checks: ReadinessCheck[] = [];
 
@@ -106,18 +109,18 @@ export function getLaunchReadiness(): ReadinessCheck[] {
 
   checks.push({
     key: "AI_PROVIDER",
-    status: provider === "openai" || provider === "anthropic" ? "pass" : "warn",
+    status: provider === "gemini" || provider === "openai" || provider === "anthropic" ? "pass" : "warn",
     explanation:
-      provider === "openai" || provider === "anthropic"
+      provider === "gemini" || provider === "openai" || provider === "anthropic"
         ? `Set to "${provider}".`
-        : "Missing — real LLM scoring/summaries are disabled. Dev heuristic mode is being used.",
+        : "Missing or unsupported — set AI_PROVIDER=gemini for production generation.",
   });
 
   checks.push({
-    key: "OPENAI_API_KEY / ANTHROPIC_API_KEY",
+    key: "GEMINI_API_KEY / provider key",
     status: providerKeyOk ? "pass" : provider ? "missing" : "warn",
     explanation: providerKeyOk
-      ? `API key present (${hasOpenAi ? "OpenAI" : ""}${hasOpenAi && hasAnthropic ? " + " : ""}${hasAnthropic ? "Anthropic" : ""}).`
+      ? `API key present (${hasGemini ? "Gemini" : hasOpenAi ? "OpenAI" : "Anthropic"}).`
       : provider
         ? `Missing — AI_PROVIDER="${provider}" but its API key is not set. LLM calls will fail and fall back/reject.`
         : "Missing — no LLM key. Real summaries disabled until a provider + key are set.",
@@ -195,20 +198,22 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     {
       key: "POLAR_ONE_ARTICLE_PRODUCT_ID",
       ok: has(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID),
-      explanation: "explicit Polar product id",
-      optional: true,
+      explanation: "OneArticle Polar product id",
+    },
+    {
+      key: "POLAR_ONEFILM_PRODUCT_ID",
+      ok: has(process.env.POLAR_ONEFILM_PRODUCT_ID) || has(process.env.POLAR_ONE_FILM_PRODUCT_ID),
+      explanation: "OneFilm Polar product id",
     },
   ];
   for (const item of polarChecks) {
     const required = polarSelected || isProd;
     checks.push({
       key: item.key,
-      status: item.ok ? "pass" : item.optional ? "warn" : required ? "missing" : "warn",
+      status: item.ok ? "pass" : required ? "missing" : "warn",
       explanation: item.ok
         ? `${item.explanation} is configured.`
-        : item.optional
-          ? "Missing — using the built-in OneArticle product id fallback."
-          : required
+        : required
             ? `Missing — Polar payments cannot launch without ${item.key}.`
             : "Missing — only required when Polar billing is selected.",
     });

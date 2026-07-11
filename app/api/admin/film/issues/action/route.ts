@@ -11,6 +11,8 @@ import { sendDailyEmail } from "@/lib/resend";
 import { parseEmail, ONE_FILM_PRODUCT_KEY } from "@/lib/options";
 import { getControls } from "@/lib/admin/settings-store";
 import { startRun, finishRun, notifyRunFailure } from "@/lib/admin/operational-runs";
+import { runSharedGates, toReport } from "@/lib/ai/quality";
+import type { FilmIssueContent } from "@/lib/film/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,6 +124,42 @@ export async function POST(req: Request) {
   let result: Record<string, unknown> | undefined;
 
   switch (action) {
+    case "edit-content": {
+      const raw = body.content;
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return NextResponse.json({ ok: false, error: "invalid_content" }, { status: 400 });
+      }
+      const current = issue.contentJson as unknown as FilmIssueContent;
+      const input = raw as Record<string, unknown>;
+      const required = ["openingLine", "whyThisFilm", "whatItFeelsLike", "bestWatchedWhen", "beforeYouPressPlay", "spoilerNote"] as const;
+      if (required.some((key) => typeof input[key] !== "string" || !(input[key] as string).trim())) {
+        return NextResponse.json({ ok: false, error: "required_content_missing" }, { status: 400 });
+      }
+      const content: FilmIssueContent = {
+        ...current,
+        greeting: typeof input.greeting === "string" ? input.greeting.trim() : current.greeting,
+        openingLine: String(input.openingLine).trim(),
+        filmTitle: issue.filmTitle ?? current.filmTitle,
+        whyThisFilm: String(input.whyThisFilm).trim(),
+        whatItFeelsLike: String(input.whatItFeelsLike).trim(),
+        bestWatchedWhen: String(input.bestWatchedWhen).trim(),
+        beforeYouPressPlay: String(input.beforeYouPressPlay).trim(),
+        spoilerNote: String(input.spoilerNote).trim(),
+        metadata: current.metadata,
+      };
+      const report = toReport(runSharedGates(content, { maxFieldLength: 1800 }));
+      if (!report.ok) return NextResponse.json({ ok: false, error: "quality_gate_failed", findings: report.findings }, { status: 400 });
+      const subject = typeof body.subject === "string" ? body.subject.trim().slice(0, 120) : issue.subject;
+      const previewText = typeof body.previewText === "string" ? body.previewText.trim().slice(0, 180) : issue.previewText;
+      if (!subject) return NextResponse.json({ ok: false, error: "missing_subject" }, { status: 400 });
+      await prisma.filmDailyIssue.update({ where: { id: issue.id }, data: {
+        subject, previewText, contentJson: content as unknown as Prisma.InputJsonObject,
+        approvalStatus: "PENDING", approvedAt: null, approvedBy: null,
+        generationMetadata: { ...(metaObject(issue.generationMetadata)), adminEditedAt: new Date().toISOString(), warnings: report.warnings } as Prisma.InputJsonObject,
+      } });
+      result = { status: "PENDING", warnings: report.warnings };
+      break;
+    }
     case "approve":
       await prisma.filmDailyIssue.update({
         where: { id: issue.id },
@@ -200,13 +238,21 @@ export async function POST(req: Request) {
       break;
     }
     case "send-now": {
-      const pipelineResult = await runOneFilmDailyPipeline({
-        date: issue.issueDate,
-        segmentKey: issue.segmentKey,
-        sendNow: true,
-        requireApproval: false,
-      });
-      result = pipelineResult.sends;
+      if (body.confirmation !== "SEND ONEFILM NOW") {
+        return NextResponse.json({ ok: false, error: "confirmation_required" }, { status: 400 });
+      }
+      const manualRoute = "/api/admin/film/issues/action:send-now";
+      const manualRun = await startRun({ productKey: ONE_FILM_PRODUCT_KEY, route: manualRoute, dryRun: false, requireApproval: false, metadata: { issueId: issue.id } });
+      try {
+        const pipelineResult = await runOneFilmDailyPipeline({ date: issue.issueDate, segmentKey: issue.segmentKey, sendNow: true, requireApproval: false });
+        await finishRun({ id: manualRun.id, status: "SUCCESS", sentCount: pipelineResult.sends.sent, skippedCount: pipelineResult.sends.skipped, failedCount: pipelineResult.sends.failed, metadata: pipelineResult as never });
+        result = pipelineResult.sends;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "OneFilm manual send failed";
+        await finishRun({ id: manualRun.id, status: "FAILED", error: message });
+        await notifyRunFailure({ productName: "OneFilm", route: manualRoute, error: message });
+        throw error;
+      }
       break;
     }
     default:
@@ -222,4 +268,8 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ ok: true, result });
+}
+
+function metaObject(value: Prisma.JsonValue | null): Record<string, Prisma.JsonValue> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, Prisma.JsonValue> : {};
 }

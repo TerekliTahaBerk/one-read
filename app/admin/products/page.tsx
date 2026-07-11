@@ -5,8 +5,6 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
-import { getLingoOverviewMetrics } from "@/lib/admin/lingo-queries";
-import { getOneReadOverviewMetrics } from "@/lib/admin/oneread-queries";
 import { PRODUCTS } from "@/lib/admin/products";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 
@@ -22,11 +20,8 @@ export default async function AdminProductsPage({
   const guard = guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, lingo, oneRead] = await Promise.all([
-    getOverviewMetrics(),
-    getLingoOverviewMetrics(),
-    getOneReadOverviewMetrics(),
-  ]);
+  const m = await getOverviewMetrics();
+  const openProducts = PRODUCTS.filter((p) => p.key === "one-article" || p.key === "one-film");
 
   return (
     <AdminShell
@@ -36,7 +31,7 @@ export default async function AdminProductsPage({
       <AdminCard>
         <AdminTable
           head={["Product", "Status", "Public visibility", "Subscribers from", "Summary", "Actions"]}
-          rows={PRODUCTS.map((p) => [
+          rows={openProducts.map((p) => [
             <span key="n" className="flex items-center gap-2 font-medium text-admin-ink">
               <span className={`h-2.5 w-2.5 rounded-full ${productDotClass(p.key)}`} />
               {p.name}
@@ -56,27 +51,15 @@ export default async function AdminProductsPage({
             ) : (
               <span key="d" className="text-admin-muted">Waitlist (Tally)</span>
             ),
-            p.key === "one-read" ? (
-              <span key="c">{`${oneRead.activeOrTrialing} active/trialing · ${oneRead.pendingCheckout} pending checkout · ${oneRead.total} total`}</span>
-            ) : p.key === "one-article" ? (
+            p.key === "one-article" ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
-            ) : p.key === "one-lingo" ? (
-              <span key="c">{`${lingo.subscribers.activeOrTrialing} active/trialing · ${lingo.subscribers.eligible} eligible`}</span>
             ) : p.connected ? (
               <span key="c" className="text-admin-muted">Use product operations for detailed metrics</span>
             ) : (
               <span key="c" className="text-admin-muted">Waitlist count not available</span>
             ),
-            p.key === "one-read" ? (
-              <Link key="a" href="/admin/settings" className="text-admin-ink underline underline-offset-2">
-                Billing settings →
-              </Link>
-            ) : p.key === "one-article" ? (
+            p.key === "one-article" ? (
               <Link key="a" href="/admin/one-article" className="text-admin-ink underline underline-offset-2">
-                Operations →
-              </Link>
-            ) : p.key === "one-lingo" ? (
-              <Link key="a" href="/admin/one-lingo" className="text-admin-ink underline underline-offset-2">
                 Operations →
               </Link>
             ) : p.key === "one-film" ? (
@@ -99,9 +82,8 @@ export default async function AdminProductsPage({
       </AdminCard>
 
       <p className="text-[12.5px] text-admin-muted font-sans">
-        Public visibility is separate from backend availability. Hidden products
-        stay available in admin and backend routes for future relaunch or
-        subscriber management.
+        The operations panel currently includes only the two open products:
+        OneArticle and OneFilm.
       </p>
     </AdminShell>
   );

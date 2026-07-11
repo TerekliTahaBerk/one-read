@@ -11,7 +11,12 @@ export default async function RunsPage({ searchParams }: { searchParams: Record<
   const guard = guardAdminPage("/admin/runs", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const product = typeof searchParams.product === "string" ? searchParams.product : undefined;
-  const runs = await prisma.operationalRun.findMany({ where: product ? { productKey: product } : undefined, orderBy: { startedAt: "desc" }, take: 200 });
+  const activeProducts = ["one-article", "one-film"];
+  const selectedProduct = product && activeProducts.includes(product) ? product : undefined;
+  const runs = await prisma.operationalRun.findMany({
+    where: selectedProduct ? { productKey: selectedProduct } : { productKey: { in: activeProducts } },
+    orderBy: { startedAt: "desc" }, take: 200,
+  });
   return <AdminShell title="Run history" subtitle="Cron, manual runs, outcomes and errors">
     <AdminCard title="Latest 200 runs"><AdminTable
       head={["Started", "Product", "Route", "Status", "Mode", "Generated", "Sent", "Skipped", "Failed", "Error"]}

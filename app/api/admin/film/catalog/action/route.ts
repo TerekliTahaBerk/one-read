@@ -40,6 +40,19 @@ export async function POST(req: Request) {
   if (!title) {
     return NextResponse.json({ ok: false, error: "missing_title" }, { status: 400 });
   }
+  const year = num(body.year);
+  const runtimeMinutes = num(body.runtimeMinutes);
+  const maxYear = new Date().getFullYear() + 2;
+  if (year !== null && (year < 1888 || year > maxYear)) {
+    return NextResponse.json({ ok: false, error: "invalid_year" }, { status: 400 });
+  }
+  if (runtimeMinutes !== null && (runtimeMinutes < 1 || runtimeMinutes > 600)) {
+    return NextResponse.json({ ok: false, error: "invalid_runtime" }, { status: 400 });
+  }
+  const sourceUrl = str(body.sourceUrl);
+  if (sourceUrl && !/^https?:\/\//i.test(sourceUrl)) {
+    return NextResponse.json({ ok: false, error: "invalid_source_url" }, { status: 400 });
+  }
 
   const spoilerLevel = ["spoiler-free", "spoiler-light", "full"].includes(str(body.spoilerLevel))
     ? str(body.spoilerLevel)
@@ -47,11 +60,11 @@ export async function POST(req: Request) {
 
   const entry = await addCatalogEntry({
     title,
-    year: num(body.year),
+    year,
     director: str(body.director) || null,
     filmLanguage: str(body.filmLanguage) || null,
-    runtimeMinutes: num(body.runtimeMinutes),
-    sourceUrl: str(body.sourceUrl) || null,
+    runtimeMinutes,
+    sourceUrl: sourceUrl || null,
     adminNote: str(body.adminNote) || null,
     genres: list(body.genres),
     moods: list(body.moods),

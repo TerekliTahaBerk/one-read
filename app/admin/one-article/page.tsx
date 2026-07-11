@@ -153,7 +153,18 @@ export default async function OneArticleOverviewPage({
       </AdminCard>
 
       <AdminCard title="Run now" subtitle="Generate or send today's issue on demand" bodyClassName="p-4">
-        <ProductRunActions endpoint="/api/admin/one-article/action" productName="OneArticle" />
+        <ProductRunActions
+          endpoint="/api/admin/one-article/action"
+          productName="OneArticle"
+          dryRunDisabledReason={!aiOk ? "AI generation is not configured" : null}
+          liveRunDisabledReason={
+            !flags.sendActionsEnabled ? "manual sends are disabled"
+              : !resend.hasApiKey ? "email delivery is not configured"
+                : m.eligibleCount === 0 ? "there are no eligible subscribers"
+                  : controls.requireApproval && m.ops.approvedToday === 0 ? "no issue is approved for today"
+                    : null
+          }
+        />
       </AdminCard>
 
       {critical.length + warnings.length > 0 && (

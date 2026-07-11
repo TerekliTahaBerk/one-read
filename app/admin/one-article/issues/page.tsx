@@ -13,6 +13,7 @@ import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime, todayUtc } from "@/lib/admin/format";
 import { labelFor } from "@/lib/admin/labels";
 import { getOneArticleIssueReadiness } from "@/lib/admin/one-article-ops";
+import { QuickIssueAction } from "@/components/admin/QuickIssueAction";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,6 +116,7 @@ export default async function IssuesListPage({
               "Skipped",
               "Failed",
               "",
+              "",
             ]}
             empty="No issues prepared for this day yet."
             rows={issues.map((i) => [
@@ -133,6 +135,7 @@ export default async function IssuesListPage({
               <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-admin-ink underline underline-offset-2">
                 View
               </Link>,
+              i.approvalStatus === "PENDING" && i.status === "READY" ? <QuickIssueAction key="qa" endpoint="/api/admin/issues/action" idKey="pickId" id={i.id} action="approve" label="Approve" /> : null,
             ])}
           />
         </AdminCard>

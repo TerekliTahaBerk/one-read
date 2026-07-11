@@ -11,12 +11,8 @@ import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime, fmtAgo } from "@/lib/admin
 import { getRuntimeSettings, SETTING_KEYS } from "@/lib/admin/settings-store";
 import { SettingToggle } from "@/components/admin/SettingToggle";
 import { SettingField } from "@/components/admin/SettingField";
+import { ScheduleDaysField } from "@/components/admin/ScheduleDaysField";
 import { WAITLIST_FORM_URL } from "@/lib/options";
-import {
-  lingoBillingConfigured,
-  lingoSendHourLocal,
-  lingoTimezone,
-} from "@/lib/lingo/config";
 import {
   filmBillingConfigured,
   filmSourceMode,
@@ -132,12 +128,6 @@ export default async function SettingsPage({
   } else if (!verificationEmailConfigured()) {
     warnings.push("Email verification is set up but email sending is missing — codes only show in server logs.");
   }
-  if (!lingoBillingConfigured()) {
-    warnings.push("OneLingo checkout is disabled until its payment product is set.");
-  }
-  if (!controls.lingo.cronEnabled) {
-    warnings.push("OneLingo automatic sending is off.");
-  }
   if (!filmBillingConfigured()) {
     warnings.push("OneFilm checkout is disabled until its payment product is set.");
   }
@@ -179,13 +169,6 @@ export default async function SettingsPage({
       dryKey: SETTING_KEYS.filmDryRun,
       apprKey: SETTING_KEYS.filmApproval,
     },
-    {
-      name: "OneLingo",
-      c: controls.lingo,
-      cronKey: SETTING_KEYS.lingoCron,
-      dryKey: SETTING_KEYS.lingoDryRun,
-      apprKey: SETTING_KEYS.lingoApproval,
-    },
   ];
 
   return (
@@ -204,11 +187,10 @@ export default async function SettingsPage({
           <SettingField settingKey={SETTING_KEYS.minArticleScore} initial={runtimeSettings.minArticleScore} type="number" min={0} max={1} step={0.05} label="Minimum article score (0–1)" />
           <SettingField settingKey={SETTING_KEYS.minDeliveryScore} initial={runtimeSettings.minDeliveryScore} type="number" min={0} max={1} step={0.05} label="Minimum delivery score (0–1)" />
           <SettingField settingKey={SETTING_KEYS.minSummaryConfidence} initial={runtimeSettings.minSummaryConfidence} type="number" min={0} max={100} step={1} label="Summary confidence (0–100)" />
-          <SettingField settingKey={SETTING_KEYS.oneArticleSendDays} initial={runtimeSettings.oneArticleSendDays} label="OneArticle days" />
-          <SettingField settingKey={SETTING_KEYS.filmSendDays} initial={runtimeSettings.filmSendDays} label="OneFilm days" />
-          <SettingField settingKey={SETTING_KEYS.lingoSendDays} initial={runtimeSettings.lingoSendDays} label="OneLingo days" />
+          <ScheduleDaysField settingKey={SETTING_KEYS.oneArticleSendDays} initial={runtimeSettings.oneArticleSendDays} label="OneArticle delivery days" />
+          <ScheduleDaysField settingKey={SETTING_KEYS.filmSendDays} initial={runtimeSettings.filmSendDays} label="OneFilm delivery days" />
         </div>
-        <p className="mt-3 text-[12px] text-admin-muted">Use comma-separated day codes: MON,TUE,WED,THU,FRI,SAT,SUN.</p>
+        <p className="mt-3 text-[12px] text-admin-muted">Quality thresholds apply to the next run. Higher values are stricter and may intentionally produce no delivery.</p>
       </AdminCard>
 
       <AdminCard title="Controls" subtitle="Turn each product on or off — changes take effect on the next run" bodyClassName="p-4">
@@ -341,11 +323,8 @@ export default async function SettingsPage({
             ["POLAR_ONEREAD_SUCCESS_URL", configured(process.env.POLAR_ONEREAD_SUCCESS_URL)],
             ["POLAR_ONEREAD_RETURN_URL", configured(process.env.POLAR_ONEREAD_RETURN_URL)],
             ["POLAR_ONE_ARTICLE_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID)],
-            ["POLAR_ONE_LINGO_PRODUCT_ID", configured(process.env.POLAR_ONE_LINGO_PRODUCT_ID || process.env.POLAR_ONELINGO_PRODUCT_ID)],
             ["POLAR_ONE_ARTICLE_SUCCESS_URL", configured(process.env.POLAR_ONE_ARTICLE_SUCCESS_URL || process.env.POLAR_SUCCESS_URL)],
             ["POLAR_ONE_ARTICLE_RETURN_URL", configured(process.env.POLAR_ONE_ARTICLE_RETURN_URL)],
-            ["POLAR_ONE_LINGO_SUCCESS_URL", configured(process.env.POLAR_ONE_LINGO_SUCCESS_URL)],
-            ["POLAR_ONE_LINGO_RETURN_URL", configured(process.env.POLAR_ONE_LINGO_RETURN_URL)],
             ["POLAR_ONEFILM_PRODUCT_ID (legacy)", configured(process.env.POLAR_ONEFILM_PRODUCT_ID || process.env.POLAR_ONE_FILM_PRODUCT_ID)],
             ["POLAR_ONEFILM_SUCCESS_URL", configured(process.env.POLAR_ONEFILM_SUCCESS_URL)],
             ["POLAR_ONEFILM_RETURN_URL", configured(process.env.POLAR_ONEFILM_RETURN_URL)],
@@ -394,7 +373,6 @@ export default async function SettingsPage({
           title="Per-product AI brain"
           rows={[
             ["OneArticle", oneArticleAi.statusLabel],
-            ["OneLingo", aiBrainStatus(aiStatus)],
             ["OneFilm", `Source mode: ${filmSourceMode()}${aiStatus.gemini.configured ? " · Gemini ready" : ""}`],
           ]}
         />
@@ -409,10 +387,6 @@ export default async function SettingsPage({
             ["OneArticle next send", fmtDateTime(nextOneArticleSend().utc)],
             ["OneArticle send days", oneArticleSendDays().join(", ")],
             ["OneFilm send days", oneFilmSendDays().join(", ")],
-            ["OneLingo cron enabled", controls.lingo.cronEnabled ? "Enabled" : "Missing"],
-            ["OneLingo dry run forced", controls.lingo.dryRun ? "Enabled" : "Off"],
-            ["OneLingo approval required", controls.lingo.requireApproval ? "Enabled" : "Off"],
-            ["OneLingo send time", `${String(lingoSendHourLocal()).padStart(2, "0")}:00 ${lingoTimezone()}`],
             ["OneFilm cron enabled", controls.film.cronEnabled ? "Enabled" : "Missing"],
             ["OneFilm approval required", controls.film.requireApproval ? "Enabled" : "Off"],
             ["OneFilm source mode", filmSourceMode()],
@@ -448,7 +422,6 @@ export default async function SettingsPage({
             ["OneRead (umbrella) public visibility", "Visible"],
             ["OneArticle public visibility", "Visible — included in OneRead"],
             ["OneFilm public visibility", "Visible — included in OneRead"],
-            ["OneLingo public visibility", "Hidden"],
             ["OneDish public visibility", "Hidden"],
             ["POLAR_SUCCESS_URL", configured(process.env.POLAR_SUCCESS_URL)],
             ["TALLY_WAITLIST_URL", WAITLIST_FORM_URL ? "Configured" : "Missing"],
@@ -480,12 +453,6 @@ export default async function SettingsPage({
 
 function configured(value: string | undefined): string {
   return value && value.trim() ? "Configured" : "Missing";
-}
-
-function aiBrainStatus(status: ReturnType<typeof getLlmStatus>): string {
-  if (status.gemini.configured && status.gemini.isActiveProvider) return "Gemini ready";
-  if (status.configured) return `Ready (${status.provider})`;
-  return "Heuristic fallback";
 }
 
 function ConfigCard({

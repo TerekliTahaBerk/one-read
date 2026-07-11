@@ -12,9 +12,13 @@ import { useRouter } from "next/navigation";
 export function ProductRunActions({
   endpoint,
   productName,
+  dryRunDisabledReason,
+  liveRunDisabledReason,
 }: {
   endpoint: string;
   productName: string;
+  dryRunDisabledReason?: string | null;
+  liveRunDisabledReason?: string | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -43,10 +47,12 @@ export function ProductRunActions({
         return;
       }
       const r = json.result ?? {};
+      const sends = r.sends ?? r;
+      const segments = r.segments ?? {};
       setMsg(
         action === "run-dry"
-          ? `Test run done — generated ${r.generated ?? 0}, would send ${r.wouldSend ?? r.skipped ?? 0}. No emails were sent.`
-          : `Run complete — generated ${r.generated ?? 0} · delivered ${r.sent ?? 0} · skipped ${r.skipped ?? 0} · failed ${r.failed ?? 0}.`,
+          ? `Test run complete — prepared ${r.picks ?? segments.generated ?? 0}; ${sends.dryRun ?? sends.skipped ?? 0} delivery row(s) checked. No emails were sent.`
+          : `Run complete — prepared ${r.picks ?? segments.generated ?? 0} · delivered ${sends.sent ?? 0} · skipped ${sends.skipped ?? 0} · failed ${sends.failed ?? 0}.`,
       );
       router.refresh();
     } catch {
@@ -62,14 +68,20 @@ export function ProductRunActions({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <button className={btn} disabled={!!busy} onClick={() => run("run-dry")}>
+        <button className={btn} disabled={!!busy || !!dryRunDisabledReason} title={dryRunDisabledReason ?? undefined} onClick={() => run("run-dry")}>
           {busy === "run-dry" ? "Running…" : "Test run (no emails)"}
         </button>
-        <button className={btn} disabled={!!busy} onClick={() => run("run-live")}>
+        <button className={btn} disabled={!!busy || !!liveRunDisabledReason} title={liveRunDisabledReason ?? undefined} onClick={() => run("run-live")}>
           {busy === "run-live" ? "Running…" : "Run now (send)"}
         </button>
       </div>
-      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
+      {(dryRunDisabledReason || liveRunDisabledReason) && (
+        <div className="space-y-1 text-[12px] text-admin-muted">
+          {dryRunDisabledReason && <p>Test run unavailable: {dryRunDisabledReason}</p>}
+          {liveRunDisabledReason && <p>Live run unavailable: {liveRunDisabledReason}</p>}
+        </div>
+      )}
+      {msg && <p role="status" aria-live="polite" className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
     </div>
   );
 }

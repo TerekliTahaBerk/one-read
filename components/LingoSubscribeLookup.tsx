@@ -56,6 +56,9 @@ export function LingoSubscribeLookup({ initialEmail = "" }: { initialEmail?: str
 
   useEffect(() => {
     if (initialEmail && isLikelyEmail(initialEmail)) void lookup(initialEmail);
+    // Initial deep-link lookup only. `lookup` also captures mutable form state,
+    // so including it would repeat the request after every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialEmail]);
 
   async function lookup(value = email) {

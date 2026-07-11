@@ -53,13 +53,6 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         icon: "doc",
       },
       {
-        href: "/admin/one-lingo",
-        label: "OneLingo",
-        matchPrefix: "/admin/one-lingo",
-        badge: productBadge("one-lingo"),
-        icon: "chat",
-      },
-      {
         href: "/admin/one-film",
         label: "OneFilm",
         matchPrefix: "/admin/one-film",
@@ -94,12 +87,6 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/admin/one-article/issues", label: "Issues" },
     { href: "/admin/one-article/articles", label: "Articles" },
     { href: "/admin/one-article/sends", label: "Sends" },
-  ],
-  "/admin/one-lingo": [
-    { href: "/admin/one-lingo", label: "Overview" },
-    { href: "/admin/one-lingo/subscribers", label: "Subscribers" },
-    { href: "/admin/one-lingo/lessons", label: "Lessons" },
-    { href: "/admin/one-lingo/sends", label: "Sends" },
   ],
   "/admin/one-film": [
     { href: "/admin/one-film", label: "Overview" },

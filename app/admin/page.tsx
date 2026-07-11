@@ -9,8 +9,6 @@ import { getOverviewMetrics } from "@/lib/admin/queries";
 import {
   getOneArticleHealth,
   getFilmHealth,
-  getLingoHealth,
-  getOneReadHealth,
 } from "@/lib/admin/health";
 import { fmtAgo, fmtWhen } from "@/lib/admin/format";
 
@@ -30,15 +28,13 @@ export default async function AdminOverviewPage({
   const guard = guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, oneArticle, film, lingo, oneRead] = await Promise.all([
+  const [m, oneArticle, film] = await Promise.all([
     getOverviewMetrics(),
     getOneArticleHealth(),
     getFilmHealth(),
-    getLingoHealth(),
-    getOneReadHealth(),
   ]);
 
-  const products = [oneArticle, film, lingo, oneRead];
+  const products = [oneArticle, film];
   const problems = products.filter((p) => p.health === "problem").length;
   const attention = products.filter((p) => p.health === "attention").length;
 

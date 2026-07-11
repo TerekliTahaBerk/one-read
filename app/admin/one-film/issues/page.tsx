@@ -6,6 +6,8 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmIssues } from "@/lib/admin/film-queries";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { AdminTable } from "@/components/admin/AdminTable";
+import { QuickIssueAction } from "@/components/admin/QuickIssueAction";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,36 +28,13 @@ export default async function OneFilmIssuesPage({
         {issues.length === 0 ? (
           <AdminEmptyState>No OneFilm notes generated yet.</AdminEmptyState>
         ) : (
-          <table className="w-full text-left text-[12.5px] font-sans">
-            <thead className="border-b border-admin-line text-admin-muted">
-              <tr>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Subject</th>
-                <th className="px-4 py-2">Film</th>
-                <th className="px-4 py-2">Segment</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Approval</th>
-                <th className="px-4 py-2">Sends</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-admin-line/70">
-              {issues.map((issue) => (
-                <tr key={issue.id}>
-                  <td className="px-4 py-2 text-admin-body">{issue.issueDate.toISOString().slice(0, 10)}</td>
-                  <td className="px-4 py-2 text-admin-ink">
-                    <Link className="link-underline" href={`/admin/one-film/issues/${issue.id}`}>
-                      {issue.subject}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 text-admin-body">{issue.filmTitle ?? "—"}</td>
-                  <td className="px-4 py-2 text-admin-body">{issue.segmentKey}</td>
-                  <td className="px-4 py-2"><StatusBadge value={issue.status} /></td>
-                  <td className="px-4 py-2"><StatusBadge value={issue.approvalStatus} /></td>
-                  <td className="px-4 py-2 text-admin-body">{issue._count.sends}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <AdminTable head={["Date", "Subject", "Film", "Segment", "Status", "Approval", "Sends", ""]} rows={issues.map((issue) => [
+            issue.issueDate.toISOString().slice(0, 10),
+            <Link key="subject" className="link-underline" href={`/admin/one-film/issues/${issue.id}`}>{issue.subject}</Link>,
+            issue.filmTitle ?? "—", issue.segmentKey, <StatusBadge key="status" value={issue.status} />,
+            <StatusBadge key="approval" value={issue.approvalStatus} />, issue._count.sends,
+            issue.approvalStatus === "PENDING" && issue.status === "GENERATED" ? <QuickIssueAction key="action" endpoint="/api/admin/film/issues/action" idKey="issueId" id={issue.id} action="approve" label="Approve" /> : null,
+          ])} />
         )}
       </AdminCard>
     </AdminShell>

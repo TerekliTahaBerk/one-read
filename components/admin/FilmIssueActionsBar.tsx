@@ -22,6 +22,7 @@ export function FilmIssueActionsBar({
   const [dialog, setDialog] = useState<Dialog>(null);
   const [testEmail, setTestEmail] = useState(defaultTestEmail);
   const [scheduleDate, setScheduleDate] = useState(dateIso);
+  const [sendConfirmation, setSendConfirmation] = useState("");
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -61,7 +62,7 @@ export function FilmIssueActionsBar({
         <button className={danger} disabled={busy} onClick={() => setDialog("regenerate")}>Regenerate</button>
         <button className={danger} disabled={busy} onClick={() => setDialog("send-now")}>Send now</button>
       </div>
-      {msg && <p className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
+      {msg && <p role="status" aria-live="polite" className="text-[12.5px] text-admin-body font-sans">{msg}</p>}
 
       {dialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-admin-ink/30 px-4">
@@ -94,15 +95,20 @@ export function FilmIssueActionsBar({
                 className="mt-3 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-[13px] text-admin-ink"
               />
             )}
+            {dialog === "send-now" && (
+              <label className="mt-3 block text-[12px] text-admin-body">Type <strong>SEND ONEFILM NOW</strong> to confirm
+                <input value={sendConfirmation} onChange={(e) => setSendConfirmation(e.target.value)} className="mt-1 w-full rounded-lg border border-admin-line bg-white px-2.5 py-1.5 font-mono text-[13px] text-admin-ink" />
+              </label>
+            )}
             <div className="mt-5 flex justify-end gap-2">
               <button className="rounded-lg px-3 py-1.5 text-[12.5px] text-admin-body hover:text-admin-ink" disabled={busy} onClick={() => setDialog(null)}>
                 Cancel
               </button>
               <button
                 className={dialog === "send-now" || dialog === "regenerate" ? danger : btn}
-                disabled={busy}
+                disabled={busy || (dialog === "send-now" && sendConfirmation !== "SEND ONEFILM NOW")}
                 onClick={() => {
-                  if (dialog === "send-now") void post({ action: "send-now" });
+                  if (dialog === "send-now") void post({ action: "send-now", confirmation: sendConfirmation });
                   if (dialog === "send-test") void post({ action: "send-test", email: testEmail });
                   if (dialog === "regenerate") void post({ action: "regenerate" });
                   if (dialog === "schedule") void post({ action: "schedule", date: scheduleDate });

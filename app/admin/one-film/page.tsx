@@ -17,6 +17,8 @@ import { ONE_FILM_PRODUCT_KEY } from "@/lib/options";
 import { fmtWhen } from "@/lib/admin/format";
 import { getLlmStatus } from "@/lib/llm";
 import { FILM_PROMPT_VERSION } from "@/lib/film/prompts";
+import { getResendStatus } from "@/lib/resend";
+import { adminFeatureFlags } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +40,8 @@ export default async function OneFilmOverviewPage({
   const controls = (await getControls()).film;
   const cronOn = controls.cronEnabled;
   const aiOk = aiBrainWorking();
+  const resend = getResendStatus();
+  const flags = adminFeatureFlags();
 
   const nextAction = !cronOn
     ? "Turn on automatic sending when you're ready to deliver"
@@ -96,7 +100,18 @@ export default async function OneFilmOverviewPage({
       </AdminCard>
 
       <AdminCard title="Run now" subtitle="Generate or send today's note on demand" bodyClassName="p-4">
-        <ProductRunActions endpoint="/api/admin/film/issues/action" productName="OneFilm" />
+        <ProductRunActions
+          endpoint="/api/admin/film/issues/action"
+          productName="OneFilm"
+          dryRunDisabledReason={!aiOk ? "AI generation is not configured" : m.catalog.total === 0 ? "the film catalog is empty" : null}
+          liveRunDisabledReason={
+            !flags.sendActionsEnabled ? "manual sends are disabled"
+              : !resend.hasApiKey ? "email delivery is not configured"
+                : m.subscribers.eligible === 0 ? "there are no eligible subscribers"
+                  : controls.requireApproval && m.issues.approvedOrScheduled === 0 ? "no film note is approved for today"
+                    : null
+          }
+        />
       </AdminCard>
 
       <AdminCard title="Automatic runs" subtitle="The daily job that generates and sends" bodyClassName="p-4">

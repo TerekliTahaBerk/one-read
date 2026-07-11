@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import { recordAudit } from "@/lib/admin/audit";
+import { startRun, finishRun, notifyRunFailure } from "@/lib/admin/operational-runs";
+import { getControls } from "@/lib/admin/settings-store";
 import {
   approveIssue,
   approveAllReady,
@@ -121,10 +123,18 @@ export async function POST(req: Request): Promise<Response> {
       auditMeta = { email: body.email, summaryLanguage: str("summaryLanguage") };
       break;
     case "send-now":
-      result = await sendIssueNow(pickId, actor, {
-        dryRun: body.dryRun === true,
-        confirmation: str("confirmation"),
-      });
+      const dryRun = body.dryRun === true;
+      const run = await startRun({ productKey: "one-article", route: "/api/admin/issues/action:send-now", dryRun, requireApproval: (await getControls()).oneArticle.requireApproval, metadata: { pickId } });
+      try {
+        result = await sendIssueNow(pickId, actor, { dryRun, confirmation: str("confirmation") });
+        const counts = (result.result ?? {}) as Record<string, unknown>;
+        await finishRun({ id: run.id, status: result.ok ? "SUCCESS" : "FAILED", sentCount: Number(counts.sent ?? 0), skippedCount: Number(counts.skipped ?? 0), failedCount: Number(counts.failed ?? 0), error: result.error ?? null, metadata: counts as never });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "OneArticle manual send failed";
+        await finishRun({ id: run.id, status: "FAILED", error: message });
+        await notifyRunFailure({ productName: "OneArticle", route: "/api/admin/issues/action:send-now", error: message });
+        throw error;
+      }
       auditMeta = { dryRun: body.dryRun === true, confirmed: str("confirmation") === "SEND ONEARTICLE NOW", result: result.result };
       break;
     default:
