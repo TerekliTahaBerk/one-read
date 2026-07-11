@@ -5,6 +5,7 @@ import { AdminCard, AdminEmptyState } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneLingoTabs } from "@/lib/admin/nav";
 import { getLingoLessons } from "@/lib/admin/lingo-queries";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function OneLingoLessonsPage({
   const lessons = await getLingoLessons();
 
   return (
-    <AdminShell title="OneLingo lessons" subtitle="Generated segment lessons">
+    <AdminShell title="OneLingo lessons" subtitle="Every lesson prepared so far">
       <AdminTabs tabs={oneLingoTabs()} active="lessons" />
       <AdminCard>
         {lessons.length === 0 ? (
@@ -46,8 +47,8 @@ export default async function OneLingoLessonsPage({
                     </Link>
                   </td>
                   <td className="px-4 py-2 text-admin-body">{lesson.segmentKey}</td>
-                  <td className="px-4 py-2 text-admin-body">{lesson.status}</td>
-                  <td className="px-4 py-2 text-admin-body">{lesson.approvalStatus}</td>
+                  <td className="px-4 py-2"><StatusBadge value={lesson.status} /></td>
+                  <td className="px-4 py-2"><StatusBadge value={lesson.approvalStatus} /></td>
                   <td className="px-4 py-2 text-admin-body">{lesson._count.sends}</td>
                 </tr>
               ))}

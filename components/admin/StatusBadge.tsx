@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { labelFor } from "@/lib/admin/labels";
 
 /**
  * One badge for every status family in the admin: access status, email
@@ -64,12 +65,13 @@ export function StatusBadge({
 }) {
   const resolved =
     tone ?? (typeof value === "string" ? statusTone(value) : "neutral");
+  const display = typeof value === "string" ? labelFor(value) : value;
   return (
     <span
       title={title}
-      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] uppercase tracking-eyebrow whitespace-nowrap ${TONE_CLASS[resolved]}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] tracking-eyebrow whitespace-nowrap ${TONE_CLASS[resolved]}`}
     >
-      {value}
+      {display}
     </span>
   );
 }
@@ -83,15 +85,10 @@ export function EligibilityBadge({
   reason: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <StatusBadge
-        value={allowed ? "eligible" : "blocked"}
-        tone={allowed ? "good" : "muted"}
-        title={reason}
-      />
-      {!allowed && (
-        <span className="font-mono text-[10.5px] text-admin-muted">{reason}</span>
-      )}
-    </span>
+    <StatusBadge
+      value={allowed ? "eligible" : "blocked"}
+      tone={allowed ? "good" : "muted"}
+      title={reason}
+    />
   );
 }

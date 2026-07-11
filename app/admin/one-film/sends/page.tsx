@@ -4,6 +4,7 @@ import { AdminCard, AdminEmptyState } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmSends } from "@/lib/admin/film-queries";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function OneFilmSendsPage({
   const sends = await getFilmSends();
 
   return (
-    <AdminShell title="OneFilm sends" subtitle="Daily send idempotency log">
+    <AdminShell title="OneFilm sends" subtitle="Who received each film note, and who didn't">
       <AdminTabs tabs={oneFilmTabs()} active="sends" />
       <AdminCard>
         {sends.length === 0 ? (
@@ -40,7 +41,7 @@ export default async function OneFilmSendsPage({
                   <td className="px-4 py-2 text-admin-body">{send.issueDate.toISOString().slice(0, 10)}</td>
                   <td className="px-4 py-2 text-admin-ink">{send.contact.email}</td>
                   <td className="px-4 py-2 text-admin-body">{send.issue.title}</td>
-                  <td className="px-4 py-2 text-admin-body">{send.status}</td>
+                  <td className="px-4 py-2"><StatusBadge value={send.status} /></td>
                   <td className="px-4 py-2 text-admin-body">{send.skippedReason ?? send.failedReason ?? ""}</td>
                 </tr>
               ))}

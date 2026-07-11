@@ -6,6 +6,7 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
 import { loadOneArticleSubs, toSubRow } from "@/lib/admin/queries";
 import { fmtDate } from "@/lib/admin/format";
+import { labelFor } from "@/lib/admin/labels";
 import { CreateUserButton } from "@/components/admin/CreateUserButton";
 
 export const runtime = "nodejs";
@@ -62,7 +63,7 @@ export default async function AdminUsersPage({
           />
         </FilterField>
         <FilterSelect name="status" label="Access" value={f.status} options={ACCESS_OPTIONS} />
-        <FilterSelect name="email_status" label="Email" value={f.email_status} options={EMAIL_OPTIONS} />
+        <FilterSelect name="email_status" label="Delivery" value={f.email_status} options={EMAIL_OPTIONS} />
         <FilterSelect name="provider" label="Provider" value={f.provider} options={PROVIDER_OPTIONS} />
         <FilterSelect name="override" label="Override" value={f.override} options={YESNO_OPTIONS} />
         <FilterSelect name="suppressed" label="Suppressed" value={f.suppressed} options={YESNO_OPTIONS} />
@@ -80,14 +81,14 @@ export default async function AdminUsersPage({
       <AdminCard>
         <AdminTable
           head={[
-            "Email",
+            "Email address",
             "Access",
-            "Email",
+            "Delivery",
             "Provider",
             "Plan",
             "Period ends",
             "Created",
-            "Eligibility",
+            "Can receive email",
             "",
           ]}
           empty="No users match these filters."
@@ -151,7 +152,7 @@ function FilterSelect({
         <option value="">Any</option>
         {options.map((o) => (
           <option key={o} value={o}>
-            {o}
+            {["yes", "no"].includes(o) ? (o === "yes" ? "Yes" : "No") : labelFor(o)}
           </option>
         ))}
       </select>

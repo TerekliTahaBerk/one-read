@@ -35,7 +35,7 @@ export default async function AdminProductsPage({
     >
       <AdminCard>
         <AdminTable
-          head={["Product", "Status", "Public visibility", "Source", "Operational data", "Actions"]}
+          head={["Product", "Status", "Public visibility", "Subscribers from", "Summary", "Actions"]}
           rows={PRODUCTS.map((p) => [
             <span key="n" className="flex items-center gap-2 font-medium text-admin-ink">
               <span className={`h-2.5 w-2.5 rounded-full ${productDotClass(p.key)}`} />
@@ -52,9 +52,9 @@ export default async function AdminProductsPage({
               tone={p.publicVisible ? "good" : "muted"}
             />,
             p.connected ? (
-              <span key="d" className="text-admin-body">From ProductSubscription</span>
+              <span key="d" className="text-admin-body">Subscriptions</span>
             ) : (
-              <span key="d" className="text-admin-muted">External: Tally, not connected</span>
+              <span key="d" className="text-admin-muted">Waitlist (Tally)</span>
             ),
             p.key === "one-read" ? (
               <span key="c">{`${oneRead.activeOrTrialing} active/trialing · ${oneRead.pendingCheckout} pending checkout · ${oneRead.total} total`}</span>

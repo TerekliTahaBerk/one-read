@@ -5,6 +5,7 @@ import { AdminCard, AdminEmptyState } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { oneFilmTabs } from "@/lib/admin/nav";
 import { getFilmIssues } from "@/lib/admin/film-queries";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function OneFilmIssuesPage({
   const issues = await getFilmIssues();
 
   return (
-    <AdminShell title="OneFilm notes" subtitle="Generated segment film notes">
+    <AdminShell title="OneFilm notes" subtitle="Every film note prepared so far">
       <AdminTabs tabs={oneFilmTabs()} active="issues" />
       <AdminCard>
         {issues.length === 0 ? (
@@ -48,8 +49,8 @@ export default async function OneFilmIssuesPage({
                   </td>
                   <td className="px-4 py-2 text-admin-body">{issue.filmTitle ?? "—"}</td>
                   <td className="px-4 py-2 text-admin-body">{issue.segmentKey}</td>
-                  <td className="px-4 py-2 text-admin-body">{issue.status}</td>
-                  <td className="px-4 py-2 text-admin-body">{issue.approvalStatus}</td>
+                  <td className="px-4 py-2"><StatusBadge value={issue.status} /></td>
+                  <td className="px-4 py-2"><StatusBadge value={issue.approvalStatus} /></td>
                   <td className="px-4 py-2 text-admin-body">{issue._count.sends}</td>
                 </tr>
               ))}

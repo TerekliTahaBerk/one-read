@@ -10,6 +10,7 @@ import { loadIssues } from "@/lib/admin/issues-read";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime, todayUtc } from "@/lib/admin/format";
+import { labelFor } from "@/lib/admin/labels";
 import { getOneArticleIssueReadiness } from "@/lib/admin/one-article-ops";
 
 export const runtime = "nodejs";
@@ -63,7 +64,7 @@ export default async function IssuesListPage({
           <select name="approval" defaultValue={searchParams.approval ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
             <option value="">Any</option>
             {["PENDING", "APPROVED", "SCHEDULED", "CANCELED"].map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{labelFor(s)}</option>
             ))}
           </select>
         </label>
@@ -99,16 +100,16 @@ export default async function IssuesListPage({
             head={[
               "Date",
               "Topic",
-              "Src lang",
+              "Source language",
               "Article",
-              "Editorial",
+              "Status",
               "Approval",
               "Scheduled",
-              "Langs",
-              "Delivery records",
-              "Sent",
-              "Skip",
-              "Fail",
+              "Languages",
+              "Recipients",
+              "Delivered",
+              "Skipped",
+              "Failed",
               "",
             ]}
             empty="No issues prepared for this day yet."
@@ -121,7 +122,7 @@ export default async function IssuesListPage({
               <StatusBadge key="ap" value={i.approvalStatus} />,
               <span key="sc" className="text-admin-body">{fmtDateTime(i.scheduledFor)}</span>,
               <span key="l" className="text-admin-body">{i.summaryLanguages.join(", ") || "—"}</span>,
-              <span key="rc" title="From DailySend rows for this issue">{i.recipientCount}</span>,
+              <span key="rc" title="Recipients for this issue">{i.recipientCount}</span>,
               i.sentCount,
               i.skippedCount,
               <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,

@@ -4,9 +4,10 @@ import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard, DefList } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { Details } from "@/components/admin/Details";
 import { getLaunchReadiness } from "@/lib/launch-readiness";
 import { getLlmStatus } from "@/lib/llm";
-import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime } from "@/lib/admin/format";
+import { SEND_HOUR_LOCAL, SEND_TIMEZONE, fmtDateTime, fmtAgo } from "@/lib/admin/format";
 import { isApprovalRequired } from "@/lib/admin/issues-config";
 import { WAITLIST_FORM_URL } from "@/lib/options";
 import {
@@ -33,6 +34,7 @@ import {
   getOneArticleAiStatus,
   oneArticleCronEnabled,
   oneArticleDryRunForced,
+  resendConfigured,
 } from "@/lib/admin/one-article-ops";
 import { oneReadBillingConfigured } from "@/lib/oneread/config";
 import { oneArticleSendDays, oneFilmSendDays } from "@/lib/schedule";
@@ -90,82 +92,120 @@ export default async function SettingsPage({
   const flags = adminFeatureFlags();
   const tone = (s: string): "good" | "muted" => (s === "pass" ? "good" : "muted");
 
-  // Operational warnings — surfaced plainly, never alarmist.
+  // Plain-language notices — actionable, never alarmist, no env-var names.
   const warnings: string[] = [];
   if (approvalRequired && approvedNext === 0) {
-    warnings.push(
-      `No approved issue for the next scheduled send (${nextSendDate.toISOString().slice(0, 10)}). With approval required, nothing will be sent.`,
-    );
+    warnings.push("No OneArticle issue is approved for the next scheduled send. With approval on, nothing will go out until you approve one.");
   }
   if (process.env.POLAR_SERVER === "production" && process.env.NODE_ENV !== "production") {
-    warnings.push("Polar is set to production while the app is not in production mode.");
+    warnings.push("Payments are pointed at the live/production account while the app itself isn't in production mode.");
   }
   if (process.env.BILLING_PROVIDER === "polar" && !process.env.POLAR_WEBHOOK_SECRET) {
-    warnings.push("Polar is the billing provider but POLAR_WEBHOOK_SECRET is not set — webhooks cannot be verified.");
+    warnings.push("Payment webhooks can't be verified yet — the signing secret is missing.");
   }
   if (overrideCount > 0) {
-    warnings.push(`${overrideCount} subscription(s) have an admin override and are eligible regardless of payment.`);
+    warnings.push(`${overrideCount} subscription(s) have manual access and receive email regardless of payment.`);
   }
   if (!adminLoginConfigured()) {
-    warnings.push("Admin login is not fully configured. Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and ADMIN_SESSION_SECRET.");
+    warnings.push("Admin login isn't fully set up yet.");
   }
   if (process.env.ADMIN_TOKEN === "dev-admin-local-7Qk2") {
-    warnings.push("Dev admin token detected — replace ADMIN_TOKEN before production.");
+    warnings.push("A development admin token is still in use — set a strong value before launch.");
   }
   if (process.env.ADMIN_PASSWORD === "taha123") {
-    warnings.push("Development password in use. Replace ADMIN_PASSWORD before production.");
+    warnings.push("A development admin password is still in use — set a strong value before launch.");
   }
   if (!flags.mutationsEnabled) {
-    warnings.push("ADMIN_MUTATIONS_ENABLED is false — user/admin mutations are hidden or blocked.");
+    warnings.push("Admin edits are turned off right now.");
   }
   if (!flags.sendActionsEnabled) {
-    warnings.push("ADMIN_SEND_ACTIONS_ENABLED is false — issue send actions are hidden or blocked.");
+    warnings.push("Manual send actions are turned off right now.");
   }
   if (oneArticleAi.blocker) {
-    warnings.push(`${oneArticleAi.statusLabel} — ${oneArticleAi.blocker}.`);
+    warnings.push("The AI brain needs setup before it can generate content.");
   }
   if (!oneArticleCronEnabled()) {
-    warnings.push("ONE_ARTICLE_CRON_ENABLED is false — scheduled OneArticle emails will not send.");
+    warnings.push("OneArticle automatic sending is off — scheduled emails won't send.");
   }
   if (oneArticleDryRunForced()) {
-    warnings.push("ONE_ARTICLE_DRY_RUN is true — OneArticle cron will not send real emails.");
+    warnings.push("OneArticle is in test mode — the daily run won't send real emails.");
   }
   if (!emailVerificationSecretConfigured()) {
-    warnings.push("EMAIL_VERIFICATION_SECRET is not set — OneArticle and OneLingo email verification will be unavailable.");
+    warnings.push("Email verification isn't set up yet — new signups can't confirm their address.");
   } else if (!verificationEmailConfigured()) {
-    warnings.push("Email verification is configured but RESEND_API_KEY is missing — codes are logged to the server console in development only.");
+    warnings.push("Email verification is set up but email sending is missing — codes only show in server logs.");
   }
   if (!lingoBillingConfigured()) {
-    warnings.push("POLAR_ONE_LINGO_PRODUCT_ID is missing — OneLingo management checkout is disabled.");
+    warnings.push("OneLingo checkout is disabled until its payment product is set.");
   }
   if (!lingoCronEnabled()) {
-    warnings.push("ONELINGO_CRON_ENABLED is not true — the OneLingo cron route will refuse scheduled runs.");
+    warnings.push("OneLingo automatic sending is off.");
   }
   if (!filmBillingConfigured()) {
-    warnings.push("POLAR_ONEFILM_PRODUCT_ID is missing — OneFilm management checkout is disabled.");
+    warnings.push("OneFilm checkout is disabled until its payment product is set.");
   }
   if (!filmCronEnabled()) {
-    warnings.push("ONEFILM_CRON_ENABLED is not true — the OneFilm cron route will refuse scheduled runs.");
+    warnings.push("OneFilm automatic sending is off.");
   }
   if (!oneReadBillingConfigured()) {
-    warnings.push("POLAR_ONEREAD_PRODUCT_ID is missing — the OneRead umbrella checkout is disabled until it's set.");
+    warnings.push("OneRead bundle checkout is disabled until its payment product is set.");
   }
-  warnings.push("Pending-checkout users are never eligible for delivery — this is by design.");
+  warnings.push("Reminder: people mid-signup or mid-checkout never receive email until they finish — this is intentional.");
 
   const verifyCfg = verificationConfig();
 
+  const setupRows: [string, boolean][] = [
+    ["Email sending", resendConfigured()],
+    ["AI brain (content generation)", oneArticleAi.productionReady],
+    ["Payments", oneReadBillingConfigured()],
+    ["Email verification", emailVerificationSecretConfigured() && verificationEmailConfigured()],
+    [
+      "Admin security",
+      adminLoginConfigured() &&
+        process.env.ADMIN_TOKEN !== "dev-admin-local-7Qk2" &&
+        process.env.ADMIN_PASSWORD !== "taha123",
+    ],
+  ];
+
+  const sendingRows: [string, boolean][] = [
+    ["OneArticle automatic sending", oneArticleCronEnabled()],
+    ["OneFilm automatic sending", filmCronEnabled()],
+    ["OneLingo automatic sending", lingoCronEnabled()],
+  ];
+
   return (
-    <AdminShell title="Settings" subtitle="Configuration & launch readiness">
-      <AdminCard title="Notices">
-        <ul className="divide-y divide-admin-line/70">
-          {warnings.map((w, i) => (
-            <li key={i} className="px-4 py-2.5 text-[12.5px] text-admin-ink/90 font-sans">
-              {w}
-            </li>
-          ))}
-        </ul>
+    <AdminShell title="Settings" subtitle="What's connected and what needs a look">
+      <AdminCard title="Setup" subtitle="Each part of the system, in plain terms" bodyClassName="p-4">
+        <DefList
+          rows={setupRows.map(([label, ok]) => [
+            label,
+            <StatusBadge key="v" value={ok ? "Connected" : "Needs setup"} tone={ok ? "good" : "wait"} />,
+          ])}
+        />
       </AdminCard>
 
+      <AdminCard title="Automatic sending" subtitle="Every delivery goes out at 07:00 Europe/Istanbul" bodyClassName="p-4">
+        <DefList
+          rows={sendingRows.map(([label, on]) => [
+            label,
+            <StatusBadge key="v" value={on ? "On" : "Off"} tone={on ? "good" : "muted"} />,
+          ])}
+        />
+      </AdminCard>
+
+      {warnings.length > 0 && (
+        <AdminCard title="Needs a look">
+          <ul className="divide-y divide-admin-line/70">
+            {warnings.map((w, i) => (
+              <li key={i} className="px-4 py-2.5 text-[12.5px] text-admin-ink/90 font-sans">
+                {w}
+              </li>
+            ))}
+          </ul>
+        </AdminCard>
+      )}
+
+      <Details summary="Technical details — environment variables, schedule, launch readiness">
       <AdminCard title="Operational config">
         <DefList
           rows={[
@@ -196,7 +236,7 @@ export default async function SettingsPage({
               />,
             ],
             ["Admin override subscriptions", String(overrideCount)],
-            ["Last successful send recorded", fmtDateTime(lastSend?.sentAt ?? null)],
+            ["Last successful send recorded", `${fmtDateTime(lastSend?.sentAt ?? null)} (${fmtAgo(lastSend?.sentAt ?? null)})`],
             [
               "Last failed send",
               lastFailed ? `${fmtDateTime(lastFailed.createdAt)} — ${lastFailed.error ?? "No error text stored"}` : "No failed sends recorded yet",
@@ -372,6 +412,7 @@ export default async function SettingsPage({
         configured. Update them through your hosting provider&apos;s environment
         settings.
       </p>
+      </Details>
     </AdminShell>
   );
 }

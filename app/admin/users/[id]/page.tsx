@@ -4,6 +4,7 @@ import { guardAdminPage } from "@/lib/admin/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard, DefList } from "@/components/admin/AdminCard";
+import { Details } from "@/components/admin/Details";
 import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
 import { evaluateEligibility } from "@/lib/subscriptions";
@@ -121,13 +122,11 @@ export default async function AdminUserDetailPage({
           <DefList
             rows={[
               ["Email", sub.contact.email],
-              ["Contact ID", <MonoShort key="c" value={sub.contact.id} />],
               ["Created", fmtDateTime(sub.contact.createdAt)],
               ["Updated", fmtDateTime(sub.contact.updatedAt)],
               ["Email delivery", <StatusBadge key="e" value={sub.emailDeliveryStatus} />],
               ["Email verified", lastVerified?.consumedAt ? fmtDateTime(lastVerified.consumedAt) : "Not verified"],
               ["Last verification request", fmtDateTime(lastVerificationRequest?.createdAt ?? null)],
-              ["Unsubscribe token", <MonoShort key="u" value={sub.unsubscribeToken} />],
             ]}
           />
         </AdminCard>
@@ -137,8 +136,8 @@ export default async function AdminUserDetailPage({
             <EligibilityBadge allowed={elig.allowed} reason={elig.reason} />
             <p className="mt-3 text-[12.5px] text-admin-body font-sans">
               {elig.allowed
-                ? "This subscriber will receive the daily OneArticle email when an issue matches their segment."
-                : "This subscriber is not receiving emails. The reason above is the canonical verdict from canReceiveOneArticleEmail."}
+                ? "This subscriber will receive the daily OneArticle email when an issue matches their interests."
+                : "This subscriber is not receiving emails right now. The badge above shows why."}
             </p>
           </div>
         </AdminCard>
@@ -177,9 +176,6 @@ export default async function AdminUserDetailPage({
             ["Admin note", sub.adminNote ?? "—"],
             ["Payment provider", sub.paymentProvider ?? "—"],
             ["Plan", sub.plan ?? "—"],
-            ["Provider customer ID", <MonoShort key="c" value={sub.providerCustomerId} />],
-            ["Provider subscription ID", <MonoShort key="s2" value={sub.providerSubscriptionId} />],
-            ["Checkout session ID", <MonoShort key="ch" value={sub.providerCheckoutSessionId} />],
             ["Paid at", fmtDateTime(sub.paidAt)],
             ["Trial started", fmtDateTime(sub.trialStartedAt)],
             ["Trial ends", fmtDateTime(sub.trialEndsAt)],
@@ -264,7 +260,7 @@ export default async function AdminUserDetailPage({
         />
       </AdminCard>
 
-      <AdminCard title="Audit history" subtitle="From AdminAuditLog">
+      <AdminCard title="Audit history" subtitle="Recent admin actions on this subscriber">
         <AdminTable
           head={["Date", "Action", "Actor", "Metadata"]}
           empty="No audit events for this user yet."
@@ -278,6 +274,18 @@ export default async function AdminUserDetailPage({
           ])}
         />
       </AdminCard>
+
+      <Details summary="Technical details — internal IDs">
+        <DefList
+          rows={[
+            ["Contact ID", <MonoShort key="c" value={sub.contact.id} />],
+            ["Unsubscribe token", <MonoShort key="u" value={sub.unsubscribeToken} />],
+            ["Provider customer ID", <MonoShort key="pc" value={sub.providerCustomerId} />],
+            ["Provider subscription ID", <MonoShort key="ps" value={sub.providerSubscriptionId} />],
+            ["Checkout session ID", <MonoShort key="ch" value={sub.providerCheckoutSessionId} />],
+          ]}
+        />
+      </Details>
     </AdminShell>
   );
 }

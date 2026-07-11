@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime } from "@/lib/admin/format";
+import { labelFor } from "@/lib/admin/labels";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ export default async function SendsPage({
           <select name="status" defaultValue={searchParams.status ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
             <option value="">Any</option>
             {["QUEUED", "SENT", "SKIPPED", "FAILED"].map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{labelFor(s)}</option>
             ))}
           </select>
         </label>
@@ -65,7 +66,7 @@ export default async function SendsPage({
 
       <AdminCard>
         <AdminTable
-          head={["Date", "Email", "Status", "Topic", "Lang", "Score", "Sent at", "Message ID", "Reason / error"]}
+          head={["Date", "Email", "Status", "Topic", "Language", "Score", "Sent at", "Message ID", "Reason / error"]}
           empty="No send records match these filters."
           rows={sends.map((s) => [
             <span key="d" className="text-admin-body">{fmtDate(s.date)}</span>,
