@@ -107,6 +107,7 @@ export type {
   StructuredSummary,
   SummarizeRequest,
 } from "./types";
+export { LlmRetryableError } from "./types";
 
 /** Test seam: lets unit tests reset the cached provider between cases. */
 export function __resetLlmProviderForTest() {

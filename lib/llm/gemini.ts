@@ -35,6 +35,7 @@ import type {
   StructuredSummary,
   SummarizeRequest,
 } from "./types";
+import { LlmRetryableError } from "./types";
 
 /** Loose schema for scoring — real validation stays in parseStructuredScore. */
 const LooseObjectSchema = z.record(z.string(), z.unknown());
@@ -173,6 +174,9 @@ export function createGeminiProvider(): LlmProvider {
       );
       if (!result.ok) {
         console.error(`[llm/gemini] score failed: ${result.kind} — ${result.message}`);
+        if (result.retryable) {
+          throw new LlmRetryableError(result.message, result.kind);
+        }
         return null;
       }
       return parseStructuredScore(result.data, { hintedTopic: req.hintedTopic });

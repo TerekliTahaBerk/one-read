@@ -31,6 +31,9 @@ interface FeedItem {
 const HTTP_TIMEOUT_MS = 12_000;
 const MAX_FEED_BYTES = 5_000_000;
 const MAX_AGE_DAYS = 7;
+// Known edge-blocked feeds are excluded even if an older seeded DB row is
+// still active. Keep this narrow so normal admin source toggles still work.
+const BLOCKED_SOURCE_SLUGS = new Set(["sarkac"]);
 
 const USER_AGENT =
   "OneReadBot/1.0 (+https://oneread.app/about/bot; editorial summarizer; contact: hello@oneread.app)";
@@ -90,7 +93,9 @@ export const rssSource: IngestionSource = {
 async function loadEnabledSources(): Promise<readonly SourceConfig[]> {
   // Prefer DB rows so admins can toggle without a deploy.
   try {
-    const rows = await prisma.source.findMany({ where: { active: true } });
+    const rows = await prisma.source.findMany({
+      where: { active: true, slug: { notIn: [...BLOCKED_SOURCE_SLUGS] } },
+    });
     if (rows.length > 0) {
       return rows.map((r) => ({
         slug: r.slug,
@@ -110,7 +115,7 @@ async function loadEnabledSources(): Promise<readonly SourceConfig[]> {
       err instanceof Error ? err.message : err,
     );
   }
-  return ACTIVE_SEED_SOURCES;
+  return ACTIVE_SEED_SOURCES.filter((source) => !BLOCKED_SOURCE_SLUGS.has(source.slug));
 }
 
 function toCandidate(

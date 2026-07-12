@@ -21,7 +21,7 @@ import {
 } from "./thresholds";
 import { ALL_TOPIC_SLUGS } from "./topics";
 import type { Article } from "@prisma/client";
-import type { LlmProvider, StructuredScore } from "./llm";
+import { LlmRetryableError, type LlmProvider, type StructuredScore } from "./llm";
 
 export interface ScoreStageResult {
   total: number;
@@ -178,6 +178,26 @@ export async function extractAndScorePendingArticles(opts: {
       if (willReject) rejected++;
       else scored++;
     } catch (err) {
+      if (err instanceof LlmRetryableError) {
+        console.warn(
+          `[scorer] temporary LLM ${err.kind}; leaving "${article.url}" PENDING and pausing this scoring run.`,
+        );
+        try {
+          await prisma.article.update({
+            where: { id: article.id },
+            data: {
+              scoringStatus: "PENDING",
+              rejectionReason: `temporary LLM failure (${err.kind}); retry next run`,
+            },
+          });
+        } catch {
+          /* best-effort; the row is PENDING already */
+        }
+        failed++;
+        // A provider-wide throttle will affect every following article. Stop
+        // here instead of burning the retry budget and flooding logs.
+        break;
+      }
       console.error(
         `[scorer] article "${article.url}" failed:`,
         err instanceof Error ? err.message : err,

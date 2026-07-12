@@ -314,7 +314,8 @@ export const SEED_SOURCES: readonly SourceConfig[] = [
     defaultTopic: "science",
     defaultSubtopics: ["research", "discoveries"],
     language: "Turkish",
-    notes: "TR science, written by academics. Verified 2026-06-16 (RSS, 50 items).",
+    active: false,
+    notes: "Feed returns HTTP 403 to server-side bots (verified 2026-07-12); leave disabled until access is restored.",
   },
   {
     slug: "fikir-turu",

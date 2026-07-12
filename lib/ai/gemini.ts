@@ -21,6 +21,7 @@ import type { z } from "zod";
 import { failureFromError, aiFailure, sanitize } from "./errors";
 import { repairOrRetryInvalidJson } from "./json";
 import type {
+  AiErrorKind,
   AiUsage,
   GeminiCallOptions,
   GeminiJsonOutcome,
@@ -240,7 +241,7 @@ export async function generateTextWithGemini(
     }
     if (!lastFailure.retryable) break;
     attempt++;
-    if (attempt <= maxRetries) await backoff(attempt);
+    if (attempt <= maxRetries) await backoff(attempt, lastFailure.kind);
   }
   return lastFailure;
 }
@@ -334,7 +335,7 @@ async function callJsonOnce(
     }
     if (!lastFailure.retryable) break;
     attempt++;
-    if (attempt <= maxRetries) await backoff(attempt);
+    if (attempt <= maxRetries) await backoff(attempt, lastFailure.kind);
   }
   return lastFailure;
 }
@@ -347,10 +348,12 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-async function backoff(attempt: number): Promise<void> {
-  // Exponential backoff with jitter: ~0.5s, 1s, 2s ...
-  const base = 500 * 2 ** (attempt - 1);
-  const jitter = Math.random() * 250;
+async function backoff(attempt: number, kind: AiErrorKind): Promise<void> {
+  // Rate-limit windows are materially longer than network blips. Give 429s
+  // ~5s then ~10s (plus jitter); other transient errors retain fast retries.
+  const initial = kind === "rate_limit" ? 5_000 : 500;
+  const base = Math.min(30_000, initial * 2 ** (attempt - 1));
+  const jitter = Math.random() * (kind === "rate_limit" ? 1_000 : 250);
   await new Promise((r) => setTimeout(r, base + jitter));
 }
 

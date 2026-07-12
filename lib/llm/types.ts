@@ -10,6 +10,19 @@
  */
 
 import type { TopicSlug } from "../topics";
+import type { AiErrorKind } from "../ai/types";
+
+/** A provider outage/throttle that must not be mistaken for an editorial
+ * rejection. The scorer keeps the article pending and retries next run. */
+export class LlmRetryableError extends Error {
+  constructor(
+    message: string,
+    public readonly kind: AiErrorKind,
+  ) {
+    super(message);
+    this.name = "LlmRetryableError";
+  }
+}
 
 /* ----------------------------------------------------------------------- */
 /* Summary schema                                                          */
