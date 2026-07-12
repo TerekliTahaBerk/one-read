@@ -29,13 +29,13 @@ interface FeedItem {
 }
 
 const HTTP_TIMEOUT_MS = 12_000;
+const MAX_FEED_BYTES = 5_000_000;
 const MAX_AGE_DAYS = 7;
 
 const USER_AGENT =
   "OneReadBot/1.0 (+https://oneread.app/about/bot; editorial summarizer; contact: hello@oneread.app)";
 
 const parser = new Parser<{ language?: string }, FeedItem>({
-  timeout: HTTP_TIMEOUT_MS,
   headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml,application/atom+xml,application/xml,text/xml" },
 });
 
@@ -57,7 +57,7 @@ export const rssSource: IngestionSource = {
     // and we want clean per-source error logs without bursts.
     for (const src of enabled) {
       try {
-        const feed = await parser.parseURL(src.feedUrl);
+        const feed = await fetchFeed(src.feedUrl);
 
         let kept = 0;
         for (const item of feed.items ?? []) {
@@ -164,23 +164,79 @@ function parseDate(s: string | undefined): Date | null {
 }
 
 async function markSourceOk(slug: string): Promise<void> {
+  // updateMany deliberately treats a concurrently deleted/fallback seed row
+  // as a no-op. `update` throws P2025 (and Prisma logs it before our catch).
   try {
-    await prisma.source.update({
+    await prisma.source.updateMany({
       where: { slug },
       data: { lastFetchedAt: new Date(), lastError: null },
     });
   } catch {
-    /* row may not exist yet — fine. */
+    // Observability writes must never turn a successfully fetched feed into
+    // an ingestion failure (for example during a transient DB outage).
   }
 }
 
 async function markSourceError(slug: string, msg: string): Promise<void> {
   try {
-    await prisma.source.update({
+    await prisma.source.updateMany({
       where: { slug },
       data: { lastFetchedAt: new Date(), lastError: msg.slice(0, 500) },
     });
   } catch {
-    /* row may not exist yet — fine. */
+    // The original feed error was already logged; do not mask it with a
+    // secondary failure while persisting diagnostics.
   }
+}
+
+/** Fetch separately from rss-parser's legacy parseURL implementation, which
+ * uses Node's deprecated `url.parse()`. This also gives feeds explicit HTTP
+ * status and response-size handling. */
+async function fetchFeed(feedUrl: string) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(feedUrl, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "application/rss+xml,application/atom+xml,application/xml,text/xml",
+      },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const declaredSize = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredSize) && declaredSize > MAX_FEED_BYTES) {
+      throw new Error(`feed response too large (${declaredSize} bytes)`);
+    }
+
+    const body = await readTextWithCap(response, MAX_FEED_BYTES);
+    if (body === null) throw new Error(`feed response exceeds ${MAX_FEED_BYTES} bytes`);
+    return parser.parseString(body);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readTextWithCap(response: Response, maxBytes: number): Promise<string | null> {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    received += value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
 }

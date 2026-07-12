@@ -11,7 +11,7 @@
  * `MIN_EXTRACTION_CONFIDENCE` are downgraded but not deleted.
  */
 
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import {
   MAX_CLEANED_TEXT_LENGTH,
@@ -70,7 +70,11 @@ export async function extractArticle(url: string): Promise<ExtractionResult> {
     // markers, we skip extraction rather than store half-content.
     if (looksPaywalled(html)) return failure("looks paywalled");
 
-    const dom = new JSDOM(html, { url });
+    // Readability only needs the DOM tree. Page CSS is never applied, so keep
+    // jsdom's CSS parser diagnostics out of production logs. Modern sites
+    // commonly contain nesting/@media syntax unsupported by jsdom's parser.
+    const virtualConsole = new VirtualConsole();
+    const dom = new JSDOM(html, { url, virtualConsole });
     const reader = new Readability(dom.window.document);
     const parsed = reader.parse();
 
