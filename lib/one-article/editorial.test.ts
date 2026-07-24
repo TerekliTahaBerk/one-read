@@ -2,14 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   editorialDeliveryIdempotencyKey,
   resolveEditorialIssueDeliveryStatus,
-  validateEditorialIssue,
 } from "./editorial";
+import {
+  editorialReadinessChecks,
+  validateEditorialDraft,
+  validateEditorialIssue,
+} from "./editorial-validation";
 
 const valid = {
   readingLanguage: "Spanish",
   subject: "Una lectura para hoy",
   headline: "Una idea que merece tu tiempo",
-  bodyText: "Texto editorial.",
+  bodyText: Array.from({ length: 120 }, (_, index) => `palabra${index}`).join(" "),
+  sourceTitle: "El artículo original",
   sourceUrl: "https://example.com/read",
 };
 
@@ -34,8 +39,29 @@ describe("validateEditorialIssue", () => {
   it("requires the editorial fields used by the dispatcher", () => {
     expect(validateEditorialIssue({ ...valid, bodyText: "" })).toEqual({
       ok: false,
-      error: "body_required",
+      error: "body_too_short",
     });
+    expect(validateEditorialIssue({ ...valid, sourceTitle: "" })).toEqual({
+      ok: false,
+      error: "source_title_required",
+    });
+  });
+
+  it("allows incomplete drafts while keeping publishing gated", () => {
+    const draft = {
+      readingLanguage: "English",
+      subject: "",
+      headline: "",
+      bodyText: "",
+      sourceTitle: "",
+      sourceUrl: "",
+    };
+    expect(validateEditorialDraft(draft)).toEqual({ ok: true });
+    expect(validateEditorialIssue(draft)).toEqual({
+      ok: false,
+      error: "subject_required",
+    });
+    expect(editorialReadinessChecks(draft).every((check) => !check.passed)).toBe(true);
   });
 
   it("keeps exhausted deliveries visible as failures", () => {

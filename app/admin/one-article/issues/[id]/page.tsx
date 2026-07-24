@@ -9,6 +9,7 @@ import { EditorialIssueEditor } from "@/components/admin/EditorialIssueEditor";
 import { prisma } from "@/lib/prisma";
 import { countEligibleEditorialRecipients } from "@/lib/one-article/editorial";
 import { fmtDateTime } from "@/lib/admin/format";
+import { SUMMARY_LANGUAGES } from "@/lib/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,14 +34,21 @@ export default async function EditorialIssueDetailPage({
     },
   });
   if (!issue) notFound();
-  const [eligible, deliveryCounts] = await Promise.all([
-    countEligibleEditorialRecipients(issue.readingLanguage),
+  const [audienceRows, deliveryCounts] = await Promise.all([
+    Promise.all(
+      SUMMARY_LANGUAGES.map(async (language) => [
+        language,
+        await countEligibleEditorialRecipients(language),
+      ] as const),
+    ),
     prisma.oneArticleDelivery.groupBy({
       by: ["status"],
       where: { issueId: issue.id },
       _count: { _all: true },
     }),
   ]);
+  const audienceByLanguage = Object.fromEntries(audienceRows);
+  const eligible = audienceByLanguage[issue.readingLanguage] ?? 0;
   const deliveryCount = (status: string) =>
     deliveryCounts.find((row) => row.status === status)?._count._all ?? 0;
   const sent = deliveryCount("SENT");
@@ -48,7 +56,7 @@ export default async function EditorialIssueDetailPage({
   const skipped = deliveryCount("SKIPPED");
   return (
     <AdminShell
-      title={issue.headline}
+      title={issue.headline || "Untitled edition"}
       subtitle={`${issue.readingLanguage} · ${issue.status}`}
       actions={<Link href="/admin/one-article/issues" className="text-[13px] text-admin-body">← All editions</Link>}
     >
@@ -62,8 +70,8 @@ export default async function EditorialIssueDetailPage({
           <MetricCard label="Scheduled" value={fmtDateTime(issue.scheduledFor)} />
         </MetricGrid>
       </AdminCard>
-      <AdminCard title="Editor" subtitle={`Version ${issue.version} · updated ${fmtDateTime(issue.updatedAt)}`} bodyClassName="p-4">
-        <EditorialIssueEditor issue={{
+      <AdminCard title="Editor" subtitle={`Version ${issue.version} · updated ${fmtDateTime(issue.updatedAt)}`} bodyClassName="p-4" containerClassName="overflow-visible">
+        <EditorialIssueEditor audienceByLanguage={audienceByLanguage} issue={{
           id: issue.id,
           version: issue.version,
           status: issue.status,

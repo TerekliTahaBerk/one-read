@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getControls } from "@/lib/admin/settings-store";
-import { finishOperationalRun, startOperationalRun } from "@/lib/admin/one-article-ops";
-import { notifyRunFailure } from "@/lib/admin/operational-runs";
+import { finishRun, notifyRunFailure, startRun } from "@/lib/admin/operational-runs";
 import { recordAudit } from "@/lib/admin/audit";
 import { dispatchDueEditorialIssues } from "@/lib/one-article/editorial";
 import { getResendStatus } from "@/lib/resend";
+import { ONE_ARTICLE_PRODUCT_KEY } from "@/lib/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,18 +22,19 @@ async function handler(request: Request): Promise<Response> {
   }
 
   const controls = (await getControls()).oneArticle;
-  const run = await startOperationalRun({
+  const run = await startRun({
+    productKey: ONE_ARTICLE_PRODUCT_KEY,
     route: "/api/cron/daily",
     dryRun: false,
     requireApproval: true,
     metadata: { mode: "manual-editorial-dispatch", cronEnabled: controls.cronEnabled },
   });
   if (!controls.cronEnabled) {
-    await finishOperationalRun({ id: run.id, status: "SKIPPED", error: "cron_disabled" });
+    await finishRun({ id: run.id, status: "SKIPPED", error: "cron_disabled" });
     return NextResponse.json({ ok: true, skipped: true, reason: "cron_disabled" });
   }
   if (controls.dryRun) {
-    await finishOperationalRun({ id: run.id, status: "SKIPPED", error: "dry_run_enabled" });
+    await finishRun({ id: run.id, status: "SKIPPED", error: "dry_run_enabled" });
     return NextResponse.json({ ok: true, skipped: true, reason: "dry_run_enabled" });
   }
 
@@ -42,7 +43,7 @@ async function handler(request: Request): Promise<Response> {
       throw new Error("RESEND_API_KEY is not configured");
     }
     const result = await dispatchDueEditorialIssues();
-    await finishOperationalRun({
+    await finishRun({
       id: run.id,
       status: "SUCCESS",
       generatedCount: 0,
@@ -61,7 +62,7 @@ async function handler(request: Request): Promise<Response> {
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "editorial_dispatch_failed";
-    await finishOperationalRun({ id: run.id, status: "FAILED", error: message });
+    await finishRun({ id: run.id, status: "FAILED", error: message });
     await notifyRunFailure({
       productName: "OneArticle",
       route: "/api/cron/daily",

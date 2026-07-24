@@ -13,6 +13,7 @@ import {
   type EditorialIssueInput,
 } from "@/lib/one-article/editorial";
 import { renderEditorialEmail } from "@/lib/one-article/editorial-email";
+import { validateEditorialIssue } from "@/lib/one-article/editorial-validation";
 import { getResendStatus, sendDailyEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -70,6 +71,8 @@ export async function POST(request: Request): Promise<Response> {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("invalid_email");
         if (!getResendStatus().hasApiKey) throw new Error("email_delivery_not_configured");
         issue = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issueId } });
+        const validation = validateEditorialIssue(issue);
+        if (!validation.ok) throw new Error(validation.error);
         const base = (process.env.PUBLIC_BASE_URL || "https://oneread.app").replace(/\/$/, "");
         const rendered = renderEditorialEmail(issue, {
           unsubscribe: `${base}/unsubscribe?preview=1`,

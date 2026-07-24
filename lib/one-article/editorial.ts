@@ -4,6 +4,11 @@ import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
 import { renderEditorialEmail } from "./editorial-email";
 import { sendDailyEmail } from "@/lib/resend";
+import {
+  validateEditorialDraft,
+  validateEditorialIssue,
+  type EditorialContentInput,
+} from "./editorial-validation";
 
 export const EDITORIAL_LANGUAGES = SUMMARY_LANGUAGES;
 export const EDITORIAL_ISSUE_STATUSES = [
@@ -19,41 +24,13 @@ export const EDITORIAL_ISSUE_STATUSES = [
 
 export type EditorialIssueStatus = (typeof EDITORIAL_ISSUE_STATUSES)[number];
 
-export interface EditorialIssueInput {
-  readingLanguage: string;
-  subject: string;
-  previewText?: string | null;
-  headline: string;
-  bodyText: string;
-  sourceTitle?: string | null;
-  sourceName?: string | null;
-  sourceUrl?: string | null;
-  ctaLabel?: string | null;
-  adminNotes?: string | null;
-}
-
-export function validateEditorialIssue(
-  input: EditorialIssueInput,
-): { ok: true } | { ok: false; error: string } {
-  if (!(EDITORIAL_LANGUAGES as readonly string[]).includes(input.readingLanguage)) {
-    return { ok: false, error: "invalid_reading_language" };
-  }
-  if (!input.subject.trim()) return { ok: false, error: "subject_required" };
-  if (!input.headline.trim()) return { ok: false, error: "headline_required" };
-  if (!input.bodyText.trim()) return { ok: false, error: "body_required" };
-  if (input.subject.trim().length > 160) return { ok: false, error: "subject_too_long" };
-  if ((input.previewText ?? "").trim().length > 240) return { ok: false, error: "preview_too_long" };
-  if (input.sourceUrl && !safeHttpUrl(input.sourceUrl)) {
-    return { ok: false, error: "invalid_source_url" };
-  }
-  return { ok: true };
-}
+export type EditorialIssueInput = EditorialContentInput;
 
 export async function createEditorialIssue(
   input: EditorialIssueInput,
   actor: string,
 ): Promise<OneArticleIssue> {
-  const validation = validateEditorialIssue(input);
+  const validation = validateEditorialDraft(input);
   if (!validation.ok) throw new Error(validation.error);
   return prisma.oneArticleIssue.create({
     data: normalizedIssueData(input, actor),
@@ -66,7 +43,7 @@ export async function updateEditorialIssue(args: {
   input: EditorialIssueInput;
   actor: string;
 }): Promise<OneArticleIssue> {
-  const validation = validateEditorialIssue(args.input);
+  const validation = validateEditorialDraft(args.input);
   if (!validation.ok) throw new Error(validation.error);
   const current = await prisma.oneArticleIssue.findUnique({ where: { id: args.id } });
   if (!current) throw new Error("issue_not_found");
@@ -405,15 +382,6 @@ function normalizedIssueData(
 function nullable(value: string | null | undefined): string | null {
   const clean = value?.trim();
   return clean ? clean : null;
-}
-
-function safeHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function errorMessage(error: unknown): string {

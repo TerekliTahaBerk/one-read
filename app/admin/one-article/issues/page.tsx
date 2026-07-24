@@ -59,7 +59,7 @@ export default async function EditorialIssuesPage({
           head={["Headline", "Language", "Status", "Scheduled", "Delivered", "Failed", "Updated", ""]}
           empty="No editorial editions match these filters."
           rows={issues.map((issue) => [
-            <span key="h" className="block min-w-[220px] font-medium text-admin-ink">{issue.headline}</span>,
+            <span key="h" className="block min-w-[220px] font-medium text-admin-ink">{issue.headline || "Untitled edition"}</span>,
             issue.readingLanguage,
             <StatusBadge key="s" value={issue.status} />,
             <span key="sc" className="whitespace-nowrap text-admin-body">{fmtDateTime(issue.scheduledFor)}</span>,

@@ -85,8 +85,8 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/admin/one-article", label: "Overview" },
     { href: "/admin/one-article/new", label: "New edition" },
     { href: "/admin/one-article/subscribers", label: "Subscribers" },
-    { href: "/admin/one-article/issues", label: "Issues" },
-    { href: "/admin/one-article/sends", label: "Sends" },
+    { href: "/admin/one-article/issues", label: "Editions" },
+    { href: "/admin/one-article/sends", label: "Deliveries" },
   ],
 };
 

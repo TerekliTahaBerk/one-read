@@ -17,9 +17,9 @@ export default async function RunsPage({ searchParams }: { searchParams: Record<
     where: selectedProduct ? { productKey: selectedProduct } : { productKey: { in: activeProducts } },
     orderBy: { startedAt: "desc" }, take: 200,
   });
-  return <AdminShell title="Run history" subtitle="Cron, manual runs, outcomes and errors">
+  return <AdminShell title="Run history" subtitle="Manual-edition dispatch outcomes and errors">
     <AdminCard title="Latest 200 runs"><AdminTable
-      head={["Started", "Product", "Route", "Status", "Mode", "Generated", "Sent", "Skipped", "Failed", "Error"]}
+      head={["Started", "Product", "Route", "Status", "Mode", "Editions created", "Sent", "Skipped", "Failed", "Error"]}
       empty="No operational runs recorded yet."
       rows={runs.map((r) => [fmtDateTime(r.startedAt), r.productKey, <span key="route" className="font-mono text-[11px]">{r.route}</span>,
         <StatusBadge key="status" value={r.status} tone={r.status === "SUCCESS" ? "good" : r.status === "FAILED" ? "bad" : "neutral"} />,

@@ -1,6 +1,6 @@
 /**
  * Central humanization layer: maps raw status/enum codes used across the admin
- * (access status, email delivery, send status, editorial/approval/generation)
+ * (access status, email delivery, recipient delivery and editorial state)
  * to plain-English labels. One place so every screen speaks the same language
  * and no raw enum ever reaches the owner's eyes.
  */
@@ -22,13 +22,13 @@ const LABELS: Record<string, string> = {
   UNSUBSCRIBED: "Unsubscribed",
   SUPPRESSED: "Blocked (bounced)",
 
-  // Send status (DailySend / FilmDailySend / LingoDailySend)
+  // Recipient delivery status
   SENT: "Delivered",
   QUEUED: "Waiting",
   FAILED: "Failed",
   SKIPPED: "Skipped",
 
-  // Editorial / approval / generation status
+  // Editorial status
   DRAFT: "Draft",
   READY: "Ready",
   PENDING: "Needs review",
@@ -37,8 +37,6 @@ const LABELS: Record<string, string> = {
   SCHEDULED: "Scheduled",
   REJECTED: "Rejected",
   SCORED: "Scored",
-  GENERATED: "Prepared",
-  NOT_GENERATED: "Not prepared",
   NO_FILM: "No film chosen",
 
   // Product / visibility helpers

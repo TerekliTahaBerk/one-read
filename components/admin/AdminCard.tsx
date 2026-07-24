@@ -7,12 +7,14 @@ export function AdminCard({
   actions,
   children,
   bodyClassName,
+  containerClassName,
 }: {
   title?: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   bodyClassName?: string;
+  containerClassName?: string;
 }) {
   return (
     <section className="mb-8">
@@ -31,7 +33,11 @@ export function AdminCard({
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <div className="overflow-hidden rounded-2xl border border-admin-line bg-admin-surface shadow-admin">
+      <div
+        className={`rounded-2xl border border-admin-line bg-admin-surface shadow-admin ${
+          containerClassName ?? "overflow-hidden"
+        }`}
+      >
         {bodyClassName ? (
           <div className={bodyClassName}>{children}</div>
         ) : (

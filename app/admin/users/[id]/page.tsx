@@ -8,8 +8,7 @@ import { Details } from "@/components/admin/Details";
 import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
 import { evaluateEligibility } from "@/lib/subscriptions";
-import { topicBySlug } from "@/lib/topics";
-import { fmtDate, fmtDateTime, yesNo } from "@/lib/admin/format";
+import { fmtDateTime, yesNo } from "@/lib/admin/format";
 import { UserActionsBar } from "@/components/admin/UserActionsBar";
 import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
@@ -43,8 +42,6 @@ export default async function AdminUserDetailPage({
   const elig = evaluateEligibility(sub);
   const prefs = sub.preferences;
 
-  // Activity: sends + feedback for this person (by new-model link or by email
-  // through the legacy Subscriber, since the backfill is still in progress).
   // Verification status — timestamps/counts only, never codes or hashes.
   const [lastVerificationRequest, lastVerified] = await Promise.all([
     prisma.emailVerificationCode.findFirst({
@@ -71,32 +68,17 @@ export default async function AdminUserDetailPage({
     resolveOneFilmEligibilityForContact(sub.contactId),
   ]);
 
-  const [sends, feedback, auditEvents] = await Promise.all([
-    prisma.dailySend.findMany({
-      where: {
-        OR: [
-          { productSubscriptionId: sub.id },
-          { subscriber: { email: sub.contact.email } },
-        ],
-      },
-      include: { pick: true },
-      orderBy: { date: "desc" },
-      take: 20,
-    }),
-    prisma.feedback.findMany({
-      where: {
-        OR: [
-          { productSubscriptionId: sub.id },
-          { subscriber: { email: sub.contact.email } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
+  const [deliveries, auditEvents] = await Promise.all([
+    prisma.oneArticleDelivery.findMany({
+      where: { contactId: sub.contactId },
+      include: { issue: { select: { id: true, headline: true, readingLanguage: true } } },
+      orderBy: { updatedAt: "desc" },
       take: 20,
     }),
     loadAuditLogs({ targetType: "ProductSubscription", q: sub.id }, 20),
   ]);
 
-  const lastSend = sends.find((s) => s.status === "SENT");
+  const lastDelivery = deliveries.find((delivery) => delivery.status === "SENT");
 
   return (
     <AdminShell
@@ -217,33 +199,24 @@ export default async function AdminUserDetailPage({
       </AdminCard>
 
       <AdminCard
-        title="Activity — recent sends"
-        subtitle={lastSend ? `last sent ${fmtDate(lastSend.date)}` : "no sends yet"}
+        title="Activity — recent deliveries"
+        subtitle={lastDelivery ? `last delivered ${fmtDateTime(lastDelivery.sentAt)}` : "no deliveries yet"}
       >
         <AdminTable
-          head={["Date", "Status", "Topic", "Language", "Score", "Sent at", "Note"]}
-          empty="No sends recorded for this subscriber yet."
-          rows={sends.map((s) => [
-            <span key="d" className="text-admin-body">{fmtDate(s.date)}</span>,
-            <StatusBadge key="s" value={s.status} />,
-            topicBySlug(s.matchedTopic)?.label ?? s.matchedTopic,
-            <span key="l" className="text-admin-body">{s.summaryLanguage}</span>,
-            s.personalizedScore.toFixed(2),
-            <span key="sa" className="text-admin-body">{fmtDateTime(s.sentAt)}</span>,
-            <span key="n" className="text-[11.5px] text-dawn">{s.error ?? "—"}</span>,
-          ])}
-        />
-      </AdminCard>
-
-      <AdminCard title="Activity — feedback" subtitle={`${feedback.length} reactions`}>
-        <AdminTable
-          head={["Date", "Reaction", "Topic", "Source"]}
-          empty="No feedback recorded yet."
-          rows={feedback.map((fb) => [
-            <span key="d" className="text-admin-body">{fmtDate(fb.createdAt)}</span>,
-            fb.reaction,
-            fb.topic ? topicBySlug(fb.topic)?.label ?? fb.topic : "—",
-            fb.sourceName ?? "—",
+          head={["Updated", "Edition", "Language", "Status", "Attempts", "Sent at", "Note"]}
+          empty="No OneArticle deliveries recorded for this subscriber yet."
+          rows={deliveries.map((delivery) => [
+            <span key="d" className="text-admin-body">{fmtDateTime(delivery.updatedAt)}</span>,
+            <Link key="i" href={`/admin/one-article/issues/${delivery.issue.id}`} className="text-admin-ink underline underline-offset-2">
+              {delivery.issue.headline || "Untitled edition"}
+            </Link>,
+            <span key="l" className="text-admin-body">{delivery.issue.readingLanguage}</span>,
+            <StatusBadge key="s" value={delivery.status} />,
+            delivery.attemptCount,
+            <span key="sa" className="text-admin-body">{fmtDateTime(delivery.sentAt)}</span>,
+            <span key="n" className="text-[11.5px] text-dawn">
+              {delivery.failedReason ?? delivery.skippedReason ?? "—"}
+            </span>,
           ])}
         />
       </AdminCard>

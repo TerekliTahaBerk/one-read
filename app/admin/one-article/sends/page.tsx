@@ -33,7 +33,7 @@ export default async function EditorialSendsPage({
     take: 300,
   });
   return (
-    <AdminShell title="Sends" subtitle={`${deliveries.length} most recent editorial delivery records`}>
+    <AdminShell title="Deliveries" subtitle={`${deliveries.length} most recent recipient delivery records`}>
       <AdminTabs tabs={oneArticleTabs()} active="sends" />
       <form className="mb-5 flex flex-wrap items-end gap-3 text-[12.5px]">
         <label><span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">Status</span><select name="status" defaultValue={searchParams.status ?? ""} className={filter}><option value="">All</option>{["QUEUED", "SENDING", "SENT", "FAILED", "SKIPPED"].map((status) => <option key={status}>{status}</option>)}</select></label>
