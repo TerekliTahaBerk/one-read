@@ -2,16 +2,14 @@ import { NextResponse } from "next/server";
 import {
   parseEmail,
   ONE_ARTICLE_PRODUCT_KEY,
-  ONE_FILM_PRODUCT_KEY,
 } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import {
   resolveOneReadState,
   resolveOneArticleEligibilityForContact,
-  resolveOneFilmEligibilityForContact,
 } from "@/lib/oneread/access";
 import { preferencesComplete } from "@/lib/subscriptions";
-import { filmPreferencesComplete } from "@/lib/film/subscriptions";
+import { hasVerifiedEmail } from "@/lib/oneread/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +34,9 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ ok: false, error: "Please enter a valid email." }, { status: 400 });
   }
+  if (!hasVerifiedEmail(email)) {
+    return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
+  }
 
   const state = await resolveOneReadState(email);
 
@@ -44,9 +45,9 @@ export async function POST(request: Request) {
     include: {
       subscriptions: {
         where: {
-          productKey: { in: [ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY] },
+          productKey: ONE_ARTICLE_PRODUCT_KEY,
         },
-        include: { preferences: true, filmPreferences: true },
+        include: { preferences: true },
       },
     },
   });
@@ -56,24 +57,16 @@ export async function POST(request: Request) {
       ok: true,
       ...state,
       articlePreferencesComplete: false,
-      filmPreferencesComplete: false,
     });
   }
 
   const articleHolder = contact.subscriptions.find((s) => s.productKey === ONE_ARTICLE_PRODUCT_KEY);
-  const filmHolder = contact.subscriptions.find((s) => s.productKey === ONE_FILM_PRODUCT_KEY);
-
-  const [articleEligibility, filmEligibility] = await Promise.all([
-    resolveOneArticleEligibilityForContact(contact.id),
-    resolveOneFilmEligibilityForContact(contact.id),
-  ]);
+  const articleEligibility = await resolveOneArticleEligibilityForContact(contact.id);
 
   return NextResponse.json({
     ok: true,
     ...state,
     articlePreferencesComplete: preferencesComplete(articleHolder?.preferences ?? null),
-    filmPreferencesComplete: filmPreferencesComplete(filmHolder?.filmPreferences ?? null),
     articleEligibilityReason: articleEligibility.reason,
-    filmEligibilityReason: filmEligibility.reason,
   });
 }

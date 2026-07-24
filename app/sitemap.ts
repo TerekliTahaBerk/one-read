@@ -4,7 +4,6 @@ import { BLOG_POSTS } from "@/lib/blog";
 const PUBLIC_ROUTES = [
   "/",
   "/article",
-  "/film",
   "/pricing",
   "/subscribe",
   "/preferences",

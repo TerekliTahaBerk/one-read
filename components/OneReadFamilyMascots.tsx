@@ -186,7 +186,7 @@ export function OneReadFamilyMascots() {
         <Mascot name="OneArticle" description={dictionary.family.article} index={0} href="/article">
           <OneArticleMascotArt />
         </Mascot>
-        <Mascot name="OneFilm" description={dictionary.family.film} index={1} href="/film">
+        <Mascot name="OneFilm" description={dictionary.family.comingSoon} index={1} href="/waitlist?product=onefilm">
           <OneFilmMascotArt />
         </Mascot>
         <Mascot

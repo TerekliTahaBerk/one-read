@@ -41,14 +41,14 @@ export const BILLING_INTERVALS = ["monthly"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
 /**
- * External Tally waitlist form for not-yet-launched products (OneLingo,
- * OneDish). Frontend-only — no waitlist backend. Swap this
+ * External Tally waitlist form for inactive/not-yet-launched products
+ * (OneFilm, OneLingo, OneDish). Frontend-only — no waitlist backend. Swap this
  * URL when each product gets its own form.
  */
 export const WAITLIST_FORM_URL =
   process.env.NEXT_PUBLIC_WAITLIST_FORM_URL || "https://tally.so/r/WOZWLe";
 
-/** Product slug for the OneRead umbrella subscription (bundles OneArticle + OneFilm). */
+/** Product slug for the OneRead subscription (currently includes OneArticle). */
 export const ONE_READ_PRODUCT_KEY = "one-read";
 
 /** Product slug for One Article (the first OneRead product). */

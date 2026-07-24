@@ -7,15 +7,7 @@
   "crons": [
     {
       "path": "/api/cron/daily",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/one-lingo",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/one-film",
-      "schedule": "0 4 * * *"
+      "schedule": "*/10 * * * *"
     }
   ]
 }

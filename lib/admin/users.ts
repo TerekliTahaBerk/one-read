@@ -6,11 +6,8 @@ import {
 } from "@/lib/subscriptions";
 import {
   parseEmail,
-  parseInterests,
-  parseSourceLanguage,
   parseSummaryLanguage,
 } from "@/lib/options";
-import { interestLabelToSlug } from "@/lib/topics";
 
 /**
  * Mutating admin actions on a OneArticle subscription. Each is intentionally
@@ -138,35 +135,20 @@ export async function setAdminNote(subId: string, note: string): Promise<ActionR
 export async function updatePreferences(
   subId: string,
   raw: {
-    interests?: unknown;
-    sourceLanguage?: unknown;
     summaryLanguage?: unknown;
-    primaryInterest?: unknown;
   },
 ): Promise<ActionResult> {
   const sub = await loadSub(subId);
   if (!sub) return { ok: false, error: "not_found" };
 
-  const interests = parseInterests(raw.interests);
-  const sourceLanguage = parseSourceLanguage(raw.sourceLanguage);
   const summaryLanguage = parseSummaryLanguage(raw.summaryLanguage);
-  if (!interests || interests.length === 0) return { ok: false, error: "invalid_interests" };
-  if (!sourceLanguage) return { ok: false, error: "invalid_source_language" };
   if (!summaryLanguage) return { ok: false, error: "invalid_summary_language" };
 
-  const primaryLabel =
-    typeof raw.primaryInterest === "string" && interests.includes(raw.primaryInterest as never)
-      ? (raw.primaryInterest as string)
-      : interests[0];
-  const secondaryLabels = interests.filter((i) => i !== primaryLabel);
-
   const prefs: ArticlePreferencesInput = {
-    interests,
-    primaryInterest: interestLabelToSlug(primaryLabel),
-    secondaryInterests: secondaryLabels
-      .map((l) => interestLabelToSlug(l))
-      .filter((s): s is string => Boolean(s)),
-    sourceLanguage,
+    interests: [],
+    primaryInterest: null,
+    secondaryInterests: [],
+    sourceLanguage: "Any",
     summaryLanguage,
   };
   await upsertArticlePreferences(subId, prefs);

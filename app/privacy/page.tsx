@@ -4,7 +4,7 @@ import { LegalContent } from "@/components/LegalContent";
 export const metadata: Metadata = {
   title: "Privacy Policy — OneRead",
   description:
-    "How OneRead collects, uses, and protects your information across OneArticle and OneFilm. We collect only what we need to run your subscription.",
+    "How OneRead collects, uses, and protects the information needed to deliver OneArticle.",
 };
 
 export default function PrivacyPage() {

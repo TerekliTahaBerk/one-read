@@ -32,13 +32,13 @@ const en: LegalDictionary = {
     title: "Terms of Service",
     lastUpdated: "July 3, 2026",
     intro: [
-      "These terms govern your use of OneRead — one subscription that currently includes OneArticle and OneFilm, with more quiet products joining the same subscription over time. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
+      "These terms govern your use of OneRead — one subscription that currently includes OneArticle. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
     ],
     sections: [
       {
         heading: "The service",
         paragraphs: [
-          "OneRead is one subscription that bundles the OneRead family of products: **OneArticle**, a curated article brief by email each weekday morning, and **OneFilm**, a short film note each Saturday. We may add further products to the same subscription at no extra cost as the family grows. We aim to deliver each email reliably around its usual time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
+          "OneRead currently includes **OneArticle**: a curated article delivered by email in your chosen reading language. Other OneRead products may be offered separately or added in the future. We aim to deliver each email reliably around its scheduled time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
         ],
       },
       {
@@ -74,7 +74,7 @@ const en: LegalDictionary = {
       {
         heading: "Content and intellectual property",
         paragraphs: [
-          "Each email in the OneRead family contains **original summary and commentary** — for OneArticle, a summary of and commentary on a source article, together with a link to it; for OneFilm, a short note about a film. We summarize and comment — we don't reproduce source material in full and we don't publish full translations of it. Where we describe a source, such as a news article, it **remains the property of its respective publisher**, and nothing in our emails should be read as OneRead claiming to be that publisher or as an endorsement by them.",
+          "Each OneArticle email contains **original editorial writing** about a source article, together with a link to it. We summarize and comment — we don't reproduce source material in full and we don't publish full translations of it. The source **remains the property of its respective publisher**, and nothing in our emails should be read as OneRead claiming to be that publisher or as an endorsement by them.",
           "Our emails are provided for your **personal, non-commercial use**. The OneRead, OneArticle, and OneFilm names, design, and the summaries and commentary we write remain ours or our licensors'. You may read and share a link to an email, but you may not copy, resell, redistribute, scrape, or archive our content on a systematic basis.",
         ],
       },
@@ -132,13 +132,13 @@ const en: LegalDictionary = {
     title: "Privacy Policy",
     lastUpdated: "July 3, 2026",
     intro: [
-      "OneRead is built around a simple idea: a few genuinely useful emails, and nothing more. That restraint extends to your data. We collect only what we need to run your subscription — currently OneArticle and OneFilm — we never sell it, and we don't track you around the web. This policy explains what we collect, why, and the choices you have.",
+      "OneRead is built around a simple idea: a genuinely useful email, and nothing more. That restraint extends to your data. We collect only what we need to run OneArticle, we never sell it, and we don't track you around the web. This policy explains what we collect, why, and the choices you have.",
     ],
     sections: [
       {
         heading: "Who we are",
         paragraphs: [
-          "OneRead is the subscription that sends you OneArticle each weekday morning and OneFilm each Saturday, with more products joining the same subscription over time. The data controller responsible for your information is **[Insert legal entity / data controller before launch]**. You can reach us any time at [hello@oneread.com](mailto:hello@oneread.com).",
+          "OneRead is the subscription that sends you OneArticle in your chosen reading language. The data controller responsible for your information is **[Insert legal entity / data controller before launch]**. You can reach us any time at [hello@oneread.com](mailto:hello@oneread.com).",
         ],
       },
       {
@@ -146,8 +146,7 @@ const en: LegalDictionary = {
         paragraphs: ["When you sign up and use OneRead, we process:"],
         list: [
           "**Your email address** — so we can send your OneRead emails.",
-          "**Your interests** — the topics, genres, and moods you select, used to match each email to you.",
-          "**Your language preferences** — your source language and the language you want your emails written in.",
+          "**Your reading language** — the language in which you want OneArticle written.",
           "**Your subscription status** — whether you're active, which OneRead products you receive, and any plan details if you're on a paid plan.",
           "**Feedback clicks** — if you tell us an email was useful or not, so we can improve what we send.",
           "**Email delivery status** — whether a message was sent, bounced, or unsubscribed, so delivery stays reliable.",
@@ -168,7 +167,7 @@ const en: LegalDictionary = {
         paragraphs: [],
         list: [
           "To select and send your OneRead emails.",
-          "To personalize that selection to your interests and languages.",
+          "To deliver the correct reading-language edition.",
           "To manage your subscription and handle unsubscribe requests.",
           "To improve the quality and reliability of the service.",
           "To prevent abuse and keep the service secure.",
@@ -189,7 +188,7 @@ const en: LegalDictionary = {
       {
         heading: "AI providers",
         paragraphs: [
-          "We use automated and AI systems to help generate summaries and notes. Where AI providers are involved, the **source content and metadata** we summarize — articles for OneArticle, film details for OneFilm — may be processed by them. We don't send subscriber email addresses to AI providers unless it's necessary, and we aim to share only what's needed to produce an email.",
+          "OneArticle editions are written and scheduled by our editorial team. We may use ordinary infrastructure providers to operate the service, but subscriber email addresses are not sent to content-generation providers.",
         ],
       },
       {
@@ -253,13 +252,13 @@ const tr: LegalDictionary = {
     title: "Kullanım Koşulları",
     lastUpdated: "3 Temmuz 2026",
     intro: [
-      "Bu koşullar, hâlihazırda OneArticle ve OneFilm'i kapsayan ve aile büyüdükçe aynı abonelik altında yeni sakin ürünlerin katılacağı tek bir abonelik olan OneRead'i kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
+      "Bu koşullar, hâlihazırda OneArticle'ı kapsayan OneRead aboneliğini kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
     ],
     sections: [
       {
         heading: "Hizmet",
         paragraphs: [
-          "OneRead, OneRead ailesindeki ürünleri tek bir pakette birleştirir: hafta içi her sabah e-posta ile gönderilen özenle seçilmiş bir makale özeti olan **OneArticle** ve her cumartesi gönderilen kısa bir film notu olan **OneFilm**. Aile büyüdükçe aynı aboneliğe ek ücret almadan yeni ürünler ekleyebiliriz. Her e-postayı olağan saatinde güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
+          "OneRead şu anda **OneArticle**'ı içerir: seçtiğiniz okuma dilinde e-posta ile gönderilen özenle hazırlanmış bir makale. Diğer OneRead ürünleri gelecekte ayrı olarak sunulabilir veya aboneliğe eklenebilir. Her e-postayı planlanan zamanda güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
         ],
       },
       {
@@ -295,7 +294,7 @@ const tr: LegalDictionary = {
       {
         heading: "İçerik ve fikri mülkiyet",
         paragraphs: [
-          "OneRead ailesindeki her e-posta **özgün bir özet ve yorum** içerir — OneArticle için kaynak makalenin özeti ve yorumu, kaynağa bir bağlantıyla birlikte; OneFilm için ise bir film hakkında kısa bir not. Yalnızca özetler ve yorumlar sunarız; kaynak materyali tam olarak yeniden üretmeyiz ve tam çevirisini yayımlamayız. Bir haber makalesi gibi bir kaynaktan bahsettiğimizde, bu kaynak **ilgili yayıncısının mülkiyetinde kalır** ve e-postalarımızdaki hiçbir ifade OneRead'in o yayıncı olduğu veya o yayıncı tarafından onaylandığı şeklinde yorumlanamaz.",
+          "Her OneArticle e-postası, kaynak makaleye bağlantıyla birlikte **özgün editoryal yazı** içerir. Özetler ve yorumlarız; kaynak materyali tam olarak yeniden üretmeyiz ve tam çevirisini yayımlamayız. Kaynak **ilgili yayıncısının mülkiyetinde kalır** ve e-postalarımızdaki hiçbir ifade OneRead'in o yayıncı olduğu veya o yayıncı tarafından onaylandığı şeklinde yorumlanamaz.",
           "E-postalarımız **kişisel, ticari olmayan kullanımınız** için sunulur. OneRead, OneArticle ve OneFilm adları, tasarımı ile yazdığımız özet ve yorumlar bize veya lisans verenlerimize aittir. Bir e-postayı okuyabilir ve bağlantısını paylaşabilirsiniz; ancak içeriklerimizi sistematik biçimde kopyalayamaz, yeniden satamaz, dağıtamaz, kazıyamaz veya arşivleyemezsiniz.",
         ],
       },
@@ -353,13 +352,13 @@ const tr: LegalDictionary = {
     title: "Gizlilik Politikası",
     lastUpdated: "3 Temmuz 2026",
     intro: [
-      "OneRead basit bir fikir üzerine kuruludur: gerçekten yararlı birkaç e-posta, fazlası değil. Bu ölçülülük verilerinize de yansır. Aboneliğinizi yürütmek için — şu anda OneArticle ve OneFilm için — gereken en az bilgiyi topluyoruz, bunu asla satmıyoruz ve sizi internette takip etmiyoruz. Bu politika neyi, neden topladığımızı ve sahip olduğunuz seçenekleri açıklar.",
+      "OneRead basit bir fikir üzerine kuruludur: gerçekten yararlı tek bir e-posta, fazlası değil. OneArticle'ı yürütmek için gereken en az bilgiyi topluyoruz, bunu asla satmıyoruz ve sizi internette takip etmiyoruz.",
     ],
     sections: [
       {
         heading: "Biz kimiz",
         paragraphs: [
-          "OneRead, size hafta içi her sabah OneArticle'ı ve her cumartesi OneFilm'i gönderen, aile büyüdükçe aynı aboneliğe yeni ürünlerin katılacağı abonelik hizmetidir. Bilgilerinizden sorumlu veri sorumlusu **[Lansman öncesi tüzel kişi / veri sorumlusu eklenecek]**'dir. Bize her zaman [hello@oneread.com](mailto:hello@oneread.com) adresinden ulaşabilirsiniz.",
+          "OneRead, seçtiğiniz okuma dilinde OneArticle gönderen abonelik hizmetidir. Bilgilerinizden sorumlu veri sorumlusu **[Lansman öncesi tüzel kişi / veri sorumlusu eklenecek]**'dir. Bize her zaman [hello@oneread.com](mailto:hello@oneread.com) adresinden ulaşabilirsiniz.",
         ],
       },
       {
@@ -367,8 +366,7 @@ const tr: LegalDictionary = {
         paragraphs: ["OneRead'e kaydolduğunuzda ve onu kullandığınızda şunları işleriz:"],
         list: [
           "**E-posta adresiniz** — OneRead e-postalarınızı gönderebilmemiz için.",
-          "**İlgi alanlarınız** — her e-postayı size uygun hâle getirmek için seçtiğiniz konular, türler ve ruh hâlleri.",
-          "**Dil tercihleriniz** — kaynak diliniz ve e-postalarınızın yazılmasını istediğiniz dil.",
+          "**Okuma diliniz** — OneArticle'ın yazılmasını istediğiniz dil.",
           "**Abonelik durumunuz** — aktif olup olmadığınız, hangi OneRead ürünlerini aldığınız ve ücretli bir plandaysanız plan ayrıntıları.",
           "**Geri bildirim tıklamaları** — bir e-postanın yararlı olup olmadığını bize bildirdiğinizde, gönderdiklerimizi iyileştirebilmemiz için.",
           "**E-posta teslimat durumu** — bir mesajın gönderilip gönderilmediği, geri döndüğü veya abonelikten çıkıldığı, teslimatın güvenilir kalması için.",
@@ -389,7 +387,7 @@ const tr: LegalDictionary = {
         paragraphs: [],
         list: [
           "OneRead e-postalarınızı seçmek ve göndermek için.",
-          "Bu seçimi ilgi alanlarınıza ve dillerinize göre kişiselleştirmek için.",
+          "Doğru okuma dili sürümünü göndermek için.",
           "Aboneliğinizi yönetmek ve abonelikten çıkma taleplerini karşılamak için.",
           "Hizmetin kalitesini ve güvenilirliğini artırmak için.",
           "Kötüye kullanımı önlemek ve hizmeti güvende tutmak için.",
@@ -410,7 +408,7 @@ const tr: LegalDictionary = {
       {
         heading: "Yapay zekâ sağlayıcıları",
         paragraphs: [
-          "Özet ve not oluşturmaya yardımcı olması için otomatik sistemler ve yapay zekâ kullanıyoruz. Yapay zekâ sağlayıcılarının dâhil olduğu durumlarda, özetlediğimiz **kaynak içerik ve meta veriler** — OneArticle için makaleler, OneFilm için film bilgileri — bu sağlayıcılar tarafından işlenebilir. Gerekli olmadıkça abone e-posta adreslerini yapay zekâ sağlayıcılarına göndermeyiz ve yalnızca bir e-posta oluşturmak için gereken bilgiyi paylaşmayı hedefleriz.",
+          "OneArticle gönderileri editoryal ekibimiz tarafından yazılır ve planlanır. Hizmeti işletmek için standart altyapı sağlayıcılarından yararlanabiliriz; ancak abone e-posta adresleri içerik üretim sağlayıcılarına gönderilmez.",
         ],
       },
       {
@@ -474,13 +472,13 @@ const de: LegalDictionary = {
     title: "Nutzungsbedingungen",
     lastUpdated: "3. Juli 2026",
     intro: [
-      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Abonnement, das derzeit OneArticle und OneFilm umfasst und dem im Laufe der Zeit weitere ruhige Produkte im selben Abonnement hinzugefügt werden. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
+      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Abonnement, das derzeit OneArticle umfasst. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
     ],
     sections: [
       {
         heading: "Der Dienst",
         paragraphs: [
-          "OneRead bündelt die Produkte der OneRead-Familie in einem Abonnement: **OneArticle**, ein sorgfältig ausgewähltes Artikelbriefing per E-Mail an jedem Werktagmorgen, und **OneFilm**, eine kurze Filmnotiz an jedem Samstag. Mit wachsender Familie können wir dem selben Abonnement ohne Aufpreis weitere Produkte hinzufügen. Wir sind bestrebt, jede E-Mail zuverlässig zur gewohnten Zeit zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern. Eine unterbrechungsfreie oder fehlerfreie Zustellung können wir nicht garantieren.",
+          "OneRead umfasst derzeit **OneArticle**: einen sorgfältig ausgewählten Artikel, der in Ihrer gewählten Lesesprache per E-Mail zugestellt wird. Weitere OneRead-Produkte können künftig separat angeboten oder dem Abonnement hinzugefügt werden. Wir sind bestrebt, jede E-Mail zuverlässig zum geplanten Zeitpunkt zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern. Eine unterbrechungsfreie oder fehlerfreie Zustellung können wir nicht garantieren.",
         ],
       },
       {
@@ -516,7 +514,7 @@ const de: LegalDictionary = {
       {
         heading: "Inhalte und geistiges Eigentum",
         paragraphs: [
-          "Jede E-Mail der OneRead-Familie enthält eine **eigenständige Zusammenfassung und Einordnung** — bei OneArticle eine Zusammenfassung und Einordnung eines Quellartikels samt Link dorthin, bei OneFilm eine kurze Notiz zu einem Film. Wir fassen zusammen und ordnen ein — wir geben Quellmaterial nicht vollständig wieder und veröffentlichen keine vollständigen Übersetzungen davon. Beschreiben wir eine Quelle, etwa einen Nachrichtenartikel, so **bleibt diese Eigentum des jeweiligen Verlags**; nichts in unseren E-Mails ist so zu verstehen, dass OneRead sich als dieser Verlag ausgibt oder von ihm unterstützt wird.",
+          "Jede OneArticle-E-Mail enthält eine **eigenständige redaktionelle Einordnung** eines Quellartikels samt Link dorthin. Wir fassen zusammen und ordnen ein — wir geben Quellmaterial nicht vollständig wieder und veröffentlichen keine vollständigen Übersetzungen davon. Die Quelle **bleibt Eigentum des jeweiligen Verlags**; nichts in unseren E-Mails ist so zu verstehen, dass OneRead sich als dieser Verlag ausgibt oder von ihm unterstützt wird.",
           "Unsere E-Mails sind für Ihre **persönliche, nicht kommerzielle Nutzung** bestimmt. Die Namen OneRead, OneArticle und OneFilm, das Design sowie die von uns verfassten Zusammenfassungen und Einordnungen bleiben unser Eigentum oder das unserer Lizenzgeber. Sie dürfen eine E-Mail lesen und einen Link dazu teilen, jedoch unsere Inhalte nicht systematisch kopieren, weiterverkaufen, verbreiten, extrahieren oder archivieren.",
         ],
       },
@@ -574,13 +572,13 @@ const de: LegalDictionary = {
     title: "Datenschutzerklärung",
     lastUpdated: "3. Juli 2026",
     intro: [
-      "OneRead beruht auf einer einfachen Idee: ein paar wirklich nützliche E-Mails, mehr nicht. Diese Zurückhaltung gilt auch für Ihre Daten. Wir erheben nur, was wir für den Betrieb Ihres Abonnements benötigen — derzeit OneArticle und OneFilm —, verkaufen sie nie und verfolgen Sie nicht im Web. Diese Erklärung beschreibt, was wir erheben, warum, und welche Wahlmöglichkeiten Sie haben.",
+      "OneRead beruht auf einer einfachen Idee: eine wirklich nützliche E-Mail, mehr nicht. Wir erheben nur, was wir für OneArticle benötigen, verkaufen die Daten nie und verfolgen Sie nicht im Web.",
     ],
     sections: [
       {
         heading: "Wer wir sind",
         paragraphs: [
-          "OneRead ist das Abonnement, das Ihnen an jedem Werktagmorgen OneArticle und an jedem Samstag OneFilm zusendet, wobei mit der Zeit weitere Produkte demselben Abonnement hinzugefügt werden. Der für Ihre Daten verantwortliche Verantwortliche ist **[Vor dem Launch juristische Person / Verantwortlichen einfügen]**. Sie erreichen uns jederzeit unter [hello@oneread.com](mailto:hello@oneread.com).",
+          "OneRead ist das Abonnement, das Ihnen OneArticle in Ihrer gewählten Lesesprache zusendet. Der für Ihre Daten verantwortliche Verantwortliche ist **[Vor dem Launch juristische Person / Verantwortlichen einfügen]**. Sie erreichen uns jederzeit unter [hello@oneread.com](mailto:hello@oneread.com).",
         ],
       },
       {
@@ -588,8 +586,7 @@ const de: LegalDictionary = {
         paragraphs: ["Wenn Sie sich bei OneRead anmelden und es nutzen, verarbeiten wir:"],
         list: [
           "**Ihre E-Mail-Adresse** — damit wir Ihnen Ihre OneRead-E-Mails senden können.",
-          "**Ihre Interessen** — die Themen, Genres und Stimmungen, die Sie auswählen, um jede E-Mail auf Sie abzustimmen.",
-          "**Ihre Sprachpräferenzen** — Ihre Quellsprache und die Sprache, in der Ihre E-Mails verfasst werden sollen.",
+          "**Ihre Lesesprache** — die Sprache, in der OneArticle verfasst werden soll.",
           "**Ihren Abonnementstatus** — ob Sie aktiv sind, welche OneRead-Produkte Sie erhalten, und etwaige Tarifdetails bei einem kostenpflichtigen Plan.",
           "**Feedback-Klicks** — wenn Sie uns mitteilen, ob eine E-Mail hilfreich war, damit wir verbessern können, was wir senden.",
           "**Zustellstatus von E-Mails** — ob eine Nachricht gesendet wurde, unzustellbar war oder abbestellt wurde, damit die Zustellung zuverlässig bleibt.",
@@ -610,7 +607,7 @@ const de: LegalDictionary = {
         paragraphs: [],
         list: [
           "Um Ihre OneRead-E-Mails auszuwählen und zu versenden.",
-          "Um diese Auswahl auf Ihre Interessen und Sprachen abzustimmen.",
+          "Um die Ausgabe in der richtigen Lesesprache zuzustellen.",
           "Um Ihr Abonnement zu verwalten und Abbestellungen zu bearbeiten.",
           "Um die Qualität und Zuverlässigkeit des Dienstes zu verbessern.",
           "Um Missbrauch vorzubeugen und den Dienst sicher zu halten.",
@@ -631,7 +628,7 @@ const de: LegalDictionary = {
       {
         heading: "KI-Anbieter",
         paragraphs: [
-          "Wir setzen automatisierte und KI-gestützte Systeme ein, um Zusammenfassungen und Notizen zu erstellen. Sind KI-Anbieter beteiligt, können die von uns zusammengefassten **Quellinhalte und Metadaten** — Artikel für OneArticle, Filmdetails für OneFilm — von ihnen verarbeitet werden. Wir übermitteln E-Mail-Adressen von Abonnenten nur, wenn es erforderlich ist, und beschränken die Weitergabe auf das für die Erstellung einer E-Mail Notwendige.",
+          "OneArticle-Ausgaben werden von unserem Redaktionsteam geschrieben und geplant. Für den Betrieb des Dienstes können wir übliche Infrastrukturanbieter einsetzen; E-Mail-Adressen von Abonnenten werden jedoch nicht an Anbieter zur Inhaltserstellung übermittelt.",
         ],
       },
       {
@@ -695,13 +692,13 @@ const fr: LegalDictionary = {
     title: "Conditions d'utilisation",
     lastUpdated: "3 juillet 2026",
     intro: [
-      "Ces conditions régissent votre utilisation d'OneRead — un abonnement unique qui inclut actuellement OneArticle et OneFilm, et auquel viendront s'ajouter d'autres produits discrets au fil du temps. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
+      "Ces conditions régissent votre utilisation d'OneRead — un abonnement qui inclut actuellement OneArticle. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
     ],
     sections: [
       {
         heading: "Le service",
         paragraphs: [
-          "OneRead réunit dans un seul abonnement les produits de la famille OneRead : **OneArticle**, un article soigneusement choisi et résumé, envoyé par e-mail chaque matin de semaine, et **OneFilm**, une courte note cinéma chaque samedi. À mesure que la famille grandit, nous pouvons ajouter d'autres produits au même abonnement sans coût supplémentaire. Nous nous efforçons de livrer chaque e-mail de manière fiable à son heure habituelle, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer. Nous ne garantissons pas une livraison ininterrompue ou sans erreur.",
+          "OneRead inclut actuellement **OneArticle** : un article soigneusement préparé et envoyé par e-mail dans la langue de lecture choisie. D'autres produits OneRead pourront être proposés séparément ou ajoutés à l'abonnement à l'avenir. Nous nous efforçons de livrer chaque e-mail de manière fiable à l'heure prévue, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer. Nous ne garantissons pas une livraison ininterrompue ou sans erreur.",
         ],
       },
       {
@@ -737,7 +734,7 @@ const fr: LegalDictionary = {
       {
         heading: "Contenu et propriété intellectuelle",
         paragraphs: [
-          "Chaque e-mail de la famille OneRead contient un **résumé et un commentaire originaux** — pour OneArticle, un résumé et un commentaire d'un article source accompagnés d'un lien vers celui-ci ; pour OneFilm, une courte note sur un film. Nous résumons et commentons — nous ne reproduisons pas intégralement le contenu source et n'en publions pas de traduction complète. Lorsque nous décrivons une source, comme un article de presse, celle-ci **demeure la propriété de son éditeur respectif**, et rien dans nos e-mails ne doit être interprété comme le fait qu'OneRead se présente comme cet éditeur ou bénéficie de son approbation.",
+          "Chaque e-mail OneArticle contient une **rédaction éditoriale originale** sur un article source, accompagnée d'un lien vers celui-ci. Nous résumons et commentons — nous ne reproduisons pas intégralement le contenu source et n'en publions pas de traduction complète. La source **demeure la propriété de son éditeur respectif**, et rien dans nos e-mails ne doit être interprété comme le fait qu'OneRead se présente comme cet éditeur ou bénéficie de son approbation.",
           "Nos e-mails sont fournis pour votre **usage personnel et non commercial**. Les noms OneRead, OneArticle et OneFilm, leur design, ainsi que les résumés et commentaires que nous rédigeons demeurent notre propriété ou celle de nos concédants de licence. Vous pouvez lire un e-mail et partager un lien vers celui-ci, mais vous ne pouvez pas copier, revendre, redistribuer, collecter ou archiver notre contenu de manière systématique.",
         ],
       },
@@ -795,13 +792,13 @@ const fr: LegalDictionary = {
     title: "Politique de confidentialité",
     lastUpdated: "3 juillet 2026",
     intro: [
-      "OneRead repose sur une idée simple : quelques e-mails réellement utiles, rien de plus. Cette sobriété s'applique aussi à vos données. Nous ne collectons que ce dont nous avons besoin pour faire fonctionner votre abonnement — actuellement OneArticle et OneFilm —, nous ne les vendons jamais, et nous ne vous suivons pas sur le web. Cette politique explique ce que nous collectons, pourquoi, et les choix qui s'offrent à vous.",
+      "OneRead repose sur une idée simple : un e-mail réellement utile, rien de plus. Nous ne collectons que ce dont nous avons besoin pour faire fonctionner OneArticle, nous ne vendons jamais ces données et nous ne vous suivons pas sur le web.",
     ],
     sections: [
       {
         heading: "Qui nous sommes",
         paragraphs: [
-          "OneRead est l'abonnement qui vous envoie OneArticle chaque matin de semaine et OneFilm chaque samedi, auquel viendront s'ajouter d'autres produits au fil du temps. Le responsable du traitement de vos informations est **[Entité juridique / responsable du traitement à insérer avant le lancement]**. Vous pouvez nous joindre à tout moment à [hello@oneread.com](mailto:hello@oneread.com).",
+          "OneRead est l'abonnement qui vous envoie OneArticle dans la langue de lecture choisie. Le responsable du traitement de vos informations est **[Entité juridique / responsable du traitement à insérer avant le lancement]**. Vous pouvez nous joindre à tout moment à [hello@oneread.com](mailto:hello@oneread.com).",
         ],
       },
       {
@@ -809,8 +806,7 @@ const fr: LegalDictionary = {
         paragraphs: ["Lorsque vous vous inscrivez et utilisez OneRead, nous traitons :"],
         list: [
           "**Votre adresse e-mail** — pour pouvoir vous envoyer vos e-mails OneRead.",
-          "**Vos centres d'intérêt** — les sujets, genres et humeurs que vous sélectionnez, utilisés pour adapter chaque e-mail à votre profil.",
-          "**Vos préférences linguistiques** — votre langue source et la langue dans laquelle vous souhaitez recevoir vos e-mails.",
+          "**Votre langue de lecture** — la langue dans laquelle vous souhaitez recevoir OneArticle.",
           "**Votre statut d'abonnement** — si vous êtes actif ou non, quels produits OneRead vous recevez, et les détails de votre formule si vous êtes sur un plan payant.",
           "**Les clics de retour** — lorsque vous nous indiquez qu'un e-mail était utile ou non, afin d'améliorer ce que nous envoyons.",
           "**Le statut de livraison des e-mails** — si un message a été envoyé, a rebondi ou a fait l'objet d'un désabonnement, pour garantir une livraison fiable.",
@@ -831,7 +827,7 @@ const fr: LegalDictionary = {
         paragraphs: [],
         list: [
           "Pour sélectionner et envoyer vos e-mails OneRead.",
-          "Pour personnaliser cette sélection selon vos centres d'intérêt et vos langues.",
+          "Pour livrer l'édition dans la bonne langue de lecture.",
           "Pour gérer votre abonnement et traiter les demandes de désabonnement.",
           "Pour améliorer la qualité et la fiabilité du service.",
           "Pour prévenir les abus et assurer la sécurité du service.",
@@ -852,7 +848,7 @@ const fr: LegalDictionary = {
       {
         heading: "Prestataires d'IA",
         paragraphs: [
-          "Nous utilisons des systèmes automatisés et d'IA pour nous aider à générer résumés et notes. Lorsque des prestataires d'IA sont impliqués, le **contenu source et les métadonnées** que nous résumons — articles pour OneArticle, informations sur les films pour OneFilm — peuvent être traités par eux. Nous ne transmettons les adresses e-mail des abonnés aux prestataires d'IA que si nécessaire, et nous nous efforçons de ne partager que ce qui est utile à la production d'un e-mail.",
+          "Les éditions OneArticle sont rédigées et programmées par notre équipe éditoriale. Nous pouvons faire appel à des prestataires d'infrastructure courants pour exploiter le service, mais les adresses e-mail des abonnés ne sont pas transmises à des prestataires de génération de contenu.",
         ],
       },
       {

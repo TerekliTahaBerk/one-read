@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { createOneReadPortalUrl } from "@/lib/oneread/checkout";
 import { resolveOneReadState } from "@/lib/oneread/access";
+import { hasVerifiedEmail } from "@/lib/oneread/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
   const email = parseEmail((payload as { email?: unknown })?.email);
   if (!email) {
     return NextResponse.json({ ok: false, error: "Please enter a valid email." }, { status: 400 });
+  }
+  if (!hasVerifiedEmail(email)) {
+    return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
   }
 
   try {

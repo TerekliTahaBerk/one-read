@@ -76,6 +76,8 @@ export async function sendDailyEmail(args: {
   subject: string;
   text: string;
   html: string;
+  /** Stable key used by Resend to prevent duplicate delivery across retries. */
+  idempotencyKey?: string;
 }): Promise<{ messageId?: string }> {
   warnIfMisconfigured();
   if (!resend) {
@@ -86,13 +88,16 @@ export async function sendDailyEmail(args: {
     return {};
   }
 
-  const { data, error } = await resend.emails.send({
-    from: FROM,
-    to: args.to,
-    subject: args.subject,
-    text: args.text,
-    html: args.html,
-  });
+  const { data, error } = await resend.emails.send(
+    {
+      from: FROM,
+      to: args.to,
+      subject: args.subject,
+      text: args.text,
+      html: args.html,
+    },
+    args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
+  );
   if (error) {
     throw new Error(`[resend] ${error.name}: ${error.message}`);
   }

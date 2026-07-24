@@ -61,7 +61,9 @@ export default async function AuditPage({
           >
             <option value="">Any</option>
             <option value="ProductSubscription">ProductSubscription</option>
-            <option value="TopicDailyPick">TopicDailyPick</option>
+            <option value="OneArticleIssue">OneArticleIssue</option>
+            <option value="OneArticleDelivery">OneArticleDelivery</option>
+            <option value="OperationalRun">OperationalRun</option>
           </select>
         </FilterField>
         <button

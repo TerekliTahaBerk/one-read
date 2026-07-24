@@ -21,14 +21,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * One-Article preferences are "complete" — i.e. enough to render an email —
- * when the subscriber has at least one interest and a chosen summary language.
+ * when the subscriber has chosen a reading language. Legacy interest fields
+ * remain stored but no longer participate in eligibility.
  */
 export function preferencesComplete(
   prefs: Pick<ArticlePreferences, "interests" | "summaryLanguage"> | null,
 ): boolean {
-  return Boolean(
-    prefs && prefs.interests.length > 0 && prefs.summaryLanguage,
-  );
+  return Boolean(prefs?.summaryLanguage);
 }
 
 /** Builds the structural input that `canReceiveOneArticleEmail` expects. */

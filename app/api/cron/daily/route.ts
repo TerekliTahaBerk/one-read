@@ -1,39 +1,18 @@
 import { NextResponse } from "next/server";
-import { runDailyPipeline, type SendArgs } from "@/lib/pipeline";
-import { sendDailyEmail } from "@/lib/resend";
-import {
-  finishOperationalRun,
-  startOperationalRun,
-} from "@/lib/admin/one-article-ops";
-import { getRuntimeSettings } from "@/lib/admin/settings-store";
+import { getControls } from "@/lib/admin/settings-store";
+import { finishOperationalRun, startOperationalRun } from "@/lib/admin/one-article-ops";
+import { notifyRunFailure } from "@/lib/admin/operational-runs";
 import { recordAudit } from "@/lib/admin/audit";
-import { isSendDay, oneArticleSendDays } from "@/lib/schedule";
-import { notifyRunFailure, notifyZeroDelivery } from "@/lib/admin/operational-runs";
-
-function oneArticleTimezone(): string {
-  return process.env.ONE_ARTICLE_TIMEZONE?.trim() || "Europe/Istanbul";
-}
+import { dispatchDueEditorialIssues } from "@/lib/one-article/editorial";
+import { getResendStatus } from "@/lib/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5 min — generation + sending may take time
+export const maxDuration = 300;
 
 /**
- * GET/POST /api/cron/daily
- *
- * Runs the full editorial pipeline:
- *   1. Ingest candidates  →  Article rows
- *   2. Pick best per topic →  TopicDailyPick rows
- *   3. Match per subscriber → DailySend rows
- *   4. Generate / reuse summaries
- *   5. Send via Resend
- *
- * Auth: requires `Authorization: Bearer ${CRON_SECRET}`. This is what
- * Vercel Cron sends automatically when configured in `vercel.json`.
- *
- * Optional query params:
- *   ?dryRun=1   Render and queue, but skip the actual email send.
- *   ?date=YYYY-MM-DD   Run for a specific UTC date (default: today).
+ * OneArticle editorial dispatcher. Content creation is deliberately absent:
+ * the panel owns copy, readiness and scheduling; cron only sends due editions.
  */
 async function handler(request: Request): Promise<Response> {
   const auth = request.headers.get("authorization") ?? "";
@@ -42,110 +21,53 @@ async function handler(request: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const runtimeSettings = await getRuntimeSettings();
-  const controls = runtimeSettings.controls.oneArticle;
-  const url = new URL(request.url);
-  const dryRun = url.searchParams.get("dryRun") === "1" || controls.dryRun;
-  const dateParam = url.searchParams.get("date");
-  const date = dateParam ? new Date(dateParam + "T00:00:00Z") : undefined;
-  const requireApproval = controls.requireApproval;
+  const controls = (await getControls()).oneArticle;
   const run = await startOperationalRun({
     route: "/api/cron/daily",
-    dryRun,
-    requireApproval,
-    metadata: { date: dateParam ?? null, cronEnabled: controls.cronEnabled },
+    dryRun: false,
+    requireApproval: true,
+    metadata: { mode: "manual-editorial-dispatch", cronEnabled: controls.cronEnabled },
   });
-
   if (!controls.cronEnabled) {
-    await finishOperationalRun({
-      id: run.id,
-      status: "SKIPPED",
-      error: "ONE_ARTICLE_CRON_ENABLED=false",
-    });
-    await recordAudit({
-      actor: "cron",
-      action: "oneArticle.cron.skipped",
-      targetType: "OperationalRun",
-      targetId: run.id,
-      metadata: { reason: "cron_disabled" },
-    });
+    await finishOperationalRun({ id: run.id, status: "SKIPPED", error: "cron_disabled" });
     return NextResponse.json({ ok: true, skipped: true, reason: "cron_disabled" });
   }
-
-  if (!dateParam && !isSendDay(date ?? new Date(), oneArticleTimezone(), oneArticleSendDays(runtimeSettings.oneArticleSendDays))) {
-    await finishOperationalRun({
-      id: run.id,
-      status: "SKIPPED",
-      error: "not_scheduled_day",
-    });
-    await recordAudit({
-      actor: "cron",
-      action: "oneArticle.cron.skipped",
-      targetType: "OperationalRun",
-      targetId: run.id,
-      metadata: { reason: "not_scheduled_day" },
-    });
-    return NextResponse.json({ ok: true, skipped: true, reason: "not_scheduled_day" });
+  if (controls.dryRun) {
+    await finishOperationalRun({ id: run.id, status: "SKIPPED", error: "dry_run_enabled" });
+    return NextResponse.json({ ok: true, skipped: true, reason: "dry_run_enabled" });
   }
 
   try {
-    const result = await runDailyPipeline({
-      date,
-      dryRun,
-      requireApproval,
-      thresholds: {
-        minArticleScore: runtimeSettings.minArticleScore,
-        minDeliveryScore: runtimeSettings.minDeliveryScore,
-        minSummaryConfidence: runtimeSettings.minSummaryConfidence,
-      },
-      send: dryRun ? undefined : (args: SendArgs) => sendDailyEmail(args),
-    });
+    if (!getResendStatus().hasApiKey) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+    const result = await dispatchDueEditorialIssues();
     await finishOperationalRun({
       id: run.id,
       status: "SUCCESS",
-      generatedCount: result.picks,
-      sentCount: result.sends.sent,
-      skippedCount: result.sends.skipped,
-      failedCount: result.sends.failed,
-      metadata: result as never,
+      generatedCount: 0,
+      sentCount: result.sent,
+      skippedCount: result.skipped,
+      failedCount: result.failed,
+      metadata: { ...result },
     });
-    if (!dryRun && result.subscribers.active > 0 && result.sends.sent === 0) {
-      await notifyZeroDelivery({ productName: "OneArticle", route: "/api/cron/daily", eligible: result.subscribers.active });
-    }
     await recordAudit({
       actor: "cron",
-      action: "oneArticle.cron.run",
+      action: "oneArticle.editorial.dispatch",
       targetType: "OperationalRun",
       targetId: run.id,
-      metadata: {
-        date: result.date,
-        dryRun,
-        sent: result.sends.sent,
-        skipped: result.sends.skipped,
-        failed: result.sends.failed,
-      },
+      metadata: { ...result },
     });
     return NextResponse.json({ ok: true, ...result });
-  } catch (err) {
-    console.error("[cron/daily] failed:", err);
-    const message = err instanceof Error ? err.message : "Pipeline failed";
-    await finishOperationalRun({
-      id: run.id,
-      status: "FAILED",
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "editorial_dispatch_failed";
+    await finishOperationalRun({ id: run.id, status: "FAILED", error: message });
+    await notifyRunFailure({
+      productName: "OneArticle",
+      route: "/api/cron/daily",
       error: message,
     });
-    await notifyRunFailure({ productName: "OneArticle", route: "/api/cron/daily", error: message });
-    await recordAudit({
-      actor: "cron",
-      action: "oneArticle.cron.failure",
-      targetType: "OperationalRun",
-      targetId: run.id,
-      metadata: { error: message },
-    });
-    return NextResponse.json(
-      { ok: false, error: "Pipeline failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: "Editorial dispatch failed" }, { status: 500 });
   }
 }
 

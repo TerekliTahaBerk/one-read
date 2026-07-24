@@ -27,7 +27,7 @@ export default async function OneArticleSubscribersPage({
 
   const now = new Date();
   const subs = await loadOneArticleSubs();
-  let rows = subs.map((s) => toSubRow(s, now));
+  let rows = await Promise.all(subs.map((s) => toSubRow(s, now)));
   if (searchParams.reason) {
     rows = rows.filter((r) => r.reason === searchParams.reason);
   }
@@ -50,8 +50,7 @@ export default async function OneArticleSubscribersPage({
             "Plan",
             "Provider",
             "Period ends",
-            "Languages",
-            "Interests",
+            "Reading language",
             "",
           ]}
           empty="No subscribers match."
@@ -62,10 +61,7 @@ export default async function OneArticleSubscribersPage({
             <span key="pl" className="text-admin-body">{r.plan ?? "—"}</span>,
             <span key="pv" className="text-admin-body">{r.provider ?? "—"}</span>,
             <span key="pe" className="text-admin-body">{fmtDate(r.currentPeriodEnd)}</span>,
-            <span key="l" className="text-admin-body">
-              {(r.sourceLanguage ?? "—") + " → " + (r.summaryLanguage ?? "—")}
-            </span>,
-            <span key="i" className="text-admin-body">{r.interestsCount}</span>,
+            <span key="l" className="text-admin-body">{r.summaryLanguage ?? "Needs language"}</span>,
             <Link key="v" href={`/admin/users/${r.id}`} className="text-admin-ink underline underline-offset-2">
               View
             </Link>,

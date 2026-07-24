@@ -21,6 +21,7 @@ import { getRunSnapshot, runStatusLabel, type RunSnapshot } from "@/lib/admin/op
 import { ONE_FILM_PRODUCT_KEY, ONE_LINGO_PRODUCT_KEY } from "@/lib/options";
 import { getLlmStatus } from "@/lib/llm";
 import { fmtAgo, fmtWhen, todayUtc } from "@/lib/admin/format";
+import { getResendStatus } from "@/lib/resend";
 
 export interface ProductHealthSummary {
   key: string;
@@ -50,37 +51,35 @@ async function latestSentAt(
 }
 
 export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
-  const [m, readiness, lastSent] = await Promise.all([
+  const [m, nextIssue, lastSent] = await Promise.all([
     getOverviewMetrics(),
-    getOneArticleIssueReadiness({ date: todayUtc() }),
-    latestSentAt("dailySend"),
+    prisma.oneArticleIssue.findFirst({
+      where: { status: "SCHEDULED", scheduledFor: { gte: new Date() } },
+      orderBy: { scheduledFor: "asc" },
+    }),
+    prisma.oneArticleDelivery.findFirst({
+      where: { status: "SENT" },
+      orderBy: { sentAt: "desc" },
+      select: { sentAt: true },
+    }).then((row) => row?.sentAt ?? null),
   ]);
-  const cronOn = (await getControls()).oneArticle.cronEnabled;
-  const aiOk = getOneArticleAiStatus().blocker === null;
-  const next = nextOneArticleSend();
+  const controls = (await getControls()).oneArticle;
+  const cronOn = controls.cronEnabled;
+  const emailReady = getResendStatus().hasApiKey;
 
   let health: Health = "ok";
-  let headline = "Ready for the next send";
-  if (readiness.alreadySentCount > 0) {
-    health = "ok";
-    headline = "Delivered today";
-  } else if (!aiOk) {
+  let headline = nextIssue ? "Next edition is scheduled" : "No edition scheduled";
+  if (!emailReady) {
     health = "problem";
-    headline = "AI brain needs setup";
+    headline = "Email delivery is not configured";
   } else if (!cronOn) {
     health = "attention";
     headline = "Automatic sending is off";
-  } else if (readiness.status === "Needs content") {
+  } else if (controls.dryRun) {
     health = "attention";
-    headline = "No issue prepared yet";
-  } else if (readiness.status === "Needs approval") {
+    headline = "Delivery is in preview mode";
+  } else if (!nextIssue) {
     health = "attention";
-    headline = "Waiting for your approval";
-  } else if (readiness.blockers.length > 0) {
-    health = "problem";
-    headline = "Needs attention";
-  } else if (readiness.status === "Ready for scheduled send") {
-    headline = "Ready to send";
   }
 
   return {
@@ -90,9 +89,11 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
     health,
     headline,
     facts: [
-      ["Today's issue", issuePhrase(readiness.status)],
-      ["Automatic sending", cronOn ? `On · next ${fmtWhen(next.utc)}` : "Off"],
-      ["AI brain", aiOk ? "Working" : "Needs setup"],
+      ["Next edition", nextIssue ? `${nextIssue.readingLanguage} · ${fmtWhen(nextIssue.scheduledFor)}` : "Nothing scheduled"],
+      ["Automatic sending", cronOn ? "On · checks every 10 minutes" : "Off"],
+      ["Delivery mode", controls.dryRun ? "Preview only" : "Live"],
+      ["Email delivery", emailReady ? "Connected" : "Needs setup"],
+      ["Content mode", "Manual editorial"],
       ["Subscribers", `${m.eligibleCount} ready to receive`],
       ["Last delivered", fmtAgo(lastSent)],
     ],

@@ -11,7 +11,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Record<
   const guard = guardAdminPage("/admin/runs", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const product = typeof searchParams.product === "string" ? searchParams.product : undefined;
-  const activeProducts = ["one-article", "one-film"];
+  const activeProducts = ["one-article"];
   const selectedProduct = product && activeProducts.includes(product) ? product : undefined;
   const runs = await prisma.operationalRun.findMany({
     where: selectedProduct ? { productKey: selectedProduct } : { productKey: { in: activeProducts } },

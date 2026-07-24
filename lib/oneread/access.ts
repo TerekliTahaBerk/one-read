@@ -13,14 +13,13 @@ import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import type { SubscribeLookupResult } from "@/lib/subscriptions";
 
 /**
- * OneRead umbrella access model. A OneRead subscriber holds up to three
+ * OneRead access model. A current subscriber holds two
  * `ProductSubscription` rows per Contact:
  *   - `productKey = "one-read"`   — the billing row (Polar checkout/webhook).
  *   - `productKey = "one-article"` — preferences-holder row; may ALSO be a real
  *     legacy paid subscription for pre-umbrella customers.
- *   - `productKey = "one-film"`    — same idea, for OneFilm.
  *
- * Access to a product is granted if EITHER that product's own row has valid
+ * Access to OneArticle is granted if EITHER its own row has valid
  * access (legacy path) OR the contact's `one-read` row has valid access
  * (umbrella path). This is fully additive — no schema changes, no migration.
  */
@@ -191,7 +190,7 @@ export async function resolveOneFilmEligibilityForContact(
 }
 
 /**
- * Once at least one of Article/Film preferences is complete, the `one-read`
+ * Once OneArticle preferences are complete, the `one-read`
  * row can move from PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors
  * `markReadyForCheckout` in lib/subscriptions.ts — never touches trial fields,
  * Polar owns those.
@@ -199,23 +198,16 @@ export async function resolveOneFilmEligibilityForContact(
 export async function markOneReadReadyForCheckoutIfEligible(
   contactId: string,
 ): Promise<ProductSubscription | null> {
-  const [oneRead, articleHolder, filmHolder] = await Promise.all([
+  const [oneRead, articleHolder] = await Promise.all([
     findOneReadRow(contactId),
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
       include: { preferences: true },
     }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-      include: { filmPreferences: true },
-    }),
   ]);
   if (!oneRead) return null;
 
-  const anyPrefsComplete =
-    preferencesComplete(articleHolder?.preferences ?? null) ||
-    filmPreferencesComplete(filmHolder?.filmPreferences ?? null);
-  if (!anyPrefsComplete) return oneRead;
+  if (!preferencesComplete(articleHolder?.preferences ?? null)) return oneRead;
 
   if (
     oneRead.status === "ADMIN_OVERRIDE" ||

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { ArticleSubscribePageContent } from "@/components/ArticleSubscribePageContent";
-import { isMockAllowed } from "@/lib/billing/mock";
-import { isBillingConfigured } from "@/lib/billing/provider";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Subscribe — OneArticle",
@@ -10,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ArticleSubscribePage() {
-  // Billing CTAs are live when a provider is usable: mock in dev (or an
-  // explicit prod preview), or any configured provider. Otherwise CTAs degrade
-  // to a pricing-page link.
-  const billingEnabled = isMockAllowed() || isBillingConfigured();
-
-  return <ArticleSubscribePageContent billingEnabled={billingEnabled} />;
+  redirect("/subscribe");
 }

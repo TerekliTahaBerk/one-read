@@ -2,10 +2,9 @@
 export function oneArticleTabs() {
   return [
     { key: "overview", label: "Overview", href: "/admin/one-article" },
-    { key: "new", label: "New article", href: "/admin/one-article/new" },
+    { key: "new", label: "New edition", href: "/admin/one-article/new" },
     { key: "subscribers", label: "Subscribers", href: "/admin/one-article/subscribers" },
     { key: "issues", label: "Issues", href: "/admin/one-article/issues" },
-    { key: "articles", label: "Articles", href: "/admin/one-article/articles" },
     { key: "sends", label: "Sends", href: "/admin/one-article/sends" },
   ] as const;
 }

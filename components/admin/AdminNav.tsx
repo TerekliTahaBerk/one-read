@@ -58,6 +58,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         matchPrefix: "/admin/one-film",
         badge: productBadge("one-film"),
         icon: "film",
+        disabled: true,
       },
     ],
   },
@@ -82,18 +83,10 @@ const NAV = NAV_GROUPS.flatMap((group) => group.items);
 const SUB_NAV: Record<string, { href: string; label: string }[]> = {
   "/admin/one-article": [
     { href: "/admin/one-article", label: "Overview" },
-    { href: "/admin/one-article/new", label: "New article" },
+    { href: "/admin/one-article/new", label: "New edition" },
     { href: "/admin/one-article/subscribers", label: "Subscribers" },
     { href: "/admin/one-article/issues", label: "Issues" },
-    { href: "/admin/one-article/articles", label: "Articles" },
     { href: "/admin/one-article/sends", label: "Sends" },
-  ],
-  "/admin/one-film": [
-    { href: "/admin/one-film", label: "Overview" },
-    { href: "/admin/one-film/subscribers", label: "Subscribers" },
-    { href: "/admin/one-film/issues", label: "Issues" },
-    { href: "/admin/one-film/catalog", label: "Catalog" },
-    { href: "/admin/one-film/sends", label: "Sends" },
   ],
 };
 

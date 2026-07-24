@@ -4,7 +4,7 @@ import { OneReadSignup } from "@/components/OneReadSignup";
 export const metadata: Metadata = {
   title: "Start OneRead",
   description:
-    "Set up OneArticle, OneFilm, or both — one subscription covers everything.",
+    "Choose your reading language and start OneArticle with OneRead.",
 };
 
 export default function SubscribePage() {

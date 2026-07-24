@@ -1,145 +1,77 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { guardAdminPage } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { IssueEmptyActions } from "@/components/admin/IssueEmptyActions";
-import { ApproveAllButton } from "@/components/admin/ApproveAllButton";
-import { loadIssues } from "@/lib/admin/issues-read";
 import { oneArticleTabs } from "@/lib/admin/nav";
-import { topicBySlug } from "@/lib/topics";
-import { fmtDate, fmtDateTime, todayUtc } from "@/lib/admin/format";
-import { labelFor } from "@/lib/admin/labels";
-import { getOneArticleIssueReadiness } from "@/lib/admin/one-article-ops";
-import { QuickIssueAction } from "@/components/admin/QuickIssueAction";
+import { prisma } from "@/lib/prisma";
+import { fmtDateTime } from "@/lib/admin/format";
+import { SUMMARY_LANGUAGES } from "@/lib/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** /admin/one-article/issues — prepared daily issues (TopicDailyPicks) for a date. */
-export default async function IssuesListPage({
+export default async function EditorialIssuesPage({
   searchParams,
 }: {
-  searchParams: { date?: string; status?: string; approval?: string };
+  searchParams: { status?: string; language?: string };
 }) {
   const guard = guardAdminPage("/admin/one-article/issues", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
-
-  const today = todayUtc();
-  const iso = searchParams.date ?? today.toISOString().slice(0, 10);
-  const date = new Date(iso + "T00:00:00Z");
-
-  const readiness = await getOneArticleIssueReadiness({ date });
-  let issues = await loadIssues(date);
-  if (searchParams.status) issues = issues.filter((i) => i.status === searchParams.status);
-  if (searchParams.approval) issues = issues.filter((i) => i.approvalStatus === searchParams.approval);
-
+  const where: Prisma.OneArticleIssueWhereInput = {};
+  if (searchParams.status) where.status = searchParams.status;
+  if (searchParams.language) where.readingLanguage = searchParams.language;
+  const issues = await prisma.oneArticleIssue.findMany({
+    where,
+    orderBy: [{ scheduledFor: "desc" }, { updatedAt: "desc" }],
+    take: 200,
+  });
+  const deliveryCounts =
+    issues.length > 0
+      ? await prisma.oneArticleDelivery.groupBy({
+          by: ["issueId", "status"],
+          where: { issueId: { in: issues.map((issue) => issue.id) } },
+          _count: { _all: true },
+        })
+      : [];
+  const deliveryCount = (issueId: string, status: string) =>
+    deliveryCounts.find(
+      (row) => row.issueId === issueId && row.status === status,
+    )?._count._all ?? 0;
   return (
     <AdminShell
-      title="Issues"
-      subtitle={`Prepared issues for ${iso}`}
-      actions={
-        <div className="flex items-center gap-2">
-          <ApproveAllButton endpoint="/api/admin/issues/action" date={iso} label={`Approve all ready · ${iso}`} />
-          <Link
-            href="/admin/manual-article"
-            className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-[12.5px] text-admin-ink hover:bg-admin-sink"
-          >
-            + Create issue from article
-          </Link>
-        </div>
-      }
+      title="Editions"
+      subtitle="Manual, language-specific OneArticle publishing"
+      actions={<Link href="/admin/one-article/new" className="rounded-lg bg-admin-accent px-3 py-2 text-[12.5px] text-white">+ New edition</Link>}
     >
       <AdminTabs tabs={oneArticleTabs()} active="issues" />
-
-      <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Date</span>
-          <input
-            type="date"
-            name="date"
-            defaultValue={iso}
-            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Approval</span>
-          <select name="approval" defaultValue={searchParams.approval ?? ""} className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink">
-            <option value="">Any</option>
-            {["PENDING", "APPROVED", "SCHEDULED", "CANCELED"].map((s) => (
-              <option key={s} value={s}>{labelFor(s)}</option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink">
-          Apply
-        </button>
-        <Link href="/admin/one-article/issues" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
-          Today
-        </Link>
+      <form method="get" className="mb-5 flex flex-wrap items-end gap-3 text-[12.5px]">
+        <label><span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">Status</span><select name="status" defaultValue={searchParams.status ?? ""} className={filterClass}><option value="">All</option>{["DRAFT", "READY", "SCHEDULED", "SENDING", "SENT", "PARTIALLY_FAILED", "FAILED", "CANCELED"].map((status) => <option key={status}>{status}</option>)}</select></label>
+        <label><span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">Language</span><select name="language" defaultValue={searchParams.language ?? ""} className={filterClass}><option value="">All</option>{SUMMARY_LANGUAGES.map((language) => <option key={language}>{language}</option>)}</select></label>
+        <button className={filterClass}>Apply</button>
+        <Link href="/admin/one-article/issues" className="px-2 py-2 text-admin-muted">Reset</Link>
       </form>
-
-      {issues.length === 0 ? (
-        <AdminCard title="No issue prepared" subtitle={readiness.status} bodyClassName="p-4">
-          <div className="space-y-4 text-[12.5px] font-sans">
-            <p className="text-admin-body">
-              No issue exists for {iso}. Prepare creates content only; it never sends subscriber email.
-            </p>
-            {[...readiness.blockers, ...readiness.warnings].length > 0 && (
-              <div>
-                <div className="mb-1 text-[10px] uppercase tracking-eyebrow text-admin-muted">Current blockers</div>
-                <ul className="space-y-1 text-dawn">
-                  {[...readiness.blockers, ...readiness.warnings].map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              </div>
-            )}
-            <p className="text-admin-body">Next action: {readiness.nextAction}</p>
-            <IssueEmptyActions dateIso={iso} />
-          </div>
-        </AdminCard>
-      ) : (
-        <AdminCard>
-          <AdminTable
-            head={[
-              "Date",
-              "Topic",
-              "Source language",
-              "Article",
-              "Status",
-              "Approval",
-              "Scheduled",
-              "Languages",
-              "Recipients",
-              "Delivered",
-              "Skipped",
-              "Failed",
-              "",
-              "",
-            ]}
-            empty="No issues prepared for this day yet."
-            rows={issues.map((i) => [
-              <span key="d" className="text-admin-body">{fmtDate(i.date)}</span>,
-              topicBySlug(i.topic)?.label ?? i.topic,
-              <span key="sl" className="text-admin-body">{i.sourceLanguage}</span>,
-              <span key="a" className="text-admin-ink/90">{i.articleTitle}</span>,
-              <StatusBadge key="s" value={i.status} />,
-              <StatusBadge key="ap" value={i.approvalStatus} />,
-              <span key="sc" className="text-admin-body">{fmtDateTime(i.scheduledFor)}</span>,
-              <span key="l" className="text-admin-body">{i.summaryLanguages.join(", ") || "—"}</span>,
-              <span key="rc" title="Recipients for this issue">{i.recipientCount}</span>,
-              i.sentCount,
-              i.skippedCount,
-              <span key="f" className={i.failedCount > 0 ? "text-dawn" : ""}>{i.failedCount}</span>,
-              <Link key="v" href={`/admin/one-article/issues/${i.id}`} className="text-admin-ink underline underline-offset-2">
-                View
-              </Link>,
-              i.approvalStatus === "PENDING" && i.status === "READY" ? <QuickIssueAction key="qa" endpoint="/api/admin/issues/action" idKey="pickId" id={i.id} action="approve" label="Approve" /> : null,
-            ])}
-          />
-        </AdminCard>
-      )}
+      <AdminCard>
+        <AdminTable
+          head={["Headline", "Language", "Status", "Scheduled", "Delivered", "Failed", "Updated", ""]}
+          empty="No editorial editions match these filters."
+          rows={issues.map((issue) => [
+            <span key="h" className="block min-w-[220px] font-medium text-admin-ink">{issue.headline}</span>,
+            issue.readingLanguage,
+            <StatusBadge key="s" value={issue.status} />,
+            <span key="sc" className="whitespace-nowrap text-admin-body">{fmtDateTime(issue.scheduledFor)}</span>,
+            deliveryCount(issue.id, "SENT"),
+            <span key="f" className={deliveryCount(issue.id, "FAILED") > 0 ? "text-rose-700" : ""}>{deliveryCount(issue.id, "FAILED")}</span>,
+            <span key="u" className="whitespace-nowrap text-admin-body">{fmtDateTime(issue.updatedAt)}</span>,
+            <Link key="v" href={`/admin/one-article/issues/${issue.id}`} className="text-admin-ink underline underline-offset-2">Open</Link>,
+          ])}
+        />
+      </AdminCard>
     </AdminShell>
   );
 }
+
+const filterClass = "rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink";

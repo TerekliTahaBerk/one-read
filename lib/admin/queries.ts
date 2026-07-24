@@ -1,7 +1,7 @@
 import type { ArticlePreferences, ProductSubscription } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { ONE_ARTICLE_PRODUCT_KEY } from "@/lib/options";
-import { evaluateEligibility } from "@/lib/subscriptions";
+import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
+import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
 import type { EligibilityReason } from "@/lib/billing/access";
 import { todayUtc } from "@/lib/admin/format";
 
@@ -9,13 +9,16 @@ import { todayUtc } from "@/lib/admin/format";
  * Read-only aggregations for the admin dashboards. Everything here is derived
  * from real rows; when a metric cannot be computed it is reported as such
  * rather than guessed. Eligibility is always taken from the canonical
- * `evaluateEligibility` (which wraps `canReceiveOneArticleEmail`) — never
- * re-derived here.
+ * the current OneRead + OneArticle access resolver — never re-derived here.
  */
 
 export type SubWithRels = ProductSubscription & {
   preferences: ArticlePreferences | null;
-  contact: { email: string; createdAt: Date };
+  contact: {
+    email: string;
+    createdAt: Date;
+    subscriptions: ProductSubscription[];
+  };
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,7 +29,13 @@ export async function loadOneArticleSubs(): Promise<SubWithRels[]> {
     where: { productKey: ONE_ARTICLE_PRODUCT_KEY },
     include: {
       preferences: true,
-      contact: { select: { email: true, createdAt: true } },
+      contact: {
+        select: {
+          email: true,
+          createdAt: true,
+          subscriptions: { where: { productKey: ONE_READ_PRODUCT_KEY }, take: 1 },
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -88,6 +97,7 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
 
   const [
     subs,
+    billingSubs,
     totalContacts,
     sendsToday,
     picksToday,
@@ -99,31 +109,42 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
     billingEvents,
   ] = await Promise.all([
     loadOneArticleSubs(),
+    prisma.productSubscription.findMany({
+      where: { productKey: ONE_READ_PRODUCT_KEY },
+    }),
     prisma.contact.count(),
-    prisma.dailySend.groupBy({
+    prisma.oneArticleDelivery.groupBy({
       by: ["status"],
-      where: { date: today },
+      where: { createdAt: { gte: today } },
       _count: { _all: true },
     }),
-    prisma.topicDailyPick.findMany({
-      where: { date: today },
-      select: { approvalStatus: true },
+    prisma.oneArticleIssue.findMany({
+      where: {
+        OR: [
+          { createdAt: { gte: today } },
+          { scheduledFor: { gte: today, lt: new Date(today.getTime() + DAY_MS) } },
+        ],
+      },
+      select: { status: true },
     }),
-    prisma.dailySend.findFirst({
+    prisma.oneArticleDelivery.findFirst({
       where: { status: "SENT", sentAt: { not: null } },
       orderBy: { sentAt: "desc" },
       select: { sentAt: true },
     }),
-    prisma.article.count(),
-    prisma.article.count({ where: { scoringStatus: "SCORED" } }),
-    prisma.summary.count(),
+    prisma.oneArticleIssue.count(),
+    prisma.oneArticleIssue.count({ where: { status: "SENT" } }),
+    prisma.oneArticleDelivery.count({ where: { status: "SENT" } }),
     prisma.adminAuditLog.count(),
     prisma.billingEvent.count(),
   ]);
 
-  const access = countBy(subs, (s) => s.status);
+  const access = countBy(billingSubs, (s) => s.status);
   const email = countBy(subs, (s) => s.emailDeliveryStatus);
-  const eligibleCount = subs.filter((s) => evaluateEligibility(s, now).allowed).length;
+  const eligibility = await Promise.all(
+    subs.map((sub) => resolveOneArticleEligibilityForContact(sub.contactId, now)),
+  );
+  const eligibleCount = eligibility.filter((result) => result.allowed).length;
 
   // Contact "new" windows (umbrella-level — counts all contacts, not just
   // OneArticle subscribers).
@@ -134,33 +155,33 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
   ]);
 
   const paidStatuses = new Set(["ACTIVE_PAID", "PAST_DUE", "CANCELED"]);
-  const paidCount = subs.filter(
+  const paidCount = billingSubs.filter(
     (s) => s.paidAt != null || paidStatuses.has(s.status),
   ).length;
 
   const providers = countBy(
-    subs.filter((s) => s.paymentProvider),
+    billingSubs.filter((s) => s.paymentProvider),
     (s) => s.paymentProvider as string,
   );
   const plans = countBy(
-    subs.filter((s) => s.plan),
+    billingSubs.filter((s) => s.plan),
     (s) => s.plan as string,
   );
 
   const within = (end: Date | null, days: number): boolean =>
     !!end && end > now && end.getTime() - now.getTime() <= days * DAY_MS;
   const renewableStatuses = new Set(["ACTIVE_PAID", "TRIALING"]);
-  const renewals7d = subs.filter(
+  const renewals7d = billingSubs.filter(
     (s) => renewableStatuses.has(s.status) && !s.cancelAtPeriodEnd && within(s.currentPeriodEnd, 7),
   ).length;
-  const renewals30d = subs.filter(
+  const renewals30d = billingSubs.filter(
     (s) => renewableStatuses.has(s.status) && !s.cancelAtPeriodEnd && within(s.currentPeriodEnd, 30),
   ).length;
 
   const sendByStatus: Record<string, number> = {};
   for (const row of sendsToday) sendByStatus[row.status] = row._count._all;
 
-  const approvalToday = countBy(picksToday, (p) => p.approvalStatus);
+  const approvalToday = countBy(picksToday, (p) => p.status);
 
   // Next scheduled cron send (07:00 Europe/Istanbul = 04:00 UTC). If now is past
   // today's 04:00 UTC, the next run is tomorrow.
@@ -197,7 +218,7 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
     ops: {
       isoDate: iso,
       picksToday: picksToday.length,
-      approvedToday: (approvalToday["APPROVED"] ?? 0) + (approvalToday["SCHEDULED"] ?? 0),
+      approvedToday: (approvalToday["READY"] ?? 0) + (approvalToday["SCHEDULED"] ?? 0),
       scheduledToday: approvalToday["SCHEDULED"] ?? 0,
       sentToday: sendByStatus["SENT"] ?? 0,
       queuedToday: sendByStatus["QUEUED"] ?? 0,
@@ -231,19 +252,20 @@ export interface SubRow {
   suppressed: boolean;
 }
 
-export function toSubRow(s: SubWithRels, now = new Date()): SubRow {
-  const elig = evaluateEligibility(s, now);
+export async function toSubRow(s: SubWithRels, now = new Date()): Promise<SubRow> {
+  const elig = await resolveOneArticleEligibilityForContact(s.contactId, now);
+  const billing = s.contact.subscriptions[0] ?? s;
   return {
     id: s.id,
     email: s.contact.email,
-    status: s.status,
+    status: billing.status,
     emailDeliveryStatus: s.emailDeliveryStatus,
-    provider: s.paymentProvider,
-    plan: s.plan,
-    adminOverride: s.adminOverride,
-    currentPeriodEnd: s.currentPeriodEnd,
-    paidAt: s.paidAt,
-    trialEndsAt: s.trialEndsAt,
+    provider: billing.paymentProvider,
+    plan: billing.plan,
+    adminOverride: billing.adminOverride || s.adminOverride,
+    currentPeriodEnd: billing.currentPeriodEnd,
+    paidAt: billing.paidAt,
+    trialEndsAt: billing.trialEndsAt,
     createdAt: s.contact.createdAt,
     updatedAt: s.updatedAt,
     interestsCount: s.preferences?.interests.length ?? 0,

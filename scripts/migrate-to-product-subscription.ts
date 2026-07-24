@@ -127,7 +127,7 @@ async function main() {
       // created by signup/start before it ever had preferences.
       skipped += 1;
 
-      if (!existing.preferences && s.interests.length > 0) {
+      if (!existing.preferences && s.summaryLanguage) {
         await prisma.articlePreferences.create({
           data: {
             productSubscriptionId: existing.id,

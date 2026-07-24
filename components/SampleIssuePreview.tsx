@@ -192,7 +192,7 @@ export function SampleIssuePreview() {
             </p>
             <p className="font-sans text-[12.5px] leading-[1.55] text-fog">
               This is an example of the format. Real OneArticle emails are chosen
-              around your interests, source language, and summary preferences.
+              in the reading language you choose.
             </p>
           </div>
         </div>

@@ -28,7 +28,9 @@ export async function POST(req: Request) {
 
   const denied = requireAdmin(req, body);
   if (denied) return denied;
+  return NextResponse.json({ ok: false, error: "product_inactive" }, { status: 410 });
 
+  /*
   const issueId = typeof body.issueId === "string" ? body.issueId : "";
   const action = typeof body.action === "string" ? body.action : "";
   const actor = adminActorLabel(req, body);
@@ -268,6 +270,7 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ ok: true, result });
+  */
 }
 
 function metaObject(value: Prisma.JsonValue | null): Record<string, Prisma.JsonValue> {

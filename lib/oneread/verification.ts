@@ -1,8 +1,8 @@
 import { createVerification, type VerificationDescriptor } from "@/lib/verification/core";
 
 /**
- * Email verification for the unified OneRead onboarding flow (covers both
- * OneArticle and OneFilm preference setup under one subscription). Thin
+ * Email verification for the unified OneRead onboarding flow (currently
+ * covers OneArticle reading-language setup). Thin
  * product binding over the shared verification core — see
  * lib/one-article/verification.ts for the original pattern this mirrors.
  * Verification proves email ownership only; Polar remains the sole source of
@@ -29,7 +29,7 @@ const descriptor: VerificationDescriptor = {
     intro: "Your OneRead verification code is:",
     textIntro: "Your OneRead code is:",
     support:
-      "Use this code to finish setting up your OneArticle and OneFilm preferences. Preferences are saved only after this email is verified.",
+      "Use this code to finish setting up your OneArticle reading language. Your choice is saved only after this email is verified.",
     theme: {
       background: "#F6F5F1",
       surface: "#FFFFFF",

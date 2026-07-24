@@ -12,7 +12,7 @@ import { topicBySlug } from "@/lib/topics";
 import { fmtDate, fmtDateTime, yesNo } from "@/lib/admin/format";
 import { UserActionsBar } from "@/components/admin/UserActionsBar";
 import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
-import { INTERESTS, SOURCE_LANGUAGES, SUMMARY_LANGUAGES } from "@/lib/options";
+import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
 import { ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import {
@@ -136,7 +136,7 @@ export default async function AdminUserDetailPage({
             <EligibilityBadge allowed={elig.allowed} reason={elig.reason} />
             <p className="mt-3 text-[12.5px] text-admin-body font-sans">
               {elig.allowed
-                ? "This subscriber will receive the daily OneArticle email when an issue matches their interests."
+                ? "This subscriber will receive scheduled OneArticle editions in their reading language."
                 : "This subscriber is not receiving emails right now. The badge above shows why."}
             </p>
           </div>
@@ -150,17 +150,17 @@ export default async function AdminUserDetailPage({
               "OneRead subscription status",
               oneReadSub ? <StatusBadge key="s" value={oneReadSub.status} /> : "No OneRead subscription",
             ],
-            ["Included products", oneReadSub ? "OneArticle, OneFilm" : "—"],
+            ["Included products", oneReadSub ? "OneArticle" : "—"],
             [
               "OneArticle eligibility",
               <EligibilityBadge key="a" allowed={oneReadElig.allowed} reason={oneReadElig.reason} />,
             ],
             [
-              "OneFilm subscription status",
+              "Historical OneFilm status",
               filmHolder ? <StatusBadge key="fs" value={filmHolder.status} /> : "No OneFilm record",
             ],
             [
-              "OneFilm eligibility",
+              "Historical OneFilm eligibility",
               <EligibilityBadge key="f" allowed={oneFilmElig.allowed} reason={oneFilmElig.reason} />,
             ],
             ["OneFilm preferences complete", yesNo(Boolean(filmHolder?.filmPreferences))],
@@ -194,12 +194,8 @@ export default async function AdminUserDetailPage({
         <div className="p-4 border-b border-admin-line">
           <PreferencesEditor
             subId={sub.id}
-            interests={INTERESTS}
-            sourceLanguages={SOURCE_LANGUAGES}
             summaryLanguages={SUMMARY_LANGUAGES}
             current={{
-              interests: prefs?.interests ?? [],
-              sourceLanguage: prefs?.sourceLanguage ?? null,
               summaryLanguage: prefs?.summaryLanguage ?? null,
             }}
           />
@@ -207,15 +203,7 @@ export default async function AdminUserDetailPage({
         {prefs ? (
           <DefList
             rows={[
-              ["Source language", prefs.sourceLanguage ?? "—"],
-              ["Summary language", prefs.summaryLanguage ?? "—"],
-              ["Primary interest", prefs.primaryInterest ?? "—"],
-              [
-                "Secondary interests",
-                prefs.secondaryInterests.length ? prefs.secondaryInterests.join(", ") : "—",
-              ],
-              ["Interests", prefs.interests.length ? prefs.interests.join(", ") : "—"],
-              ["Difficulty", prefs.preferredDifficulty],
+              ["Reading language", prefs.summaryLanguage ?? "—"],
               ["Timezone", prefs.timezone ?? "—"],
               ["Created", fmtDateTime(prefs.createdAt)],
               ["Updated", fmtDateTime(prefs.updatedAt)],

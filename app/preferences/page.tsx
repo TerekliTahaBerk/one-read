@@ -3,7 +3,7 @@ import { OneReadPreferences } from "@/components/OneReadPreferences";
 
 export const metadata: Metadata = {
   title: "Manage OneRead",
-  description: "Check your OneRead subscription status and edit your OneArticle and OneFilm preferences.",
+  description: "Check your OneRead subscription status and edit your OneArticle reading language.",
 };
 
 export default function PreferencesPage({

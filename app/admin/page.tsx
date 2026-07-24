@@ -8,7 +8,6 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import {
   getOneArticleHealth,
-  getFilmHealth,
 } from "@/lib/admin/health";
 import { fmtAgo, fmtWhen } from "@/lib/admin/format";
 
@@ -28,27 +27,26 @@ export default async function AdminOverviewPage({
   const guard = guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, oneArticle, film] = await Promise.all([
+  const [m, oneArticle] = await Promise.all([
     getOverviewMetrics(),
     getOneArticleHealth(),
-    getFilmHealth(),
   ]);
 
-  const products = [oneArticle, film];
+  const products = [oneArticle];
   const problems = products.filter((p) => p.health === "problem").length;
   const attention = products.filter((p) => p.health === "attention").length;
 
   const systemHealth: Health = problems > 0 ? "problem" : attention > 0 ? "attention" : "ok";
   const systemHeadline =
     problems > 0
-      ? `${problems} product${problems === 1 ? "" : "s"} need${problems === 1 ? "s" : ""} attention`
+      ? "OneArticle needs attention"
       : attention > 0
-        ? `${attention} product${attention === 1 ? "" : "s"} to look at`
-        : "Everything is running";
+        ? "OneArticle needs a look"
+        : "OneArticle is running";
   const systemDetail =
     systemHealth === "ok"
-      ? "All products are healthy. Nothing needs you right now."
-      : "The cards below show exactly what needs a look.";
+      ? "Delivery and scheduling are healthy. Nothing needs you right now."
+      : "The OneArticle card below shows exactly what needs a look.";
 
   const accessOrder = [
     "ACTIVE_PAID",
@@ -105,7 +103,7 @@ export default async function AdminOverviewPage({
         </Link>
       </AdminCard>
 
-      <Details summary="Technical details — subscriptions, billing, content">
+      <Details summary="Technical details — subscriptions, billing, editorial delivery">
         <div className="space-y-6">
           <div>
             <div className="mb-2 text-[11px] uppercase tracking-eyebrow text-admin-muted">
@@ -148,9 +146,9 @@ export default async function AdminOverviewPage({
             </div>
             <DefList
               rows={[
-                ["Articles ingested", String(m.content.articles)],
-                ["Scored articles", String(m.content.scoredArticles)],
-                ["Summaries generated", String(m.content.summaries)],
+                ["Editorial editions", String(m.content.articles)],
+                ["Editions fully sent", String(m.content.scoredArticles)],
+                ["Recipient deliveries sent", String(m.content.summaries)],
                 ["Audit events", String(m.content.auditEvents)],
                 ["Last delivery", fmtWhen(m.ops.lastSendAt)],
                 ["Last delivery (relative)", fmtAgo(m.ops.lastSendAt)],

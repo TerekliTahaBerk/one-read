@@ -30,7 +30,7 @@ export default async function AdminUsersPage({
 
   const now = new Date();
   const subs = await loadOneArticleSubs();
-  let rows = subs.map((s) => toSubRow(s, now));
+  let rows = await Promise.all(subs.map((s) => toSubRow(s, now)));
 
   // Filters (all read-only, applied in-memory over the small dataset).
   const f = searchParams;

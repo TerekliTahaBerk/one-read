@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { createOneReadCheckoutSession } from "@/lib/oneread/checkout";
+import { hasVerifiedEmail } from "@/lib/oneread/verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
  * POST /api/oneread/checkout
  * Body: { email: string }
  *
- * Starts the single OneRead umbrella checkout (covers OneArticle + OneFilm).
+ * Starts the single OneRead checkout (currently covers OneArticle only).
  * Returns one of:
  *   { ok, action: "redirect", url }        — go complete checkout
  *   { ok, action: "needs_setup" }          — finish preferences first
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
   const email = parseEmail(payload.email);
   if (!email) {
     return NextResponse.json({ ok: false, error: "Please enter a valid email." }, { status: 400 });
+  }
+  if (!hasVerifiedEmail(email)) {
+    return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
   }
 
   try {

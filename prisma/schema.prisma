@@ -79,6 +79,7 @@ model Contact {
   lingoSends       LingoDailySend[]
   filmPreferences  FilmPreferences[]
   filmSends        FilmDailySend[]
+  oneArticleDeliveries OneArticleDelivery[]
 }
 
 /// A single product subscription for a Contact. Holds the access lifecycle,
@@ -140,6 +141,7 @@ model ProductSubscription {
   sends            DailySend[]
   lingoSends       LingoDailySend[]
   filmSends        FilmDailySend[]
+  oneArticleDeliveries OneArticleDelivery[]
 
   @@unique([contactId, productKey])
   @@index([productKey, status])
@@ -416,6 +418,79 @@ model DailySend {
 
   @@unique([date, subscriberId])
   @@index([date, status])
+}
+
+/// A manually authored, language-specific OneArticle edition.
+model OneArticleIssue {
+  id              String   @id @default(cuid())
+  readingLanguage String
+
+  /// "DRAFT" | "READY" | "SCHEDULED" | "SENDING" | "SENT"
+  /// | "PARTIALLY_FAILED" | "FAILED" | "CANCELED"
+  status String @default("DRAFT")
+
+  scheduledFor DateTime?
+  timezone     String    @default("Europe/Istanbul")
+
+  subject     String
+  previewText String?
+  headline    String
+  bodyText    String  @db.Text
+  bodyHtml    String? @db.Text
+
+  sourceTitle String?
+  sourceName  String?
+  sourceUrl   String?
+  ctaLabel    String?
+  adminNotes  String? @db.Text
+
+  createdBy String
+  updatedBy String
+  version   Int    @default(1)
+
+  readyAt     DateTime?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  canceledAt  DateTime?
+  claimedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries OneArticleDelivery[]
+
+  @@index([status, scheduledFor])
+  @@index([readingLanguage, status])
+  @@index([createdAt])
+}
+
+/// Idempotent per-recipient delivery record for a OneArticle edition.
+model OneArticleDelivery {
+  id                    String   @id @default(cuid())
+  issueId               String
+  contactId             String
+  productSubscriptionId String
+
+  /// "QUEUED" | "SENDING" | "SENT" | "FAILED" | "SKIPPED"
+  status String @default("QUEUED")
+
+  providerMessageId String?
+  attemptCount      Int       @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  failedReason      String?   @db.Text
+  skippedReason     String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue               OneArticleIssue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, contactId])
+  @@index([issueId, status])
+  @@index([productSubscriptionId, status])
 }
 
 /// User reaction to a delivered article.

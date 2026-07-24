@@ -1,14 +1,4 @@
-import type { Metadata } from "next";
-import { FilmSubscribeSuccessContent } from "@/components/FilmSubscribeSuccessContent";
-
-export const metadata: Metadata = {
-  title: "Checkout received — OneFilm",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
+import { redirect } from "next/navigation";
 export default function FilmSubscribeSuccessPage() {
-  return <FilmSubscribeSuccessContent />;
+  redirect("/waitlist?product=onefilm");
 }

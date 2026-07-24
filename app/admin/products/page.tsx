@@ -46,15 +46,15 @@ export default async function AdminProductsPage({
               value={p.publicVisible ? "public" : "hidden"}
               tone={p.publicVisible ? "good" : "muted"}
             />,
-            p.connected ? (
+            p.status === "live" && p.connected ? (
               <span key="d" className="text-admin-body">Subscriptions</span>
             ) : (
-              <span key="d" className="text-admin-muted">Waitlist (Tally)</span>
+              <span key="d" className="text-admin-muted">Waitlist</span>
             ),
             p.key === "one-article" ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
-            ) : p.connected ? (
-              <span key="c" className="text-admin-muted">Use product operations for detailed metrics</span>
+            ) : p.key === "one-film" ? (
+              <span key="c" className="text-admin-muted">Inactive · historical data preserved</span>
             ) : (
               <span key="c" className="text-admin-muted">Waitlist count not available</span>
             ),
@@ -63,9 +63,9 @@ export default async function AdminProductsPage({
                 Operations →
               </Link>
             ) : p.key === "one-film" ? (
-              <Link key="a" href="/admin/one-film" className="text-admin-ink underline underline-offset-2">
-                Operations →
-              </Link>
+              <a key="a" href="/waitlist?product=onefilm" target="_blank" rel="noopener noreferrer" className="text-admin-body underline underline-offset-2">
+                Waitlist form ↗
+              </a>
             ) : (
               <a
                 key="a"
@@ -82,8 +82,8 @@ export default async function AdminProductsPage({
       </AdminCard>
 
       <p className="text-[12.5px] text-admin-muted font-sans">
-        The operations panel currently includes only the two open products:
-        OneArticle and OneFilm.
+        OneArticle is the only active operational product. Historical OneFilm
+        data remains preserved while new demand is collected on the waitlist.
       </p>
     </AdminShell>
   );
