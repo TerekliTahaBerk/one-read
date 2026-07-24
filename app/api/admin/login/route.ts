@@ -36,6 +36,6 @@ export async function POST(req: Request) {
 
   const next = sanitizeAdminNextPath(body.next);
   const res = NextResponse.json({ ok: true, next });
-  setAdminSessionCookie(res, process.env.ADMIN_EMAIL ?? email.trim().toLowerCase());
+  setAdminSessionCookie(res, email.trim().toLowerCase());
   return res;
 }

@@ -103,10 +103,10 @@ export default function AdminLoginPage({
                 Login isn&rsquo;t configured
               </h2>
               <p className="mt-2 text-[13px] leading-[1.6] text-admin-body">
-                Set the following environment variables to enable admin sign-in:
+                Configure a primary admin or the additional-admin JSON list:
               </p>
               <ul className="mt-3 space-y-1.5">
-                {["ADMIN_EMAIL", "ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET"].map(
+                {["ADMIN_EMAIL + ADMIN_PASSWORD_HASH", "ADMIN_ADDITIONAL_ACCOUNTS", "ADMIN_SESSION_SECRET"].map(
                   (name) => (
                     <li key={name} className="flex items-center gap-2 text-[12.5px]">
                       <span aria-hidden="true" className="h-1 w-1 rounded-full bg-admin-line-strong" />

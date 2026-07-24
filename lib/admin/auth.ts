@@ -20,17 +20,39 @@ export type AdminPageGuard =
   | { ok: true; session: AdminSession }
   | { ok: false; reason: "not_configured" };
 
+type ConfiguredAdminAccount = {
+  email: string;
+  passwordHash: string | null;
+  developmentPassword: string | null;
+};
+
 export function adminTokenConfigured(): boolean {
   return Boolean(process.env.ADMIN_TOKEN);
 }
 
 export function adminLoginConfigured(): boolean {
   return Boolean(
-    process.env.ADMIN_EMAIL &&
-      process.env.ADMIN_SESSION_SECRET &&
-      (process.env.ADMIN_PASSWORD_HASH ||
-        (process.env.NODE_ENV !== "production" && process.env.ADMIN_PASSWORD)),
+    process.env.ADMIN_SESSION_SECRET &&
+      getConfiguredAdminAccounts().some(
+        (account) =>
+          account.passwordHash ||
+          (process.env.NODE_ENV !== "production" && account.developmentPassword),
+      ),
   );
+}
+
+/**
+ * Canonical list of browser-login admins. Every listed account receives the
+ * same panel permissions; authorization remains feature-flag based.
+ *
+ * Backwards compatible primary account:
+ *   ADMIN_EMAIL + ADMIN_PASSWORD_HASH
+ *
+ * Additional accounts:
+ *   ADMIN_ADDITIONAL_ACCOUNTS='[{"email":"person@example.com","passwordHash":"pbkdf2_sha256:..."}]'
+ */
+export function configuredAdminEmails(): string[] {
+  return getConfiguredAdminAccounts().map((account) => account.email);
 }
 
 export function adminFeatureFlags() {
@@ -141,16 +163,20 @@ export async function verifyAdminCredentials(
   email: string,
   password: string,
 ): Promise<boolean> {
-  const expectedEmail = process.env.ADMIN_EMAIL ?? "";
-  if (!expectedEmail || !timingSafeStringEqual(email.trim().toLowerCase(), expectedEmail.trim().toLowerCase())) {
-    return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  const account = getConfiguredAdminAccounts().find((candidate) =>
+    timingSafeStringEqual(normalizedEmail, candidate.email),
+  );
+  if (!account) return false;
+
+  if (account.passwordHash) {
+    return verifyPasswordHash(password, account.passwordHash);
   }
-
-  const hash = process.env.ADMIN_PASSWORD_HASH;
-  if (hash) return verifyPasswordHash(password, hash);
-
-  if (process.env.NODE_ENV !== "production" && process.env.ADMIN_PASSWORD) {
-    return timingSafeStringEqual(password, process.env.ADMIN_PASSWORD);
+  if (
+    process.env.NODE_ENV !== "production" &&
+    account.developmentPassword
+  ) {
+    return timingSafeStringEqual(password, account.developmentPassword);
   }
 
   return false;
@@ -265,7 +291,7 @@ function verifyAdminSessionToken(token?: string): AdminSession | null {
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as AdminSessionPayload;
     if (!payload.email || !payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) return null;
-    if (process.env.ADMIN_EMAIL && payload.email !== process.env.ADMIN_EMAIL) return null;
+    if (!configuredAdminEmails().includes(payload.email.trim().toLowerCase())) return null;
     return { email: payload.email, expiresAt: new Date(payload.exp * 1000) };
   } catch {
     return null;
@@ -329,6 +355,58 @@ function safeBufferEqual(a: Buffer, b: Buffer): boolean {
     return false;
   }
   return timingSafeEqual(a, b);
+}
+
+function getConfiguredAdminAccounts(): ConfiguredAdminAccount[] {
+  const accounts: ConfiguredAdminAccount[] = [];
+  const primaryEmail = normalizeAdminEmail(process.env.ADMIN_EMAIL);
+  if (primaryEmail) {
+    accounts.push({
+      email: primaryEmail,
+      passwordHash: clean(process.env.ADMIN_PASSWORD_HASH),
+      developmentPassword: clean(process.env.ADMIN_PASSWORD),
+    });
+  }
+
+  const raw = process.env.ADMIN_ADDITIONAL_ACCOUNTS;
+  if (raw?.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (!item || typeof item !== "object") continue;
+          const record = item as Record<string, unknown>;
+          const email = normalizeAdminEmail(record.email);
+          const passwordHash =
+            typeof record.passwordHash === "string"
+              ? clean(record.passwordHash)
+              : null;
+          if (!email || !passwordHash || accounts.some((a) => a.email === email)) {
+            continue;
+          }
+          accounts.push({
+            email,
+            passwordHash,
+            developmentPassword: null,
+          });
+        }
+      }
+    } catch {
+      // Fail closed: malformed additional-account config grants no access.
+    }
+  }
+  return accounts;
+}
+
+function normalizeAdminEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const email = value.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+function clean(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
 }
 
 function buildSafeAdminPath(
