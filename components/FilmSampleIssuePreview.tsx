@@ -1,20 +1,21 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 
 const SECTIONS = [
   {
     heading: "Why this film?",
     body: [
       "It's a small, unhurried story that trusts a quiet week to carry its weight — the kind of film that rewards attention rather than demanding it.",
-      "Nothing about the premise is loud. A stranger arrives, routines shift a little, and the film lets that shift sit with you instead of rushing to explain it.",
+      "Hirayama cleans public toilets in Tokyo and moves through a precise daily routine. The film watches closely enough for repetition to reveal its small differences.",
     ],
   },
   {
     heading: "How does it feel?",
     body: [
       "Calm, warm, and a little melancholy — the sort of tone that suits a slow evening rather than a night you want to be swept along by.",
-      "Long takes, natural light, very little score. It gives a scene room to breathe before it moves on.",
+      "The pace is patient and observant. Music, trees, streets, and ordinary gestures are allowed to carry as much weight as dialogue.",
     ],
   },
   {
@@ -34,35 +35,46 @@ const SECTIONS = [
 
 const NOTE_INTRO = [
   "Good evening.",
-  "Tonight's pick is a small, character-driven story — the kind that doesn't announce itself but stays with you after the credits.",
-  "If your week has been loud, this is the deliberate opposite: unhurried pacing, a handful of quiet performances, and a story more interested in a feeling than a twist.",
+  "Tonight's pick is Perfect Days, Wim Wenders' quiet character study set around one man's daily life in Tokyo.",
+  "If your week has been loud, this is the deliberate opposite: unhurried pacing, a precise central performance, and a story more interested in attention than plot mechanics.",
   "Here's the short version of why it's worth your evening, what mood it suits, and what — if anything — you should know before you press play.",
 ] as const;
 
 const SOURCE = {
   label: "OneFilm | Saturday Film Note",
-  pick: "A slow, tender character study about a stranger who quietly reshapes one ordinary week.",
+  pick: "Perfect Days — a gentle character study about routine, attention, and the small variations that make one day different from the next.",
+  director: "Wim Wenders",
+  year: "2023",
+  language: "Japanese",
+  runtime: "124 minutes",
   mood: "Calm, warm, a little melancholy — slow-burning rather than eventful.",
   bestFor: "A quiet evening when you want to feel something, not just watch something.",
   spoilerLevel: "Spoiler-light — enough to decide, nothing given away.",
+  sourceUrl: "https://www.perfectdays-movie.jp/en/",
   note:
-    "This is an example of the format only — it does not name a real film, director, year, platform, or rating. Nothing in a OneFilm note is invented: only what's genuinely known about the film makes it in.",
+    "Film identity and story details are grounded in the official Perfect Days website. OneRead does not claim current streaming availability, and this note contains no paid placement or affiliate link.",
 } as const;
 
 /**
  * An inline, accessible disclosure (no modal, no focus trap) that expands to a
  * fuller example of a OneFilm note. Mirrors OneArticle's SampleIssuePreview
  * exactly — same toggle, same card, same rhythm — so the two examples read as
- * one family, not two designs. Static/frontend-only, and deliberately generic:
- * no real film titles, director/year, platform claims, or ratings.
+ * one family, not two designs. Static/frontend-only, with factual identity and
+ * story details linked to the film's official website.
  */
-export function FilmSampleIssuePreview() {
-  const [open, setOpen] = useState(false);
+export function FilmSampleIssuePreview({
+  defaultOpen = false,
+  hideToggle = false,
+}: {
+  defaultOpen?: boolean;
+  hideToggle?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen || hideToggle);
   const regionId = useId();
 
   return (
     <div className="w-full">
-      <div className="flex justify-center">
+      {!hideToggle && <div className="flex flex-wrap justify-center gap-3">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -93,7 +105,13 @@ export function FilmSampleIssuePreview() {
             />
           </svg>
         </button>
-      </div>
+        <Link
+          href="/samples/film"
+          className="focus-ring inline-flex items-center rounded-full px-3 py-1.5 font-sans text-[13px] text-ink link-underline"
+        >
+          Open full sample
+        </Link>
+      </div>}
 
       {open && (
         <div
@@ -107,7 +125,7 @@ export function FilmSampleIssuePreview() {
             {SOURCE.label}
           </p>
           <h3 className="mt-2 font-serif font-medium text-[1.25rem] sm:text-[1.4rem] leading-[1.2] text-ink">
-            A quiet film for a long evening
+            Perfect Days — a quiet film for a loud week
           </h3>
 
           <div className="mt-4 rounded-xl border border-[var(--theme-border)] bg-white/60 p-4">
@@ -121,6 +139,12 @@ export function FilmSampleIssuePreview() {
 
           <dl className="mt-4 grid gap-3 border-b border-[var(--theme-border)] pb-4 font-sans text-[12.5px] leading-[1.55]">
             <div>
+              <dt className="text-fog">Film</dt>
+              <dd className="mt-0.5 text-graphite">
+                {SOURCE.year} · {SOURCE.director} · {SOURCE.language} · {SOURCE.runtime}
+              </dd>
+            </div>
+            <div>
               <dt className="text-fog">Mood</dt>
               <dd className="mt-0.5 text-graphite">{SOURCE.mood}</dd>
             </div>
@@ -131,6 +155,14 @@ export function FilmSampleIssuePreview() {
             <div>
               <dt className="text-fog">Spoiler level</dt>
               <dd className="mt-0.5 text-graphite">{SOURCE.spoilerLevel}</dd>
+            </div>
+            <div>
+              <dt className="text-fog">Official source</dt>
+              <dd className="mt-0.5">
+                <a href={SOURCE.sourceUrl} target="_blank" rel="noopener noreferrer" className="link-underline text-[var(--theme-accent)] hover:text-ink">
+                  Perfect Days official website
+                </a>
+              </dd>
             </div>
           </dl>
 
@@ -169,8 +201,8 @@ export function FilmSampleIssuePreview() {
               {SOURCE.note}
             </p>
             <p className="font-sans text-[12.5px] leading-[1.55] text-fog">
-              This is an example of the format. Real OneFilm notes are chosen
-              around your genres, moods, and spoiler preference.
+              This is a complete format sample. Real OneFilm notes use the same
+              grounded, spoiler-light structure.
             </p>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { LegalContent } from "@/components/LegalContent";
 export const metadata: Metadata = {
   title: "Terms of Service — OneRead",
   description:
-    "The terms for using OneRead, the subscription that currently includes OneArticle.",
+    "The terms for using the monthly OneRead subscription, including OneArticle and OneFilm.",
 };
 
 export default function TermsPage() {

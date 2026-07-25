@@ -907,7 +907,7 @@ function buildEmailLinks(sendId: string): {
   const base =
     process.env.PUBLIC_BASE_URL ??
     process.env.NEXT_PUBLIC_BASE_URL ??
-    "https://oneread.app";
+    "https://oneread.email";
   const fb = (r: string) =>
     `${base}/api/feedback?send=${encodeURIComponent(sendId)}&r=${r}`;
   return {

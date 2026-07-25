@@ -328,7 +328,7 @@ function buildUnsubscribeLink(token: string): string {
   const base =
     process.env.PUBLIC_BASE_URL ??
     process.env.NEXT_PUBLIC_BASE_URL ??
-    "https://oneread.app";
+    "https://oneread.email";
   return `${base}/unsubscribe?subscription=${encodeURIComponent(token)}`;
 }
 

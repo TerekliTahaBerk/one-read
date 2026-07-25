@@ -10,7 +10,13 @@ import { useSiteLanguage } from "@/components/SiteLanguageProvider";
  * — never hardcode it elsewhere.
  */
 export function OneReadPricingCard() {
-  const { dictionary } = useSiteLanguage();
+  const { dictionary, locale } = useSiteLanguage();
+  const currencyNote = {
+    en: "Charged monthly in USD. Your bank may apply its own exchange rate or fees. Local-currency pricing is not currently available.",
+    tr: "Aylık olarak USD cinsinden tahsil edilir. Bankanız kendi döviz kuru veya ücretini uygulayabilir. Şu anda yerel para birimi fiyatlandırması yoktur.",
+    de: "Monatliche Abrechnung in USD. Ihre Bank kann einen eigenen Wechselkurs oder Gebühren anwenden. Lokale Währungspreise sind derzeit nicht verfügbar.",
+    fr: "Facturé mensuellement en USD. Votre banque peut appliquer son propre taux de change ou des frais. La tarification en devise locale n'est pas encore disponible.",
+  }[locale];
 
   return (
     <div className="group relative w-full max-w-[25rem] mt-8 sm:mt-9 animate-rise-delayed-3">
@@ -95,6 +101,9 @@ export function OneReadPricingCard() {
                 {note}
               </p>
             ))}
+            <p className="pt-1 font-sans text-[11.5px] leading-[1.5] text-fog">
+              {currencyNote}
+            </p>
           </div>
         </div>
       </div>

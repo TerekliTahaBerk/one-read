@@ -284,7 +284,7 @@ async function dispatchIssue(
       },
     });
     try {
-      const base = (process.env.PUBLIC_BASE_URL || "https://oneread.app").replace(/\/$/, "");
+      const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
       const rendered = renderEditorialEmail(issue, {
         unsubscribe: `${base}/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`,
       });

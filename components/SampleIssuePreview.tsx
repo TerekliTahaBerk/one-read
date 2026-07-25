@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 
 const SECTIONS = [
   {
@@ -65,13 +66,19 @@ const SOURCE = {
  * An inline, accessible disclosure (no modal, no focus trap) that expands to a
  * fuller example of a OneArticle issue. Static/frontend-only.
  */
-export function SampleIssuePreview() {
-  const [open, setOpen] = useState(false);
+export function SampleIssuePreview({
+  defaultOpen = false,
+  hideToggle = false,
+}: {
+  defaultOpen?: boolean;
+  hideToggle?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen || hideToggle);
   const regionId = useId();
 
   return (
     <div className="w-full">
-      <div className="flex justify-center">
+      {!hideToggle && <div className="flex flex-wrap justify-center gap-3">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -102,7 +109,13 @@ export function SampleIssuePreview() {
             />
           </svg>
         </button>
-      </div>
+        <Link
+          href="/samples/article"
+          className="focus-ring inline-flex items-center rounded-full px-3 py-1.5 font-sans text-[13px] text-ink link-underline"
+        >
+          Open full sample
+        </Link>
+      </div>}
 
       {open && (
         <div

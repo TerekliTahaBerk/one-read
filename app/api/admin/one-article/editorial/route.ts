@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<Response> {
         issue = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issueId } });
         const validation = validateEditorialIssue(issue);
         if (!validation.ok) throw new Error(validation.error);
-        const base = (process.env.PUBLIC_BASE_URL || "https://oneread.app").replace(/\/$/, "");
+        const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
         const rendered = renderEditorialEmail(issue, {
           unsubscribe: `${base}/unsubscribe?preview=1`,
         });

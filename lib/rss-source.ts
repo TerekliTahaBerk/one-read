@@ -36,7 +36,7 @@ const MAX_AGE_DAYS = 7;
 const BLOCKED_SOURCE_SLUGS = new Set(["sarkac"]);
 
 const USER_AGENT =
-  "OneReadBot/1.0 (+https://oneread.app/about/bot; editorial summarizer; contact: hello@oneread.app)";
+  "OneReadBot/1.0 (+https://oneread.email/editorial; contact: hello@oneread.email)";
 
 const parser = new Parser<{ language?: string }, FeedItem>({
   headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml,application/atom+xml,application/xml,text/xml" },

@@ -5,8 +5,8 @@ import { FilmSampleIssuePreview } from "./FilmSampleIssuePreview";
  * Mirrors OneArticle's SampleEmailPreview exactly — same eyebrow, same teaser
  * card, same disclosure below it — so the two "what you'll receive" sections
  * read as one family, not two designs. Static and trust-building: no fake
- * inbox chrome, no stock images, no real film titles or ratings. Inherits the
- * OneFilm theme variables from its page wrapper.
+ * inbox chrome or stock images. Inherits the OneFilm theme variables from its
+ * page wrapper.
  */
 export function FilmSampleEmailPreview({ className = "" }: { className?: string }) {
   return (
@@ -19,13 +19,12 @@ export function FilmSampleEmailPreview({ className = "" }: { className?: string 
         <p className="font-sans text-[12.5px] text-fog">A Saturday with OneFilm</p>
 
         <h3 className="mt-2 font-serif font-medium text-[1.2rem] sm:text-[1.3rem] leading-[1.22] text-ink">
-          A quiet film for a long evening
+          Perfect Days — a quiet film for a loud week
         </h3>
 
         <p className="mt-3 font-sans text-[14px] leading-[1.6] text-graphite">
-          A short, spoiler-light note on why one thoughtfully chosen film is
-          worth your evening, what mood it suits, and what to know before you
-          press play.
+          Wim Wenders&apos; gentle Tokyo drama makes daily routine feel newly
+          visible — a spoiler-light choice for an unhurried evening.
         </p>
 
         <p className="mt-4 border-t border-[var(--theme-border)] pt-3 font-serif italic text-[13px] text-ash">

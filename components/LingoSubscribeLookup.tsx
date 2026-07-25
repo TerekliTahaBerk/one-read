@@ -38,7 +38,7 @@ function present(r: LookupResult, email: string, t: LegacySubscribeDict, locale:
     case "past_due":
       return [t.states.past_due.title, t.states.past_due.body, t.cta.manageBilling, "portal"];
     case "suppressed":
-      return [t.states.suppressed.title, t.states.suppressed.body, t.cta.contactSupport, "mailto:hello@oneread.app"];
+      return [t.states.suppressed.title, t.states.suppressed.body, t.cta.contactSupport, "mailto:hello@oneread.email"];
     case "trial_expired":
     case "expired":
       return [t.states.expired.title, t.states.expired.body, t.cta.restartSubscription, "checkout"];

@@ -304,7 +304,7 @@ async function upsertSkippedSend(
 
 function buildUnsubscribeLink(token: string): string {
   const base =
-    process.env.PUBLIC_BASE_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "https://oneread.app";
+    process.env.PUBLIC_BASE_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "https://oneread.email";
   return `${base}/unsubscribe?subscription=${encodeURIComponent(token)}`;
 }
 

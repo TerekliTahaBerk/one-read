@@ -4,7 +4,7 @@ import { PricingPageContent } from "@/components/PricingPageContent";
 export const metadata: Metadata = {
   title: "Pricing — OneRead",
   description:
-    "OneRead is one subscription for OneArticle in your chosen reading language.",
+    "One monthly OneRead subscription includes OneArticle and OneFilm.",
 };
 
 export default function PricingPage() {

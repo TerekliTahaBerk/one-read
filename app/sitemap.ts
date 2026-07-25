@@ -4,16 +4,20 @@ import { BLOG_POSTS } from "@/lib/blog";
 const PUBLIC_ROUTES = [
   "/",
   "/article",
+  "/film",
   "/pricing",
   "/subscribe",
   "/preferences",
   "/blog",
   "/terms",
   "/privacy",
+  "/editorial",
+  "/samples/article",
+  "/samples/film",
 ] as const;
 
 function siteUrl(path: string): string {
-  const base = process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.app";
+  const base = process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.email";
   return new URL(path, base).toString();
 }
 

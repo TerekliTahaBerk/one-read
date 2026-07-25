@@ -48,7 +48,7 @@ export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 export const WAITLIST_FORM_URL =
   process.env.NEXT_PUBLIC_WAITLIST_FORM_URL || "https://tally.so/r/WOZWLe";
 
-/** Product slug for the OneRead subscription (currently includes OneArticle). */
+/** Product slug for the OneRead subscription (includes OneArticle and OneFilm). */
 export const ONE_READ_PRODUCT_KEY = "one-read";
 
 /** Product slug for One Article (the first OneRead product). */

@@ -60,7 +60,7 @@ export function AdminLoginForm({ next }: { next: string }) {
             inputMode="email"
             autoComplete="username"
             autoFocus
-            placeholder="you@oneread.app"
+            placeholder="you@oneread.email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={error ? true : undefined}

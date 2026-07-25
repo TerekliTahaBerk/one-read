@@ -26,7 +26,13 @@ export function Footer({
   backLabel = "Back to OneRead",
   showManifesto = false,
 }: Props) {
-  const { dictionary } = useSiteLanguage();
+  const { dictionary, locale } = useSiteLanguage();
+  const editorialLabel = {
+    en: "Editorial standards",
+    tr: "Editoryal standartlar",
+    de: "Redaktionelle Standards",
+    fr: "Normes éditoriales",
+  }[locale];
   const resolvedTagline = tagline === "No feeds. No noise. Just one good read."
     ? dictionary.footer.defaultTagline
     : tagline;
@@ -63,6 +69,13 @@ export function Footer({
             className="link-underline transition-colors duration-200 hover:text-ink"
           >
             {dictionary.footer.privacy}
+          </Link>
+          <span aria-hidden="true" className="text-line-strong">·</span>
+          <Link
+            href="/editorial"
+            className="link-underline transition-colors duration-200 hover:text-ink"
+          >
+            {editorialLabel}
           </Link>
           {showPricing && (
             <>

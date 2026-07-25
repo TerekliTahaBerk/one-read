@@ -40,9 +40,9 @@ const en = {
   home: {
     title: "One useful email at a time.",
     intro:
-      "OneRead brings one carefully edited article to your inbox in the reading language you choose.",
+      "OneRead brings carefully edited article briefs and film notes to your inbox.",
     priceNote:
-      "One subscription. One dollar. OneArticle and OneFilm included.",
+      "$1 per month. One subscription. OneArticle and OneFilm included.",
     tagline: "No feed to check. Just something worth opening.",
   },
   blog: {
@@ -242,7 +242,7 @@ const tr: SiteDictionary = {
   common: { backToOneRead: "OneRead’e dön", oneReadHome: "OneRead ana sayfası", startOneRead: "OneRead’i başlat", includedIn: "Şuna dahil:", subscriptionCovers: "tek abonelik OneArticle ve OneFilm’i kapsar.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Dil", menu: "Dil seç" },
   footer: { terms: "Koşullar", privacy: "Gizlilik", pricing: "Fiyatlandırma", navigation: "Alt menü", feedback: "Geri bildirim formunu aç", manifesto: "Daha iyi içerik isteyen ama açacak yeni bir uygulama istemeyenler için.", defaultTagline: "Akış yok. Gürültü yok. Yalnızca iyi bir okuma." },
-  home: { title: "Her seferinde tek bir faydalı e-posta.", intro: "OneRead, özenle hazırlanan makale ve film notlarını seçtiğin dilde gelen kutuna getirir.", priceNote: "Tek abonelik. Bir dolar. OneArticle ve OneFilm dahil.", tagline: "Kontrol edilecek bir akış yok. Yalnızca açmaya değer bir şey." },
+  home: { title: "Her seferinde tek bir faydalı e-posta.", intro: "OneRead, özenle hazırlanan makale ve film notlarını gelen kutuna getirir.", priceNote: "Aylık 1$. Tek abonelik. OneArticle ve OneFilm dahil.", tagline: "Kontrol edilecek bir akış yok. Yalnızca açmaya değer bir şey." },
   blog: { eyebrow: "Günlük", title: "OneRead blog", intro: "Daha sakin bir okuma biçimi kurmaya dair ara sıra notlar — neden tek e-postanın yeterli olduğu, her sabahı nasıl seçtiğimiz ve daha sessiz bir gelen kutusunun nasıl hissettirdiği.", backToBlog: "Bloga dön", minRead: "dk okuma" },
   family: { title: "OneRead ailesiyle tanış.", intro: "Her biri tek bir işi sessizce yapar, sonra aradan çekilir.", article: "Hafta içi makale özeti", film: "Cumartesi film notu", comingSoon: "Yakında — ilgini bildir" },
   pricing: { title: "OneRead {price}.", intro: "Tek abonelik OneArticle ve OneFilm’i kapsar.", perMonth: "aylık", included: "Tek abonelik. OneArticle ve OneFilm dahil.", features: ["OneArticle — hafta içi her sabah tek makale özeti", "OneFilm — her cumartesi tek film notu", "İngilizce, Türkçe, İspanyolca, Fransızca veya Almanca oku", "Tercihlerini istediğin zaman düzenle", "Tek tıkla iptal — soru yok"], cta: "OneRead’i başlat", trustNotes: ["OneArticle + OneFilm dahil", "Uygulama yok", "İstediğin zaman iptal et", "Ödeme Polar tarafından güvenle işlenir"] },
@@ -310,7 +310,7 @@ const de: SiteDictionary = {
   common: { backToOneRead: "Zurück zu OneRead", oneReadHome: "OneRead-Startseite", startOneRead: "OneRead starten", includedIn: "Enthalten in", subscriptionCovers: "ein Abo umfasst OneArticle und OneFilm.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Sprache", menu: "Sprache wählen" },
   footer: { terms: "Bedingungen", privacy: "Datenschutz", pricing: "Preise", navigation: "Fußzeile", feedback: "Feedback-Formular öffnen", manifesto: "Für Menschen, die bessere Impulse wollen, ohne noch eine App zu öffnen.", defaultTagline: "Kein Feed. Kein Lärm. Nur ein guter Text." },
-  home: { title: "Eine nützliche E-Mail nach der anderen.", intro: "OneRead bringt sorgfältig redigierte Artikel- und Filmnotizen in dein Postfach.", priceNote: "Ein Abo. Ein Dollar. OneArticle und OneFilm sind enthalten.", tagline: "Kein Feed zum Prüfen. Nur etwas, das sich zu öffnen lohnt." },
+  home: { title: "Eine nützliche E-Mail nach der anderen.", intro: "OneRead bringt sorgfältig redigierte Artikel- und Filmnotizen in dein Postfach.", priceNote: "1 $ pro Monat. Ein Abo. OneArticle und OneFilm sind enthalten.", tagline: "Kein Feed zum Prüfen. Nur etwas, das sich zu öffnen lohnt." },
   blog: { eyebrow: "Journal", title: "Der OneRead-Blog", intro: "Gelegentliche Notizen über einen ruhigeren Weg zu lesen — warum eine E-Mail genügt, wie wir jeden Morgen auswählen und wie sich ein leiseres Postfach anfühlen kann.", backToBlog: "Zurück zum Blog", minRead: "Min. Lesezeit" },
   family: { title: "Lerne die OneRead-Familie kennen.", intro: "Jedes Mitglied erledigt leise eine einzige Aufgabe und tritt dann beiseite.", article: "Artikelbriefing unter der Woche", film: "Filmnotiz am Samstag", comingSoon: "Demnächst — Interesse anmelden" },
   pricing: { title: "OneRead kostet {price}.", intro: "Ein Abo umfasst OneArticle und OneFilm.", perMonth: "pro Monat", included: "Ein Abo. OneArticle und OneFilm sind enthalten.", features: ["OneArticle — jeden Werktagmorgen ein Artikelbriefing", "OneFilm — jeden Samstag eine Filmnotiz", "Auf Englisch, Türkisch, Spanisch, Französisch oder Deutsch lesen", "Präferenzen jederzeit ändern", "Mit einem Klick kündigen — ohne Fragen"], cta: "OneRead starten", trustNotes: ["OneArticle + OneFilm enthalten", "Keine App", "Jederzeit kündbar", "Sichere Zahlungsabwicklung durch Polar"] },
@@ -378,7 +378,7 @@ const fr: SiteDictionary = {
   common: { backToOneRead: "Retour à OneRead", oneReadHome: "Accueil OneRead", startOneRead: "Commencer OneRead", includedIn: "Inclus dans", subscriptionCovers: "un abonnement couvre OneArticle et OneFilm.", adminLogin: "Admin", blog: "Blog" },
   language: { label: "Langue", menu: "Choisir la langue" },
   footer: { terms: "Conditions", privacy: "Confidentialité", pricing: "Tarifs", navigation: "Pied de page", feedback: "Ouvrir le formulaire de retour", manifesto: "Pour celles et ceux qui veulent de meilleures sources sans ouvrir une autre application.", defaultTagline: "Aucun fil. Aucun bruit. Juste une bonne lecture." },
-  home: { title: "Un e-mail utile à la fois.", intro: "OneRead dépose dans votre boîte des notes article et cinéma soigneusement rédigées.", priceNote: "Un abonnement. Un dollar. OneArticle et OneFilm inclus.", tagline: "Aucun fil à consulter. Juste quelque chose qui mérite d’être ouvert." },
+  home: { title: "Un e-mail utile à la fois.", intro: "OneRead dépose dans votre boîte des notes article et cinéma soigneusement rédigées.", priceNote: "1 $ par mois. Un abonnement. OneArticle et OneFilm inclus.", tagline: "Aucun fil à consulter. Juste quelque chose qui mérite d’être ouvert." },
   blog: { eyebrow: "Journal", title: "Le blog OneRead", intro: "Quelques notes sur une façon plus calme de lire — pourquoi un e-mail suffit, comment nous choisissons chaque matin et ce que peut être une boîte de réception plus sereine.", backToBlog: "Retour au blog", minRead: "min de lecture" },
   family: { title: "Découvrez la famille OneRead.", intro: "Chacun accomplit discrètement une seule tâche, puis s’efface.", article: "Un article en semaine", film: "Une note cinéma le samedi", comingSoon: "Bientôt — manifester votre intérêt" },
   pricing: { title: "OneRead coûte {price}.", intro: "Un abonnement inclut OneArticle et OneFilm.", perMonth: "par mois", included: "Un abonnement. OneArticle et OneFilm inclus.", features: ["OneArticle — un article chaque matin en semaine", "OneFilm — une note cinéma chaque samedi", "Lisez en anglais, turc, espagnol, français ou allemand", "Modifiez vos préférences à tout moment", "Résiliation en un clic — sans questions"], cta: "Commencer OneRead", trustNotes: ["OneArticle + OneFilm inclus", "Aucune application", "Résiliez à tout moment", "Paiement sécurisé par Polar"] },

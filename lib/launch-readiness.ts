@@ -72,7 +72,7 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     status: has(process.env.PUBLIC_BASE_URL) ? "pass" : "warn",
     explanation: has(process.env.PUBLIC_BASE_URL)
       ? "Email links use your configured origin."
-      : "Missing — email links fall back to https://oneread.app.",
+      : "Missing — email links fall back to https://oneread.email.",
   });
 
   checks.push({

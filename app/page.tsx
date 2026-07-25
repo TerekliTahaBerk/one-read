@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { EditorialTrust } from "@/components/EditorialTrust";
 import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
 import { OneReadFamilyMascots } from "@/components/OneReadFamilyMascots";
@@ -165,6 +166,7 @@ export default function HomePage() {
 
           <div className="w-full reveal-item reveal-item-4">
             <OneReadFamilyMascots />
+            <EditorialTrust />
           </div>
         </section>
       </HomeReveal>

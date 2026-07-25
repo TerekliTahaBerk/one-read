@@ -30,7 +30,7 @@ const HTTP_TIMEOUT_MS = 10_000;
 const MAX_BYTES = 1_500_000;
 
 const USER_AGENT =
-  "OneReadBot/1.0 (+https://oneread.app/about/bot; editorial summarizer; contact: hello@oneread.app)";
+  "OneReadBot/1.0 (+https://oneread.email/editorial; contact: hello@oneread.email)";
 
 /**
  * Politely fetch + readability-extract a public article.

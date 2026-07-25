@@ -117,7 +117,7 @@ function present(
       return {
         title: t.states.suppressed.title,
         body: t.states.suppressed.body,
-        ctas: [{ kind: "link", label: t.cta.contactSupport, href: "mailto:hello@oneread.app", primary: true }],
+        ctas: [{ kind: "link", label: t.cta.contactSupport, href: "mailto:hello@oneread.email", primary: true }],
       };
   }
 }
