@@ -14,6 +14,8 @@ const valid = {
   subject: "Una lectura para hoy",
   headline: "Una idea que merece tu tiempo",
   bodyText: Array.from({ length: 120 }, (_, index) => `palabra${index}`).join(" "),
+  heroImageUrl: "https://images.example.com/article.jpg",
+  heroImageAlt: "La portada del artículo",
   sourceTitle: "El artículo original",
   sourceUrl: "https://example.com/read",
 };
@@ -45,6 +47,14 @@ describe("validateEditorialIssue", () => {
       ok: false,
       error: "source_title_required",
     });
+    expect(validateEditorialIssue({ ...valid, heroImageUrl: "" })).toEqual({
+      ok: false,
+      error: "hero_image_url_required",
+    });
+    expect(validateEditorialIssue({ ...valid, heroImageAlt: "" })).toEqual({
+      ok: false,
+      error: "hero_image_alt_required",
+    });
   });
 
   it("allows incomplete drafts while keeping publishing gated", () => {
@@ -53,6 +63,8 @@ describe("validateEditorialIssue", () => {
       subject: "",
       headline: "",
       bodyText: "",
+      heroImageUrl: "",
+      heroImageAlt: "",
       sourceTitle: "",
       sourceUrl: "",
     };

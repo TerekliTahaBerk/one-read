@@ -25,6 +25,9 @@ type EditorIssue = {
   previewText: string | null;
   headline: string;
   bodyText: string;
+  heroImageUrl: string | null;
+  heroImageAlt: string | null;
+  heroImageCredit: string | null;
   sourceTitle: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
@@ -39,6 +42,9 @@ type EditorialForm = {
   previewText: string;
   headline: string;
   bodyText: string;
+  heroImageUrl: string;
+  heroImageAlt: string;
+  heroImageCredit: string;
   sourceTitle: string;
   sourceName: string;
   sourceUrl: string;
@@ -59,6 +65,9 @@ const empty: EditorialForm = {
   previewText: "",
   headline: "",
   bodyText: "",
+  heroImageUrl: "",
+  heroImageAlt: "",
+  heroImageCredit: "",
   sourceTitle: "",
   sourceName: "",
   sourceUrl: "",
@@ -84,6 +93,9 @@ export function EditorialIssueEditor({
             previewText: issue.previewText ?? "",
             headline: issue.headline,
             bodyText: issue.bodyText,
+            heroImageUrl: issue.heroImageUrl ?? "",
+            heroImageAlt: issue.heroImageAlt ?? "",
+            heroImageCredit: issue.heroImageCredit ?? "",
             sourceTitle: issue.sourceTitle ?? "",
             sourceName: issue.sourceName ?? "",
             sourceUrl: issue.sourceUrl ?? "",
@@ -126,6 +138,9 @@ export function EditorialIssueEditor({
             form.bodyText ||
             "Start writing the edition. The exact email layout will appear here as you type.",
           bodyHtml: null,
+          heroImageUrl: form.heroImageUrl,
+          heroImageAlt: form.heroImageAlt,
+          heroImageCredit: form.heroImageCredit,
           sourceTitle: form.sourceTitle,
           sourceName: form.sourceName,
           sourceUrl: form.sourceUrl,
@@ -358,6 +373,45 @@ export function EditorialIssueEditor({
               disabled={!editable}
             />
           </Field>
+          <div className="border-t border-admin-line pt-4">
+            <div className="mb-3">
+              <h3 className="text-[13px] font-medium text-admin-ink">Cover image</h3>
+              <p className="mt-0.5 text-[11.5px] leading-5 text-admin-muted">
+                A wide image anchors the article card. Use a permanent HTTPS URL, ideally 1280×720 or wider.
+              </p>
+            </div>
+            <Field label="Image URL">
+              <input
+                type="url"
+                className={input}
+                value={form.heroImageUrl}
+                placeholder="https://…"
+                onChange={(event) => set("heroImageUrl", event.target.value)}
+                disabled={!editable}
+              />
+            </Field>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Alternative text" help={`${form.heroImageAlt.length}/240 · describe the image for screen readers`}>
+                <input
+                  className={input}
+                  value={form.heroImageAlt}
+                  maxLength={240}
+                  placeholder="What the image shows"
+                  onChange={(event) => set("heroImageAlt", event.target.value)}
+                  disabled={!editable}
+                />
+              </Field>
+              <Field label="Image credit" help="Optional · photographer, publication or agency">
+                <input
+                  className={input}
+                  value={form.heroImageCredit}
+                  placeholder="Photo: …"
+                  onChange={(event) => set("heroImageCredit", event.target.value)}
+                  disabled={!editable}
+                />
+              </Field>
+            </div>
+          </div>
         </section>
 
         <section className={section}>
@@ -670,6 +724,10 @@ function humanError(error: string): string {
     body_too_short: "The edition needs at least 120 words before publishing.",
     source_title_required: "Add the original article title before publishing.",
     source_url_required: "Add the original article link before publishing.",
+    hero_image_url_required: "Add a cover image before publishing.",
+    hero_image_alt_required: "Add alternative text for the cover image.",
+    invalid_hero_image_url: "Use a permanent https:// URL for the cover image.",
+    hero_image_alt_too_long: "The cover image alternative text is too long.",
     invalid_source_url: "Use a valid http:// or https:// source link.",
     subject_too_long: "The email subject is too long.",
     preview_too_long: "The preview text is too long.",

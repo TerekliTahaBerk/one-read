@@ -8,6 +8,9 @@ const base = {
   headline: "Why small systems compound",
   bodyText: "First paragraph.\n\nSecond paragraph.",
   bodyHtml: null,
+  heroImageUrl: "https://images.example.com/cover.jpg",
+  heroImageAlt: "A small system drawn as connected circles",
+  heroImageCredit: "Illustration: Example Journal",
   sourceTitle: "The original article",
   sourceName: "Example Journal",
   sourceUrl: "https://example.com/article",
@@ -50,5 +53,16 @@ describe("renderEditorialEmail", () => {
     });
     expect(rendered.html).toContain("One clear idea for today");
     expect(rendered.subject).toBe("A useful morning read");
+  });
+
+  it("renders the article card, cover metadata and calculated reading time", () => {
+    const rendered = renderEditorialEmail(base, {
+      unsubscribe: "https://oneread.app/unsubscribe?subscription=abc",
+    });
+    expect(rendered.html).toContain("https://images.example.com/cover.jpg");
+    expect(rendered.html).toContain("A small system drawn as connected circles");
+    expect(rendered.html).toContain("Illustration: Example Journal");
+    expect(rendered.html).toContain("Article");
+    expect(rendered.html).toContain("1 min read");
   });
 });

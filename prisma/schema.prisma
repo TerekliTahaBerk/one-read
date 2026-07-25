@@ -437,6 +437,9 @@ model OneArticleIssue {
   headline    String
   bodyText    String  @db.Text
   bodyHtml    String? @db.Text
+  heroImageUrl    String?
+  heroImageAlt    String?
+  heroImageCredit String?
 
   sourceTitle String?
   sourceName  String?

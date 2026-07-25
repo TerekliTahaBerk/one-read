@@ -108,18 +108,35 @@ export function SampleIssuePreview() {
         <div
           id={regionId}
           className="
-            mt-4 rounded-2xl border border-[var(--theme-border)] bg-white/70
-            p-5 sm:p-6 text-left animate-fade-in
+            mt-4 overflow-hidden rounded-2xl border border-[var(--theme-border)]
+            bg-[#fafbfd] text-left animate-fade-in
           "
         >
-          <p className="font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
-            {SOURCE.label}
-          </p>
-          <h3 className="mt-2 font-serif font-medium text-[1.25rem] sm:text-[1.4rem] leading-[1.2] text-ink">
-            Stablecoins and the banking system’s biggest test
-          </h3>
+          <div className="flex items-center justify-between px-5 py-4 sm:px-6">
+            <span className="rounded-full bg-[#ffe144] px-3 py-1 font-sans text-[10px] font-semibold uppercase tracking-eyebrow text-ink">
+              Article
+            </span>
+            <span className="font-sans text-[10px] uppercase tracking-eyebrow text-fog">
+              6 min read
+            </span>
+          </div>
 
-          <div className="mt-4 rounded-xl border border-[var(--theme-border)] bg-white/60 p-4">
+          <div
+            role="img"
+            aria-label="An editorial illustration of connected financial systems"
+            className="mx-5 aspect-[16/8.5] rounded-xl bg-[radial-gradient(circle_at_28%_35%,rgba(255,225,68,.95),transparent_25%),linear-gradient(135deg,#171717_0%,#464641_48%,#d7d4c7_100%)] sm:mx-6"
+          />
+
+          <div className="p-5 sm:p-6">
+            <p className="font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
+              {SOURCE.label}
+            </p>
+            <h3 className="mt-2 font-serif font-semibold text-[1.35rem] leading-[1.16] text-ink sm:text-[1.55rem]">
+              Stablecoins and the banking system’s biggest test
+            </h3>
+            <div className="mt-4 h-[3px] w-10 bg-[#ffe144]" />
+
+          <div className="mt-5 rounded-xl border border-[var(--theme-border)] bg-white/60 p-4">
             <p className="font-sans text-[11px] uppercase tracking-eyebrow text-[var(--theme-accent)]">
               Subject
             </p>
@@ -194,6 +211,7 @@ export function SampleIssuePreview() {
               This is an example of the format. Real OneArticle emails are chosen
               in the reading language you choose.
             </p>
+          </div>
           </div>
         </div>
       )}
