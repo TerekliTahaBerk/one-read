@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { FilmLanding } from "@/components/FilmLanding";
 
 export const metadata: Metadata = {
   title: "OneFilm — One film worth watching. Every Saturday.",
@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function FilmPage() {
-  redirect("/waitlist?product=onefilm");
+  return <FilmLanding />;
 }

@@ -11,8 +11,7 @@ import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 /**
  * OneFilm marketing/description page. Purely explanatory — signup itself
- * happens through the OneRead umbrella flow at /subscribe, which already
- * collects email once for the whole product family.
+ * starts through the shared OneRead onboarding flow.
  */
 export function FilmLanding() {
   const theme = productThemes.film;

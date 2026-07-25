@@ -6,7 +6,6 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import { PRODUCTS } from "@/lib/admin/products";
-import { WAITLIST_FORM_URL } from "@/lib/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +53,7 @@ export default async function AdminProductsPage({
             p.key === "one-article" ? (
               <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
             ) : p.key === "one-film" ? (
-              <span key="c" className="text-admin-muted">Inactive · historical data preserved</span>
+              <span key="c">Manual editorial · active</span>
             ) : (
               <span key="c" className="text-admin-muted">Waitlist count not available</span>
             ),
@@ -63,27 +62,19 @@ export default async function AdminProductsPage({
                 Operations →
               </Link>
             ) : p.key === "one-film" ? (
-              <a key="a" href="/waitlist?product=onefilm" target="_blank" rel="noopener noreferrer" className="text-admin-body underline underline-offset-2">
-                Waitlist form ↗
-              </a>
+              <Link key="a" href="/admin/one-film" className="text-admin-ink underline underline-offset-2">
+                Operations →
+              </Link>
             ) : (
-              <a
-                key="a"
-                href={WAITLIST_FORM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-admin-body underline underline-offset-2"
-              >
-                Tally form ↗
-              </a>
+              <span key="a" className="text-admin-muted">Not available</span>
             ),
           ])}
         />
       </AdminCard>
 
       <p className="text-[12.5px] text-admin-muted font-sans">
-        OneArticle is the only active operational product. Historical OneFilm
-        data remains preserved while new demand is collected on the waitlist.
+        OneArticle and OneFilm use the same manual editorial workflow, with
+        independent audiences, editions, delivery controls, and audit history.
       </p>
     </AdminShell>
   );

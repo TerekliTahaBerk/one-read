@@ -9,8 +9,10 @@ import {
 import {
   ensureOneReadSubscription,
   ensureArticlePreferencesHolder,
+  ensureFilmPreferencesHolder,
 } from "@/lib/oneread/access";
 import { preferencesComplete } from "@/lib/subscriptions";
+import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,13 +73,17 @@ export async function POST(req: Request) {
   }
 
   const oneRead = await ensureOneReadSubscription(email);
-  const articleHolder = await ensureArticlePreferencesHolder(oneRead.contactId);
+  const [articleHolder, filmHolder] = await Promise.all([
+    ensureArticlePreferencesHolder(oneRead.contactId),
+    ensureFilmPreferencesHolder(oneRead.contactId),
+  ]);
 
   const res = NextResponse.json({
     ok: true,
     verified: true,
     email,
     articlePreferencesComplete: preferencesComplete(articleHolder.preferences),
+    filmPreferencesComplete: filmPreferencesComplete(filmHolder.filmPreferences),
   });
   setVerifiedEmailCookie(res, email, VERIFICATION_PURPOSES.signup);
   return res;

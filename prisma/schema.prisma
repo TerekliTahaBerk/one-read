@@ -80,6 +80,7 @@ model Contact {
   filmPreferences  FilmPreferences[]
   filmSends        FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
+  oneFilmDeliveries OneFilmDelivery[]
 }
 
 /// A single product subscription for a Contact. Holds the access lifecycle,
@@ -142,6 +143,7 @@ model ProductSubscription {
   lingoSends       LingoDailySend[]
   filmSends        FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
+  oneFilmDeliveries OneFilmDelivery[]
 
   @@unique([contactId, productKey])
   @@index([productKey, status])
@@ -805,6 +807,82 @@ model FilmCatalogEntry {
   updatedAt      DateTime  @updatedAt
 
   @@index([usedAt])
+}
+
+/// Manually-authored OneFilm edition. This mirrors OneArticleIssue's explicit
+/// editorial lifecycle; legacy generated FilmDailyIssue rows remain preserved.
+model OneFilmIssue {
+  id            String @id @default(cuid())
+  emailLanguage String
+  status        String @default("DRAFT")
+
+  scheduledFor DateTime?
+  timezone     String @default("Europe/Istanbul")
+
+  subject     String
+  previewText String?
+  filmTitle   String
+  bodyText    String @db.Text
+  bodyHtml    String? @db.Text
+
+  heroImageUrl    String?
+  heroImageAlt    String?
+  heroImageCredit String?
+
+  filmYear       Int?
+  director       String?
+  filmLanguage   String?
+  runtimeMinutes Int?
+  sourceName     String?
+  sourceUrl      String?
+  ctaLabel       String?
+  adminNotes     String? @db.Text
+
+  createdBy String
+  updatedBy String
+  version   Int @default(1)
+
+  readyAt     DateTime?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  canceledAt  DateTime?
+  claimedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries OneFilmDelivery[]
+
+  @@index([status, scheduledFor])
+  @@index([emailLanguage, status])
+  @@index([createdAt])
+}
+
+/// Idempotent per-recipient delivery record for a manual OneFilm edition.
+model OneFilmDelivery {
+  id                    String @id @default(cuid())
+  issueId               String
+  contactId             String
+  productSubscriptionId String
+
+  status          String @default("QUEUED")
+  providerMessageId String?
+  attemptCount    Int @default(0)
+  lastAttemptAt   DateTime?
+  sentAt          DateTime?
+  failedReason    String? @db.Text
+  skippedReason   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue               OneFilmIssue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, contactId])
+  @@index([issueId, status])
+  @@index([productSubscriptionId, status])
 }
 
 /// Mutable, panel-editable runtime configuration. One row per setting key.

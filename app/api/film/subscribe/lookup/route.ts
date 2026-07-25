@@ -1,5 +1,18 @@
 import { NextResponse } from "next/server";
+import { parseEmail } from "@/lib/options";
+import { resolveFilmSubscribeState } from "@/lib/film/subscriptions";
 
-export async function POST() {
-  return NextResponse.json({ ok: false, error: "product_inactive" }, { status: 410 });
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
+  let payload: Record<string, unknown>;
+  try {
+    payload = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+  }
+  const email = parseEmail(payload.email);
+  if (!email) return NextResponse.json({ ok: false, error: "Please enter a valid email." }, { status: 400 });
+  return NextResponse.json({ ok: true, ...(await resolveFilmSubscribeState(email)) });
 }

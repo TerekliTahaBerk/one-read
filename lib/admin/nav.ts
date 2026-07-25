@@ -23,9 +23,9 @@ export function oneLingoTabs() {
 export function oneFilmTabs() {
   return [
     { key: "overview", label: "Overview", href: "/admin/one-film" },
+    { key: "new", label: "New edition", href: "/admin/one-film/new" },
     { key: "subscribers", label: "Subscribers", href: "/admin/one-film/subscribers" },
-    { key: "issues", label: "Issues", href: "/admin/one-film/issues" },
-    { key: "catalog", label: "Catalog", href: "/admin/one-film/catalog" },
-    { key: "sends", label: "Sends", href: "/admin/one-film/sends" },
+    { key: "issues", label: "Editions", href: "/admin/one-film/issues" },
+    { key: "sends", label: "Deliveries", href: "/admin/one-film/sends" },
   ] as const;
 }

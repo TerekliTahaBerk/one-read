@@ -14,6 +14,7 @@ type LookupResult = {
   daysLeft?: number;
   periodEndsAt?: string;
   articlePreferencesComplete: boolean;
+  filmPreferencesComplete: boolean;
 };
 
 export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: string }) {
@@ -204,6 +205,9 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
 
             <p className="text-fog text-[12.5px]">{t.articleLabel}</p>
             <p className="mb-3">{result.articlePreferencesComplete ? t.complete : t.incomplete}</p>
+
+            <p className="text-fog text-[12.5px]">{t.filmLabel}</p>
+            <p className="mb-3">{result.filmPreferencesComplete ? t.complete : t.incomplete}</p>
 
             <div className="mt-4 flex flex-col gap-2">
               <Link

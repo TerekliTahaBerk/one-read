@@ -4,13 +4,19 @@ import { useState, type CSSProperties, type FormEvent, type ReactNode } from "re
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes } from "@/lib/product-themes";
 import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
-import { SUMMARY_LANGUAGES, isLikelyEmail } from "@/lib/options";
+import {
+  FILM_EMAIL_LANGUAGES,
+  FILM_GENRES,
+  SUMMARY_LANGUAGES,
+  isLikelyEmail,
+} from "@/lib/options";
 
-type Step = "email" | "verify" | "language" | "review";
+type Step = "email" | "verify" | "language" | "film" | "review";
 
 async function postJson(url: string, body: unknown) {
   const response = await fetch(url, {
@@ -25,11 +31,13 @@ async function postJson(url: string, body: unknown) {
 export function OneReadSignup() {
   const { dictionary } = useSiteLanguage();
   const t = dictionary.signup;
-  const theme = productThemes.article;
   const [step, setStep] = useState<Step>("email");
+  const theme = step === "film" ? productThemes.film : productThemes.article;
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [readingLanguage, setReadingLanguage] = useState<string>("English");
+  const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
+  const [filmGenres, setFilmGenres] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +91,27 @@ export function OneReadSignup() {
     const result = await postJson("/api/oneread/article-preferences", {
       email,
       summaryLanguage: readingLanguage,
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setError(t.errors.generic);
+      return;
+    }
+    setStep("film");
+  }
+
+  async function saveFilmPreferences(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (filmGenres.length === 0) {
+      setError(t.errors.chooseGenre);
+      return;
+    }
+    setBusy(true);
+    const result = await postJson("/api/oneread/film-preferences", {
+      email,
+      emailLanguage: filmEmailLanguage,
+      preferredGenres: filmGenres,
     });
     setBusy(false);
     if (!result.ok) {
@@ -156,14 +185,51 @@ export function OneReadSignup() {
           </StepShell>
         )}
 
+        {step === "film" && (
+          <StepShell title={t.filmPrefs.title} support={t.filmPrefs.support}>
+            <form onSubmit={saveFilmPreferences} className="w-full flex flex-col items-center gap-6">
+              <div className="flex flex-wrap justify-center gap-2">
+                {FILM_GENRES.map((genre) => (
+                  <InterestChip
+                    key={genre}
+                    label={genre}
+                    selected={filmGenres.includes(genre)}
+                    onClick={() => setFilmGenres((current) =>
+                      current.includes(genre)
+                        ? current.filter((item) => item !== genre)
+                        : [...current, genre],
+                    )}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">{t.filmPrefs.emailLanguage}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {FILM_EMAIL_LANGUAGES.map((language) => (
+                    <LanguagePill
+                      key={language}
+                      label={language}
+                      selected={filmEmailLanguage === language}
+                      onClick={() => setFilmEmailLanguage(language)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <Submit busy={busy} wait={t.pleaseWait}>{t.filmPrefs.cta}</Submit>
+            </form>
+          </StepShell>
+        )}
+
         {step === "review" && (
           <StepShell title={t.review.title} support={t.review.support}>
             <div className="w-full rounded-2xl border border-[var(--theme-border)] bg-white p-5">
-              <ReviewRow label="Product" value="OneArticle" />
+              <ReviewRow label="Products" value="OneArticle + OneFilm" />
               <ReviewRow label={t.articlePrefs.summaryLanguage} value={readingLanguage} />
+              <ReviewRow label={t.filmPrefs.emailLanguage} value={filmEmailLanguage} />
+              <ReviewRow label="Film genres" value={filmGenres.join(", ")} />
               <ReviewRow label="Plan" value={ONEREAD_BILLING_LABEL} />
               <p className="mt-5 border-t border-[var(--theme-border)] pt-4 text-center font-sans text-[12.5px] leading-relaxed text-fog">
-                OneRead currently includes OneArticle only. Cancel anytime.
+                One subscription includes OneArticle and OneFilm. Cancel anytime.
               </p>
             </div>
             <button type="button" onClick={startCheckout} disabled={busy} className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-7 font-sans text-[14px] font-medium text-white disabled:opacity-50">
