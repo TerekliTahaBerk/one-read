@@ -211,7 +211,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
 
             <div className="mt-4 flex flex-col gap-2">
               <Link
-                href="/subscribe"
+                href={`/subscribe?email=${encodeURIComponent(email)}`}
                 className="focus-ring inline-flex h-10 items-center justify-center rounded-full border border-[var(--theme-accent)] px-4 font-sans text-[13px] font-medium text-[var(--theme-accent)] hover:bg-[var(--theme-surface)]"
               >
                 {t.editPreferences}
@@ -242,7 +242,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
               )}
               {(result.state === "checkout_needed" || result.state === "incomplete") && (
                 <Link
-                  href="/subscribe"
+                  href={`/subscribe?email=${encodeURIComponent(email)}`}
                   className="focus-ring inline-flex h-10 items-center justify-center rounded-full bg-ink px-4 font-sans text-[13px] font-medium text-white hover:bg-ink/90"
                 >
                   {t.startCheckout}

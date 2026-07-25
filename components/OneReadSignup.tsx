@@ -12,6 +12,15 @@ import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
 import {
   FILM_EMAIL_LANGUAGES,
   FILM_GENRES,
+  FILM_MOODS,
+  FILM_DECADES,
+  FILM_LANGUAGES,
+  FILM_PLATFORMS,
+  FILM_SPOILER_PREFERENCES,
+  FILM_FAMILIARITIES,
+  FILM_RUNTIME_PREFERENCES,
+  INTERESTS,
+  SOURCE_LANGUAGES,
   SUMMARY_LANGUAGES,
   isLikelyEmail,
 } from "@/lib/options";
@@ -28,16 +37,25 @@ async function postJson(url: string, body: unknown) {
   return { ok: response.ok, data };
 }
 
-export function OneReadSignup() {
+export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) {
   const { dictionary } = useSiteLanguage();
   const t = dictionary.signup;
   const [step, setStep] = useState<Step>("email");
   const theme = step === "film" ? productThemes.film : productThemes.article;
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [readingLanguage, setReadingLanguage] = useState<string>("English");
+  const [sourceLanguage, setSourceLanguage] = useState<string>("Any");
+  const [articleInterests, setArticleInterests] = useState<string[]>([]);
   const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
   const [filmGenres, setFilmGenres] = useState<string[]>([]);
+  const [filmMoods, setFilmMoods] = useState<string[]>([]);
+  const [filmDecades, setFilmDecades] = useState<string[]>([]);
+  const [filmLanguages, setFilmLanguages] = useState<string[]>([]);
+  const [filmPlatforms, setFilmPlatforms] = useState<string[]>([]);
+  const [spoilerPreference, setSpoilerPreference] = useState<string>("Spoiler-light");
+  const [familiarity, setFamiliarity] = useState<string>("Mixed");
+  const [runtimePreference, setRuntimePreference] = useState<string>("Any");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,15 +99,39 @@ export function OneReadSignup() {
       );
       return;
     }
+    const article = result.data.articlePreferences;
+    if (article) {
+      setArticleInterests(article.interests ?? []);
+      setSourceLanguage(article.sourceLanguage ?? "Any");
+      setReadingLanguage(article.summaryLanguage ?? "English");
+    }
+    const film = result.data.filmPreferences;
+    if (film) {
+      setFilmEmailLanguage(film.emailLanguage ?? "English");
+      setFilmGenres(film.preferredGenres ?? []);
+      setFilmMoods(film.moods ?? []);
+      setFilmDecades(film.decades ?? []);
+      setFilmLanguages(film.languages ?? []);
+      setFilmPlatforms(film.platforms ?? []);
+      setSpoilerPreference(film.spoilerPreference ?? "Spoiler-light");
+      setFamiliarity(film.familiarity ?? "Mixed");
+      setRuntimePreference(film.runtimePreference ?? "Any");
+    }
     setStep("language");
   }
 
   async function saveLanguage(event: FormEvent) {
     event.preventDefault();
+    if (articleInterests.length === 0) {
+      setError(t.errors.chooseInterest);
+      return;
+    }
     setBusy(true);
     setError(null);
     const result = await postJson("/api/oneread/article-preferences", {
       email,
+      interests: articleInterests,
+      sourceLanguage,
       summaryLanguage: readingLanguage,
     });
     setBusy(false);
@@ -112,6 +154,13 @@ export function OneReadSignup() {
       email,
       emailLanguage: filmEmailLanguage,
       preferredGenres: filmGenres,
+      moods: filmMoods,
+      decades: filmDecades,
+      languages: filmLanguages,
+      platforms: filmPlatforms,
+      spoilerPreference,
+      familiarity,
+      runtimePreference,
     });
     setBusy(false);
     if (!result.ok) {
@@ -175,11 +224,28 @@ export function OneReadSignup() {
         {step === "language" && (
           <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
             <form onSubmit={saveLanguage} className="w-full flex flex-col items-center gap-6">
+              <PreferenceGroup label="Interests">
+                {INTERESTS.map((interest) => (
+                  <InterestChip
+                    key={interest}
+                    label={interest}
+                    selected={articleInterests.includes(interest)}
+                    onClick={() => setArticleInterests(toggleValue(articleInterests, interest))}
+                  />
+                ))}
+              </PreferenceGroup>
+              <PreferenceGroup label={t.articlePrefs.sourceLanguage}>
+                {SOURCE_LANGUAGES.map((language) => (
+                  <LanguagePill key={language} label={language} selected={sourceLanguage === language} onClick={() => setSourceLanguage(language)} />
+                ))}
+              </PreferenceGroup>
+              <PreferenceGroup label={t.articlePrefs.summaryLanguage}>
               <div className="flex flex-wrap justify-center gap-2">
                 {SUMMARY_LANGUAGES.map((language) => (
                   <LanguagePill key={language} label={language} selected={readingLanguage === language} onClick={() => setReadingLanguage(language)} />
                 ))}
               </div>
+              </PreferenceGroup>
               <Submit busy={busy} wait={t.pleaseWait}>{t.articlePrefs.cta}</Submit>
             </form>
           </StepShell>
@@ -194,27 +260,18 @@ export function OneReadSignup() {
                     key={genre}
                     label={genre}
                     selected={filmGenres.includes(genre)}
-                    onClick={() => setFilmGenres((current) =>
-                      current.includes(genre)
-                        ? current.filter((item) => item !== genre)
-                        : [...current, genre],
-                    )}
+                    onClick={() => setFilmGenres(toggleValue(filmGenres, genre))}
                   />
                 ))}
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">{t.filmPrefs.emailLanguage}</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {FILM_EMAIL_LANGUAGES.map((language) => (
-                    <LanguagePill
-                      key={language}
-                      label={language}
-                      selected={filmEmailLanguage === language}
-                      onClick={() => setFilmEmailLanguage(language)}
-                    />
-                  ))}
-                </div>
-              </div>
+              <ChipGroup label="Moods" options={FILM_MOODS} selected={filmMoods} onChange={setFilmMoods} />
+              <ChipGroup label="Decades" options={FILM_DECADES} selected={filmDecades} onChange={setFilmDecades} />
+              <ChipGroup label="Original languages" options={FILM_LANGUAGES} selected={filmLanguages} onChange={setFilmLanguages} />
+              <ChipGroup label="Platforms" options={FILM_PLATFORMS} selected={filmPlatforms} onChange={setFilmPlatforms} />
+              <PillGroup label={t.filmPrefs.emailLanguage} options={FILM_EMAIL_LANGUAGES} selected={filmEmailLanguage} onChange={setFilmEmailLanguage} />
+              <PillGroup label="Spoiler preference" options={FILM_SPOILER_PREFERENCES} selected={spoilerPreference} onChange={setSpoilerPreference} />
+              <PillGroup label="Discovery style" options={FILM_FAMILIARITIES} selected={familiarity} onChange={setFamiliarity} />
+              <PillGroup label="Runtime" options={FILM_RUNTIME_PREFERENCES} selected={runtimePreference} onChange={setRuntimePreference} />
               <Submit busy={busy} wait={t.pleaseWait}>{t.filmPrefs.cta}</Submit>
             </form>
           </StepShell>
@@ -225,8 +282,11 @@ export function OneReadSignup() {
             <div className="w-full rounded-2xl border border-[var(--theme-border)] bg-white p-5">
               <ReviewRow label="Products" value="OneArticle + OneFilm" />
               <ReviewRow label={t.articlePrefs.summaryLanguage} value={readingLanguage} />
+              <ReviewRow label="Article interests" value={articleInterests.join(", ")} />
+              <ReviewRow label={t.articlePrefs.sourceLanguage} value={sourceLanguage} />
               <ReviewRow label={t.filmPrefs.emailLanguage} value={filmEmailLanguage} />
               <ReviewRow label="Film genres" value={filmGenres.join(", ")} />
+              <ReviewRow label="Film moods" value={filmMoods.join(", ") || "Any"} />
               <ReviewRow label="Plan" value={ONEREAD_BILLING_LABEL} />
               <p className="mt-5 border-t border-[var(--theme-border)] pt-4 text-center font-sans text-[12.5px] leading-relaxed text-fog">
                 One subscription includes OneArticle and OneFilm. Cancel anytime.
@@ -259,7 +319,60 @@ function Submit({ busy, wait, children }: { busy: boolean; wait: string; childre
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-center justify-between border-b border-[var(--theme-border)] py-3 font-sans text-[14px] last:border-0"><span className="text-fog">{label}</span><span className="font-medium text-ink">{value}</span></div>;
+  return <div className="flex items-start justify-between gap-5 border-b border-[var(--theme-border)] py-3 font-sans text-[14px] last:border-0"><span className="shrink-0 text-fog">{label}</span><span className="text-right font-medium text-ink">{value}</span></div>;
 }
 
 const inputClass = "focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink";
+
+function toggleValue(values: string[], value: string): string[] {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
+
+function PreferenceGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex w-full flex-col items-center gap-3">
+      <p className="font-sans text-[11px] uppercase tracking-eyebrow text-fog">{label}</p>
+      <div className="flex flex-wrap justify-center gap-2">{children}</div>
+    </div>
+  );
+}
+
+function ChipGroup({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: readonly string[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+}) {
+  return (
+    <PreferenceGroup label={label}>
+      {options.map((option) => (
+        <InterestChip key={option} label={option} selected={selected.includes(option)} onClick={() => onChange(toggleValue(selected, option))} />
+      ))}
+    </PreferenceGroup>
+  );
+}
+
+function PillGroup({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: readonly string[];
+  selected: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <PreferenceGroup label={label}>
+      {options.map((option) => (
+        <LanguagePill key={option} label={option} selected={selected === option} onClick={() => onChange(option)} />
+      ))}
+    </PreferenceGroup>
+  );
+}

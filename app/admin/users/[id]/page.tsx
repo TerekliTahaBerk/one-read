@@ -7,13 +7,8 @@ import { AdminCard, DefList } from "@/components/admin/AdminCard";
 import { Details } from "@/components/admin/Details";
 import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
-import { evaluateEligibility } from "@/lib/subscriptions";
 import { fmtDateTime, yesNo } from "@/lib/admin/format";
 import { UserActionsBar } from "@/components/admin/UserActionsBar";
-import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
-import { SUMMARY_LANGUAGES } from "@/lib/options";
-import { loadAuditLogs, summarizeAuditMetadata } from "@/lib/admin/audit";
-import { ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import {
   resolveOneArticleEligibilityForContact,
   resolveOneFilmEligibilityForContact,
@@ -22,7 +17,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** /admin/users/[id] — full detail for one OneArticle subscription. */
 export default async function AdminUserDetailPage({
   params,
   searchParams,
@@ -33,220 +27,212 @@ export default async function AdminUserDetailPage({
   const guard = guardAdminPage(`/admin/users/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const sub = await prisma.productSubscription.findUnique({
+  let contact = await prisma.contact.findUnique({
     where: { id: params.id },
-    include: { preferences: true, contact: true },
+    include: {
+      subscriptions: {
+        include: { preferences: true, filmPreferences: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   });
-  if (!sub) notFound();
 
-  const elig = evaluateEligibility(sub);
-  const prefs = sub.preferences;
+  // Backwards-compatible with old links that used a ProductSubscription id.
+  if (!contact) {
+    const subscription = await prisma.productSubscription.findUnique({
+      where: { id: params.id },
+      select: { contactId: true },
+    });
+    if (subscription) {
+      contact = await prisma.contact.findUnique({
+        where: { id: subscription.contactId },
+        include: {
+          subscriptions: {
+            include: { preferences: true, filmPreferences: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+    }
+  }
+  if (!contact) notFound();
 
-  // Verification status — timestamps/counts only, never codes or hashes.
-  const [lastVerificationRequest, lastVerified] = await Promise.all([
+  const umbrella = contact.subscriptions.find((sub) => sub.productKey === "one-read");
+  const article = contact.subscriptions.find((sub) => sub.productKey === "one-article");
+  const film = contact.subscriptions.find((sub) => sub.productKey === "one-film");
+  const actionSubscription = umbrella ?? article ?? film;
+  const articlePrefs = article?.preferences;
+  const filmPrefs = film?.filmPreferences;
+
+  const [
+    lastVerificationRequest,
+    lastVerified,
+    articleEligibility,
+    filmEligibility,
+    articleDeliveries,
+    filmDeliveries,
+  ] = await Promise.all([
     prisma.emailVerificationCode.findFirst({
-      where: { email: sub.contact.email },
+      where: { email: contact.email },
       orderBy: { createdAt: "desc" },
       select: { createdAt: true },
     }),
     prisma.emailVerificationCode.findFirst({
-      where: { email: sub.contact.email, consumedAt: { not: null } },
+      where: { email: contact.email, consumedAt: { not: null } },
       orderBy: { consumedAt: "desc" },
       select: { consumedAt: true },
     }),
-  ]);
-
-  const [oneReadSub, filmHolder, oneReadElig, oneFilmElig] = await Promise.all([
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_READ_PRODUCT_KEY } },
-    }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-      include: { filmPreferences: true },
-    }),
-    resolveOneArticleEligibilityForContact(sub.contactId),
-    resolveOneFilmEligibilityForContact(sub.contactId),
-  ]);
-
-  const [deliveries, auditEvents] = await Promise.all([
+    resolveOneArticleEligibilityForContact(contact.id),
+    resolveOneFilmEligibilityForContact(contact.id),
     prisma.oneArticleDelivery.findMany({
-      where: { contactId: sub.contactId },
-      include: { issue: { select: { id: true, headline: true, readingLanguage: true } } },
+      where: { contactId: contact.id },
+      include: { issue: { select: { headline: true, readingLanguage: true } } },
       orderBy: { updatedAt: "desc" },
-      take: 20,
+      take: 10,
     }),
-    loadAuditLogs({ targetType: "ProductSubscription", q: sub.id }, 20),
+    prisma.oneFilmDelivery.findMany({
+      where: { contactId: contact.id },
+      include: { issue: { select: { filmTitle: true, emailLanguage: true } } },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+    }),
   ]);
-
-  const lastDelivery = deliveries.find((delivery) => delivery.status === "SENT");
 
   return (
     <AdminShell
-      title={sub.contact.email}
-      subtitle="OneArticle subscription detail"
-      actions={
-        <Link href="/admin/users" className="text-[13px] text-admin-body hover:text-admin-ink">
-          ← All users
-        </Link>
-      }
+      title={contact.email}
+      subtitle="Complete OneRead contact, subscription, and preference detail"
+      actions={<Link href="/admin/users" className="text-[13px] text-admin-body hover:text-admin-ink">← All users</Link>}
     >
-      <AdminCard title="Actions" bodyClassName="p-4">
-        <UserActionsBar
-          subId={sub.id}
-          email={sub.contact.email}
-          emailDeliveryStatus={sub.emailDeliveryStatus}
-          adminOverride={sub.adminOverride}
-        />
-      </AdminCard>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
-        <AdminCard title="Contact">
-          <DefList
-            rows={[
-              ["Email", sub.contact.email],
-              ["Created", fmtDateTime(sub.contact.createdAt)],
-              ["Updated", fmtDateTime(sub.contact.updatedAt)],
-              ["Email delivery", <StatusBadge key="e" value={sub.emailDeliveryStatus} />],
-              ["Email verified", lastVerified?.consumedAt ? fmtDateTime(lastVerified.consumedAt) : "Not verified"],
-              ["Last verification request", fmtDateTime(lastVerificationRequest?.createdAt ?? null)],
-            ]}
+      {actionSubscription && (
+        <AdminCard title="Actions" bodyClassName="p-4">
+          <UserActionsBar
+            subId={actionSubscription.id}
+            email={contact.email}
+            emailDeliveryStatus={actionSubscription.emailDeliveryStatus}
+            adminOverride={actionSubscription.adminOverride}
           />
         </AdminCard>
+      )}
 
-        <AdminCard title="Eligibility">
-          <div className="px-4 py-4">
-            <EligibilityBadge allowed={elig.allowed} reason={elig.reason} />
-            <p className="mt-3 text-[12.5px] text-admin-body font-sans">
-              {elig.allowed
-                ? "This subscriber will receive scheduled OneArticle editions in their reading language."
-                : "This subscriber is not receiving emails right now. The badge above shows why."}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-x-6 lg:grid-cols-2">
+        <AdminCard title="Contact">
+          <DefList rows={[
+            ["Email", contact.email],
+            ["Created", fmtDateTime(contact.createdAt)],
+            ["Updated", fmtDateTime(contact.updatedAt)],
+            ["Email verified", lastVerified?.consumedAt ? fmtDateTime(lastVerified.consumedAt) : "Not verified"],
+            ["Last verification request", fmtDateTime(lastVerificationRequest?.createdAt ?? null)],
+          ]} />
+        </AdminCard>
+        <AdminCard title="Product eligibility">
+          <DefList rows={[
+            ["OneArticle", <EligibilityBadge key="a" allowed={articleEligibility.allowed} reason={articleEligibility.reason} />],
+            ["OneFilm", <EligibilityBadge key="f" allowed={filmEligibility.allowed} reason={filmEligibility.reason} />],
+          ]} />
         </AdminCard>
       </div>
 
-      <AdminCard title="OneRead umbrella">
-        <DefList
-          rows={[
-            [
-              "OneRead subscription status",
-              oneReadSub ? <StatusBadge key="s" value={oneReadSub.status} /> : "No OneRead subscription",
-            ],
-            ["Included products", oneReadSub ? "OneArticle" : "—"],
-            [
-              "OneArticle eligibility",
-              <EligibilityBadge key="a" allowed={oneReadElig.allowed} reason={oneReadElig.reason} />,
-            ],
-            [
-              "Historical OneFilm status",
-              filmHolder ? <StatusBadge key="fs" value={filmHolder.status} /> : "No OneFilm record",
-            ],
-            [
-              "Historical OneFilm eligibility",
-              <EligibilityBadge key="f" allowed={oneFilmElig.allowed} reason={oneFilmElig.reason} />,
-            ],
-            ["OneFilm preferences complete", yesNo(Boolean(filmHolder?.filmPreferences))],
-          ]}
-        />
-      </AdminCard>
-
-      <AdminCard title="Subscription">
-        <DefList
-          rows={[
-            ["Access status", <StatusBadge key="s" value={sub.status} />],
-            ["Admin override", yesNo(sub.adminOverride)],
-            ["Admin note", sub.adminNote ?? "—"],
-            ["Payment provider", sub.paymentProvider ?? "—"],
-            ["Plan", sub.plan ?? "—"],
-            ["Paid at", fmtDateTime(sub.paidAt)],
-            ["Trial started", fmtDateTime(sub.trialStartedAt)],
-            ["Trial ends", fmtDateTime(sub.trialEndsAt)],
-            ["Trial used at", fmtDateTime(sub.trialUsedAt)],
-            ["Current period start", fmtDateTime(sub.currentPeriodStart)],
-            ["Current period end", fmtDateTime(sub.currentPeriodEnd)],
-            ["Cancel at period end", yesNo(sub.cancelAtPeriodEnd)],
-            ["Canceled at", fmtDateTime(sub.canceledAt)],
-            ["Past due at", fmtDateTime(sub.pastDueAt)],
-            ["Last sent", fmtDateTime(sub.lastSentAt)],
-          ]}
+      <AdminCard title="Subscriptions" subtitle="Every product row belonging to this contact">
+        <AdminTable
+          head={["Product", "Access", "Delivery", "Provider", "Plan", "Trial ends", "Period ends", "Override", "Admin note"]}
+          rows={contact.subscriptions.map((sub) => [
+            sub.productKey,
+            <StatusBadge key="s" value={sub.status} />,
+            <StatusBadge key="d" value={sub.emailDeliveryStatus} />,
+            sub.paymentProvider ?? "—",
+            sub.plan ?? "—",
+            fmtDateTime(sub.trialEndsAt),
+            fmtDateTime(sub.currentPeriodEnd),
+            yesNo(sub.adminOverride),
+            sub.adminNote ?? "—",
+          ])}
+          empty="No product subscriptions."
         />
       </AdminCard>
 
       <AdminCard title="OneArticle preferences">
-        <div className="p-4 border-b border-admin-line">
-          <PreferencesEditor
-            subId={sub.id}
-            summaryLanguages={SUMMARY_LANGUAGES}
-            current={{
-              summaryLanguage: prefs?.summaryLanguage ?? null,
-            }}
-          />
-        </div>
-        {prefs ? (
-          <DefList
-            rows={[
-              ["Reading language", prefs.summaryLanguage ?? "—"],
-              ["Timezone", prefs.timezone ?? "—"],
-              ["Created", fmtDateTime(prefs.createdAt)],
-              ["Updated", fmtDateTime(prefs.updatedAt)],
-            ]}
-          />
-        ) : (
-          <div className="px-4 py-6 text-[13px] text-admin-muted">
-            Preferences saved, checkout not completed — or preferences not yet set.
-          </div>
-        )}
+        {articlePrefs ? (
+          <DefList rows={[
+            ["Interests", articlePrefs.interests.join(", ") || "—"],
+            ["Primary interest", articlePrefs.primaryInterest ?? "—"],
+            ["Secondary interests", articlePrefs.secondaryInterests.join(", ") || "—"],
+            ["Source language", articlePrefs.sourceLanguage ?? "—"],
+            ["Reading language", articlePrefs.summaryLanguage ?? "—"],
+            ["Timezone", articlePrefs.timezone ?? "—"],
+            ["Delivery hour", `${articlePrefs.deliveryHour}:00`],
+            ["Difficulty", articlePrefs.preferredDifficulty],
+            ["Recently sent topics", articlePrefs.recentlySentTopics.join(", ") || "—"],
+            ["Created", fmtDateTime(articlePrefs.createdAt)],
+            ["Updated", fmtDateTime(articlePrefs.updatedAt)],
+          ]} />
+        ) : <EmptyPreferences product="OneArticle" />}
       </AdminCard>
 
-      <AdminCard
-        title="Activity — recent deliveries"
-        subtitle={lastDelivery ? `last delivered ${fmtDateTime(lastDelivery.sentAt)}` : "no deliveries yet"}
-      >
+      <AdminCard title="OneFilm preferences">
+        {filmPrefs ? (
+          <DefList rows={[
+            ["Email language", filmPrefs.emailLanguage],
+            ["Genres", filmPrefs.preferredGenres.join(", ") || "—"],
+            ["Moods", filmPrefs.moods.join(", ") || "Any"],
+            ["Decades", filmPrefs.decades.join(", ") || "Any"],
+            ["Original languages", filmPrefs.languages.join(", ") || "Any"],
+            ["Platforms", filmPrefs.platforms.join(", ") || "Any"],
+            ["Spoiler preference", filmPrefs.spoilerPreference],
+            ["Discovery style", filmPrefs.familiarity],
+            ["Runtime preference", filmPrefs.runtimePreference],
+            ["Created", fmtDateTime(filmPrefs.createdAt)],
+            ["Updated", fmtDateTime(filmPrefs.updatedAt)],
+          ]} />
+        ) : <EmptyPreferences product="OneFilm" />}
+      </AdminCard>
+
+      <AdminCard title="Recent OneArticle deliveries">
         <AdminTable
           head={["Updated", "Edition", "Language", "Status", "Attempts", "Sent at", "Note"]}
-          empty="No OneArticle deliveries recorded for this subscriber yet."
-          rows={deliveries.map((delivery) => [
-            <span key="d" className="text-admin-body">{fmtDateTime(delivery.updatedAt)}</span>,
-            <Link key="i" href={`/admin/one-article/issues/${delivery.issue.id}`} className="text-admin-ink underline underline-offset-2">
-              {delivery.issue.headline || "Untitled edition"}
-            </Link>,
-            <span key="l" className="text-admin-body">{delivery.issue.readingLanguage}</span>,
+          rows={articleDeliveries.map((delivery) => [
+            fmtDateTime(delivery.updatedAt),
+            delivery.issue.headline || "Untitled edition",
+            delivery.issue.readingLanguage,
             <StatusBadge key="s" value={delivery.status} />,
             delivery.attemptCount,
-            <span key="sa" className="text-admin-body">{fmtDateTime(delivery.sentAt)}</span>,
-            <span key="n" className="text-[11.5px] text-dawn">
-              {delivery.failedReason ?? delivery.skippedReason ?? "—"}
-            </span>,
+            fmtDateTime(delivery.sentAt),
+            delivery.failedReason ?? delivery.skippedReason ?? "—",
           ])}
+          empty="No OneArticle deliveries."
         />
       </AdminCard>
 
-      <AdminCard title="Audit history" subtitle="Recent admin actions on this subscriber">
+      <AdminCard title="Recent OneFilm deliveries">
         <AdminTable
-          head={["Date", "Action", "Actor", "Metadata"]}
-          empty="No audit events for this user yet."
-          rows={auditEvents.map((event) => [
-            <span key="d" className="text-admin-body">{fmtDateTime(event.createdAt)}</span>,
-            <StatusBadge key="a" value={event.action} tone="neutral" />,
-            <span key="actor" className="font-mono text-[11.5px] text-admin-body">{event.actor}</span>,
-            <span key="m" className="text-[11.5px] text-admin-body">
-              {summarizeAuditMetadata(event.metadata)}
-            </span>,
+          head={["Updated", "Film", "Language", "Status", "Attempts", "Sent at", "Note"]}
+          rows={filmDeliveries.map((delivery) => [
+            fmtDateTime(delivery.updatedAt),
+            delivery.issue.filmTitle || "Untitled film",
+            delivery.issue.emailLanguage,
+            <StatusBadge key="s" value={delivery.status} />,
+            delivery.attemptCount,
+            fmtDateTime(delivery.sentAt),
+            delivery.failedReason ?? delivery.skippedReason ?? "—",
           ])}
+          empty="No OneFilm deliveries."
         />
       </AdminCard>
 
       <Details summary="Technical details — internal IDs">
-        <DefList
-          rows={[
-            ["Contact ID", <MonoShort key="c" value={sub.contact.id} />],
-            ["Unsubscribe token", <MonoShort key="u" value={sub.unsubscribeToken} />],
-            ["Provider customer ID", <MonoShort key="pc" value={sub.providerCustomerId} />],
-            ["Provider subscription ID", <MonoShort key="ps" value={sub.providerSubscriptionId} />],
-            ["Checkout session ID", <MonoShort key="ch" value={sub.providerCheckoutSessionId} />],
-          ]}
-        />
+        <DefList rows={[
+          ["Contact ID", <MonoShort key="c" value={contact.id} />],
+          ["OneRead subscription ID", <MonoShort key="or" value={umbrella?.id} />],
+          ["OneArticle subscription ID", <MonoShort key="oa" value={article?.id} />],
+          ["OneFilm subscription ID", <MonoShort key="of" value={film?.id} />],
+          ["Provider customer ID", <MonoShort key="pc" value={umbrella?.providerCustomerId} />],
+          ["Provider subscription ID", <MonoShort key="ps" value={umbrella?.providerSubscriptionId} />],
+        ]} />
       </Details>
     </AdminShell>
   );
+}
+
+function EmptyPreferences({ product }: { product: string }) {
+  return <div className="px-4 py-6 text-[13px] text-admin-muted">{product} preferences have not been saved yet.</div>;
 }

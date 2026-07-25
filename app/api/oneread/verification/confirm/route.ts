@@ -84,6 +84,26 @@ export async function POST(req: Request) {
     email,
     articlePreferencesComplete: preferencesComplete(articleHolder.preferences),
     filmPreferencesComplete: filmPreferencesComplete(filmHolder.filmPreferences),
+    articlePreferences: articleHolder.preferences
+      ? {
+          interests: articleHolder.preferences.interests,
+          sourceLanguage: articleHolder.preferences.sourceLanguage,
+          summaryLanguage: articleHolder.preferences.summaryLanguage,
+        }
+      : null,
+    filmPreferences: filmHolder.filmPreferences
+      ? {
+          emailLanguage: filmHolder.filmPreferences.emailLanguage,
+          preferredGenres: filmHolder.filmPreferences.preferredGenres,
+          moods: filmHolder.filmPreferences.moods,
+          decades: filmHolder.filmPreferences.decades,
+          languages: filmHolder.filmPreferences.languages,
+          platforms: filmHolder.filmPreferences.platforms,
+          spoilerPreference: filmHolder.filmPreferences.spoilerPreference,
+          familiarity: filmHolder.filmPreferences.familiarity,
+          runtimePreference: filmHolder.filmPreferences.runtimePreference,
+        }
+      : null,
   });
   setVerifiedEmailCookie(res, email, VERIFICATION_PURPOSES.signup);
   return res;

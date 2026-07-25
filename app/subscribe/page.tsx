@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     "Set up OneArticle and OneFilm — one OneRead subscription covers both.",
 };
 
-export default function SubscribePage() {
-  return <OneReadSignup />;
+export default function SubscribePage({
+  searchParams,
+}: {
+  searchParams: { email?: string };
+}) {
+  return <OneReadSignup initialEmail={searchParams.email ?? ""} />;
 }

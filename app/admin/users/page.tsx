@@ -3,116 +3,118 @@ import { guardAdminPage } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
-import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
-import { loadOneArticleSubs, toSubRow } from "@/lib/admin/queries";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import { fmtDate } from "@/lib/admin/format";
-import { labelFor } from "@/lib/admin/labels";
 import { CreateUserButton } from "@/components/admin/CreateUserButton";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** /admin/users — OneRead contacts with their OneArticle subscription state. */
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: {
-    status?: string;
-    email_status?: string;
-    provider?: string;
-    q?: string;
-    override?: string;
-    suppressed?: string;
-  };
+  searchParams: { q?: string; status?: string };
 }) {
   const guard = guardAdminPage("/admin/users", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const now = new Date();
-  const subs = await loadOneArticleSubs();
-  let rows = await Promise.all(subs.map((s) => toSubRow(s, now)));
+  const contacts = await prisma.contact.findMany({
+    include: {
+      subscriptions: {
+        include: { preferences: true, filmPreferences: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-  // Filters (all read-only, applied in-memory over the small dataset).
-  const f = searchParams;
-  if (f.status) rows = rows.filter((r) => r.status === f.status);
-  if (f.email_status) rows = rows.filter((r) => r.emailDeliveryStatus === f.email_status);
-  if (f.provider) rows = rows.filter((r) => (r.provider ?? "none") === f.provider);
-  if (f.override === "yes") rows = rows.filter((r) => r.adminOverride);
-  if (f.override === "no") rows = rows.filter((r) => !r.adminOverride);
-  if (f.suppressed === "yes") rows = rows.filter((r) => r.suppressed);
-  if (f.q) {
-    const needle = f.q.toLowerCase();
-    rows = rows.filter((r) => r.email.toLowerCase().includes(needle));
+  let rows = contacts.map((contact) => {
+    const umbrella = contact.subscriptions.find((sub) => sub.productKey === "one-read");
+    const article = contact.subscriptions.find((sub) => sub.productKey === "one-article");
+    const film = contact.subscriptions.find((sub) => sub.productKey === "one-film");
+    return { contact, umbrella, article, film };
+  });
+
+  if (searchParams.q) {
+    const needle = searchParams.q.toLowerCase();
+    rows = rows.filter(({ contact }) => contact.email.toLowerCase().includes(needle));
+  }
+  if (searchParams.status) {
+    rows = rows.filter(({ umbrella, article, film }) =>
+      [umbrella?.status, article?.status, film?.status].includes(searchParams.status),
+    );
   }
 
   return (
     <AdminShell
       title="Users"
-      subtitle={`${rows.length} of ${subs.length} OneArticle subscriptions`}
-      actions={<CreateUserButton />}
+      subtitle={`${rows.length} of ${contacts.length} contacts across OneArticle and OneFilm`}
+      actions={
+        <>
+          <a
+            href="/api/admin/users/export"
+            className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-2 text-[12.5px] text-admin-ink hover:bg-admin-sink"
+          >
+            Download CSV
+          </a>
+          <CreateUserButton />
+        </>
+      }
     >
-      {/* Filter bar — a plain GET form so state lives in the URL. */}
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <FilterField label="Search email">
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Search email</span>
           <input
             type="text"
             name="q"
-            defaultValue={f.q ?? ""}
+            defaultValue={searchParams.q ?? ""}
             placeholder="email contains…"
-            className="w-48 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+            className="w-56 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           />
-        </FilterField>
-        <FilterSelect name="status" label="Access" value={f.status} options={ACCESS_OPTIONS} />
-        <FilterSelect name="email_status" label="Delivery" value={f.email_status} options={EMAIL_OPTIONS} />
-        <FilterSelect name="provider" label="Provider" value={f.provider} options={PROVIDER_OPTIONS} />
-        <FilterSelect name="override" label="Override" value={f.override} options={YESNO_OPTIONS} />
-        <FilterSelect name="suppressed" label="Suppressed" value={f.suppressed} options={YESNO_OPTIONS} />
-        <button
-          type="submit"
-          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink"
-        >
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">Any product status</span>
+          <select
+            name="status"
+            defaultValue={searchParams.status ?? ""}
+            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+          >
+            <option value="">Any</option>
+            {STATUSES.map((status) => <option key={status}>{status}</option>)}
+          </select>
+        </label>
+        <button type="submit" className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink">
           Apply
         </button>
-        <Link href="/admin/users" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
-          Reset
-        </Link>
+        <Link href="/admin/users" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">Reset</Link>
       </form>
 
       <AdminCard>
         <AdminTable
           head={[
-            "Email address",
-            "Access",
-            "Delivery",
-            "Provider",
-            "Plan",
-            "Period ends",
+            "Email",
+            "OneRead",
+            "OneArticle",
+            "Article interests",
+            "Reading",
+            "OneFilm",
+            "Film genres",
+            "Film moods",
             "Created",
-            "Can receive email",
             "",
           ]}
           empty="No users match these filters."
-          rows={rows.map((r) => [
-            <span key="e" className="text-admin-ink">
-              {r.email}
-              {r.adminOverride && (
-                <span className="ml-1.5 text-[10px] uppercase tracking-eyebrow text-amber-700">
-                  override
-                </span>
-              )}
-            </span>,
-            <StatusBadge key="s" value={r.status} />,
-            <StatusBadge key="d" value={r.emailDeliveryStatus} />,
-            <span key="pv" className="text-admin-body">{r.provider ?? "—"}</span>,
-            <span key="pl" className="text-admin-body">{r.plan ?? "—"}</span>,
-            <span key="pe" className="text-admin-body">{fmtDate(r.currentPeriodEnd)}</span>,
-            <span key="c" className="text-admin-body">{fmtDate(r.createdAt)}</span>,
-            <EligibilityBadge key="el" allowed={r.eligible} reason={r.reason} />,
-            <Link
-              key="v"
-              href={`/admin/users/${r.id}`}
-              className="text-admin-ink underline underline-offset-2"
-            >
+          rows={rows.map(({ contact, umbrella, article, film }) => [
+            <span key="e" className="text-admin-ink">{contact.email}</span>,
+            umbrella ? <StatusBadge key="or" value={umbrella.status} /> : "—",
+            article ? <StatusBadge key="oa" value={article.status} /> : "—",
+            article?.preferences?.interests.join(", ") || "—",
+            article?.preferences?.summaryLanguage ?? "—",
+            film ? <StatusBadge key="of" value={film.status} /> : "—",
+            film?.filmPreferences?.preferredGenres.join(", ") || "—",
+            film?.filmPreferences?.moods.join(", ") || "—",
+            <span key="c" className="text-admin-body">{fmtDate(contact.createdAt)}</span>,
+            <Link key="v" href={`/admin/users/${contact.id}`} className="text-admin-ink underline underline-offset-2">
               View
             </Link>,
           ])}
@@ -122,45 +124,7 @@ export default async function AdminUsersPage({
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function FilterSelect({
-  name,
-  label,
-  value,
-  options,
-}: {
-  name: string;
-  label: string;
-  value?: string;
-  options: readonly string[];
-}) {
-  return (
-    <FilterField label={label}>
-      <select
-        name={name}
-        defaultValue={value ?? ""}
-        className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
-      >
-        <option value="">Any</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {["yes", "no"].includes(o) ? (o === "yes" ? "Yes" : "No") : labelFor(o)}
-          </option>
-        ))}
-      </select>
-    </FilterField>
-  );
-}
-
-const ACCESS_OPTIONS = [
+const STATUSES = [
   "ACTIVE_PAID",
   "TRIALING",
   "ADMIN_OVERRIDE",
@@ -171,6 +135,3 @@ const ACCESS_OPTIONS = [
   "TRIAL_EXPIRED",
   "EXPIRED",
 ] as const;
-const EMAIL_OPTIONS = ["SUBSCRIBED", "UNSUBSCRIBED", "SUPPRESSED"] as const;
-const PROVIDER_OPTIONS = ["polar", "mock", "none"] as const;
-const YESNO_OPTIONS = ["yes", "no"] as const;

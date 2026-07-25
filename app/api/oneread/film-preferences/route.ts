@@ -3,6 +3,13 @@ import {
   parseEmail,
   parseFilmEmailLanguage,
   parseFilmGenres,
+  parseFilmMoods,
+  parseFilmDecades,
+  parseFilmLanguages,
+  parseFilmPlatforms,
+  parseFilmSpoilerPreference,
+  parseFilmFamiliarity,
+  parseFilmRuntimePreference,
 } from "@/lib/options";
 import { upsertFilmPreferences } from "@/lib/film/subscriptions";
 import {
@@ -37,13 +44,13 @@ export async function POST(request: Request) {
       {
         emailLanguage,
         preferredGenres,
-        moods: [],
-        decades: [],
-        languages: [],
-        platforms: [],
-        spoilerPreference: "Spoiler-light",
-        familiarity: "Mixed",
-        runtimePreference: "Any",
+        moods: parseFilmMoods(payload.moods) ?? [],
+        decades: parseFilmDecades(payload.decades) ?? [],
+        languages: parseFilmLanguages(payload.languages) ?? [],
+        platforms: parseFilmPlatforms(payload.platforms) ?? [],
+        spoilerPreference: parseFilmSpoilerPreference(payload.spoilerPreference) ?? "Spoiler-light",
+        familiarity: parseFilmFamiliarity(payload.familiarity) ?? "Mixed",
+        runtimePreference: parseFilmRuntimePreference(payload.runtimePreference) ?? "Any",
       },
     );
     await markOneReadReadyForCheckoutIfEligible(oneRead.contactId);
