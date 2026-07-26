@@ -33,9 +33,9 @@ export function LanguageSwitcher() {
         aria-expanded={open}
         aria-label={dictionary.language.menu}
         onClick={() => setOpen((value) => !value)}
-        className="focus-ring link-underline inline-flex items-center gap-1 rounded-sm transition-colors duration-200 hover:text-ink"
+        className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-sm px-1 transition-colors duration-200 hover:text-ink"
       >
-        <span>{LANGUAGE_NAMES[locale]}</span>
+        <span className="link-underline">{LANGUAGE_NAMES[locale]}</span>
         <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="m2.5 3.75 2.5 2.5 2.5-2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

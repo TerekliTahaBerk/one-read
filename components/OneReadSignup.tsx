@@ -243,7 +243,11 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
         <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
       </header>
 
-      <section className="flex-1 w-full flex flex-col items-center justify-center max-w-[34rem] mx-auto py-8">
+      <section
+        className={`flex-1 w-full flex flex-col items-center justify-center mx-auto py-8 ${
+          step === "choose" ? "max-w-[40rem]" : "max-w-[34rem]"
+        }`}
+      >
         {step === "email" && (
           <StepShell title={t.email.title} support={t.email.support}>
             <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
@@ -269,7 +273,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
                 name="OneArticle"
                 description={t.choose.articleDescription}
                 complete={articleComplete}
-                completeLabel={t.review.complete}
+                completeLabel={dictionary.preferences.complete}
                 actionLabel={articleComplete ? t.choose.articleCtaEdit : t.choose.articleCta}
                 accent={productThemes.article.accent}
                 surface={productThemes.article.surface}
@@ -283,7 +287,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
                 name="OneFilm"
                 description={t.choose.filmDescription}
                 complete={filmComplete}
-                completeLabel={t.review.complete}
+                completeLabel={dictionary.preferences.complete}
                 actionLabel={filmComplete ? t.choose.filmCtaEdit : t.choose.filmCta}
                 accent={productThemes.film.accent}
                 surface={productThemes.film.surface}
@@ -407,7 +411,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
 function StepShell({ title, support, children }: { title: string; support: string; children: ReactNode }) {
   return (
     <div className="w-full flex flex-col items-center text-center animate-rise">
-      <h1 className="font-serif font-medium text-[2rem] sm:text-[2.5rem] leading-[1.07] tracking-[-.015em] text-ink max-w-[20ch]">{title}</h1>
+      <h1 className="max-w-[22ch] text-balance font-serif text-[2rem] font-medium leading-[1.07] tracking-[-.015em] text-ink sm:text-[2.5rem]">{title}</h1>
       <p className="mt-4 mb-7 max-w-[42ch] font-sans text-[14.5px] leading-[1.65] text-ash">{support}</p>
       {children}
     </div>
@@ -501,20 +505,26 @@ function ProductChoiceCard({
   onClick: () => void;
 }) {
   return (
-    <div className="flex min-h-[15rem] flex-col rounded-3xl border p-5 text-left" style={{ borderColor: border, backgroundColor: surface }}>
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="font-serif text-[1.55rem] font-medium text-ink">{name}</h2>
+    <div
+      className="flex min-h-[13.5rem] flex-col rounded-3xl border p-5 text-left sm:min-h-[14rem] sm:p-6"
+      style={{ borderColor: border, backgroundColor: surface }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 className="font-serif text-[1.55rem] font-medium leading-none text-ink">{name}</h2>
         {complete && (
-          <span className="rounded-full bg-white/80 px-2.5 py-1 font-sans text-[10px] uppercase tracking-eyebrow" style={{ color: accent }}>
+          <span
+            className="whitespace-nowrap rounded-full bg-white/80 px-2.5 py-1.5 font-sans text-[9.5px] uppercase tracking-[.14em]"
+            style={{ color: accent }}
+          >
             {completeLabel}
           </span>
         )}
       </div>
-      <p className="mt-3 font-sans text-[13.5px] leading-relaxed text-ash">{description}</p>
+      <p className="mt-4 max-w-[28ch] font-sans text-[13.5px] leading-relaxed text-ash">{description}</p>
       <button
         type="button"
         onClick={onClick}
-        className="focus-ring mt-auto inline-flex h-10 items-center justify-center rounded-full px-4 font-sans text-[12.5px] font-medium text-white"
+        className="focus-ring mt-auto inline-flex min-h-11 items-center justify-center rounded-full px-4 font-sans text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
         style={{ backgroundColor: accent }}
       >
         {actionLabel}

@@ -55,40 +55,40 @@ export function Footer({
 
         <nav
           aria-label={dictionary.footer.navigation}
-          className="mt-3 flex flex-wrap items-center justify-center gap-3 text-[12px] text-fog font-sans"
+          className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 text-[12px] text-fog font-sans sm:gap-x-2.5"
         >
           <Link
             href="/terms"
-            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
+            className="inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
-            {dictionary.footer.terms}
+            <span className="link-underline">{dictionary.footer.terms}</span>
           </Link>
-          <span aria-hidden="true" className="text-line-strong">·</span>
+          <span aria-hidden="true" className="hidden text-line-strong sm:inline">·</span>
           <Link
             href="/privacy"
-            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
+            className="inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
-            {dictionary.footer.privacy}
+            <span className="link-underline">{dictionary.footer.privacy}</span>
           </Link>
-          <span aria-hidden="true" className="text-line-strong">·</span>
+          <span aria-hidden="true" className="hidden text-line-strong sm:inline">·</span>
           <Link
             href="/editorial"
-            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
+            className="inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
-            {editorialLabel}
+            <span className="link-underline">{editorialLabel}</span>
           </Link>
           {showPricing && (
             <>
-              <span aria-hidden="true" className="text-line-strong">·</span>
+              <span aria-hidden="true" className="hidden text-line-strong sm:inline">·</span>
               <Link
                 href={pricingHref}
-                className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
+                className="inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
               >
-                {dictionary.footer.pricing}
+                <span className="link-underline">{dictionary.footer.pricing}</span>
               </Link>
             </>
           )}
-          <span aria-hidden="true" className="text-line-strong">·</span>
+          <span aria-hidden="true" className="hidden text-line-strong sm:inline">·</span>
           <LanguageSwitcher />
         </nav>
         {showBackHome && (
