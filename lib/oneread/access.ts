@@ -190,7 +190,7 @@ export async function resolveOneFilmEligibilityForContact(
 }
 
 /**
- * Once OneArticle preferences are complete, the `one-read`
+ * Once OneArticle and OneFilm preferences are complete, the `one-read`
  * row can move from PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors
  * `markReadyForCheckout` in lib/subscriptions.ts — never touches trial fields,
  * Polar owns those.
@@ -198,16 +198,25 @@ export async function resolveOneFilmEligibilityForContact(
 export async function markOneReadReadyForCheckoutIfEligible(
   contactId: string,
 ): Promise<ProductSubscription | null> {
-  const [oneRead, articleHolder] = await Promise.all([
+  const [oneRead, articleHolder, filmHolder] = await Promise.all([
     findOneReadRow(contactId),
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
       include: { preferences: true },
     }),
+    prisma.productSubscription.findUnique({
+      where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
+      include: { filmPreferences: true },
+    }),
   ]);
   if (!oneRead) return null;
 
-  if (!preferencesComplete(articleHolder?.preferences ?? null)) return oneRead;
+  if (
+    !preferencesComplete(articleHolder?.preferences ?? null) ||
+    !filmPreferencesComplete(filmHolder?.filmPreferences ?? null)
+  ) {
+    return oneRead;
+  }
 
   if (
     oneRead.status === "ADMIN_OVERRIDE" ||

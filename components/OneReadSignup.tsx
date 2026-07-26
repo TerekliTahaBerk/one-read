@@ -25,7 +25,7 @@ import {
   isLikelyEmail,
 } from "@/lib/options";
 
-type Step = "email" | "verify" | "language" | "film" | "review";
+type Step = "email" | "verify" | "choose" | "language" | "film" | "review";
 
 async function postJson(url: string, body: unknown) {
   const response = await fetch(url, {
@@ -41,7 +41,12 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
   const { dictionary } = useSiteLanguage();
   const t = dictionary.signup;
   const [step, setStep] = useState<Step>("email");
-  const theme = step === "film" ? productThemes.film : productThemes.article;
+  const theme =
+    step === "film"
+      ? productThemes.film
+      : step === "language"
+        ? productThemes.article
+        : productThemes.read;
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [readingLanguage, setReadingLanguage] = useState<string>("English");
@@ -56,6 +61,9 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
   const [spoilerPreference, setSpoilerPreference] = useState<string>("Spoiler-light");
   const [familiarity, setFamiliarity] = useState<string>("Mixed");
   const [runtimePreference, setRuntimePreference] = useState<string>("Any");
+  const [articleComplete, setArticleComplete] = useState(false);
+  const [filmComplete, setFilmComplete] = useState(false);
+  const [settingUpAll, setSettingUpAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,12 +108,14 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       return;
     }
     const article = result.data.articlePreferences;
+    setArticleComplete(Boolean(result.data.articlePreferencesComplete));
     if (article) {
       setArticleInterests(article.interests ?? []);
       setSourceLanguage(article.sourceLanguage ?? "Any");
       setReadingLanguage(article.summaryLanguage ?? "English");
     }
     const film = result.data.filmPreferences;
+    setFilmComplete(Boolean(result.data.filmPreferencesComplete));
     if (film) {
       setFilmEmailLanguage(film.emailLanguage ?? "English");
       setFilmGenres(film.preferredGenres ?? []);
@@ -117,7 +127,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       setFamiliarity(film.familiarity ?? "Mixed");
       setRuntimePreference(film.runtimePreference ?? "Any");
     }
-    setStep("language");
+    setStep("choose");
   }
 
   async function saveLanguage(event: FormEvent) {
@@ -139,7 +149,13 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       setError(t.errors.generic);
       return;
     }
-    setStep("film");
+    setArticleComplete(true);
+    if (settingUpAll && !filmComplete) {
+      setStep("film");
+      return;
+    }
+    setSettingUpAll(false);
+    setStep("choose");
   }
 
   async function saveFilmPreferences(event: FormEvent) {
@@ -167,6 +183,31 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       setError(t.errors.generic);
       return;
     }
+    setFilmComplete(true);
+    if (settingUpAll && !articleComplete) {
+      setStep("language");
+      return;
+    }
+    if (settingUpAll) {
+      setSettingUpAll(false);
+      setStep("review");
+      return;
+    }
+    setStep("choose");
+  }
+
+  function startFullSetup() {
+    setError(null);
+    setSettingUpAll(true);
+    if (!articleComplete) {
+      setStep("language");
+      return;
+    }
+    if (!filmComplete) {
+      setStep("film");
+      return;
+    }
+    setSettingUpAll(false);
     setStep("review");
   }
 
@@ -221,6 +262,52 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
           </StepShell>
         )}
 
+        {step === "choose" && (
+          <StepShell title={t.choose.title} support={t.choose.support}>
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+              <ProductChoiceCard
+                name="OneArticle"
+                description={t.choose.articleDescription}
+                complete={articleComplete}
+                completeLabel={t.review.complete}
+                actionLabel={articleComplete ? t.choose.articleCtaEdit : t.choose.articleCta}
+                accent={productThemes.article.accent}
+                surface={productThemes.article.surface}
+                border={productThemes.article.border}
+                onClick={() => {
+                  setSettingUpAll(false);
+                  setStep("language");
+                }}
+              />
+              <ProductChoiceCard
+                name="OneFilm"
+                description={t.choose.filmDescription}
+                complete={filmComplete}
+                completeLabel={t.review.complete}
+                actionLabel={filmComplete ? t.choose.filmCtaEdit : t.choose.filmCta}
+                accent={productThemes.film.accent}
+                surface={productThemes.film.surface}
+                border={productThemes.film.border}
+                onClick={() => {
+                  setSettingUpAll(false);
+                  setStep("film");
+                }}
+              />
+            </div>
+            <div className="mt-6 flex w-full flex-col items-center gap-3">
+              {articleComplete && filmComplete ? (
+                <button type="button" onClick={() => setStep("review")} className={primaryButtonClass}>
+                  {t.choose.continueReview}
+                </button>
+              ) : (
+                <button type="button" onClick={startFullSetup} className={primaryButtonClass}>
+                  {t.choose.setupAll}
+                </button>
+              )}
+            </div>
+          </StepShell>
+        )}
+
         {step === "language" && (
           <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
             <form onSubmit={saveLanguage} className="w-full flex flex-col items-center gap-6">
@@ -247,6 +334,11 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
               </div>
               </PreferenceGroup>
               <Submit busy={busy} wait={t.pleaseWait}>{t.articlePrefs.cta}</Submit>
+              {!settingUpAll && (
+                <button type="button" onClick={() => setStep("choose")} className={secondaryButtonClass}>
+                  ← {t.choose.title}
+                </button>
+              )}
             </form>
           </StepShell>
         )}
@@ -273,6 +365,11 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
               <PillGroup label="Discovery style" options={FILM_FAMILIARITIES} selected={familiarity} onChange={setFamiliarity} />
               <PillGroup label="Runtime" options={FILM_RUNTIME_PREFERENCES} selected={runtimePreference} onChange={setRuntimePreference} />
               <Submit busy={busy} wait={t.pleaseWait}>{t.filmPrefs.cta}</Submit>
+              {!settingUpAll && (
+                <button type="button" onClick={() => setStep("choose")} className={secondaryButtonClass}>
+                  ← {t.choose.title}
+                </button>
+              )}
             </form>
           </StepShell>
         )}
@@ -294,6 +391,9 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
             </div>
             <button type="button" onClick={startCheckout} disabled={busy} className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-7 font-sans text-[14px] font-medium text-white disabled:opacity-50">
               {busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}
+            </button>
+            <button type="button" onClick={() => setStep("choose")} className={secondaryButtonClass}>
+              {t.review.editPreferences}
             </button>
           </StepShell>
         )}
@@ -323,6 +423,8 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 }
 
 const inputClass = "focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink";
+const primaryButtonClass = "focus-ring inline-flex h-12 items-center justify-center rounded-full bg-ink px-7 font-sans text-[14px] font-medium text-white hover:bg-ink/90";
+const secondaryButtonClass = "focus-ring inline-flex h-10 items-center justify-center rounded-full px-4 font-sans text-[13px] text-fog hover:text-ink";
 
 function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
@@ -374,5 +476,49 @@ function PillGroup({
         <LanguagePill key={option} label={option} selected={selected === option} onClick={() => onChange(option)} />
       ))}
     </PreferenceGroup>
+  );
+}
+
+function ProductChoiceCard({
+  name,
+  description,
+  complete,
+  completeLabel,
+  actionLabel,
+  accent,
+  surface,
+  border,
+  onClick,
+}: {
+  name: string;
+  description: string;
+  complete: boolean;
+  completeLabel: string;
+  actionLabel: string;
+  accent: string;
+  surface: string;
+  border: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex min-h-[15rem] flex-col rounded-3xl border p-5 text-left" style={{ borderColor: border, backgroundColor: surface }}>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-serif text-[1.55rem] font-medium text-ink">{name}</h2>
+        {complete && (
+          <span className="rounded-full bg-white/80 px-2.5 py-1 font-sans text-[10px] uppercase tracking-eyebrow" style={{ color: accent }}>
+            {completeLabel}
+          </span>
+        )}
+      </div>
+      <p className="mt-3 font-sans text-[13.5px] leading-relaxed text-ash">{description}</p>
+      <button
+        type="button"
+        onClick={onClick}
+        className="focus-ring mt-auto inline-flex h-10 items-center justify-center rounded-full px-4 font-sans text-[12.5px] font-medium text-white"
+        style={{ backgroundColor: accent }}
+      >
+        {actionLabel}
+      </button>
+    </div>
   );
 }

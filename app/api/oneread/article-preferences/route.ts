@@ -22,8 +22,8 @@ export const dynamic = "force-dynamic";
  *
  * Saves OneArticle preferences for a verified OneRead email. Never grants
  * billing access — Polar remains the source of truth. Once the OneArticle
- * reading language is complete, the umbrella `one-read` row moves to
- * PENDING_CHECKOUT so the review step can start checkout.
+ * preferences are complete, readiness is re-evaluated across OneArticle and
+ * OneFilm before the umbrella row can move to PENDING_CHECKOUT.
  */
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
