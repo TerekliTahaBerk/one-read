@@ -38,7 +38,8 @@ const nextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  silent: true,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   // Only upload source maps / release artifacts when an auth token is
