@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getControls } from "@/lib/admin/settings-store";
-import { finishRun, notifyRunFailure, startRun } from "@/lib/admin/operational-runs";
+import {
+  finishRun,
+  notifyMissingScheduledEdition,
+  notifyRunFailure,
+  notifyZeroDelivery,
+  startRun,
+} from "@/lib/admin/operational-runs";
 import { recordAudit } from "@/lib/admin/audit";
 import { dispatchDueFilmEditorialIssues } from "@/lib/film/editorial";
 import { getResendStatus } from "@/lib/resend";
@@ -34,6 +40,20 @@ async function handler(request: Request): Promise<Response> {
     await recordAudit({
       actor: "cron", action: "oneFilm.editorial.dispatch", targetType: "OperationalRun",
       targetId: run.id, metadata: { ...result },
+    });
+    if (result.sent === 0) {
+      await notifyZeroDelivery({
+        productName: "OneFilm",
+        route: "/api/cron/one-film",
+        eligible: result.recipients,
+      });
+    }
+    await notifyMissingScheduledEdition({
+      productKey: "one-film",
+      productName: "OneFilm",
+      route: "/api/cron/one-film",
+      issuesDispatched: result.issues,
+      sendDays: [6],
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

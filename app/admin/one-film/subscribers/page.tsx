@@ -10,7 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveOneFilmEligibilityForContact } from "@/lib/oneread/access";
 import { fmtDate } from "@/lib/admin/format";
 export const runtime="nodejs";export const dynamic="force-dynamic";
-export default async function FilmSubscribers({searchParams}:{searchParams:Record<string,string|string[]|undefined>}){
+export default async function FilmSubscribers(props:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
+ const searchParams = await props.searchParams;
  const guard=guardAdminPage("/admin/one-film/subscribers",searchParams);if(!guard.ok)return <AdminNotConfigured/>;
  const subs=await prisma.productSubscription.findMany({where:{productKey:"one-film"},include:{filmPreferences:true,contact:{select:{email:true}}},orderBy:{createdAt:"desc"}});
  const rows=await Promise.all(subs.map(async sub=>({sub,result:await resolveOneFilmEligibilityForContact(sub.contactId)})));const eligible=rows.filter(x=>x.result.allowed).length;

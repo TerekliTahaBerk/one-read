@@ -12,8 +12,9 @@ import { fmtDateTime } from "@/lib/admin/format";
 import { FILM_EMAIL_LANGUAGES } from "@/lib/options";
 
 export const runtime = "nodejs"; export const dynamic = "force-dynamic";
-export default async function FilmIssues({ searchParams }: { searchParams: { status?: string; language?: string } }) {
-  const guard = guardAdminPage("/admin/one-film/issues", searchParams); if (!guard.ok) return <AdminNotConfigured />;
+export default async function FilmIssues(props: { searchParams: Promise<{ status?: string; language?: string }> }) {
+  const searchParams = await props.searchParams;
+  const guard = guardAdminPage("/admin/one-film/issues", searchParams);if (!guard.ok) return <AdminNotConfigured />;
   const where: Prisma.OneFilmIssueWhereInput = {};
   if (searchParams.status) where.status = searchParams.status;
   if (searchParams.language) where.emailLanguage = searchParams.language;

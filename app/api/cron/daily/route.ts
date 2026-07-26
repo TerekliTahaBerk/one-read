@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getControls } from "@/lib/admin/settings-store";
-import { finishRun, notifyRunFailure, startRun } from "@/lib/admin/operational-runs";
+import {
+  finishRun,
+  notifyMissingScheduledEdition,
+  notifyRunFailure,
+  notifyZeroDelivery,
+  startRun,
+} from "@/lib/admin/operational-runs";
 import { recordAudit } from "@/lib/admin/audit";
 import { dispatchDueEditorialIssues } from "@/lib/one-article/editorial";
 import { getResendStatus } from "@/lib/resend";
@@ -58,6 +64,20 @@ async function handler(request: Request): Promise<Response> {
       targetType: "OperationalRun",
       targetId: run.id,
       metadata: { ...result },
+    });
+    if (result.sent === 0) {
+      await notifyZeroDelivery({
+        productName: "OneArticle",
+        route: "/api/cron/daily",
+        eligible: result.recipients,
+      });
+    }
+    await notifyMissingScheduledEdition({
+      productKey: ONE_ARTICLE_PRODUCT_KEY,
+      productName: "OneArticle",
+      route: "/api/cron/daily",
+      issuesDispatched: result.issues,
+      sendDays: [1, 2, 3, 4, 5],
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

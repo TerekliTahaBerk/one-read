@@ -17,11 +17,12 @@ export const dynamic = "force-dynamic";
  * canonical eligibility verdict (and reason) shown inline. When someone is not
  * receiving email, the reason is immediately visible.
  */
-export default async function OneArticleSubscribersPage({
-  searchParams,
-}: {
-  searchParams: { reason?: string };
-}) {
+export default async function OneArticleSubscribersPage(
+  props: {
+    searchParams: Promise<{ reason?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-article/subscribers", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

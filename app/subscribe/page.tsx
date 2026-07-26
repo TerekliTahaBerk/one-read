@@ -7,10 +7,11 @@ export const metadata: Metadata = {
     "Set up OneArticle and OneFilm — one OneRead subscription covers both.",
 };
 
-export default function SubscribePage({
-  searchParams,
-}: {
-  searchParams: { email?: string };
-}) {
+export default async function SubscribePage(
+  props: {
+    searchParams: Promise<{ email?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return <OneReadSignup initialEmail={searchParams.email ?? ""} />;
 }

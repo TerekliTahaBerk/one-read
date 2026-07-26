@@ -145,6 +145,64 @@ export async function notifyZeroDelivery(input: { productName: string; route: st
   } catch { /* best effort */ }
 }
 
+/**
+ * Sends at most one alert per product/day when the expected editorial window
+ * arrives without a due edition. A Setting row is the cross-instance
+ * idempotency lock, so a ten-minute serverless cron cannot spam the operator.
+ */
+export async function notifyMissingScheduledEdition(input: {
+  productKey: string;
+  productName: string;
+  route: string;
+  issuesDispatched: number;
+  sendDays: number[];
+}): Promise<void> {
+  if (input.issuesDispatched > 0) return;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hourCycle: "h23",
+      weekday: "short",
+    })
+      .formatToParts(new Date())
+      .map((part) => [part.type, part.value]),
+  );
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
+  const hour = Number(parts.hour);
+  if (!input.sendDays.includes(weekday) || hour < 7 || hour > 9) return;
+
+  const dateKey = `${parts.year}-${parts.month}-${parts.day}`;
+  try {
+    await prisma.setting.create({
+      data: {
+        key: `alert.missing-edition.${input.productKey}.${dateKey}`,
+        value: new Date().toISOString(),
+        updatedBy: "cron",
+      },
+    });
+  } catch {
+    return;
+  }
+
+  const to = process.env.ADMIN_EMAIL?.trim();
+  if (!to) return;
+  const text = `${input.productName} has no due scheduled edition in its expected delivery window.\n\nDate: ${dateKey}\nRoute: ${input.route}\nTime: ${new Date().toISOString()}\n\nOpen the editorial panel, prepare the edition, and schedule it explicitly.`;
+  try {
+    await sendDailyEmail({
+      to,
+      subject: `⚠️ ${input.productName}: no edition scheduled`,
+      text,
+      html: `<pre>${escapeHtml(text)}</pre>`,
+    });
+  } catch {
+    // Best effort; the idempotency row still records that the condition occurred.
+  }
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

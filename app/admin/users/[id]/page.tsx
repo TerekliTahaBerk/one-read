@@ -17,13 +17,14 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminUserDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function AdminUserDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const guard = guardAdminPage(`/admin/users/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

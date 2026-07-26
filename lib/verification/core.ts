@@ -1,5 +1,5 @@
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
+import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getResendStatus, sendDailyEmail } from "@/lib/resend";
@@ -351,7 +351,7 @@ export function createVerification(product: VerificationDescriptor) {
   }
 
   function getVerifiedEmailSession(): VerifiedEmailSession | null {
-    const token = cookies().get(product.cookieName)?.value;
+    const token = (cookies() as unknown as UnsafeUnwrappedCookies).get(product.cookieName)?.value;
     return verifyVerifiedSessionToken(token);
   }
 

@@ -10,7 +10,8 @@ import { oneFilmTabs } from "@/lib/admin/nav";
 import { prisma } from "@/lib/prisma";
 import { fmtDateTime } from "@/lib/admin/format";
 export const runtime="nodejs";export const dynamic="force-dynamic";
-export default async function FilmSends({searchParams}:{searchParams:{status?:string;email?:string}}){
+export default async function FilmSends(props:{searchParams: Promise<{status?:string;email?:string}>}) {
+ const searchParams = await props.searchParams;
  const guard=guardAdminPage("/admin/one-film/sends",searchParams);if(!guard.ok)return <AdminNotConfigured/>;
  const where:Prisma.OneFilmDeliveryWhereInput={};if(searchParams.status)where.status=searchParams.status;if(searchParams.email)where.contact={email:{contains:searchParams.email,mode:"insensitive"}};
  const rows=await prisma.oneFilmDelivery.findMany({where,include:{contact:{select:{email:true}},issue:{select:{id:true,filmTitle:true,emailLanguage:true}}},orderBy:{updatedAt:"desc"},take:300});

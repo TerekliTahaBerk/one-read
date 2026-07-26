@@ -5,6 +5,12 @@ import {
   setAdminSessionCookie,
   verifyAdminCredentials,
 } from "@/lib/admin/auth";
+import {
+  adminLoginThrottleKeys,
+  checkAdminLoginRateLimit,
+  clearAdminLoginFailures,
+  recordAdminLoginFailure,
+} from "@/lib/admin/login-throttle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,14 +32,32 @@ export async function POST(req: Request) {
 
   const email = body.email ?? "";
   const password = body.password ?? "";
+  const ip =
+    (req.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip")?.trim() ||
+    null;
+  const throttleKeys = adminLoginThrottleKeys(email, ip);
+  const rateLimit = await checkAdminLoginRateLimit(throttleKeys);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "too_many_attempts" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const ok = await verifyAdminCredentials(email, password);
   if (!ok) {
+    await recordAdminLoginFailure(throttleKeys);
     return NextResponse.json(
       { ok: false, error: "invalid_credentials" },
       { status: 401 },
     );
   }
 
+  await clearAdminLoginFailures(throttleKeys);
   const next = sanitizeAdminNextPath(body.next);
   const res = NextResponse.json({ ok: true, next });
   setAdminSessionCookie(res, email.trim().toLowerCase());

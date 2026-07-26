@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * survives navigation between admin routes.
  */
 export async function GET() {
-  const cookiePresent = Boolean(cookies().get(ADMIN_SESSION_COOKIE)?.value);
+  const cookiePresent = Boolean((await cookies()).get(ADMIN_SESSION_COOKIE)?.value);
   const session = getAdminSession();
 
   if (!session) {

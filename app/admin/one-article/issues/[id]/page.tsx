@@ -14,13 +14,14 @@ import { SUMMARY_LANGUAGES } from "@/lib/options";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function EditorialIssueDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function EditorialIssueDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const guard = guardAdminPage(`/admin/one-article/issues/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const issue = await prisma.oneArticleIssue.findUnique({

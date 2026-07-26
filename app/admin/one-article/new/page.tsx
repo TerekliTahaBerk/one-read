@@ -10,11 +10,12 @@ import { countEligibleEditorialRecipients } from "@/lib/one-article/editorial";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function NewEditorialIssuePage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function NewEditorialIssuePage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-article/new", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const audienceByLanguage = Object.fromEntries(

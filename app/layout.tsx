@@ -22,6 +22,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.email"),
   title: "OneRead — One useful email at a time.",
   description:
     "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
@@ -30,12 +31,16 @@ export const metadata: Metadata = {
     description:
       "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
     type: "website",
+    siteName: "OneRead",
+    url: "/",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "OneRead" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "OneRead — One useful email at a time.",
     description:
       "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
+    images: ["/opengraph-image"],
   },
 };
 
@@ -45,12 +50,14 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const locale = normalizeSiteLocale(cookies().get(SITE_LOCALE_COOKIE)?.value);
+export default async function RootLayout(
+  {
+    children,
+  }: {
+    children: React.ReactNode;
+  }
+) {
+  const locale = normalizeSiteLocale((await cookies()).get(SITE_LOCALE_COOKIE)?.value);
 
   return (
     <html

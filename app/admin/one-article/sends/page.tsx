@@ -13,11 +13,12 @@ import { fmtDateTime } from "@/lib/admin/format";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function EditorialSendsPage({
-  searchParams,
-}: {
-  searchParams: { status?: string; email?: string };
-}) {
+export default async function EditorialSendsPage(
+  props: {
+    searchParams: Promise<{ status?: string; email?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-article/sends", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const where: Prisma.OneArticleDeliveryWhereInput = {};

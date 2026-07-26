@@ -367,6 +367,20 @@ model AdminAuditLog {
   @@index([createdAt])
 }
 
+/// Fixed-window throttle state for the public admin login endpoint. Keys are
+/// HMAC hashes of the submitted email and client IP; raw identifiers are never
+/// persisted.
+model AdminLoginThrottle {
+  key           String   @id
+  attempts      Int      @default(0)
+  windowStarted DateTime @default(now())
+  blockedUntil  DateTime?
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([blockedUntil])
+  @@index([updatedAt])
+}
+
 /// Structured operational history for cron/admin pipeline runs. This is
 /// intentionally product-scoped so future products can use it without creating
 /// another audit system. Secret values must never be stored in metadata.
@@ -894,4 +908,18 @@ model Setting {
   value     String
   updatedBy String?
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// Consent-scoped interest registration for products that are not live yet.
+/// No marketing is sent beyond the selected product's launch/update notice.
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String
+  product   String
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, product])
+  @@index([product, createdAt])
 }

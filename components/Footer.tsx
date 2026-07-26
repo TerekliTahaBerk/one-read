@@ -59,21 +59,21 @@ export function Footer({
         >
           <Link
             href="/terms"
-            className="link-underline transition-colors duration-200 hover:text-ink"
+            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
             {dictionary.footer.terms}
           </Link>
           <span aria-hidden="true" className="text-line-strong">·</span>
           <Link
             href="/privacy"
-            className="link-underline transition-colors duration-200 hover:text-ink"
+            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
             {dictionary.footer.privacy}
           </Link>
           <span aria-hidden="true" className="text-line-strong">·</span>
           <Link
             href="/editorial"
-            className="link-underline transition-colors duration-200 hover:text-ink"
+            className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
           >
             {editorialLabel}
           </Link>
@@ -82,7 +82,7 @@ export function Footer({
               <span aria-hidden="true" className="text-line-strong">·</span>
               <Link
                 href={pricingHref}
-                className="link-underline transition-colors duration-200 hover:text-ink"
+                className="link-underline inline-flex min-h-11 items-center px-1 transition-colors duration-200 hover:text-ink"
               >
                 {dictionary.footer.pricing}
               </Link>

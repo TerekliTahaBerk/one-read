@@ -11,11 +11,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** /admin/audit — append-only admin mutation log from AdminAuditLog. */
-export default async function AuditPage({
-  searchParams,
-}: {
-  searchParams: { action?: string; targetType?: string; q?: string; date?: string };
-}) {
+export default async function AuditPage(
+  props: {
+    searchParams: Promise<{ action?: string; targetType?: string; q?: string; date?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/audit", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

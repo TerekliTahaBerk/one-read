@@ -7,11 +7,12 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default function OneLingoOverviewPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function OneLingoOverviewPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-lingo", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

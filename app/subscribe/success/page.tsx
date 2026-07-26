@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -8,11 +9,12 @@ import { Logo } from "@/components/Logo";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes } from "@/lib/product-themes";
 
-export default function SubscribeSuccessPage({
-  searchParams,
-}: {
-  searchParams: { checkout_id?: string; email?: string };
-}) {
+export default function SubscribeSuccessPage(
+  props: {
+    searchParams: Promise<{ checkout_id?: string; email?: string }>;
+  }
+) {
+  const searchParams = use(props.searchParams);
   const { dictionary } = useSiteLanguage();
   const t = dictionary.subscribeSuccess;
   const theme = productThemes.read;

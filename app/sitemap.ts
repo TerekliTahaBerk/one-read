@@ -6,8 +6,6 @@ const PUBLIC_ROUTES = [
   "/article",
   "/film",
   "/pricing",
-  "/subscribe",
-  "/preferences",
   "/blog",
   "/terms",
   "/privacy",
@@ -22,11 +20,10 @@ function siteUrl(path: string): string {
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
   const routes = PUBLIC_ROUTES.map((route) => ({
     url: siteUrl(route),
-    lastModified: now,
+    changeFrequency: route === "/" ? "weekly" as const : "monthly" as const,
+    priority: route === "/" ? 1 : route === "/article" || route === "/film" ? 0.9 : 0.7,
   }));
 
   const posts = BLOG_POSTS.map((post) => ({

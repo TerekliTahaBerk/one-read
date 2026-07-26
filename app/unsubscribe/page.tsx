@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { normalizeSiteLocale, SITE_DICTIONARIES, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
 
@@ -21,12 +22,13 @@ export const dynamic = "force-dynamic";
  * Returns a small editorial confirmation page that mirrors the rest of
  * the OneRead aesthetic.
  */
-export default async function UnsubscribePage({
-  searchParams,
-}: {
-  searchParams: { send?: string; email?: string; subscription?: string; preview?: string };
-}) {
-  const locale = normalizeSiteLocale(cookies().get(SITE_LOCALE_COOKIE)?.value);
+export default async function UnsubscribePage(
+  props: {
+    searchParams: Promise<{ send?: string; email?: string; subscription?: string; preview?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const locale = normalizeSiteLocale((await cookies()).get(SITE_LOCALE_COOKIE)?.value);
   const t = SITE_DICTIONARIES[locale].unsubscribe;
 
   const isPreview = searchParams.preview === "1";
@@ -81,6 +83,33 @@ export default async function UnsubscribePage({
         <p style={{ color: "#6B5F50", fontSize: 14, lineHeight: 1.65, margin: 0 }}>
           {message.body}
         </p>
+        {!isPreview && (
+          <div
+            style={{
+              marginTop: 24,
+              padding: 18,
+              border: "1px solid rgba(107, 95, 80, 0.2)",
+              borderRadius: 10,
+              background: "rgba(255, 255, 255, 0.35)",
+            }}
+          >
+            <p style={{ color: "#6B5F50", fontSize: 13, lineHeight: 1.6, margin: "0 0 12px" }}>
+              {t.billingNotice}
+            </p>
+            <Link
+              href="/subscribe"
+              style={{
+                color: "#1B1612",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              {t.manageBilling}
+            </Link>
+          </div>
+        )}
         <div
           style={{
             marginTop: 32,

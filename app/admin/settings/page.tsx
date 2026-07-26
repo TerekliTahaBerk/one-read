@@ -16,11 +16,12 @@ import { fmtDateTime } from "@/lib/admin/format";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function SettingsPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/settings", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

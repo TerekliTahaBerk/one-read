@@ -14,11 +14,12 @@ import { SUMMARY_LANGUAGES } from "@/lib/options";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function EditorialIssuesPage({
-  searchParams,
-}: {
-  searchParams: { status?: string; language?: string };
-}) {
+export default async function EditorialIssuesPage(
+  props: {
+    searchParams: Promise<{ status?: string; language?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-article/issues", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const where: Prisma.OneArticleIssueWhereInput = {};

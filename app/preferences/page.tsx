@@ -6,10 +6,11 @@ export const metadata: Metadata = {
   description: "Check your OneRead subscription status and edit your OneArticle reading language.",
 };
 
-export default function PreferencesPage({
-  searchParams,
-}: {
-  searchParams: { email?: string };
-}) {
+export default async function PreferencesPage(
+  props: {
+    searchParams: Promise<{ email?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return <OneReadPreferences initialEmail={searchParams.email ?? ""} />;
 }

@@ -9,7 +9,8 @@ import { countEligibleFilmEditorialRecipients } from "@/lib/film/editorial";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export default async function NewFilmIssue({ searchParams }: { searchParams: Record<string,string|string[]|undefined> }) {
+export default async function NewFilmIssue(props: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-film/new", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const audienceByLanguage = Object.fromEntries(await Promise.all(FILM_EMAIL_LANGUAGES.map(async (x) => [x, await countEligibleFilmEditorialRecipients(x)])));

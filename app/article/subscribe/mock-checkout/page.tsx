@@ -16,11 +16,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function MockCheckoutPage({
-  searchParams,
-}: {
-  searchParams: { email?: string; plan?: string };
-}) {
+export default async function MockCheckoutPage(
+  props: {
+    searchParams: Promise<{ email?: string; plan?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const theme = productThemes.article;
   const email = parseEmail(searchParams.email);
   const plan = parseBillingInterval(searchParams.plan);

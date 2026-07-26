@@ -19,11 +19,12 @@ export const dynamic = "force-dynamic";
  * card per product (is today's issue ready, is automatic sending on, how many
  * subscribers), and all the raw numbers tucked into a Details disclosure.
  */
-export default async function AdminOverviewPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function AdminOverviewPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

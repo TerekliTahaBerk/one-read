@@ -1,5 +1,5 @@
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
+import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 
@@ -115,7 +115,7 @@ export function guardAdminPage(
     return { ok: false, reason: "not_configured" };
   }
 
-  const cookiePresent = Boolean(cookies().get(ADMIN_SESSION_COOKIE)?.value);
+  const cookiePresent = Boolean((cookies() as unknown as UnsafeUnwrappedCookies).get(ADMIN_SESSION_COOKIE)?.value);
   const session = getAdminSession();
   if (session) {
     adminAuthDebug({ path: pathname, cookie: "present", verify: "ok", actor: "session", redirect: "no" });
@@ -241,7 +241,7 @@ export function readCurrentAdminSession(): AdminSession | null {
 }
 
 export function getAdminSession(): AdminSession | null {
-  const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
+  const token = (cookies() as unknown as UnsafeUnwrappedCookies).get(ADMIN_SESSION_COOKIE)?.value;
   return verifyAdminSessionToken(token);
 }
 

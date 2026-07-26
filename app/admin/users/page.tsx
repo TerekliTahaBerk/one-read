@@ -11,11 +11,12 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; status?: string };
-}) {
+export default async function AdminUsersPage(
+  props: {
+    searchParams: Promise<{ q?: string; status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/users", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 

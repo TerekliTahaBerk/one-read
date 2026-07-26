@@ -15,11 +15,12 @@ import { fmtDateTime } from "@/lib/admin/format";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function OneArticleEditorialOverview({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function OneArticleEditorialOverview(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const guard = guardAdminPage("/admin/one-article", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const [next, recent, statusCounts, controls, languageCounts] = await Promise.all([

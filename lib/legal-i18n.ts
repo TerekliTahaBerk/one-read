@@ -57,9 +57,10 @@ const en: LegalDictionary = {
         heading: "Subscription, billing, and cancellation",
         paragraphs: [
           "OneRead is offered as a paid monthly subscription, at the price shown on our [pricing page](/pricing) at the time you subscribe. Prices may change for future billing periods, and we'll make any change clear before it applies to you.",
+          "Where checkout offers a free trial, the trial length and the date of the first charge are shown before purchase. The paid subscription begins automatically when that trial ends unless you cancel through the customer portal before the stated deadline.",
           "Prices are charged in **US dollars (USD)**. If your account uses another currency, your bank or payment provider may convert the charge and apply its own exchange rate or fees. OneRead does not currently offer localized currency pricing.",
-          "Billing is handled securely by our payment processor, **Polar**, and your purchase is also subject to Polar's own terms.",
-          "You can cancel at any time using the one-click unsubscribe link in any email, or by managing your subscription through the billing portal linked in your confirmation email. Cancellation stops future emails and future renewals; unless otherwise stated or required by law, it doesn't automatically create a right to a refund for the current period.",
+          "**Polar acts as merchant of record and authorized reseller** for the transaction. Polar collects the payment, calculates and remits applicable sales taxes, and makes the order invoice or receipt available in the customer portal. Your checkout is also subject to [Polar's Buyer Terms](https://polar.sh/legal/checkout-buyer-terms), including its cancellation, refund and dispute process.",
+          "You can stop OneRead emails at any time using the one-click unsubscribe link in any email. Email unsubscribe does not cancel a paid plan or stop its renewal. To cancel future charges, use the secure subscription portal available after verifying your email on the subscription page. Paid-plan cancellation stops future renewals; unless otherwise stated or required by law, it doesn't automatically create a right to a refund for the current period.",
         ],
       },
       {
@@ -106,7 +107,7 @@ const en: LegalDictionary = {
       {
         heading: "Changes, suspension, or termination",
         paragraphs: [
-          "You can stop the service at any time using the one-click unsubscribe link in any email. We may also modify, suspend, or discontinue the service, in whole or in part, at any time, and we may end or limit access where necessary to protect the service or comply with the law.",
+          "You can stop emails at any time using the one-click unsubscribe link in any email, and you can separately cancel paid renewal through the secure subscription portal. We may also modify, suspend, or discontinue the service, in whole or in part, at any time, and we may end or limit access where necessary to protect the service or comply with the law.",
         ],
       },
       {
@@ -201,7 +202,7 @@ const en: LegalDictionary = {
       {
         heading: "Data retention",
         paragraphs: [
-          "While your subscription is active, we keep the information we need to run it. If you unsubscribe, we retain only what's necessary — such as a suppression record so we don't email you again and minimal logs — and we delete your other preference data within a reasonable period.",
+          "While your paid plan or account relationship remains active, we keep the information needed to run it, including preferences so you can resume emails without setting everything up again. Email unsubscribe creates a suppression record but does not by itself close the paid plan. After paid cancellation and account closure, we delete or anonymize preference data within a reasonable period, while retaining only records required for tax, payment, fraud prevention, legal claims, and suppression.",
         ],
       },
       {
@@ -278,9 +279,10 @@ const tr: LegalDictionary = {
         heading: "Abonelik, faturalandırma ve iptal",
         paragraphs: [
           "OneRead, kaydolduğunuz sırada [fiyatlandırma sayfamızda](/pricing) belirtilen ücret üzerinden aylık ücretli bir abonelik olarak sunulur. Fiyatlar gelecekteki faturalandırma dönemleri için değişebilir; herhangi bir değişikliği sizi etkilemeden önce açıkça bildiririz.",
+          "Ödeme ekranında ücretsiz deneme sunuluyorsa deneme süresi ve ilk tahsilat tarihi satın almadan önce gösterilir. Belirtilen son tarihten önce müşteri portalından iptal etmediğiniz sürece deneme bittiğinde ücretli abonelik otomatik olarak başlar.",
           "Ücretler **ABD doları (USD)** olarak tahsil edilir. Hesabınız başka bir para birimi kullanıyorsa bankanız veya ödeme sağlayıcınız kendi döviz kuru ve ücretleriyle dönüşüm yapabilir. OneRead şu anda yerel para biriminde fiyatlandırma sunmamaktadır.",
-          "Ödemeler, ödeme sağlayıcımız **Polar** tarafından güvenli biçimde işlenir ve satın alımınız Polar'ın kendi koşullarına da tabidir.",
-          "Aboneliğinizi, herhangi bir e-postadaki tek tıkla abonelikten çıkma bağlantısını kullanarak veya onay e-postanızdaki fatura yönetim bağlantısı üzerinden istediğiniz zaman iptal edebilirsiniz. İptal, gelecekteki e-postaları ve yenilemeleri durdurur; aksi belirtilmedikçe veya yasa gerektirmedikçe, cari dönem için otomatik bir iade hakkı doğurmaz.",
+          "İşlemde **kayıtlı satıcı ve yetkili yeniden satıcı Polar'dır**. Polar ödemeyi tahsil eder, geçerli satış vergilerini hesaplayıp aktarır ve sipariş faturasını veya makbuzunu müşteri portalında sunar. Ödeme işleminiz Polar'ın iptal, iade ve itiraz süreçlerini de içeren [Alıcı Koşulları'na](https://polar.sh/legal/checkout-buyer-terms) tabidir.",
+          "Herhangi bir e-postadaki tek tıkla abonelikten çıkma bağlantısını kullanarak OneRead e-postalarını istediğiniz zaman durdurabilirsiniz. E-posta listesinden çıkmak ücretli planı iptal etmez veya yenilemeyi durdurmaz. Gelecekteki tahsilatları durdurmak için abonelik sayfasında e-posta adresinizi doğruladıktan sonra açılan güvenli abonelik portalını kullanın. Ücretli planın iptali gelecekteki yenilemeleri durdurur; aksi belirtilmedikçe veya yasa gerektirmedikçe cari dönem için otomatik bir iade hakkı doğurmaz.",
         ],
       },
       {
@@ -327,7 +329,7 @@ const tr: LegalDictionary = {
       {
         heading: "Değişiklik, askıya alma veya sonlandırma",
         paragraphs: [
-          "Herhangi bir e-postadaki tek tıkla abonelikten çıkma bağlantısını kullanarak hizmeti istediğiniz zaman durdurabilirsiniz. Ayrıca hizmeti kısmen veya tamamen istediğimiz zaman değiştirebilir, askıya alabilir veya sonlandırabiliriz; hizmeti korumak veya yasaya uymak amacıyla erişimi sonlandırabilir veya sınırlandırabiliriz.",
+          "Herhangi bir e-postadaki tek tıkla abonelikten çıkma bağlantısını kullanarak e-postaları istediğiniz zaman durdurabilir, ücretli yenilemeyi ise güvenli abonelik portalından ayrıca iptal edebilirsiniz. Ayrıca hizmeti kısmen veya tamamen istediğimiz zaman değiştirebilir, askıya alabilir veya sonlandırabiliriz; hizmeti korumak veya yasaya uymak amacıyla erişimi sonlandırabilir veya sınırlandırabiliriz.",
         ],
       },
       {
@@ -422,7 +424,7 @@ const tr: LegalDictionary = {
       {
         heading: "Veri saklama",
         paragraphs: [
-          "Aboneliğiniz aktif olduğu sürece, yürütülmesi için gereken bilgileri saklarız. Abonelikten çıkarsanız, yalnızca gerekli olanı — örneğin size tekrar e-posta göndermemek için bir baskılama kaydı ve asgari kayıtları — saklarız ve diğer tercih verilerinizi makul bir süre içinde sileriz.",
+          "Ücretli planınız veya hesap ilişkiniz aktif olduğu sürece, e-postaları yeniden başlattığınızda her şeyi tekrar kurmamanız için tercihler dahil hizmeti yürütmekte gereken bilgileri saklarız. E-posta listesinden çıkmak bir baskılama kaydı oluşturur ancak ücretli planı tek başına kapatmaz. Ücretli iptal ve hesap kapatma sonrasında tercih verilerini makul bir süre içinde siler veya anonimleştirir; yalnızca vergi, ödeme, dolandırıcılığı önleme, hukuki talepler ve baskılama için gerekli kayıtları saklarız.",
         ],
       },
       {
@@ -499,9 +501,10 @@ const de: LegalDictionary = {
         heading: "Abonnement, Abrechnung und Kündigung",
         paragraphs: [
           "OneRead wird als kostenpflichtiges Monatsabonnement zu dem Preis angeboten, der zum Zeitpunkt Ihrer Anmeldung auf unserer [Preisseite](/pricing) angegeben ist. Preise können sich für künftige Abrechnungszeiträume ändern; wir weisen auf jede Änderung deutlich hin, bevor sie für Sie wirksam wird.",
+          "Wenn der Checkout eine kostenlose Testphase anbietet, werden deren Dauer und das Datum der ersten Abbuchung vor dem Kauf angezeigt. Das kostenpflichtige Abo beginnt nach Ablauf der Testphase automatisch, sofern Sie nicht vor der angegebenen Frist im Kundenportal kündigen.",
           "Die Abrechnung erfolgt in **US-Dollar (USD)**. Bei Konten in einer anderen Währung kann Ihre Bank oder Ihr Zahlungsanbieter den Betrag zum eigenen Kurs umrechnen und Gebühren erheben. OneRead bietet derzeit keine lokalisierte Währungspreisgestaltung an.",
-          "Die Zahlungsabwicklung erfolgt sicher über unseren Zahlungsdienstleister **Polar**; Ihr Kauf unterliegt zusätzlich dessen eigenen Bedingungen.",
-          "Sie können jederzeit über den Ein-Klick-Abmeldelink in jeder E-Mail kündigen oder Ihr Abonnement über das in Ihrer Bestätigungs-E-Mail verlinkte Kundenportal verwalten. Die Kündigung beendet künftige E-Mails und Verlängerungen; sofern nicht anders angegeben oder gesetzlich vorgeschrieben, entsteht dadurch kein automatischer Anspruch auf Erstattung für den laufenden Zeitraum.",
+          "**Polar ist Merchant of Record und autorisierter Wiederverkäufer** der Transaktion. Polar zieht die Zahlung ein, berechnet und führt anwendbare Verkaufssteuern ab und stellt Rechnung oder Beleg im Kundenportal bereit. Der Checkout unterliegt außerdem den [Polar-Käuferbedingungen](https://polar.sh/legal/checkout-buyer-terms) einschließlich Kündigungs-, Erstattungs- und Streitbeilegungsverfahren.",
+          "Sie können OneRead-E-Mails jederzeit über den Ein-Klick-Abmeldelink in jeder E-Mail stoppen. Die E-Mail-Abmeldung kündigt kein kostenpflichtiges Abo und stoppt keine Verlängerung. Um künftige Abbuchungen zu beenden, verwenden Sie nach Bestätigung Ihrer E-Mail-Adresse auf der Abonnementseite das sichere Abo-Portal. Die Kündigung des kostenpflichtigen Abos beendet künftige Verlängerungen; sofern nicht anders angegeben oder gesetzlich vorgeschrieben, entsteht dadurch kein automatischer Anspruch auf Erstattung für den laufenden Zeitraum.",
         ],
       },
       {
@@ -643,7 +646,7 @@ const de: LegalDictionary = {
       {
         heading: "Speicherdauer",
         paragraphs: [
-          "Solange Ihr Abonnement aktiv ist, bewahren wir die dafür erforderlichen Informationen auf. Nach einer Abbestellung behalten wir nur, was notwendig ist — etwa einen Sperrvermerk, damit wir Ihnen nicht erneut schreiben, sowie minimale Protokolle — und löschen Ihre übrigen Präferenzdaten innerhalb einer angemessenen Frist.",
+          "Solange Ihr kostenpflichtiges Abo oder Ihre Kontobeziehung aktiv ist, speichern wir die dafür erforderlichen Informationen einschließlich Ihrer Präferenzen, damit Sie E-Mails ohne erneute Einrichtung fortsetzen können. Die E-Mail-Abmeldung erzeugt einen Sperrvermerk, schließt das kostenpflichtige Abo aber nicht. Nach Kündigung und Kontoschließung löschen oder anonymisieren wir Präferenzdaten innerhalb einer angemessenen Frist und bewahren nur die für Steuern, Zahlungen, Betrugsprävention, Rechtsansprüche und Sperrung erforderlichen Unterlagen auf.",
         ],
       },
       {
@@ -720,9 +723,10 @@ const fr: LegalDictionary = {
         heading: "Abonnement, facturation et résiliation",
         paragraphs: [
           "OneRead est proposé sous la forme d'un abonnement mensuel payant, au tarif indiqué sur notre [page tarifs](/pricing) au moment de votre inscription. Les tarifs peuvent évoluer pour les futures périodes de facturation ; nous vous préviendrons clairement de tout changement avant qu'il ne s'applique.",
+          "Lorsqu'un essai gratuit est proposé au paiement, sa durée et la date du premier prélèvement sont affichées avant l'achat. L'offre payante commence automatiquement à la fin de l'essai sauf résiliation depuis le portail avant l'échéance indiquée.",
           "Les paiements sont facturés en **dollars américains (USD)**. Si votre compte utilise une autre devise, votre banque ou prestataire peut convertir le montant à son propre taux et appliquer des frais. OneRead ne propose pas actuellement de tarification localisée.",
-          "Les paiements sont traités de manière sécurisée par notre prestataire de paiement, **Polar**, et votre achat est également soumis aux propres conditions de Polar.",
-          "Vous pouvez résilier à tout moment via le lien de désabonnement en un clic présent dans chaque e-mail, ou en gérant votre abonnement depuis le portail de facturation dont le lien figure dans votre e-mail de confirmation. La résiliation met fin aux futurs e-mails et renouvellements ; sauf indication contraire ou obligation légale, elle ne crée pas automatiquement de droit à un remboursement pour la période en cours.",
+          "**Polar agit comme marchand officiel et revendeur autorisé** de la transaction. Polar encaisse le paiement, calcule et reverse les taxes de vente applicables et met la facture ou le reçu à disposition dans le portail client. Le paiement est également soumis aux [Conditions acheteur de Polar](https://polar.sh/legal/checkout-buyer-terms), notamment à ses procédures de résiliation, remboursement et contestation.",
+          "Vous pouvez arrêter les e-mails OneRead à tout moment grâce au lien de désabonnement en un clic présent dans chaque e-mail. Le désabonnement des e-mails ne résilie pas l'offre payante et n'arrête pas son renouvellement. Pour arrêter les futurs prélèvements, utilisez le portail sécurisé accessible après vérification de votre adresse e-mail sur la page d'abonnement. La résiliation de l'offre payante met fin aux renouvellements futurs ; sauf indication contraire ou obligation légale, elle ne crée pas automatiquement de droit à un remboursement pour la période en cours.",
         ],
       },
       {
@@ -864,7 +868,7 @@ const fr: LegalDictionary = {
       {
         heading: "Conservation des données",
         paragraphs: [
-          "Tant que votre abonnement est actif, nous conservons les informations nécessaires à son fonctionnement. Si vous vous désabonnez, nous ne conservons que ce qui est nécessaire — comme un enregistrement de suppression pour ne plus vous contacter et des journaux minimaux — et nous supprimons vos autres données de préférences dans un délai raisonnable.",
+          "Tant que votre offre payante ou votre relation de compte reste active, nous conservons les informations nécessaires, y compris vos préférences afin de pouvoir reprendre les e-mails sans tout reconfigurer. Le désabonnement des e-mails crée un enregistrement de suppression mais ne ferme pas l'offre payante. Après résiliation et fermeture du compte, nous supprimons ou anonymisons les préférences dans un délai raisonnable et ne conservons que les éléments nécessaires aux obligations fiscales, aux paiements, à la prévention de la fraude, aux recours juridiques et à la suppression.",
         ],
       },
       {

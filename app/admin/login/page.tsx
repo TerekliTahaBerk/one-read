@@ -26,11 +26,12 @@ const READ_THEME: CSSProperties = {
   "--admin-accent-tint": "#F2F2F2",
 } as CSSProperties;
 
-export default function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: { next?: string };
-}) {
+export default async function AdminLoginPage(
+  props: {
+    searchParams: Promise<{ next?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   if (getAdminSession()) {
     redirect(sanitizeAdminNextPath(searchParams.next));
   }

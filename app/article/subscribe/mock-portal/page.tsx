@@ -17,11 +17,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function MockPortalPage({
-  searchParams,
-}: {
-  searchParams: { email?: string };
-}) {
+export default async function MockPortalPage(
+  props: {
+    searchParams: Promise<{ email?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const theme = productThemes.article;
   const email = parseEmail(searchParams.email);
   const allowed = isMockAllowed();

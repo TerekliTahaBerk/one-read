@@ -12,9 +12,13 @@ import { fmtDateTime } from "@/lib/admin/format";
 import { FILM_EMAIL_LANGUAGES } from "@/lib/options";
 
 export const runtime="nodejs"; export const dynamic="force-dynamic";
-export default async function FilmIssueDetail({params,searchParams}:{params:{id:string};searchParams:Record<string,string|string[]|undefined>}) {
-  const guard=guardAdminPage(`/admin/one-film/issues/${params.id}`,searchParams); if(!guard.ok)return <AdminNotConfigured/>;
-  const issue=await prisma.oneFilmIssue.findUnique({where:{id:params.id},include:{deliveries:{include:{contact:{select:{email:true}}},orderBy:{updatedAt:"desc"},take:200}}}); if(!issue)notFound();
+export default async function FilmIssueDetail(
+  props:{params: Promise<{id:string}>;searchParams:Promise<Record<string,string|string[]|undefined>>}
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const guard=guardAdminPage(`/admin/one-film/issues/${params.id}`,searchParams);if(!guard.ok)return <AdminNotConfigured/>;
+  const issue=await prisma.oneFilmIssue.findUnique({where:{id:params.id},include:{deliveries:{include:{contact:{select:{email:true}}},orderBy:{updatedAt:"desc"},take:200}}});if(!issue)notFound();
   const audienceByLanguage=Object.fromEntries(await Promise.all(FILM_EMAIL_LANGUAGES.map(async(x)=>[x,await countEligibleFilmEditorialRecipients(x)])));
   const grouped=await prisma.oneFilmDelivery.groupBy({by:["status"],where:{issueId:issue.id},_count:{_all:true}});
   const count=(s:string)=>grouped.find((x)=>x.status===s)?._count._all??0;

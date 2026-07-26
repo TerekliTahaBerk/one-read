@@ -232,6 +232,9 @@ const en = {
       headline: "Something went wrong.",
       body: "We've logged it. Please try again, or reply to any OneRead email.",
     },
+    billingNotice:
+      "Email unsubscribe and paid-plan cancellation are separate. If you have a paid plan, it continues until you cancel renewal from the secure subscription portal.",
+    manageBilling: "Manage or cancel paid plan",
     tagline: "One good read. Every morning. Curated for you.",
   },
 };
@@ -302,6 +305,8 @@ const tr: SiteDictionary = {
     doneProduct: { headline: "Abonelikten çıktın.", body: "Artık {product} e-postası gelmeyecek. Fikrini değiştirirsen abonelik sayfasından e-postaları yeniden başlatabilirsin." },
     doneGeneric: { headline: "Abonelikten çıktın.", body: "Artık OneRead'den e-posta gelmeyecek. Fikrini değiştirirsen herhangi bir sabah tekrar kaydolabilirsin." },
     error: { headline: "Bir şeyler ters gitti.", body: "Bunu kaydettik. Lütfen tekrar dene ya da herhangi bir OneRead e-postasını yanıtla." },
+    billingNotice: "E-posta listesinden çıkma ile ücretli planı iptal etme ayrı işlemlerdir. Ücretli planın varsa güvenli abonelik portalından yenilemeyi iptal edene kadar devam eder.",
+    manageBilling: "Ücretli planı yönet veya iptal et",
     tagline: "Tek iyi okuma. Her sabah. Senin için seçildi.",
   },
 };
@@ -370,6 +375,8 @@ const de: SiteDictionary = {
     doneProduct: { headline: "Du bist abgemeldet.", body: "Keine {product}-E-Mails mehr. Wenn du deine Meinung änderst, kannst du die E-Mails über die Abo-Seite wieder aktivieren." },
     doneGeneric: { headline: "Du bist abgemeldet.", body: "Keine E-Mails mehr von OneRead. Wenn du deine Meinung änderst, kannst du dich jederzeit wieder anmelden." },
     error: { headline: "Etwas ist schiefgelaufen.", body: "Wir haben das protokolliert. Bitte versuche es erneut oder antworte auf eine beliebige OneRead-E-Mail." },
+    billingNotice: "Die E-Mail-Abmeldung und die Kündigung des kostenpflichtigen Abos sind getrennte Vorgänge. Ein kostenpflichtiges Abo läuft weiter, bis du die Verlängerung im sicheren Abo-Portal kündigst.",
+    manageBilling: "Kostenpflichtiges Abo verwalten oder kündigen",
     tagline: "Eine gute Lektüre. Jeden Morgen. Für dich ausgewählt.",
   },
 };
@@ -438,6 +445,8 @@ const fr: SiteDictionary = {
     doneProduct: { headline: "Vous êtes désabonné(e).", body: "Plus d'e-mails {product}. Si vous changez d'avis, vous pouvez reprendre les e-mails depuis la page d'abonnement." },
     doneGeneric: { headline: "Vous êtes désabonné(e).", body: "Plus d'e-mails de la part d'OneRead. Si vous changez d'avis, vous pouvez vous réinscrire n'importe quel matin." },
     error: { headline: "Une erreur est survenue.", body: "Nous l'avons enregistrée. Veuillez réessayer, ou répondez à n'importe quel e-mail OneRead." },
+    billingNotice: "Le désabonnement des e-mails et la résiliation de l'offre payante sont deux opérations distinctes. Si vous avez une offre payante, elle continue jusqu'à l'annulation du renouvellement depuis le portail sécurisé.",
+    manageBilling: "Gérer ou résilier l'offre payante",
     tagline: "Une bonne lecture. Chaque matin. Choisie pour vous.",
   },
 };
