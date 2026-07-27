@@ -130,10 +130,10 @@ export function FilmEditorialIssueEditor({
           <Field label="Film title"><input className={`${input} text-[15px] font-medium`} value={form.filmTitle} onChange={(e) => set("filmTitle", e.target.value)} disabled={!editable} /></Field>
           <Field label="Body" help="Minimum 120 words. Separate paragraphs with a blank line."><textarea className={`${input} min-h-[380px] resize-y font-serif text-[15px] leading-7`} value={form.bodyText} onChange={(e) => set("bodyText", e.target.value)} disabled={!editable} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Cover image URL"><input type="url" className={input} value={form.heroImageUrl} onChange={(e) => set("heroImageUrl", e.target.value)} disabled={!editable} placeholder="https://…" /></Field>
+            <Field label="Cover image URL" help="Optional · if added, use a permanent HTTPS URL"><input type="url" className={input} value={form.heroImageUrl} onChange={(e) => set("heroImageUrl", e.target.value)} disabled={!editable} placeholder="https://…" /></Field>
             <Field label="Image credit"><input className={input} value={form.heroImageCredit} onChange={(e) => set("heroImageCredit", e.target.value)} disabled={!editable} /></Field>
           </div>
-          <Field label="Image alternative text" help={`${form.heroImageAlt.length}/240`}><input className={input} maxLength={240} value={form.heroImageAlt} onChange={(e) => set("heroImageAlt", e.target.value)} disabled={!editable} /></Field>
+          <Field label="Image alternative text" help={`${form.heroImageAlt.length}/240 · required only when an image is added`}><input className={input} maxLength={240} value={form.heroImageAlt} onChange={(e) => set("heroImageAlt", e.target.value)} disabled={!editable} /></Field>
         </EditorSection>
         <EditorSection step="3" title="Grounded film facts" description="Only include facts you can verify.">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -181,7 +181,7 @@ function istanbulDateTimeToIso(value: string): string { return new Date(`${value
 function humanError(error: string): string {
   const messages: Record<string,string> = {
     subject_required:"Add an email subject.",film_title_required:"Add the film title.",body_too_short:"The film note needs at least 120 words.",
-    hero_image_url_required:"Add a cover image.",hero_image_alt_required:"Add cover image alternative text.",director_required:"Add the director.",
+    hero_image_alt_required:"Add cover image alternative text.",director_required:"Add the director.",
     film_year_required:"Add a valid release year.",source_url_required:"Add a reference URL.",invalid_source_url:"Use a valid reference URL.",
     invalid_hero_image_url:"Use a permanent HTTPS cover image URL.",invalid_film_year:"Use a valid release year.",invalid_runtime:"Runtime must be between 1 and 600 minutes.",
     schedule_must_be_future:"Choose a future delivery time.",version_conflict:"Another administrator changed this edition. Reload first.",

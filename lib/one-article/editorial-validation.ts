@@ -35,13 +35,13 @@ export function editorialReadinessChecks(
     },
     {
       key: "heroImageUrl",
-      label: "Cover image uses a valid HTTPS URL",
-      passed: Boolean(input.heroImageUrl?.trim() && safeHttpsUrl(input.heroImageUrl)),
+      label: "Optional cover image uses a valid HTTPS URL",
+      passed: !input.heroImageUrl?.trim() || safeHttpsUrl(input.heroImageUrl),
     },
     {
       key: "heroImageAlt",
-      label: "Cover image has accessible alt text",
-      passed: Boolean(input.heroImageAlt?.trim()),
+      label: "Added cover image has accessible alt text",
+      passed: !input.heroImageUrl?.trim() || Boolean(input.heroImageAlt?.trim()),
     },
     {
       key: "sourceTitle",
@@ -89,9 +89,7 @@ export function validateEditorialIssue(
     subject: "subject_required",
     headline: "headline_required",
     body: "body_too_short",
-    heroImageUrl: input.heroImageUrl?.trim()
-      ? "invalid_hero_image_url"
-      : "hero_image_url_required",
+    heroImageUrl: "invalid_hero_image_url",
     heroImageAlt: "hero_image_alt_required",
     sourceTitle: "source_title_required",
     sourceUrl: input.sourceUrl?.trim() ? "invalid_source_url" : "source_url_required",

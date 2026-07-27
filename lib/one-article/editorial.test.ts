@@ -38,7 +38,7 @@ describe("validateEditorialIssue", () => {
     });
   });
 
-  it("requires the editorial fields used by the dispatcher", () => {
+  it("requires the editorial fields used by the dispatcher while allowing no cover image", () => {
     expect(validateEditorialIssue({ ...valid, bodyText: "" })).toEqual({
       ok: false,
       error: "body_too_short",
@@ -47,9 +47,8 @@ describe("validateEditorialIssue", () => {
       ok: false,
       error: "source_title_required",
     });
-    expect(validateEditorialIssue({ ...valid, heroImageUrl: "" })).toEqual({
-      ok: false,
-      error: "hero_image_url_required",
+    expect(validateEditorialIssue({ ...valid, heroImageUrl: "", heroImageAlt: "" })).toEqual({
+      ok: true,
     });
     expect(validateEditorialIssue({ ...valid, heroImageAlt: "" })).toEqual({
       ok: false,
@@ -73,7 +72,9 @@ describe("validateEditorialIssue", () => {
       ok: false,
       error: "subject_required",
     });
-    expect(editorialReadinessChecks(draft).every((check) => !check.passed)).toBe(true);
+    const checks = editorialReadinessChecks(draft);
+    expect(checks.filter((check) => check.key.startsWith("heroImage")).every((check) => check.passed)).toBe(true);
+    expect(checks.filter((check) => !check.key.startsWith("heroImage")).every((check) => !check.passed)).toBe(true);
   });
 
   it("keeps exhausted deliveries visible as failures", () => {

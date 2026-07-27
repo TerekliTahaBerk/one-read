@@ -377,7 +377,7 @@ export function EditorialIssueEditor({
             <div className="mb-3">
               <h3 className="text-[13px] font-medium text-admin-ink">Cover image</h3>
               <p className="mt-0.5 text-[11.5px] leading-5 text-admin-muted">
-                A wide image anchors the article card. Use a permanent HTTPS URL, ideally 1280×720 or wider.
+                Optional. If added, use a permanent HTTPS URL, ideally 1280×720 or wider, and include alternative text.
               </p>
             </div>
             <Field label="Image URL">
@@ -724,8 +724,7 @@ function humanError(error: string): string {
     body_too_short: "The edition needs at least 120 words before publishing.",
     source_title_required: "Add the original article title before publishing.",
     source_url_required: "Add the original article link before publishing.",
-    hero_image_url_required: "Add a cover image before publishing.",
-    hero_image_alt_required: "Add alternative text for the cover image.",
+            hero_image_alt_required: "Add alternative text for the cover image.",
     invalid_hero_image_url: "Use a permanent https:// URL for the cover image.",
     hero_image_alt_too_long: "The cover image alternative text is too long.",
     invalid_source_url: "Use a valid http:// or https:// source link.",

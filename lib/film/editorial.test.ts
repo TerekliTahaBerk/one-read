@@ -28,6 +28,16 @@ describe("OneFilm manual editorial", () => {
     }
   });
 
+  it("allows editions without a cover image but requires alt text when one is added", () => {
+    expect(validateFilmEditorialIssue({ ...valid, heroImageUrl: "", heroImageAlt: "" })).toEqual({
+      ok: true,
+    });
+    expect(validateFilmEditorialIssue({ ...valid, heroImageAlt: "" })).toEqual({
+      ok: false,
+      error: "hero_image_alt_required",
+    });
+  });
+
   it("rejects unknown languages and unsafe URLs", () => {
     expect(validateFilmEditorialIssue({ ...valid, emailLanguage: "German" })).toEqual({
       ok: false,
@@ -52,7 +62,9 @@ describe("OneFilm manual editorial", () => {
     };
     expect(validateFilmEditorialDraft(draft)).toEqual({ ok: true });
     expect(validateFilmEditorialIssue(draft)).toEqual({ ok: false, error: "subject_required" });
-    expect(filmEditorialReadinessChecks(draft).every((check) => !check.passed)).toBe(true);
+    const checks = filmEditorialReadinessChecks(draft);
+    expect(checks.filter((check) => check.key.startsWith("heroImage")).every((check) => check.passed)).toBe(true);
+    expect(checks.filter((check) => !check.key.startsWith("heroImage")).every((check) => !check.passed)).toBe(true);
   });
 
   it("keeps failed deliveries visible and creates stable idempotency keys", () => {
