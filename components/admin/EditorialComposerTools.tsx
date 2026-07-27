@@ -55,6 +55,32 @@ export function FormattingToolbar({
     apply("[", `](${url})`, "link text");
   }
 
+  function addImage() {
+    const url = window.prompt("Paste a permanent HTTPS image URL");
+    if (!url) return;
+    if (!/^https:\/\//i.test(url)) {
+      window.alert("Inline images require a complete https:// URL.");
+      return;
+    }
+    const alt = window.prompt("Describe the image for screen readers")?.trim();
+    if (!alt) {
+      window.alert("Alternative text is required for inline images.");
+      return;
+    }
+    const caption = window.prompt("Optional image caption or credit")?.trim();
+    const syntax = `![${alt}](${url}${caption ? ` "${caption.replace(/"/g, "'")}"` : ""})`;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const prefix = before && !before.endsWith("\n\n") ? "\n\n" : "";
+    const suffix = after && !after.startsWith("\n\n") ? "\n\n" : "";
+    onChange(`${before}${prefix}${syntax}${suffix}${after}`);
+    window.requestAnimationFrame(() => textarea.focus());
+  }
+
   const button =
     "h-8 min-w-8 rounded-md border border-admin-line bg-admin-surface px-2 text-[11.5px] font-medium text-admin-body transition hover:border-admin-line-strong hover:bg-admin-sink disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -84,6 +110,12 @@ export function FormattingToolbar({
       </button>
       <button type="button" className={button} disabled={disabled} onClick={addLink} title="Link">
         ↗ Link
+      </button>
+      <button type="button" className={button} disabled={disabled} onClick={addImage} title="Inline image">
+        ▧ Image
+      </button>
+      <button type="button" className={button} disabled={disabled} onClick={() => apply("\n\n---\n\n", "", "")} title="Divider">
+        — Divider
       </button>
       <span className="ml-auto text-[10.5px] text-admin-muted">
         Formatting is email-safe

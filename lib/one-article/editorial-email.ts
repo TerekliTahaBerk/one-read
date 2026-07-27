@@ -124,40 +124,52 @@ export function renderEditorialEmail(
     table{border-collapse:collapse!important}
     img{-ms-interpolation-mode:bicubic}
     @media screen and (max-width:680px){
-      .page-pad{padding-left:12px!important;padding-right:12px!important}
-      .card-copy{padding-left:20px!important;padding-right:20px!important}
-      .headline{font-size:28px!important;line-height:1.12!important}
+      .page-pad{padding:0!important}
+      .masthead{padding:24px 20px!important}
+      .intro-copy,.card-copy{padding-left:22px!important;padding-right:22px!important}
+      .headline{font-size:31px!important;line-height:1.08!important}
+      .email-shell{border-radius:0!important}
     }
   </style>
 </head>
-<body style="width:100%!important;margin:0!important;padding:0!important;background:#FFFFFF;color:#090909;">
+<body style="width:100%!important;margin:0!important;padding:0!important;background:#EFEEE9;color:#171714;">
 ${preview}
-<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF">
+<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#EFEEE9">
   <tr>
-    <td align="center" class="page-pad" style="padding:16px 24px 36px;">
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;">
+    <td align="center" class="page-pad" style="padding:28px 20px 44px;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" class="email-shell" bgcolor="#FFFFFF" style="width:100%;max-width:680px;border:1px solid #D8D6CF;border-radius:18px;overflow:hidden;">
         <tr>
-          <td style="padding:0 4px 14px;font:11px/1.5 Arial,Helvetica,sans-serif;color:#8A8A86;">
-            ${escapeHtml(dateLabel)}
-            <span style="float:right;font-weight:bold;letter-spacing:.08em;color:#090909;">OneArticle</span>
+          <td class="masthead" bgcolor="#171714" style="padding:28px 32px 26px;color:#FFFFFF;">
+            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font:700 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#FFFFFF;">OneRead<span style="color:#FFE144;">.</span></td>
+                <td align="right" style="font:700 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#B9B8B2;">OneArticle</td>
+              </tr>
+            </table>
+            <p style="margin:18px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#B9B8B2;">${escapeHtml(dateLabel)} · ${escapeHtml(readingLabel)}</p>
           </td>
         </tr>
         <tr>
-          <td>
-            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FAFBFD" style="width:100%;border:1px solid #D6D6D6;border-radius:15px;overflow:hidden;">
+          <td class="intro-copy" style="padding:30px 32px 20px;">
+            <p style="margin:0;font:italic 16px/1.55 Georgia,'Times New Roman',serif;color:#626159;">${escapeHtml(labels.opening)}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 16px 16px;">
+            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FBFBF8" style="width:100%;border:1px solid #DEDDD7;border-radius:14px;overflow:hidden;">
               <tr>
-                <td style="padding:18px 16px 14px;">
-                  <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:#FFE144;color:#090909;font:bold 12px/1 Arial,Helvetica,sans-serif;letter-spacing:.1em;text-transform:uppercase;">${escapeHtml(labels.article)}</span>
-                  <span style="float:right;padding-top:5px;font:11px/1.2 Arial,Helvetica,sans-serif;color:#8A8A86;letter-spacing:.04em;text-transform:uppercase;">${escapeHtml(readingLabel)}</span>
+                <td style="padding:20px 18px 15px;">
+                  <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#FFE144;color:#171714;font:bold 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;">${escapeHtml(labels.article)}</span>
+                  <span style="float:right;padding-top:6px;font:10px/1.2 Arial,Helvetica,sans-serif;color:#77766F;letter-spacing:.08em;text-transform:uppercase;">Curated by OneRead</span>
                 </td>
               </tr>
               ${image}
               <tr>
-                <td class="card-copy" style="padding:24px 28px 30px;">
-                  <h1 class="headline" style="margin:0 0 14px;font:700 34px/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#090909;">${escapeHtml(issue.headline)}</h1>
+                <td class="card-copy" style="padding:28px 38px 38px;">
+                  <h1 class="headline" style="margin:0 0 16px;font:700 40px/1.04 Georgia,'Times New Roman',serif;letter-spacing:-.035em;color:#171714;">${escapeHtml(issue.headline)}</h1>
                   ${deck}
-                  <div style="height:3px;width:42px;margin:0 0 22px;background:#FFE144;"></div>
-                  <div style="font:15.5px/1.68 Arial,Helvetica,sans-serif;color:#222220;">${safeBody}</div>
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;"><tr><td width="52" height="4" bgcolor="#FFE144" style="width:52px;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  <div style="font:16px/1.76 Arial,Helvetica,sans-serif;color:#2D2C28;">${safeBody}</div>
                   ${source}
                   ${cta}
                 </td>
@@ -166,14 +178,11 @@ ${preview}
           </td>
         </tr>
         <tr>
-          <td height="14" style="height:14px;font-size:0;line-height:0;">&nbsp;</td>
-        </tr>
-        <tr>
-          <td bgcolor="#F2F2EF" style="padding:24px 22px 28px;border-radius:8px;">
-            <p style="margin:0 0 12px;font:italic 13px/1.55 Georgia,'Times New Roman',serif;color:#666662;">${escapeHtml(t.tagline)}</p>
-            <p style="margin:0;font:11.5px/1.6 Arial,Helvetica,sans-serif;color:#8A8A86;">
-              <strong style="color:#565653;">OneRead</strong> · One article worth reading.
-              <br><a href="${escapeAttr(links.unsubscribe)}" style="color:#8A8A86;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
+          <td align="center" style="padding:24px 28px 30px;border-top:1px solid #E5E3DD;">
+            <p style="margin:0 0 8px;font:italic 13px/1.55 Georgia,'Times New Roman',serif;color:#66645D;">${escapeHtml(t.tagline)}</p>
+            <p style="margin:0;font:10.5px/1.65 Arial,Helvetica,sans-serif;color:#96948D;letter-spacing:.02em;">
+              <strong style="color:#626159;">OneRead</strong> · ${escapeHtml(labels.footer)}
+              <br><a href="${escapeAttr(links.unsubscribe)}" style="color:#77766F;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
             </p>
           </td>
         </tr>
@@ -193,30 +202,40 @@ function formatLabels(language: string) {
       return {
         article: "Makale",
         source: "Kaynak",
+        opening: "Günaydın — tüm dikkatinizi hak eden tek bir fikir.",
+        footer: "Daha sakin bir gelen kutusu için özenle seçildi.",
         readingTime: (minutes: number) => `${minutes} dk okuma`,
       };
     case "Spanish":
       return {
         article: "Artículo",
         source: "Fuente",
+        opening: "Buenos días — una idea que merece toda tu atención.",
+        footer: "Elegido con cuidado para una bandeja de entrada más tranquila.",
         readingTime: (minutes: number) => `${minutes} min de lectura`,
       };
     case "French":
       return {
         article: "Article",
         source: "Source",
+        opening: "Bonjour — une idée qui mérite toute votre attention.",
+        footer: "Choisi avec soin pour une boîte de réception plus calme.",
         readingTime: (minutes: number) => `${minutes} min de lecture`,
       };
     case "German":
       return {
         article: "Artikel",
         source: "Quelle",
+        opening: "Guten Morgen — eine Idee, die Ihre volle Aufmerksamkeit verdient.",
+        footer: "Sorgfältig ausgewählt für einen ruhigeren Posteingang.",
         readingTime: (minutes: number) => `${minutes} Min. Lesezeit`,
       };
     default:
       return {
         article: "Article",
         source: "Source",
+        opening: "Good morning — one idea worth your full attention.",
+        footer: "Chosen with care for a quieter inbox.",
         readingTime: (minutes: number) => `${minutes} min read`,
       };
   }

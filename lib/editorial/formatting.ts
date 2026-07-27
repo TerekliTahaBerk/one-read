@@ -1,9 +1,9 @@
 /**
  * Small, email-safe formatting language for editorial copy.
  *
- * Supports paragraphs, ## headings, bullet/numbered lists, > pull quotes,
- * **bold**, _italic_ and [links](https://example.com). Arbitrary HTML is
- * escaped before it reaches the email.
+ * Supports paragraphs, ## / ### headings, bullet/numbered lists, > pull
+ * quotes, dividers, **bold**, _italic_, links and full-width inline images.
+ * Arbitrary HTML is escaped before it reaches the email.
  */
 export function editorialTextToHtml(value: string): string {
   return value
@@ -17,18 +17,39 @@ export function editorialTextToHtml(value: string): string {
 
 export function editorialTextToPlainText(value: string): string {
   return value
+    .replace(
+      /!\[([^\]]*)\]\((https:\/\/[^)\s]+)(?:\s+"([^"]*)")?\)/giu,
+      (_match, alt: string, url: string, caption?: string) =>
+        `[Image: ${alt || "Editorial image"}]${caption ? ` ${caption}` : ""} (${url})`,
+    )
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/giu, "$1 ($2)")
     .replace(/\*\*([^*]+)\*\*/gu, "$1")
     .replace(/_([^_\n]+)_/gu, "$1")
-    .replace(/^[ \t]*#{1,2}[ \t]+/gmu, "")
+    .replace(/^[ \t]*#{1,3}[ \t]+/gmu, "")
     .replace(/^[ \t]*>[ \t]?/gmu, "")
     .replace(/^[ \t]*[-*][ \t]+/gmu, "• ")
     .trim();
 }
 
 function renderBlock(block: string): string {
+  const image = block.match(
+    /^!\[([^\]]*)\]\((https:\/\/[^)\s]+)(?:\s+"([^"]*)")?\)$/iu,
+  );
+  if (image) {
+    const [, alt, url, caption] = image;
+    return `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:26px 0 28px;">
+      <tr><td><img src="${escapeHtml(url)}" alt="${escapeHtml(alt || "")}" width="552" style="display:block;width:100%;max-width:552px;height:auto;border:0;border-radius:12px;line-height:100%;outline:none;text-decoration:none;"></td></tr>
+      ${caption ? `<tr><td style="padding:8px 2px 0;font:11px/1.5 Arial,Helvetica,sans-serif;color:#8A8A86;">${escapeHtml(caption)}</td></tr>` : ""}
+    </table>`;
+  }
+  if (block === "---") {
+    return `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:28px 0;"><tr><td height="1" style="height:1px;background:#D8D8D3;font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+  }
   if (block.startsWith("## ")) {
     return `<h2 style="margin:28px 0 12px;font:700 22px/1.25 Georgia,'Times New Roman',serif;color:inherit;">${inline(block.slice(3))}</h2>`;
+  }
+  if (block.startsWith("### ")) {
+    return `<h3 style="margin:24px 0 10px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:inherit;">${inline(block.slice(4))}</h3>`;
   }
 
   const lines = block.split("\n").map((line) => line.trim());

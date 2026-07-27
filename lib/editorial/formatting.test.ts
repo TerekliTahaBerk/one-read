@@ -22,6 +22,18 @@ describe("editorial formatting", () => {
     expect(html).not.toContain("<script>");
   });
 
+  it("renders HTTPS inline images with accessible copy and captions", () => {
+    const html = editorialTextToHtml(
+      `![A quiet Tokyo street](https://images.example.com/street.jpg "Still: Example Studio")`,
+    );
+    expect(html).toContain('src="https://images.example.com/street.jpg"');
+    expect(html).toContain('alt="A quiet Tokyo street"');
+    expect(html).toContain("Still: Example Studio");
+    expect(
+      editorialTextToHtml("![Unsafe](http://images.example.com/photo.jpg)"),
+    ).not.toContain("<img");
+  });
+
   it("creates a readable plain-text alternative", () => {
     expect(
       editorialTextToPlainText("## Note\n\nA **good** [source](https://example.com).\n\n- One"),
