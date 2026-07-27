@@ -22,7 +22,7 @@ export default async function EditorialIssueDetailPage(
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const guard = guardAdminPage(`/admin/one-article/issues/${params.id}`, searchParams);
+  const guard = await guardAdminPage(`/admin/one-article/issues/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const issue = await prisma.oneArticleIssue.findUnique({
     where: { id: params.id },

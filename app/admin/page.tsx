@@ -26,7 +26,7 @@ export default async function AdminOverviewPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin", searchParams);
+  const guard = await guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [m, oneArticle, oneFilm] = await Promise.all([

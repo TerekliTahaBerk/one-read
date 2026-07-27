@@ -31,7 +31,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
 
-  const denied = requireAdmin(req, body);
+  const denied = await requireAdmin(req, body);
   if (denied) return denied;
   if (!adminFeatureFlags().mutationsEnabled) {
     return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(req: Request): Promise<Response> {
 
   const action = typeof body.action === "string" ? body.action : "";
   const subId = typeof body.subId === "string" ? body.subId : "";
-  const actor = adminActorLabel(req, body);
+  const actor = await adminActorLabel(req, body);
 
   let result: ActionResult & { subId?: string };
   let auditMeta: Record<string, unknown> = {};

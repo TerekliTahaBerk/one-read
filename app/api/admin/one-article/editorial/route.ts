@@ -26,14 +26,14 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
-  const denied = requireAdmin(request, body);
+  const denied = await requireAdmin(request, body);
   if (denied) return denied;
   if (!adminFeatureFlags().mutationsEnabled) {
     return NextResponse.json({ ok: false, error: "admin_mutations_disabled" }, { status: 403 });
   }
 
   const action = str(body.action);
-  const actor = adminActorLabel(request, body);
+  const actor = await adminActorLabel(request, body);
   const issueId = str(body.issueId);
   try {
     let issue;

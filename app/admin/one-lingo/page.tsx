@@ -13,7 +13,7 @@ export default async function OneLingoOverviewPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-lingo", searchParams);
+  const guard = await guardAdminPage("/admin/one-lingo", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   return (

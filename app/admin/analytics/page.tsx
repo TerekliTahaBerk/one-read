@@ -16,7 +16,7 @@ export default async function AnalyticsPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/analytics", searchParams);
+  const guard = await guardAdminPage("/admin/analytics", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [

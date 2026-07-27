@@ -19,7 +19,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
 
-  const denied = requireAdmin(req, body);
+  const denied = await requireAdmin(req, body);
   if (denied) return denied;
 
   if (!adminFeatureFlags().mutationsEnabled) {
@@ -39,7 +39,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "invalid_value_type" }, { status: 400 });
   }
   try {
-    await setSetting(key, body.value as boolean | number | string, adminActorLabel(req, body));
+    await setSetting(key, body.value as boolean | number | string, await adminActorLabel(req, body));
   } catch (error) {
     if (error instanceof Error && error.message === "invalid_setting_value") {
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });

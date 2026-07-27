@@ -19,7 +19,7 @@ export default async function OneFilmOverview(
   props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-film", searchParams);
+  const guard = await guardAdminPage("/admin/one-film", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const [next, recent, statusCounts, controls, languageCounts] = await Promise.all([
     prisma.oneFilmIssue.findFirst({ where: { status: "SCHEDULED", scheduledFor: { gte: new Date() } }, orderBy: { scheduledFor: "asc" } }),

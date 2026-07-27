@@ -12,7 +12,7 @@ export default async function RunsPage(
   props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/runs", searchParams);
+  const guard = await guardAdminPage("/admin/runs", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const product = typeof searchParams.product === "string" ? searchParams.product : undefined;
   const activeProducts = ["one-article", "one-film"];

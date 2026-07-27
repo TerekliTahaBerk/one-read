@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /** OneFilm is inactive; historical catalog data remains read-only. */
 export async function POST(request: Request) {
-  const denied = requireAdmin(request);
+  const denied = await requireAdmin(request);
   if (denied) return denied;
   return NextResponse.json(
     { ok: false, error: "product_inactive", product: "one-film" },

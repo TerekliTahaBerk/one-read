@@ -32,7 +32,7 @@ export default async function AdminLoginPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  if (getAdminSession()) {
+  if (await getAdminSession()) {
     redirect(sanitizeAdminNextPath(searchParams.next));
   }
 

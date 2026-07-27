@@ -16,7 +16,7 @@ export default async function NewEditorialIssuePage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-article/new", searchParams);
+  const guard = await guardAdminPage("/admin/one-article/new", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const audienceByLanguage = Object.fromEntries(
     await Promise.all(

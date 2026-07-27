@@ -32,7 +32,7 @@ export default async function AdminUserDetailPage(
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const guard = guardAdminPage(`/admin/users/${params.id}`, searchParams);
+  const guard = await guardAdminPage(`/admin/users/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   let contact = await prisma.contact.findUnique({

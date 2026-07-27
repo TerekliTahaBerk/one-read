@@ -12,6 +12,7 @@ import {
 } from "@/lib/one-article/verification";
 import { prisma } from "@/lib/prisma";
 import { fmtDateTime } from "@/lib/admin/format";
+import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function SettingsPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/settings", searchParams);
+  const guard = await guardAdminPage("/admin/settings", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [controls, latestArticleRun, latestFilmRun, articleScheduled, articleFailed, filmScheduled, filmFailed] = await Promise.all([
@@ -156,6 +157,13 @@ export default async function SettingsPage(
             </span>,
           ])}
         />
+      </AdminCard>
+
+      <AdminCard
+        title="Account security"
+        subtitle="Change your own admin password without exposing it to another administrator"
+      >
+        <ChangePasswordForm email={guard.session.email} />
       </AdminCard>
 
       <AdminCard title="Safety guarantees">

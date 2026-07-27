@@ -20,7 +20,7 @@ export default async function EditorialIssuesPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-article/issues", searchParams);
+  const guard = await guardAdminPage("/admin/one-article/issues", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const where: Prisma.OneArticleIssueWhereInput = {};
   if (searchParams.status) where.status = searchParams.status;

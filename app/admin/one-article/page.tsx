@@ -21,7 +21,7 @@ export default async function OneArticleEditorialOverview(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-article", searchParams);
+  const guard = await guardAdminPage("/admin/one-article", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const [next, recent, statusCounts, controls, languageCounts] = await Promise.all([
     prisma.oneArticleIssue.findFirst({

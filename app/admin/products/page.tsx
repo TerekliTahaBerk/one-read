@@ -20,7 +20,7 @@ export default async function AdminProductsPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/products", searchParams);
+  const guard = await guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [m, oneRead, filmSubscriptions] = await Promise.all([

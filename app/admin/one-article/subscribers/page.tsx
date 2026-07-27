@@ -23,7 +23,7 @@ export default async function OneArticleSubscribersPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-article/subscribers", searchParams);
+  const guard = await guardAdminPage("/admin/one-article/subscribers", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const now = new Date();

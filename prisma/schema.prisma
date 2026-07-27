@@ -910,6 +910,19 @@ model Setting {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
+/// A database-backed credential override for an env-allow-listed admin.
+/// The environment remains the account allow-list and bootstrap credential;
+/// changing a password in the panel stores only the new salted hash here.
+/// Incrementing sessionVersion invalidates every previously issued session.
+model AdminCredential {
+  email          String   @id
+  passwordHash   String
+  sessionVersion Int      @default(1)
+  changedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 /// Consent-scoped interest registration for products that are not live yet.
 /// No marketing is sent beyond the selected product's launch/update notice.
 model WaitlistEntry {

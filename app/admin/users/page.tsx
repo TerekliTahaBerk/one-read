@@ -37,7 +37,7 @@ export default async function AdminUsersPage(
   props: { searchParams: Promise<Filters> },
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/users", searchParams);
+  const guard = await guardAdminPage("/admin/users", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [contacts, verificationEvents] = await Promise.all([

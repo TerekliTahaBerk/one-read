@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /** Retired AI/RSS test sender. Use an edition's Test delivery action instead. */
 export async function POST(request: Request) {
-  const denied = requireAdmin(request);
+  const denied = await requireAdmin(request);
   if (denied) return denied;
   return NextResponse.json(
     {

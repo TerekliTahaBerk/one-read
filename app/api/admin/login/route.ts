@@ -60,6 +60,6 @@ export async function POST(req: Request) {
   await clearAdminLoginFailures(throttleKeys);
   const next = sanitizeAdminNextPath(body.next);
   const res = NextResponse.json({ ok: true, next });
-  setAdminSessionCookie(res, email.trim().toLowerCase());
+  await setAdminSessionCookie(res, email.trim().toLowerCase());
   return res;
 }

@@ -18,7 +18,7 @@ export default async function AuditPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/audit", searchParams);
+  const guard = await guardAdminPage("/admin/audit", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
   const [logs, targetTypes] = await Promise.all([

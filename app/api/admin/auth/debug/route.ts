@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const cookiePresent = Boolean((await cookies()).get(ADMIN_SESSION_COOKIE)?.value);
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json(

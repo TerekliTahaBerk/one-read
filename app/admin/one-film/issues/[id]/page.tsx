@@ -17,7 +17,7 @@ export default async function FilmIssueDetail(
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
-  const guard=guardAdminPage(`/admin/one-film/issues/${params.id}`,searchParams);if(!guard.ok)return <AdminNotConfigured/>;
+  const guard = await guardAdminPage(`/admin/one-film/issues/${params.id}`,searchParams);if(!guard.ok)return <AdminNotConfigured/>;
   const issue=await prisma.oneFilmIssue.findUnique({where:{id:params.id},include:{deliveries:{include:{contact:{select:{email:true}}},orderBy:{updatedAt:"desc"},take:200}}});if(!issue)notFound();
   const audienceByLanguage=Object.fromEntries(await Promise.all(FILM_EMAIL_LANGUAGES.map(async(x)=>[x,await countEligibleFilmEditorialRecipients(x)])));
   const grouped=await prisma.oneFilmDelivery.groupBy({by:["status"],where:{issueId:issue.id},_count:{_all:true}});

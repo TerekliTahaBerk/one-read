@@ -19,7 +19,7 @@ export default async function EditorialSendsPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const guard = guardAdminPage("/admin/one-article/sends", searchParams);
+  const guard = await guardAdminPage("/admin/one-article/sends", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const where: Prisma.OneArticleDeliveryWhereInput = {};
   if (searchParams.status) where.status = searchParams.status;

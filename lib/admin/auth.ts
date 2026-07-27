@@ -2,6 +2,7 @@ import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from "crypto";
 import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export const ADMIN_SESSION_COOKIE = "oneread_admin_session";
 export const ADMIN_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -9,6 +10,7 @@ export const ADMIN_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 type AdminSessionPayload = {
   email: string;
   exp: number;
+  version?: number;
 };
 
 export type AdminSession = {
@@ -85,26 +87,26 @@ export function getAdminToken(req: Request, body?: unknown): string {
   return "";
 }
 
-export function isAdminAuthorized(req: Request, body?: unknown): boolean {
-  return Boolean(readAdminSessionFromRequest(req)) || isAdminTokenAuthorized(req, body);
+export async function isAdminAuthorized(req: Request, body?: unknown): Promise<boolean> {
+  return Boolean(await readAdminSessionFromRequest(req)) || isAdminTokenAuthorized(req, body);
 }
 
-export function isAdminRequest(req: Request, body?: unknown): boolean {
+export async function isAdminRequest(req: Request, body?: unknown): Promise<boolean> {
   return isAdminAuthorized(req, body);
 }
 
-export function requireAdmin(
+export async function requireAdmin(
   req: Request,
   body?: unknown,
-): NextResponse | null {
-  if (isAdminAuthorized(req, body)) return null;
+): Promise<NextResponse | null> {
+  if (await isAdminAuthorized(req, body)) return null;
   return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 }
 
-export function guardAdminPage(
+export async function guardAdminPage(
   pathname: string,
   searchParams?: Record<string, string | string[] | undefined>,
-): AdminPageGuard {
+): Promise<AdminPageGuard> {
   // Query-string credentials leak through browser history, logs and referrers.
   // Keep the local-development shortcut, but production pages require the
   // signed, httpOnly admin session cookie.
@@ -116,7 +118,7 @@ export function guardAdminPage(
   }
 
   const cookiePresent = Boolean((cookies() as unknown as UnsafeUnwrappedCookies).get(ADMIN_SESSION_COOKIE)?.value);
-  const session = getAdminSession();
+  const session = await getAdminSession();
   if (session) {
     adminAuthDebug({ path: pathname, cookie: "present", verify: "ok", actor: "session", redirect: "no" });
     return { ok: true, session };
@@ -169,8 +171,13 @@ export async function verifyAdminCredentials(
   );
   if (!account) return false;
 
-  if (account.passwordHash) {
-    return verifyPasswordHash(password, account.passwordHash);
+  const override = await prisma.adminCredential.findUnique({
+    where: { email: normalizedEmail },
+    select: { passwordHash: true },
+  });
+  const passwordHash = override?.passwordHash ?? account.passwordHash;
+  if (passwordHash) {
+    return verifyPasswordHash(password, passwordHash);
   }
   if (
     process.env.NODE_ENV !== "production" &&
@@ -182,10 +189,10 @@ export async function verifyAdminCredentials(
   return false;
 }
 
-export function setAdminSessionCookie(res: NextResponse, email: string): void {
+export async function setAdminSessionCookie(res: NextResponse, email: string): Promise<void> {
   res.cookies.set({
     name: ADMIN_SESSION_COOKIE,
-    value: createAdminSessionToken(email),
+    value: await createAdminSessionToken(email),
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -206,8 +213,8 @@ export function clearAdminSessionCookie(res: NextResponse): void {
   });
 }
 
-export function adminActorLabel(req: Request, body?: unknown): string {
-  const session = readAdminSessionFromRequest(req);
+export async function adminActorLabel(req: Request, body?: unknown): Promise<string> {
+  const session = await readAdminSessionFromRequest(req);
   if (session) return session.email;
 
   const token = getAdminToken(req, body);
@@ -226,21 +233,83 @@ export function generateAdminPasswordHash(password: string): string {
   return `pbkdf2_sha256:${iterations}:${salt.toString("base64url")}:${hash.toString("base64url")}`;
 }
 
-function createAdminSessionToken(email: string): string {
+export function validateAdminPassword(password: string, email: string): string | null {
+  if (password.length < 12) return "password_too_short";
+  if (password.length > 128) return "password_too_long";
+
+  const characterClasses = [
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length;
+  if (characterClasses < 3) return "password_not_strong_enough";
+
+  const localPart = email.split("@")[0]?.toLowerCase() ?? "";
+  if (localPart.length >= 4 && password.toLowerCase().includes(localPart)) {
+    return "password_contains_email";
+  }
+  return null;
+}
+
+export async function changeAdminPassword(input: {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ ok: true; sessionVersion: number } | { ok: false; error: string }> {
+  const email = input.email.trim().toLowerCase();
+  if (!configuredAdminEmails().includes(email)) {
+    return { ok: false, error: "admin_not_configured" };
+  }
+  if (!(await verifyAdminCredentials(email, input.currentPassword))) {
+    return { ok: false, error: "current_password_incorrect" };
+  }
+  if (timingSafeStringEqual(input.currentPassword, input.newPassword)) {
+    return { ok: false, error: "password_unchanged" };
+  }
+  const validationError = validateAdminPassword(input.newPassword, email);
+  if (validationError) return { ok: false, error: validationError };
+
+  const passwordHash = generateAdminPasswordHash(input.newPassword);
+  const credential = await prisma.adminCredential.upsert({
+    where: { email },
+    create: {
+      email,
+      passwordHash,
+      sessionVersion: 1,
+      changedBy: email,
+    },
+    update: {
+      passwordHash,
+      sessionVersion: { increment: 1 },
+      changedBy: email,
+    },
+    select: { sessionVersion: true },
+  });
+  return { ok: true, sessionVersion: credential.sessionVersion };
+}
+
+async function createAdminSessionToken(email: string): Promise<string> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const credential = await prisma.adminCredential.findUnique({
+    where: { email: normalizedEmail },
+    select: { sessionVersion: true },
+  });
   const payload: AdminSessionPayload = {
-    email,
+    email: normalizedEmail,
     exp: Math.floor(Date.now() / 1000) + ADMIN_SESSION_TTL_SECONDS,
+    version: credential?.sessionVersion ?? 0,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = sign(body);
   return `${body}.${sig}`;
 }
 
-export function readCurrentAdminSession(): AdminSession | null {
+export async function readCurrentAdminSession(): Promise<AdminSession | null> {
   return getAdminSession();
 }
 
-export function getAdminSession(): AdminSession | null {
+export async function getAdminSession(): Promise<AdminSession | null> {
   const token = (cookies() as unknown as UnsafeUnwrappedCookies).get(ADMIN_SESSION_COOKIE)?.value;
   return verifyAdminSessionToken(token);
 }
@@ -273,7 +342,7 @@ export function sanitizeAdminNextPath(next?: string): string {
   return "/admin";
 }
 
-function readAdminSessionFromRequest(req: Request): AdminSession | null {
+export async function readAdminSessionFromRequest(req: Request): Promise<AdminSession | null> {
   const cookie = req.headers
     .get("cookie")
     ?.split(";")
@@ -283,7 +352,7 @@ function readAdminSessionFromRequest(req: Request): AdminSession | null {
   return verifyAdminSessionToken(token);
 }
 
-function verifyAdminSessionToken(token?: string): AdminSession | null {
+async function verifyAdminSessionToken(token?: string): Promise<AdminSession | null> {
   if (!token || !process.env.ADMIN_SESSION_SECRET) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig || !timingSafeStringEqual(sig, sign(body))) return null;
@@ -291,8 +360,14 @@ function verifyAdminSessionToken(token?: string): AdminSession | null {
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as AdminSessionPayload;
     if (!payload.email || !payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) return null;
-    if (!configuredAdminEmails().includes(payload.email.trim().toLowerCase())) return null;
-    return { email: payload.email, expiresAt: new Date(payload.exp * 1000) };
+    const email = payload.email.trim().toLowerCase();
+    if (!configuredAdminEmails().includes(email)) return null;
+    const credential = await prisma.adminCredential.findUnique({
+      where: { email },
+      select: { sessionVersion: true },
+    });
+    if ((payload.version ?? 0) !== (credential?.sessionVersion ?? 0)) return null;
+    return { email, expiresAt: new Date(payload.exp * 1000) };
   } catch {
     return null;
   }
