@@ -233,6 +233,7 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
 /** A flattened, presentation-ready view of one subscription for tables. */
 export interface SubRow {
   id: string;
+  contactId: string;
   email: string;
   status: string;
   emailDeliveryStatus: string;
@@ -257,6 +258,7 @@ export async function toSubRow(s: SubWithRels, now = new Date()): Promise<SubRow
   const billing = s.contact.subscriptions[0] ?? s;
   return {
     id: s.id,
+    contactId: s.contactId,
     email: s.contact.email,
     status: billing.status,
     emailDeliveryStatus: s.emailDeliveryStatus,

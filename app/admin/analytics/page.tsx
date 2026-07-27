@@ -74,6 +74,7 @@ export default async function AnalyticsPage(
       }),
       prisma.productSubscription.groupBy({
         by: ["status"],
+        where: { productKey: "one-read" },
         _count: { _all: true },
       }),
       prisma.contact.count(),

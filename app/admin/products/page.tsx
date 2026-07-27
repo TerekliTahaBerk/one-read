@@ -6,6 +6,9 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import { PRODUCTS } from "@/lib/admin/products";
+import { getOneReadOverviewMetrics } from "@/lib/admin/oneread-queries";
+import { prisma } from "@/lib/prisma";
+import { resolveOneFilmEligibilityForContact } from "@/lib/oneread/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,13 +23,29 @@ export default async function AdminProductsPage(
   const guard = guardAdminPage("/admin/products", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const m = await getOverviewMetrics();
-  const openProducts = PRODUCTS.filter((p) => p.key === "one-article" || p.key === "one-film");
+  const [m, oneRead, filmSubscriptions] = await Promise.all([
+    getOverviewMetrics(),
+    getOneReadOverviewMetrics(),
+    prisma.productSubscription.findMany({
+      where: { productKey: "one-film" },
+      select: { contactId: true },
+    }),
+  ]);
+  const filmEligibility = await Promise.all(
+    filmSubscriptions.map((subscription) =>
+      resolveOneFilmEligibilityForContact(subscription.contactId),
+    ),
+  );
+  const filmEligible = filmEligibility.filter((result) => result.allowed).length;
+  const articleTotal = Object.values(m.email).reduce((sum, count) => sum + count, 0);
+  const openProducts = PRODUCTS.filter((p) =>
+    ["one-read", "one-article", "one-film"].includes(p.key),
+  );
 
   return (
     <AdminShell
       title="Products"
-      subtitle="OneRead product family"
+      subtitle="Live products and umbrella access"
     >
       <AdminCard>
         <AdminTable
@@ -51,14 +70,20 @@ export default async function AdminProductsPage(
             ) : (
               <span key="d" className="text-admin-muted">Waitlist</span>
             ),
-            p.key === "one-article" ? (
-              <span key="c">{`${m.users.subscribed} active · ${m.eligibleCount} eligible`}</span>
+            p.key === "one-read" ? (
+              <span key="c">{`${oneRead.total} accounts · ${oneRead.activeOrTrialing} active`}</span>
+            ) : p.key === "one-article" ? (
+              <span key="c">{`${articleTotal} subscribers · ${m.eligibleCount} eligible`}</span>
             ) : p.key === "one-film" ? (
-              <span key="c">Manual editorial · active</span>
+              <span key="c">{`${filmSubscriptions.length} subscribers · ${filmEligible} eligible`}</span>
             ) : (
               <span key="c" className="text-admin-muted">Waitlist count not available</span>
             ),
-            p.key === "one-article" ? (
+            p.key === "one-read" ? (
+              <Link key="a" href="/admin/users" className="text-admin-ink underline underline-offset-2">
+                Accounts →
+              </Link>
+            ) : p.key === "one-article" ? (
               <Link key="a" href="/admin/one-article" className="text-admin-ink underline underline-offset-2">
                 Operations →
               </Link>

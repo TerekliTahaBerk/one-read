@@ -6,6 +6,7 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { fmtDateTime } from "@/lib/admin/format";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,14 @@ export default async function AuditPage(
   const guard = guardAdminPage("/admin/audit", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const logs = await loadAuditLogs(searchParams, 150);
+  const [logs, targetTypes] = await Promise.all([
+    loadAuditLogs(searchParams, 150),
+    prisma.adminAuditLog.findMany({
+      distinct: ["targetType"],
+      select: { targetType: true },
+      orderBy: { targetType: "asc" },
+    }),
+  ]);
 
   return (
     <AdminShell
@@ -61,10 +69,9 @@ export default async function AuditPage(
             className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
           >
             <option value="">Any</option>
-            <option value="ProductSubscription">ProductSubscription</option>
-            <option value="OneArticleIssue">OneArticleIssue</option>
-            <option value="OneArticleDelivery">OneArticleDelivery</option>
-            <option value="OperationalRun">OperationalRun</option>
+            {targetTypes.map(({ targetType }) => (
+              <option key={targetType} value={targetType}>{targetType}</option>
+            ))}
           </select>
         </FilterField>
         <button

@@ -63,7 +63,7 @@ export default async function OneArticleSubscribersPage(
             <span key="pv" className="text-admin-body">{r.provider ?? "—"}</span>,
             <span key="pe" className="text-admin-body">{fmtDate(r.currentPeriodEnd)}</span>,
             <span key="l" className="text-admin-body">{r.summaryLanguage ?? "Needs language"}</span>,
-            <Link key="v" href={`/admin/users/${r.id}`} className="text-admin-ink underline underline-offset-2">
+            <Link key="v" href={`/admin/users/${r.contactId}`} className="text-admin-ink underline underline-offset-2">
               View
             </Link>,
           ])}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { guardAdminPage } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard } from "@/components/admin/AdminCard";
@@ -14,13 +15,35 @@ export default async function RunsPage(
   const guard = guardAdminPage("/admin/runs", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const product = typeof searchParams.product === "string" ? searchParams.product : undefined;
-  const activeProducts = ["one-article"];
+  const activeProducts = ["one-article", "one-film"];
   const selectedProduct = product && activeProducts.includes(product) ? product : undefined;
   const runs = await prisma.operationalRun.findMany({
     where: selectedProduct ? { productKey: selectedProduct } : { productKey: { in: activeProducts } },
     orderBy: { startedAt: "desc" }, take: 200,
   });
   return <AdminShell title="Run history" subtitle="Manual-edition dispatch outcomes and errors">
+    <form method="get" className="mb-5 flex flex-wrap items-end gap-3 text-[12.5px]">
+      <label>
+        <span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">
+          Product
+        </span>
+        <select
+          name="product"
+          defaultValue={selectedProduct ?? ""}
+          className="rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink"
+        >
+          <option value="">All live products</option>
+          <option value="one-article">OneArticle</option>
+          <option value="one-film">OneFilm</option>
+        </select>
+      </label>
+      <button className="rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink">
+        Apply
+      </button>
+      <Link href="/admin/runs" className="px-2 py-2 text-admin-muted hover:text-admin-ink">
+        Reset
+      </Link>
+    </form>
     <AdminCard title="Latest 200 runs"><AdminTable
       head={["Started", "Product", "Route", "Status", "Mode", "Editions created", "Sent", "Skipped", "Failed", "Error"]}
       empty="No operational runs recorded yet."

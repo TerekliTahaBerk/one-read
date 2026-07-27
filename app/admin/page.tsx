@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import {
   getOneArticleHealth,
+  getOneFilmHealth,
 } from "@/lib/admin/health";
 import { fmtAgo, fmtWhen } from "@/lib/admin/format";
 
@@ -28,26 +29,27 @@ export default async function AdminOverviewPage(
   const guard = guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, oneArticle] = await Promise.all([
+  const [m, oneArticle, oneFilm] = await Promise.all([
     getOverviewMetrics(),
     getOneArticleHealth(),
+    getOneFilmHealth(),
   ]);
 
-  const products = [oneArticle];
+  const products = [oneArticle, oneFilm];
   const problems = products.filter((p) => p.health === "problem").length;
   const attention = products.filter((p) => p.health === "attention").length;
 
   const systemHealth: Health = problems > 0 ? "problem" : attention > 0 ? "attention" : "ok";
   const systemHeadline =
     problems > 0
-      ? "OneArticle needs attention"
+      ? "Delivery needs attention"
       : attention > 0
-        ? "OneArticle needs a look"
-        : "OneArticle is running";
+        ? "Publishing needs a look"
+        : "OneRead operations are healthy";
   const systemDetail =
     systemHealth === "ok"
-      ? "Delivery and scheduling are healthy. Nothing needs you right now."
-      : "The OneArticle card below shows exactly what needs a look.";
+      ? "OneArticle and OneFilm delivery and scheduling are healthy."
+      : "The product cards below show exactly what needs a look.";
 
   const accessOrder = [
     "ACTIVE_PAID",
@@ -87,17 +89,17 @@ export default async function AdminOverviewPage(
       <AdminCard title="People" bodyClassName="p-4">
         <MetricGrid>
           <MetricCard label="Total people" value={m.users.totalContacts} />
-          <MetricCard label="Getting emails" value={m.users.subscribed} tone="good" />
-          <MetricCard label="Unsubscribed" value={m.users.paused} />
-          <MetricCard
-            label="Bounced / blocked"
-            value={m.users.suppressed}
-            tone={m.users.suppressed > 0 ? "warn" : "default"}
-          />
           <MetricCard label="Joined today" value={m.users.newToday} />
           <MetricCard label="Joined this week" value={m.users.new7d} />
           <MetricCard label="Joined this month" value={m.users.new30d} />
-          <MetricCard label="Ready to receive" value={m.eligibleCount} tone="good" />
+          <MetricCard label="OneArticle subscribed" value={m.users.subscribed} tone="good" />
+          <MetricCard label="OneArticle paused" value={m.users.paused} />
+          <MetricCard
+            label="OneArticle blocked"
+            value={m.users.suppressed}
+            tone={m.users.suppressed > 0 ? "warn" : "default"}
+          />
+          <MetricCard label="OneArticle eligible" value={m.eligibleCount} tone="good" />
         </MetricGrid>
         <Link href="/admin/users" className="text-[13px] text-admin-ink underline underline-offset-2">
           View everyone →
