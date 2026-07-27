@@ -46,6 +46,31 @@ const LABELS: Record<string, string> = {
   hidden: "Hidden",
   eligible: "Eligible",
   blocked: "Blocked",
+
+  // User journey / CRM state
+  ADMIN: "Admin",
+  USER: "Reader",
+  EMAIL_ONLY: "Email only",
+  UNVERIFIED: "Not verified",
+  NO_PREFERENCES: "No selections",
+  PARTIAL_PREFERENCES: "Selections incomplete",
+  AWAITING_PAYMENT: "Never paid",
+  TRIAL: "On trial",
+  ACTIVE: "Active customer",
+  MANUAL_ACCESS: "Manual access",
+  PAYMENT_ISSUE: "Payment issue",
+  INACTIVE: "Former customer",
+  NEVER_PAID: "Never paid",
+  PAYING: "Paying",
+  PAYMENT_OVERDUE: "Payment overdue",
+  FORMER_PAYER: "Former payer",
+  NOT_STARTED: "Not started",
+  PARTIAL: "Partial",
+  COMPLETE: "Complete",
+  NOT_APPLICABLE: "Not applicable",
+  NOT_REQUESTED: "Not requested",
+  PENDING_VERIFICATION: "Verification pending",
+  VERIFIED: "Verified",
 };
 
 /** Title-case a raw SCREAMING_SNAKE or kebab value as a last resort. */

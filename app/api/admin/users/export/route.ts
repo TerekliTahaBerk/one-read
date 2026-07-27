@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { configuredAdminEmails, requireAdmin } from "@/lib/admin/auth";
 import { csvRow } from "@/lib/admin/csv";
 import { prisma } from "@/lib/prisma";
+import { analyzeUserJourney, userRole } from "@/lib/admin/user-lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,17 +11,55 @@ export async function GET(request: Request): Promise<Response> {
   const denied = requireAdmin(request);
   if (denied) return denied;
 
-  const contacts = await prisma.contact.findMany({
-    include: {
-      subscriptions: {
-        include: { preferences: true, filmPreferences: true },
+  const [contacts, verificationEvents] = await Promise.all([
+    prisma.contact.findMany({
+      include: {
+        subscriptions: {
+          include: { preferences: true, filmPreferences: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.emailVerificationCode.findMany({
+      select: { email: true, createdAt: true, consumedAt: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+  const adminEmails = configuredAdminEmails();
+  const verificationByEmail = new Map<string, {
+    requestedAt: Date;
+    verifiedAt: Date | null;
+    requestCount: number;
+  }>();
+  for (const event of verificationEvents) {
+    const email = event.email.trim().toLowerCase();
+    const current = verificationByEmail.get(email);
+    if (!current) {
+      verificationByEmail.set(email, {
+        requestedAt: event.createdAt,
+        verifiedAt: event.consumedAt,
+        requestCount: 1,
+      });
+    } else {
+      current.requestCount += 1;
+      if (event.consumedAt && (!current.verifiedAt || event.consumedAt > current.verifiedAt)) {
+        current.verifiedAt = event.consumedAt;
+      }
+    }
+  }
 
   const header = [
     "email",
+    "role",
+    "journey_stage",
+    "verification_status",
+    "verification_requests",
+    "preferences_status",
+    "preferences_completed_products",
+    "preferences_expected_products",
+    "missing_preferences",
+    "payment_status",
+    "has_paid_ever",
     "contact_created_at",
     "one_read_status",
     "payment_provider",
@@ -48,14 +87,32 @@ export async function GET(request: Request): Promise<Response> {
   ];
 
   const lines = [csvRow(header)];
+  const exportedEmails = new Set<string>();
   for (const contact of contacts) {
+    exportedEmails.add(contact.email.toLowerCase());
     const umbrella = contact.subscriptions.find((sub) => sub.productKey === "one-read");
     const article = contact.subscriptions.find((sub) => sub.productKey === "one-article");
     const film = contact.subscriptions.find((sub) => sub.productKey === "one-film");
     const articlePrefs = article?.preferences;
     const filmPrefs = film?.filmPreferences;
+    const verification = verificationByEmail.get(contact.email.toLowerCase());
+    const journey = analyzeUserJourney({
+      subscriptions: contact.subscriptions,
+      verificationRequested: Boolean(verification),
+      verified: Boolean(verification?.verifiedAt),
+    });
     lines.push(csvRow([
       contact.email,
+      userRole(contact.email, adminEmails),
+      journey.stage,
+      journey.verification,
+      verification?.requestCount ?? 0,
+      journey.preferences,
+      journey.completedPreferenceProducts,
+      journey.expectedPreferenceProducts,
+      journey.missingPreferenceProducts,
+      journey.payment,
+      journey.hasPaidEver,
       contact.createdAt,
       umbrella?.status,
       umbrella?.paymentProvider,
@@ -83,6 +140,55 @@ export async function GET(request: Request): Promise<Response> {
     ]));
   }
 
+  for (const [email, verification] of verificationByEmail) {
+    if (exportedEmails.has(email)) continue;
+    exportedEmails.add(email);
+    const journey = analyzeUserJourney({
+      subscriptions: [],
+      verificationRequested: true,
+      verified: Boolean(verification.verifiedAt),
+    });
+    lines.push(csvRow([
+      email,
+      userRole(email, adminEmails),
+      journey.stage,
+      journey.verification,
+      verification.requestCount,
+      journey.preferences,
+      0,
+      0,
+      [],
+      journey.payment,
+      false,
+      "",
+      ...Array(header.length - 12).fill(""),
+    ]));
+  }
+
+  for (const email of adminEmails) {
+    if (exportedEmails.has(email.toLowerCase())) continue;
+    const journey = analyzeUserJourney({
+      subscriptions: [],
+      verificationRequested: false,
+      verified: false,
+    });
+    lines.push(csvRow([
+      email,
+      "ADMIN",
+      journey.stage,
+      journey.verification,
+      0,
+      journey.preferences,
+      0,
+      0,
+      [],
+      journey.payment,
+      false,
+      "",
+      ...Array(header.length - 12).fill(""),
+    ]));
+  }
+
   const date = new Date().toISOString().slice(0, 10);
   return new Response(`\uFEFF${lines.join("\r\n")}\r\n`, {
     headers: {
@@ -92,4 +198,3 @@ export async function GET(request: Request): Promise<Response> {
     },
   });
 }
-
