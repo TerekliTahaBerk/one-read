@@ -6,6 +6,13 @@ import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import {
+  AdminFilterBar,
+  AdminFilterField,
+  adminControlClass,
+  adminFilterButtonClass,
+  adminResetClass,
+} from "@/components/admin/AdminFilters";
 import { oneArticleTabs } from "@/lib/admin/nav";
 import { prisma } from "@/lib/prisma";
 import { fmtDateTime } from "@/lib/admin/format";
@@ -49,12 +56,16 @@ export default async function EditorialIssuesPage(
       actions={<Link href="/admin/one-article/new" className="rounded-lg bg-admin-accent px-3 py-2 text-[12.5px] text-white">+ New edition</Link>}
     >
       <AdminTabs tabs={oneArticleTabs()} active="issues" />
-      <form method="get" className="mb-5 flex flex-wrap items-end gap-3 text-[12.5px]">
-        <label><span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">Status</span><select name="status" defaultValue={searchParams.status ?? ""} className={filterClass}><option value="">All</option>{["DRAFT", "READY", "SCHEDULED", "SENDING", "SENT", "PARTIALLY_FAILED", "FAILED", "CANCELED"].map((status) => <option key={status}>{status}</option>)}</select></label>
-        <label><span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">Language</span><select name="language" defaultValue={searchParams.language ?? ""} className={filterClass}><option value="">All</option>{SUMMARY_LANGUAGES.map((language) => <option key={language}>{language}</option>)}</select></label>
-        <button className={filterClass}>Apply</button>
-        <Link href="/admin/one-article/issues" className="px-2 py-2 text-admin-muted">Reset</Link>
-      </form>
+      <AdminFilterBar method="get">
+        <AdminFilterField label="Status">
+          <select name="status" defaultValue={searchParams.status ?? ""} className={adminControlClass}><option value="">All statuses</option>{["DRAFT", "READY", "SCHEDULED", "SENDING", "SENT", "PARTIALLY_FAILED", "FAILED", "CANCELED"].map((status) => <option key={status}>{status}</option>)}</select>
+        </AdminFilterField>
+        <AdminFilterField label="Language">
+          <select name="language" defaultValue={searchParams.language ?? ""} className={adminControlClass}><option value="">All languages</option>{SUMMARY_LANGUAGES.map((language) => <option key={language}>{language}</option>)}</select>
+        </AdminFilterField>
+        <button className={adminFilterButtonClass}>Apply filters</button>
+        <Link href="/admin/one-article/issues" className={adminResetClass}>Reset</Link>
+      </AdminFilterBar>
       <AdminCard>
         <AdminTable
           head={["Headline", "Language", "Status", "Scheduled", "Delivered", "Failed", "Updated", ""]}
@@ -74,5 +85,3 @@ export default async function EditorialIssuesPage(
     </AdminShell>
   );
 }
-
-const filterClass = "rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink";

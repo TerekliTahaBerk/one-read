@@ -6,6 +6,13 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { prisma } from "@/lib/prisma";
 import { fmtDateTime } from "@/lib/admin/format";
+import {
+  AdminFilterBar,
+  AdminFilterField,
+  adminControlClass,
+  adminFilterButtonClass,
+  adminResetClass,
+} from "@/components/admin/AdminFilters";
 
 export const dynamic = "force-dynamic";
 export default async function RunsPage(
@@ -22,28 +29,25 @@ export default async function RunsPage(
     orderBy: { startedAt: "desc" }, take: 200,
   });
   return <AdminShell title="Run history" subtitle="Manual-edition dispatch outcomes and errors">
-    <form method="get" className="mb-5 flex flex-wrap items-end gap-3 text-[12.5px]">
-      <label>
-        <span className="mb-1 block text-[10px] uppercase tracking-eyebrow text-admin-muted">
-          Product
-        </span>
+    <AdminFilterBar method="get">
+      <AdminFilterField label="Product">
         <select
           name="product"
           defaultValue={selectedProduct ?? ""}
-          className="rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink"
+          className={adminControlClass}
         >
           <option value="">All live products</option>
           <option value="one-article">OneArticle</option>
           <option value="one-film">OneFilm</option>
         </select>
-      </label>
-      <button className="rounded-lg border border-admin-line bg-admin-surface px-3 py-2 text-admin-ink">
-        Apply
+      </AdminFilterField>
+      <button className={adminFilterButtonClass}>
+        Apply filter
       </button>
-      <Link href="/admin/runs" className="px-2 py-2 text-admin-muted hover:text-admin-ink">
+      <Link href="/admin/runs" className={adminResetClass}>
         Reset
       </Link>
-    </form>
+    </AdminFilterBar>
     <AdminCard title="Latest 200 runs"><AdminTable
       head={["Started", "Product", "Route", "Status", "Mode", "Editions created", "Sent", "Skipped", "Failed", "Error"]}
       empty="No operational runs recorded yet."

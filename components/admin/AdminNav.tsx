@@ -109,11 +109,11 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
   const sub = activeTop?.matchPrefix ? SUB_NAV[activeTop.matchPrefix] : undefined;
 
   return (
-    <nav className="font-sans text-[13px]">
-      <ul className="space-y-5">
+    <nav className="flex min-h-full flex-col font-sans text-[13px]">
+      <ul className="space-y-4">
         {NAV_GROUPS.map((group) => (
           <li key={group.label}>
-            <div className="px-3 pb-1.5 text-[10px] uppercase tracking-eyebrow text-admin-muted">
+            <div className="px-3 pb-1.5 text-[9.5px] font-medium uppercase tracking-[0.2em] text-admin-muted">
               {group.label}
             </div>
             <ul className="space-y-0.5">
@@ -143,7 +143,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                       href={item.href}
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
-                      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                      className={`relative flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 transition-colors ${
                         active
                           ? "bg-admin-accent-tint font-medium text-admin-ink"
                           : "text-admin-body hover:bg-admin-sink hover:text-admin-ink"
@@ -160,7 +160,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                     </Link>
 
                     {active && sub && (
-                      <ul className="mb-1 ml-[26px] mt-0.5 space-y-0.5 border-l border-admin-line pl-3">
+                      <ul className="mb-1 ml-[26px] mt-1 space-y-0.5 border-l border-admin-line pl-3">
                         {sub.map((s) => {
                           const subActive = pathname === s.href;
                           return (
@@ -168,7 +168,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                               <Link
                                 href={s.href}
                                 onClick={onNavigate}
-                                className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors ${
+                                className={`block rounded-lg px-2 py-1.5 text-[12.5px] transition-colors ${
                                   subActive
                                     ? "font-medium text-admin-accent-strong"
                                     : "text-admin-muted hover:text-admin-ink"
@@ -189,7 +189,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </ul>
 
-      <div className="mt-6 border-t border-admin-line pt-3">
+      <div className="mt-auto border-t border-admin-line pt-3">
         {/*
           Logout is a POST form, never a <Link>. A GET/prefetchable logout link
           would be hit by Next.js prefetch and clear the session in the
@@ -199,7 +199,7 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
         <form action="/admin/logout" method="post">
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-admin-body transition-colors hover:bg-admin-sink hover:text-admin-ink"
+            className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-admin-body transition-colors hover:bg-admin-sink hover:text-admin-ink"
           >
             <span className="text-admin-muted">{ICONS.logout}</span>
             Logout

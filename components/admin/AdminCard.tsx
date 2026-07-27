@@ -17,15 +17,15 @@ export function AdminCard({
   containerClassName?: string;
 }) {
   return (
-    <section className="mb-8">
+    <section className="mb-6 sm:mb-7">
       {(title || subtitle || actions) && (
-        <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-baseline sm:gap-4">
-          <div className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+        <div className="mb-3.5 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-4">
+          <div className="flex min-w-0 flex-col items-start gap-1">
             {title && (
-              <h2 className="font-serif text-[18px] text-admin-ink">{title}</h2>
+              <h2 className="font-serif text-[20px] leading-tight tracking-[-0.015em] text-admin-ink sm:text-[22px]">{title}</h2>
             )}
             {subtitle && (
-              <span className="font-sans text-[11.5px] text-admin-muted">
+              <span className="max-w-3xl font-sans text-[12px] leading-5 text-admin-muted">
                 {subtitle}
               </span>
             )}
@@ -34,7 +34,7 @@ export function AdminCard({
         </div>
       )}
       <div
-        className={`rounded-2xl border border-admin-line bg-admin-surface shadow-admin ${
+        className={`rounded-[18px] border border-admin-line bg-admin-surface shadow-admin ${
           containerClassName ?? "overflow-hidden"
         }`}
       >
@@ -68,12 +68,12 @@ export function MetricCard({
         ? "text-emerald-700"
         : "text-admin-ink";
   return (
-    <div className="rounded-2xl border border-admin-line bg-admin-surface px-4 py-3.5 shadow-admin transition-shadow hover:shadow-admin-md">
+    <div className="min-w-0 rounded-[18px] border border-admin-line bg-admin-surface px-4 py-4 shadow-admin transition duration-200 hover:-translate-y-0.5 hover:shadow-admin-md sm:px-5">
       <div className="font-sans text-[11px] uppercase tracking-eyebrow text-admin-muted">
         {label}
       </div>
       <div
-        className={`mt-1.5 font-serif text-[clamp(18px,2vw,28px)] leading-tight ${valueClass}`}
+        className={`mt-2 min-w-0 break-words font-serif text-[clamp(22px,2.4vw,32px)] leading-[1.05] tracking-[-0.025em] ${valueClass}`}
       >
         {value}
       </div>
@@ -88,7 +88,7 @@ export function MetricCard({
 
 export function MetricGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="admin-metric-grid mb-6 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 [&:last-child]:mb-0">
       {children}
     </div>
   );
@@ -112,11 +112,11 @@ export function DefList({
   return (
     <dl className="divide-y divide-admin-line/70">
       {rows.map(([k, v], i) => (
-        <div key={i} className="flex gap-4 px-4 py-2.5">
-          <dt className="w-44 shrink-0 font-sans text-[12px] text-admin-muted">
+        <div key={i} className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:items-start sm:gap-5 sm:px-5">
+          <dt className="font-sans text-[12px] text-admin-muted">
             {k}
           </dt>
-          <dd className="min-w-0 break-words font-sans text-[12.5px] text-admin-ink/90">
+          <dd className="min-w-0 break-words font-sans text-[12.5px] leading-5 text-admin-ink/90 sm:text-right">
             {v}
           </dd>
         </div>

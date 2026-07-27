@@ -18,7 +18,7 @@ export default async function OneLingoOverviewPage(
 
   return (
     <AdminShell title="OneLingo" subtitle="Inactive product · collecting demand on the waitlist">
-      <AdminCard title="Product status">
+      <AdminCard title="Product status" bodyClassName="p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-3">
           <StatusBadge value="waitlist" tone="muted" />
           <p className="text-[13px] text-admin-body">

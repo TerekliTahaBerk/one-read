@@ -94,24 +94,24 @@ export function AdminShell({
   return (
     <div
       style={adminThemeVars(pathname)}
-      className="min-h-svh bg-admin-bg text-admin-body font-sans"
+      className="admin-panel min-h-svh overflow-x-hidden bg-admin-bg text-admin-body font-sans"
     >
       <div className="flex min-h-svh">
         {/* Desktop sidebar */}
-        <aside className="hidden w-[248px] shrink-0 flex-col border-r border-admin-line bg-admin-sink/50 lg:flex">
+        <aside className="sticky top-0 hidden h-svh w-[272px] shrink-0 flex-col border-r border-admin-line bg-admin-sink/55 xl:flex">
           <SidebarContent />
         </aside>
 
         {/* Mobile drawer */}
         {drawerOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-40 xl:hidden">
             <button
               type="button"
               aria-label="Close menu"
               onClick={() => setDrawerOpen(false)}
               className="absolute inset-0 bg-admin-ink/30 backdrop-blur-[1px]"
             />
-            <aside className="absolute inset-y-0 left-0 flex w-[264px] flex-col border-r border-admin-line bg-admin-surface shadow-admin-md">
+            <aside className="absolute inset-y-0 left-0 flex w-[min(304px,88vw)] flex-col border-r border-admin-line bg-admin-surface shadow-admin-md">
               <SidebarContent onNavigate={() => setDrawerOpen(false)} />
             </aside>
           </div>
@@ -119,12 +119,12 @@ export function AdminShell({
 
         {/* Main column */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-admin-line bg-admin-bg/85 px-5 backdrop-blur sm:px-8">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-admin-line bg-admin-bg/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
             <button
               type="button"
               aria-label="Open menu"
               onClick={() => setDrawerOpen(true)}
-              className="-ml-1 grid h-9 w-9 place-items-center rounded-lg text-admin-body hover:bg-admin-sink lg:hidden"
+              className="-ml-1 grid h-10 w-10 place-items-center rounded-xl border border-transparent text-admin-body transition hover:border-admin-line hover:bg-admin-sink xl:hidden"
             >
               <MenuIcon />
             </button>
@@ -161,9 +161,11 @@ export function AdminShell({
             </div>
           </header>
 
-          <main className="flex-1 px-5 py-8 sm:px-8">
-            <AdminHeader title={title} subtitle={subtitle} actions={actions} />
-            {children}
+          <main className="flex-1 px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+            <div className="mx-auto w-full max-w-[1480px]">
+              <AdminHeader title={title} subtitle={subtitle} actions={actions} />
+              {children}
+            </div>
           </main>
         </div>
       </div>
@@ -180,7 +182,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         href="/admin"
         onClick={onNavigate}
         aria-label="OneRead admin — overview"
-        className="flex items-center gap-2.5 border-b border-admin-line px-5 py-[18px]"
+        className="flex h-16 items-center gap-2.5 border-b border-admin-line px-5"
       >
         <Image
           src="/oneread-logo.png"
@@ -194,7 +196,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           Admin
         </span>
       </Link>
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4 [scrollbar-gutter:stable]">
         <AdminNav onNavigate={onNavigate} />
       </div>
     </>
@@ -226,18 +228,22 @@ export function AdminHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
-      <div>
-        <h1 className="font-serif text-[27px] font-medium leading-none tracking-[-0.02em] text-admin-ink">
+    <header className="mb-7 flex flex-col justify-between gap-4 border-b border-admin-line pb-6 sm:flex-row sm:items-end">
+      <div className="min-w-0">
+        <h1 className="font-serif text-[clamp(28px,3vw,40px)] font-medium leading-[1.05] tracking-[-0.035em] text-admin-ink">
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-2 font-sans text-[13px] text-admin-body/85">
+          <p className="mt-2 max-w-3xl font-sans text-[13px] leading-5 text-admin-body/85 sm:text-[13.5px]">
             {subtitle}
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {actions}
+        </div>
+      )}
     </header>
   );
 }

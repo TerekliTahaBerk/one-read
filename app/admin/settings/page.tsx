@@ -56,7 +56,7 @@ export default async function SettingsPage(
 
   return (
     <AdminShell title="Settings" subtitle="OneArticle and OneFilm delivery readiness">
-      <AdminCard title="OneArticle delivery control" subtitle="Cron checks for due editions every ten minutes">
+      <AdminCard title="OneArticle delivery control" subtitle="Cron checks for due editions every ten minutes" bodyClassName="p-5 sm:p-6">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -91,7 +91,7 @@ export default async function SettingsPage(
         </div>
       </AdminCard>
 
-      <AdminCard title="OneFilm delivery control" subtitle="Manual film editions use an independent ten-minute dispatcher">
+      <AdminCard title="OneFilm delivery control" subtitle="Manual film editions use an independent ten-minute dispatcher" bodyClassName="p-5 sm:p-6">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -126,15 +126,17 @@ export default async function SettingsPage(
         </div>
       </AdminCard>
 
-      <AdminCard title="Current operations">
-        <MetricGrid>
-          <MetricCard label="Article scheduled" value={articleScheduled} tone={articleScheduled > 0 ? "good" : "default"} />
-          <MetricCard label="Film scheduled" value={filmScheduled} tone={filmScheduled > 0 ? "good" : "default"} />
-          <MetricCard label="Article failed" value={articleFailed} tone={articleFailed > 0 ? "warn" : "default"} />
-          <MetricCard label="Film failed" value={filmFailed} tone={filmFailed > 0 ? "warn" : "default"} />
-          <MetricCard label="Cron interval" value="10 min" />
-          <MetricCard label="Timezone" value="Europe/Istanbul" />
-        </MetricGrid>
+      <AdminCard title="Current operations" bodyClassName="p-0">
+        <div className="p-4 sm:p-5">
+          <MetricGrid>
+            <MetricCard label="Article scheduled" value={articleScheduled} tone={articleScheduled > 0 ? "good" : "default"} />
+            <MetricCard label="Film scheduled" value={filmScheduled} tone={filmScheduled > 0 ? "good" : "default"} />
+            <MetricCard label="Article failed" value={articleFailed} tone={articleFailed > 0 ? "warn" : "default"} />
+            <MetricCard label="Film failed" value={filmFailed} tone={filmFailed > 0 ? "warn" : "default"} />
+            <MetricCard label="Cron interval" value="10 min" />
+            <MetricCard label="Timezone" value="Europe/Istanbul" />
+          </MetricGrid>
+        </div>
         <DefList
           rows={[
             ["Content mode", "Manual editorial — no RSS or AI generation"],
@@ -162,17 +164,18 @@ export default async function SettingsPage(
       <AdminCard
         title="Account security"
         subtitle="Change your own admin password without exposing it to another administrator"
+        bodyClassName="p-5 sm:p-6"
       >
         <ChangePasswordForm email={guard.session.email} />
       </AdminCard>
 
-      <AdminCard title="Safety guarantees">
-        <ul className="space-y-2 text-[12.5px] text-admin-body">
-          <li>• Draft and ready editions are never sent until a delivery time is scheduled.</li>
-          <li>• Every recipient delivery has a stable provider idempotency key.</li>
-          <li>• Unsubscribed, suppressed, unpaid, or language-incomplete contacts are excluded.</li>
-          <li>• OneArticle and OneFilm are manual-only; legacy AI generation cannot publish editions.</li>
-          <li>• OneLingo generation, checkout, and delivery endpoints remain disabled.</li>
+      <AdminCard title="Safety guarantees" bodyClassName="p-5 sm:p-6">
+        <ul className="grid gap-3 text-[12.5px] leading-5 text-admin-body md:grid-cols-2">
+          <li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Draft and ready editions are never sent until a delivery time is scheduled.</span></li>
+          <li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Every recipient delivery has a stable provider idempotency key.</span></li>
+          <li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Unsubscribed, suppressed, unpaid, or language-incomplete contacts are excluded.</span></li>
+          <li className="flex gap-2"><span className="text-emerald-700">✓</span><span>OneArticle and OneFilm are manual-only; legacy AI generation cannot publish editions.</span></li>
+          <li className="flex gap-2 md:col-span-2"><span className="text-emerald-700">✓</span><span>OneLingo generation, checkout, and delivery endpoints remain disabled.</span></li>
         </ul>
       </AdminCard>
     </AdminShell>

@@ -7,6 +7,13 @@ import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { fmtDateTime } from "@/lib/admin/format";
 import { prisma } from "@/lib/prisma";
+import {
+  AdminFilterBar,
+  AdminFilterField,
+  adminControlClass,
+  adminFilterButtonClass,
+  adminResetClass,
+} from "@/components/admin/AdminFilters";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,55 +42,55 @@ export default async function AuditPage(
       title="Audit log"
       subtitle="From AdminAuditLog · mutating admin actions only"
     >
-      <form method="get" className="mb-6 flex flex-wrap items-end gap-3 text-[12.5px] font-sans">
-        <FilterField label="Search">
+      <AdminFilterBar method="get">
+        <AdminFilterField label="Search">
           <input
             type="text"
             name="q"
             defaultValue={searchParams.q ?? ""}
             placeholder="actor, action, target"
-            className="w-52 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+            className={`${adminControlClass} w-56`}
           />
-        </FilterField>
-        <FilterField label="Date">
+        </AdminFilterField>
+        <AdminFilterField label="Date">
           <input
             type="date"
             name="date"
             defaultValue={searchParams.date ?? ""}
-            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+            className={adminControlClass}
           />
-        </FilterField>
-        <FilterField label="Action">
+        </AdminFilterField>
+        <AdminFilterField label="Action">
           <input
             type="text"
             name="action"
             defaultValue={searchParams.action ?? ""}
             placeholder="user.pause"
-            className="w-40 rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+            className={`${adminControlClass} w-44`}
           />
-        </FilterField>
-        <FilterField label="Target">
+        </AdminFilterField>
+        <AdminFilterField label="Target">
           <select
             name="targetType"
             defaultValue={searchParams.targetType ?? ""}
-            className="rounded-lg border border-admin-line bg-admin-surface px-2.5 py-1.5 text-admin-ink"
+            className={adminControlClass}
           >
             <option value="">Any</option>
             {targetTypes.map(({ targetType }) => (
               <option key={targetType} value={targetType}>{targetType}</option>
             ))}
           </select>
-        </FilterField>
+        </AdminFilterField>
         <button
           type="submit"
-          className="rounded-lg border border-admin-line-strong bg-admin-surface px-3 py-1.5 text-admin-ink hover:bg-admin-sink"
+          className={adminFilterButtonClass}
         >
-          Apply
+          Apply filters
         </button>
-        <Link href="/admin/audit" className="px-2 py-1.5 text-admin-muted hover:text-admin-ink">
+        <Link href="/admin/audit" className={adminResetClass}>
           Reset
         </Link>
-      </form>
+      </AdminFilterBar>
 
       <AdminCard
         title="Events"
@@ -105,14 +112,5 @@ export default async function AuditPage(
         />
       </AdminCard>
     </AdminShell>
-  );
-}
-
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">{label}</span>
-      {children}
-    </label>
   );
 }

@@ -59,6 +59,26 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Admin interaction polish. Kept under a dedicated root so public product
+     pages retain their own editorial interaction language. */
+  .admin-panel :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--admin-accent, #111111);
+    outline-offset: 2px;
+  }
+
+  .admin-panel :where(button, a, summary) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .admin-panel :where(input, select, textarea) {
+    min-width: 0;
+  }
+
+  .admin-panel ::selection {
+    background: var(--admin-accent-tint, #f2f2f2);
+    color: #111111;
+  }
 }
 
 @layer utilities {

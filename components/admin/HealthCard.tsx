@@ -46,12 +46,12 @@ export function HealthHeadline({
   next?: ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3 rounded-xl">
       <span className={`mt-1.5 ${TEXT_CLASS[health]}`}>
         <StatusDot health={health} />
       </span>
       <div className="min-w-0">
-        <div className={`font-serif text-[20px] leading-tight ${TEXT_CLASS[health]}`}>
+        <div className={`font-serif text-[22px] leading-tight tracking-[-0.015em] ${TEXT_CLASS[health]}`}>
           {headline}
         </div>
         {detail != null && (
@@ -86,11 +86,11 @@ export function ProductHealthCard({
   facts: readonly (readonly [ReactNode, ReactNode])[];
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-admin-line bg-admin-surface p-4 shadow-admin">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div className="flex min-w-0 flex-col rounded-[18px] border border-admin-line bg-admin-surface p-5 shadow-admin transition duration-200 hover:-translate-y-0.5 hover:shadow-admin-md">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <StatusDot health={health} />
-          <span className="font-serif text-[16px] text-admin-ink">{name}</span>
+          <span className="font-serif text-[19px] text-admin-ink">{name}</span>
         </div>
         <Link
           href={href}

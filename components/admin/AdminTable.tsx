@@ -23,14 +23,14 @@ export function AdminTable({
     );
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-[13px]">
+    <div className="overflow-x-auto overscroll-x-contain [scrollbar-color:#DADADA_transparent]">
+      <table className="min-w-[760px] w-full text-left text-[13px]">
         <thead>
-          <tr className="bg-admin-sink/50 text-[11px] uppercase tracking-eyebrow text-admin-muted">
+          <tr className="bg-admin-sink/70 text-[10px] uppercase tracking-[0.16em] text-admin-muted">
             {head.map((h, i) => (
               <th
                 key={i}
-                className="whitespace-nowrap border-b border-admin-line px-4 py-3 font-sans font-normal"
+                className="whitespace-nowrap border-b border-admin-line px-4 py-3.5 font-sans font-medium"
               >
                 {h}
               </th>
@@ -41,12 +41,12 @@ export function AdminTable({
           {rows.map((row, i) => (
             <tr
               key={i}
-              className="border-b border-admin-line/60 transition-colors last:border-b-0 hover:bg-admin-sink/40"
+              className="border-b border-admin-line/70 transition-colors last:border-b-0 hover:bg-admin-sink/55"
             >
               {row.map((cell, j) => (
                 <td
                   key={j}
-                  className="px-4 py-3 align-top font-sans text-admin-ink/90"
+                  className="px-4 py-3.5 align-top font-sans leading-5 text-admin-ink/90"
                 >
                   {cell}
                 </td>
