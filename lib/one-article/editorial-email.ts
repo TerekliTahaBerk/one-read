@@ -1,5 +1,9 @@
 import type { OneArticleIssue } from "@prisma/client";
 import { getEmailStrings, htmlLangFor, localeFor } from "@/lib/i18n";
+import {
+  editorialTextToHtml,
+  editorialTextToPlainText,
+} from "@/lib/editorial/formatting";
 
 export interface EditorialEmailLinks {
   unsubscribe: string;
@@ -51,7 +55,7 @@ export function renderEditorialEmail(
   });
   const sourceLine = [issue.sourceName, issue.sourceTitle].filter(Boolean).join(" · ");
   const readLabel = issue.ctaLabel?.trim() || t.readLabel;
-  const safeBody = issue.bodyHtml?.trim() || paragraphsToHtml(issue.bodyText);
+  const safeBody = issue.bodyHtml?.trim() || editorialTextToHtml(issue.bodyText);
   const readingMinutes = Math.max(1, Math.ceil(wordCount(issue.bodyText) / 220));
   const readingLabel = labels.readingTime(readingMinutes);
 
@@ -66,7 +70,7 @@ export function renderEditorialEmail(
     issue.heroImageCredit?.trim() ?? "",
     sourceLine,
     "",
-    issue.bodyText.trim(),
+    editorialTextToPlainText(issue.bodyText),
     "",
     issue.sourceUrl ? `${readLabel}: ${issue.sourceUrl}` : "",
     "",
@@ -181,18 +185,6 @@ ${preview}
 </html>`;
 
   return { subject: issue.subject.trim(), text, html };
-}
-
-function paragraphsToHtml(text: string): string {
-  return text
-    .trim()
-    .split(/\n{2,}/)
-    .filter(Boolean)
-    .map(
-      (paragraph) =>
-        `<p style="margin:0 0 18px;">${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`,
-    )
-    .join("");
 }
 
 function formatLabels(language: string) {

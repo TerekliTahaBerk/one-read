@@ -7,6 +7,7 @@ import {
   editorialReadinessChecks,
   validateEditorialDraft,
   validateEditorialIssue,
+  validateEditorialTest,
 } from "./editorial-validation";
 
 const valid = {
@@ -75,6 +76,21 @@ describe("validateEditorialIssue", () => {
     const checks = editorialReadinessChecks(draft);
     expect(checks.filter((check) => check.key.startsWith("heroImage")).every((check) => check.passed)).toBe(true);
     expect(checks.filter((check) => !check.key.startsWith("heroImage")).every((check) => !check.passed)).toBe(true);
+  });
+
+  it("allows useful draft tests before publishing is ready", () => {
+    expect(
+      validateEditorialTest({
+        ...valid,
+        bodyText: "A short draft.",
+        sourceTitle: "",
+        sourceUrl: "",
+      }),
+    ).toEqual({ ok: true });
+    expect(validateEditorialTest({ ...valid, bodyText: "" })).toEqual({
+      ok: false,
+      error: "body_required_for_test",
+    });
   });
 
   it("keeps exhausted deliveries visible as failures", () => {

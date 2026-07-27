@@ -15,6 +15,11 @@ import {
   editorialReadinessChecks,
   editorialWordCount,
 } from "@/lib/one-article/editorial-validation";
+import {
+  EmailPreviewPanel,
+  FormattingToolbar,
+  SchedulePresets,
+} from "@/components/admin/EditorialComposerTools";
 
 type EditorIssue = {
   id: string;
@@ -107,6 +112,7 @@ export function EditorialIssueEditor({
     [issue],
   );
   const [form, setForm] = useState(initialForm);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot(initialForm));
   const versionRef = useRef(issue?.version ?? 1);
   const [schedule, setSchedule] = useState(
@@ -122,6 +128,11 @@ export function EditorialIssueEditor({
   const dirty = snapshot(form) !== savedSnapshot;
   const checks = useMemo(() => editorialReadinessChecks(form), [form]);
   const ready = checks.every((check) => check.passed);
+  const passedChecks = checks.filter((check) => check.passed).length;
+  const readinessPercent = Math.round((passedChecks / checks.length) * 100);
+  const testReady = Boolean(
+    form.subject.trim() && form.headline.trim() && form.bodyText.trim(),
+  );
   const words = editorialWordCount(form.bodyText);
   const readingMinutes = Math.max(1, Math.ceil(words / 220));
   const audience = audienceByLanguage[form.readingLanguage];
@@ -285,7 +296,8 @@ export function EditorialIssueEditor({
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(380px,.82fr)]">
       <form onSubmit={save} className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-admin-line bg-admin-sink/60 px-4 py-3">
+        <div className="rounded-xl border border-admin-line bg-admin-sink/60 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-eyebrow text-admin-muted">
               Manual editorial workspace
@@ -296,6 +308,18 @@ export function EditorialIssueEditor({
             </div>
           </div>
           <SaveIndicator state={dirty ? saveState : "saved"} isNew={!issue} />
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-admin-line">
+              <div
+                className={`h-full rounded-full transition-all ${ready ? "bg-emerald-500" : "bg-admin-accent"}`}
+                style={{ width: `${readinessPercent}%` }}
+              />
+            </div>
+            <span className="text-[11px] tabular-nums text-admin-muted">
+              {passedChecks}/{checks.length} ready
+            </span>
+          </div>
         </div>
 
         <section className={section}>
@@ -363,10 +387,19 @@ export function EditorialIssueEditor({
           </Field>
           <Field
             label="Body"
-            help="Minimum 120 words before publishing. Separate paragraphs with a blank line; HTML is escaped."
+            htmlFor="one-article-body"
+            help="Minimum 120 words before publishing. Use the safe formatting tools; separate paragraphs with a blank line."
           >
+            <FormattingToolbar
+              textareaRef={bodyRef}
+              value={form.bodyText}
+              onChange={(value) => set("bodyText", value)}
+              disabled={!editable}
+            />
             <textarea
-              className={`${input} min-h-[380px] resize-y font-serif text-[15px] leading-7`}
+              id="one-article-body"
+              ref={bodyRef}
+              className={`${input} min-h-[380px] resize-y rounded-t-none font-serif text-[15px] leading-7`}
               value={form.bodyText}
               placeholder="Write the edition here…"
               onChange={(event) => set("bodyText", event.target.value)}
@@ -555,6 +588,7 @@ export function EditorialIssueEditor({
                 Schedule edition
               </button>
             </div>
+            <SchedulePresets product="article" onSelect={setSchedule} />
           </section>
         )}
 
@@ -563,7 +597,7 @@ export function EditorialIssueEditor({
             <SectionHeading
               step="6"
               title="Test delivery"
-              description="Send the exact email below to one address. No recipient delivery record is created."
+              description="Send a working draft before every publishing check passes. A subject, headline and some body copy are enough."
             />
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
@@ -575,7 +609,8 @@ export function EditorialIssueEditor({
               />
               <button
                 type="button"
-                disabled={busy || !testEmail || !ready}
+                disabled={busy || !testEmail || !testReady}
+                title={!testReady ? "Add a subject, headline and body copy first" : undefined}
                 onClick={() => action("test", { to: testEmail })}
                 className={secondary}
               >
@@ -600,25 +635,13 @@ export function EditorialIssueEditor({
         </div>
       </form>
 
-      <aside className="xl:sticky xl:top-20 xl:self-start">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-eyebrow text-admin-muted">
-            Exact email preview
-          </span>
-          <span className="text-[11px] text-admin-muted">
-            {form.readingLanguage} · desktop
-          </span>
-        </div>
-        <iframe
-          title="OneArticle email preview"
-          srcDoc={previewHtml}
-          sandbox=""
-          className="h-[calc(100vh-11rem)] min-h-[480px] max-h-[760px] w-full rounded-xl border border-admin-line bg-white shadow-admin-sm"
-        />
-        <p className="mt-2 text-[11px] leading-5 text-admin-muted">
-          This preview uses the same renderer as test and live delivery. Links are disabled here.
-        </p>
-      </aside>
+      <EmailPreviewPanel
+        html={previewHtml}
+        product="OneArticle"
+        subject={form.subject}
+        previewText={form.previewText}
+        language={form.readingLanguage}
+      />
     </div>
   );
 }
@@ -626,12 +649,28 @@ export function EditorialIssueEditor({
 function Field({
   label,
   help,
+  htmlFor,
   children,
 }: {
   label: string;
   help?: string;
+  htmlFor?: string;
   children: React.ReactNode;
 }) {
+  if (htmlFor) {
+    return (
+      <div>
+        <label
+          htmlFor={htmlFor}
+          className="mb-1.5 block text-[11px] uppercase tracking-eyebrow text-admin-muted"
+        >
+          {label}
+        </label>
+        {children}
+        {help && <span className="mt-1 block text-[11px] leading-4 text-admin-muted">{help}</span>}
+      </div>
+    );
+  }
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] uppercase tracking-eyebrow text-admin-muted">
@@ -722,9 +761,10 @@ function humanError(error: string): string {
     subject_required: "Add an email subject before publishing.",
     headline_required: "Add a headline before publishing.",
     body_too_short: "The edition needs at least 120 words before publishing.",
+    body_required_for_test: "Add some body copy before sending a test.",
     source_title_required: "Add the original article title before publishing.",
     source_url_required: "Add the original article link before publishing.",
-            hero_image_alt_required: "Add alternative text for the cover image.",
+    hero_image_alt_required: "Add alternative text for the cover image.",
     invalid_hero_image_url: "Use a permanent https:// URL for the cover image.",
     hero_image_alt_too_long: "The cover image alternative text is too long.",
     invalid_source_url: "Use a valid http:// or https:// source link.",

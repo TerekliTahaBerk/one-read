@@ -97,6 +97,17 @@ export function validateEditorialIssue(
   return { ok: false, error: errors[failed.key] ?? "edition_not_ready" };
 }
 
+export function validateEditorialTest(
+  input: EditorialContentInput,
+): { ok: true } | { ok: false; error: string } {
+  const draft = validateEditorialDraft(input);
+  if (!draft.ok) return draft;
+  if (!input.subject.trim()) return { ok: false, error: "subject_required" };
+  if (!input.headline.trim()) return { ok: false, error: "headline_required" };
+  if (!input.bodyText.trim()) return { ok: false, error: "body_required_for_test" };
+  return { ok: true };
+}
+
 export function editorialWordCount(value: string): number {
   const text = value.trim();
   return text ? text.split(/\s+/u).length : 0;

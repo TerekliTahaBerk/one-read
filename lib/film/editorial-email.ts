@@ -1,4 +1,8 @@
 import type { OneFilmIssue } from "@prisma/client";
+import {
+  editorialTextToHtml,
+  editorialTextToPlainText,
+} from "@/lib/editorial/formatting";
 
 export interface FilmEditorialEmailLinks { unsubscribe: string }
 export interface RenderedFilmEditorialEmail { subject: string; text: string; html: string }
@@ -32,12 +36,12 @@ export function renderFilmEditorialEmail(
     issue.filmLanguage?.trim() ?? "",
     issue.runtimeMinutes ? (tr ? `${issue.runtimeMinutes} dk` : `${issue.runtimeMinutes} min`) : "",
   ].filter(Boolean).join(" · ");
-  const safeBody = issue.bodyHtml?.trim() || paragraphsToHtml(issue.bodyText);
+  const safeBody = issue.bodyHtml?.trim() || editorialTextToHtml(issue.bodyText);
 
   const text = [
     dateLabel, "OneFilm", "", `${label} · ${readingLabel}`, issue.filmTitle, meta,
     issue.previewText?.trim() ?? "", "", issue.heroImageCredit?.trim() ?? "",
-    issue.bodyText.trim(), "", issue.sourceUrl ? `${readLabel}: ${issue.sourceUrl}` : "",
+    editorialTextToPlainText(issue.bodyText), "", issue.sourceUrl ? `${readLabel}: ${issue.sourceUrl}` : "",
     "", tagline, `${unsubscribe}: ${links.unsubscribe}`,
   ].filter(Boolean).join("\n");
 
@@ -74,9 +78,6 @@ ${cta}</td></tr></table></td></tr>
   return { subject: issue.subject.trim(), text, html };
 }
 
-function paragraphsToHtml(text: string): string {
-  return text.trim().split(/\n{2,}/).filter(Boolean).map((p) => `<p style="margin:0 0 18px;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("");
-}
 function wordCount(value: string): number { const clean = value.trim(); return clean ? clean.split(/\s+/u).length : 0; }
 function escapeHtml(value: string): string { return value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function escapeAttr(value: string): string { return escapeHtml(value); }

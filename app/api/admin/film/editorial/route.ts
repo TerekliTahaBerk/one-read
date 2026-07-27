@@ -13,7 +13,7 @@ import {
   type FilmEditorialIssueInput,
 } from "@/lib/film/editorial";
 import { renderFilmEditorialEmail } from "@/lib/film/editorial-email";
-import { validateFilmEditorialIssue } from "@/lib/film/editorial-validation";
+import { validateFilmEditorialTest } from "@/lib/film/editorial-validation";
 import { getResendStatus, sendDailyEmail } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -60,7 +60,7 @@ export async function POST(request: Request): Promise<Response> {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("invalid_email");
         if (!getResendStatus().hasApiKey) throw new Error("email_delivery_not_configured");
         issue = await prisma.oneFilmIssue.findUniqueOrThrow({ where: { id: issueId } });
-        const validation = validateFilmEditorialIssue(issue);
+        const validation = validateFilmEditorialTest(issue);
         if (!validation.ok) throw new Error(validation.error);
         const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
         const rendered = renderFilmEditorialEmail(issue, { unsubscribe: `${base}/unsubscribe?preview=1` });

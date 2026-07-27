@@ -74,6 +74,17 @@ export function validateFilmEditorialIssue(
   return { ok: false, error: errors[failed.key] ?? "edition_not_ready" };
 }
 
+export function validateFilmEditorialTest(
+  input: FilmEditorialContentInput,
+): { ok: true } | { ok: false; error: string } {
+  const draft = validateFilmEditorialDraft(input);
+  if (!draft.ok) return draft;
+  if (!input.subject.trim()) return { ok: false, error: "subject_required" };
+  if (!input.filmTitle.trim()) return { ok: false, error: "film_title_required" };
+  if (!input.bodyText.trim()) return { ok: false, error: "body_required_for_test" };
+  return { ok: true };
+}
+
 export function filmEditorialWordCount(value: string): number {
   const text = value.trim();
   return text ? text.split(/\s+/u).length : 0;

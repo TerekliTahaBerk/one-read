@@ -19,8 +19,8 @@ export function AdminCard({
   return (
     <section className="mb-8">
       {(title || subtitle || actions) && (
-        <div className="mb-3 flex items-baseline justify-between gap-4">
-          <div className="flex items-baseline gap-3">
+        <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-baseline sm:gap-4">
+          <div className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
             {title && (
               <h2 className="font-serif text-[18px] text-admin-ink">{title}</h2>
             )}
@@ -30,7 +30,7 @@ export function AdminCard({
               </span>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}
       <div

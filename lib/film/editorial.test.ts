@@ -7,6 +7,7 @@ import {
   filmEditorialReadinessChecks,
   validateFilmEditorialDraft,
   validateFilmEditorialIssue,
+  validateFilmEditorialTest,
 } from "./editorial-validation";
 
 const valid = {
@@ -35,6 +36,22 @@ describe("OneFilm manual editorial", () => {
     expect(validateFilmEditorialIssue({ ...valid, heroImageAlt: "" })).toEqual({
       ok: false,
       error: "hero_image_alt_required",
+    });
+  });
+
+  it("allows useful draft tests before all publishing facts are complete", () => {
+    expect(
+      validateFilmEditorialTest({
+        ...valid,
+        bodyText: "A short draft.",
+        director: "",
+        filmYear: null,
+        sourceUrl: "",
+      }),
+    ).toEqual({ ok: true });
+    expect(validateFilmEditorialTest({ ...valid, filmTitle: "" })).toEqual({
+      ok: false,
+      error: "film_title_required",
     });
   });
 
