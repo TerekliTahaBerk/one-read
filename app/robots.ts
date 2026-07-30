@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
+import { absoluteSiteUrl } from "@/lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.email";
   return {
     rules: {
       userAgent: "*",
@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         "/waitlist",
       ],
     },
-    sitemap: new URL("/sitemap.xml", base).toString(),
+    sitemap: absoluteSiteUrl("/sitemap.xml"),
   };
 }

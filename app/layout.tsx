@@ -6,6 +6,7 @@ import { OpeningLoader } from "@/components/OpeningLoader";
 import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
 import { cookies } from "next/headers";
 import { normalizeSiteLocale, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
+import { getSiteOrigin } from "@/lib/site-url";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -22,7 +23,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.email"),
+  metadataBase: new URL(getSiteOrigin()),
   title: "OneRead — One useful email at a time.",
   description:
     "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",

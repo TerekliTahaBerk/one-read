@@ -37,7 +37,7 @@ export function BlogIndex() {
         <Logo />
       </header>
 
-      <section className="flex-1 w-full max-w-[42rem] mx-auto pt-10 sm:pt-14">
+      <section lang="en" className="flex-1 w-full max-w-[42rem] mx-auto pt-10 sm:pt-14">
         <p className="text-[11px] sm:text-[11.5px] uppercase tracking-eyebrow text-fog">
           {dictionary.blog.eyebrow}
         </p>
@@ -56,6 +56,8 @@ export function BlogIndex() {
                 className="focus-ring group -mx-3 block rounded-2xl px-3 py-6 transition-colors duration-200 hover:bg-cream/60"
               >
                 <div className="flex items-center gap-2 font-sans text-[11.5px] uppercase tracking-eyebrow text-fog">
+                  <span>{post.category}</span>
+                  <span aria-hidden="true">·</span>
                   <time dateTime={post.date}>
                     {dateFormatter.format(new Date(post.date))}
                   </time>

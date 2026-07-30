@@ -47,9 +47,9 @@ const en = {
   },
   blog: {
     eyebrow: "Journal",
-    title: "The OneRead blog",
+    title: "The OneRead Journal",
     intro:
-      "Occasional notes on building a calmer way to read — why one email is enough, how we choose each morning, and what a quieter inbox can feel like.",
+      "Practical essays on intentional reading, editorial curation, calmer email, and choosing films without endless scrolling.",
     backToBlog: "Back to the blog",
     minRead: "min read",
   },

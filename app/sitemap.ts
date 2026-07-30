@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { BLOG_POSTS } from "@/lib/blog";
+import { BLOG_POSTS, getLatestBlogUpdate } from "@/lib/blog";
+import { absoluteSiteUrl } from "@/lib/site-url";
 
 const PUBLIC_ROUTES = [
   "/",
@@ -14,21 +15,21 @@ const PUBLIC_ROUTES = [
   "/samples/film",
 ] as const;
 
-function siteUrl(path: string): string {
-  const base = process.env.PUBLIC_BASE_URL?.trim() || "https://oneread.email";
-  return new URL(path, base).toString();
-}
-
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = PUBLIC_ROUTES.map((route) => ({
-    url: siteUrl(route),
+    url: absoluteSiteUrl(route),
+    ...(route === "/blog"
+      ? { lastModified: new Date(getLatestBlogUpdate()) }
+      : {}),
     changeFrequency: route === "/" ? "weekly" as const : "monthly" as const,
     priority: route === "/" ? 1 : route === "/article" || route === "/film" ? 0.9 : 0.7,
   }));
 
   const posts = BLOG_POSTS.map((post) => ({
-    url: siteUrl(`/blog/${post.slug}`),
-    lastModified: new Date(post.date),
+    url: absoluteSiteUrl(`/blog/${post.slug}`),
+    lastModified: new Date(post.updatedDate),
+    changeFrequency: "monthly" as const,
+    priority: 0.75,
   }));
 
   return [...routes, ...posts];
