@@ -11,11 +11,13 @@ import {
 import { preferencesComplete } from "@/lib/subscriptions";
 import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import { ensureOneReadSubscription } from "@/lib/oneread/access";
+import { reconcileOneReadBillingFromPolar } from "@/lib/oneread/billing-sync";
+import { hasValidAccess } from "@/lib/billing/access";
 
 export type OneReadCheckoutResult =
   | { kind: "needs_setup_first" }
   | { kind: "needs_setup" }
-  | { kind: "already_active"; manageUrl: string }
+  | { kind: "already_active"; billingManageable: boolean }
   | { kind: "redirect"; url: string };
 
 /**
@@ -25,7 +27,12 @@ export type OneReadCheckoutResult =
 export async function createOneReadCheckoutSession(
   email: string,
 ): Promise<OneReadCheckoutResult> {
-  const sub = await ensureOneReadSubscription(email);
+  const ensured = await ensureOneReadSubscription(email);
+  await reconcileOneReadBillingFromPolar(email);
+  const sub =
+    (await prisma.productSubscription.findUnique({
+      where: { id: ensured.id },
+    })) ?? ensured;
 
   const [articleHolder, filmHolder] = await Promise.all([
     prisma.productSubscription.findUnique({
@@ -44,15 +51,11 @@ export async function createOneReadCheckoutSession(
     return { kind: "needs_setup" };
   }
 
-  if (
-    sub.status === "ACTIVE_PAID" ||
-    sub.status === "ADMIN_OVERRIDE" ||
-    (sub.status === "TRIALING" &&
-      sub.paymentProvider === "polar" &&
-      sub.trialEndsAt &&
-      new Date() < sub.trialEndsAt)
-  ) {
-    return { kind: "already_active", manageUrl: "/api/oneread/portal" };
+  if (hasValidAccess(sub).allowed) {
+    return {
+      kind: "already_active",
+      billingManageable: sub.paymentProvider === "polar",
+    };
   }
 
   const url = await createPolarCheckoutForSubscription(sub, email, ONE_READ_PRODUCT_KEY);
@@ -60,7 +63,12 @@ export async function createOneReadCheckoutSession(
 }
 
 export async function createOneReadPortalUrl(email: string): Promise<string> {
-  const sub = await ensureOneReadSubscription(email);
+  const ensured = await ensureOneReadSubscription(email);
+  await reconcileOneReadBillingFromPolar(email);
+  const sub =
+    (await prisma.productSubscription.findUnique({
+      where: { id: ensured.id },
+    })) ?? ensured;
   if (!sub.providerCustomerId && sub.paymentProvider !== "polar") {
     throw new Error("Polar customer is not available yet.");
   }

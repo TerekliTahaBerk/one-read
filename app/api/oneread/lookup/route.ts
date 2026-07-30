@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   parseEmail,
+  ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_FILM_PRODUCT_KEY,
 } from "@/lib/options";
@@ -13,6 +14,7 @@ import {
 import { preferencesComplete } from "@/lib/subscriptions";
 import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
+import { reconcileOneReadBillingFromPolar } from "@/lib/oneread/billing-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
   }
 
+  await reconcileOneReadBillingFromPolar(email);
   const state = await resolveOneReadState(email);
 
   const contact = await prisma.contact.findUnique({
@@ -48,7 +51,13 @@ export async function POST(request: Request) {
     include: {
       subscriptions: {
         where: {
-          productKey: { in: [ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY] },
+          productKey: {
+            in: [
+              ONE_READ_PRODUCT_KEY,
+              ONE_ARTICLE_PRODUCT_KEY,
+              ONE_FILM_PRODUCT_KEY,
+            ],
+          },
         },
         include: { preferences: true, filmPreferences: true },
       },
@@ -78,5 +87,11 @@ export async function POST(request: Request) {
     filmPreferencesComplete: filmPreferencesComplete(filmHolder?.filmPreferences ?? null),
     articleEligibilityReason: articleEligibility.reason,
     filmEligibilityReason: filmEligibility.reason,
+    billingManageable: contact.subscriptions.some(
+      (subscription) =>
+        subscription.productKey === ONE_READ_PRODUCT_KEY &&
+        subscription.paymentProvider === "polar" &&
+        Boolean(subscription.providerCustomerId || subscription.providerSubscriptionId),
+    ),
   });
 }

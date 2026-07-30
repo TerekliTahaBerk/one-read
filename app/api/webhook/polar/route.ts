@@ -15,6 +15,15 @@ function headersToRecord(headers: Headers): Record<string, string> {
   return out;
 }
 
+function isBillingLifecycleEvent(type: string): boolean {
+  return (
+    type.startsWith("checkout.") ||
+    type.startsWith("order.") ||
+    type.startsWith("subscription.") ||
+    type === "customer.state_changed"
+  );
+}
+
 export async function POST(request: Request) {
   const secret = process.env.POLAR_WEBHOOK_SECRET;
   if (!secret) {
@@ -33,6 +42,9 @@ export async function POST(request: Request) {
   }
 
   const parsedBody = JSON.parse(body) as Prisma.InputJsonValue;
+  if (!isBillingLifecycleEvent(payload.type)) {
+    return NextResponse.json({ ok: true, ignored: true });
+  }
   const providerEventId =
     request.headers.get("webhook-id") ??
     `${payload.type}:${(payload as any).data?.id ?? payload.timestamp.toISOString()}`;

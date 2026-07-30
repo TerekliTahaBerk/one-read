@@ -341,6 +341,26 @@ function metadataValue(data: PolarData, key: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function productKeyForPolarData(data: PolarData): string {
+  const metadataProductKey = metadataValue(data, "productKey");
+  if (metadataProductKey) return metadataProductKey;
+
+  const productId =
+    typeof data.productId === "string"
+      ? data.productId
+      : typeof data.product?.id === "string"
+        ? data.product.id
+        : null;
+  if (!productId) return ONE_ARTICLE_PRODUCT_KEY;
+  if (productId === oneReadPolarProductId()) return ONE_READ_PRODUCT_KEY;
+  if (productId === filmPolarProductId()) return ONE_FILM_PRODUCT_KEY;
+  if (productId === lingoPolarProductId()) return ONE_LINGO_PRODUCT_KEY;
+  if (productId === getPolarProductId(ONE_ARTICLE_PRODUCT_KEY)) {
+    return ONE_ARTICLE_PRODUCT_KEY;
+  }
+  return ONE_ARTICLE_PRODUCT_KEY;
+}
+
 async function findSubscriptionForPolarData(data: PolarData) {
   const metadataSubId = metadataValue(data, "productSubscriptionId");
   if (metadataSubId) {
@@ -366,7 +386,7 @@ async function findSubscriptionForPolarData(data: PolarData) {
   // above (productSubscriptionId / providerSubscriptionId) already disambiguate
   // products, so an OneLingo purchase can never resolve to an OneArticle row
   // here, and vice-versa.
-  const productKey = metadataValue(data, "productKey") ?? ONE_ARTICLE_PRODUCT_KEY;
+  const productKey = productKeyForPolarData(data);
 
   const contactId =
     metadataValue(data, "contactId") ??

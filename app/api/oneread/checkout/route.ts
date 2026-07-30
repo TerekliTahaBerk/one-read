@@ -42,7 +42,11 @@ export async function POST(request: Request) {
       case "needs_setup":
         return NextResponse.json({ ok: true, action: "needs_setup" });
       case "already_active":
-        return NextResponse.json({ ok: true, action: "already_active", url: result.manageUrl });
+        return NextResponse.json({
+          ok: true,
+          action: "already_active",
+          billingManageable: result.billingManageable,
+        });
     }
   } catch (err) {
     console.error("[/api/oneread/checkout] error:", err);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
@@ -25,7 +26,7 @@ import {
   isLikelyEmail,
 } from "@/lib/options";
 
-type Step = "email" | "verify" | "choose" | "language" | "film" | "review";
+type Step = "email" | "verify" | "choose" | "language" | "film" | "review" | "active";
 
 async function postJson(url: string, body: unknown) {
   const response = await fetch(url, {
@@ -220,8 +221,12 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       setError(typeof result.data.error === "string" ? result.data.error : t.errors.generic);
       return;
     }
-    if ((result.data.action === "redirect" || result.data.action === "already_active") && result.data.url) {
+    if (result.data.action === "redirect" && result.data.url) {
       window.location.href = result.data.url;
+      return;
+    }
+    if (result.data.action === "already_active") {
+      setStep("active");
       return;
     }
     setError(t.errors.needsSetup);
@@ -399,6 +404,25 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
             <button type="button" onClick={() => setStep("choose")} className={secondaryButtonClass}>
               {t.review.editPreferences}
             </button>
+          </StepShell>
+        )}
+
+        {step === "active" && (
+          <StepShell
+            title={dictionary.preferences.states.active_paid}
+            support={t.review.support}
+          >
+            <div className="flex w-full flex-col items-center gap-3">
+              <Link
+                href={`/preferences?email=${encodeURIComponent(email)}`}
+                className={primaryButtonClass}
+              >
+                {dictionary.preferences.editPreferences}
+              </Link>
+              <Link href="/" className={secondaryButtonClass}>
+                {dictionary.common.backToOneRead}
+              </Link>
+            </div>
           </StepShell>
         )}
         {error && <p className="mt-4 font-sans text-[13px] text-red-600">{error}</p>}

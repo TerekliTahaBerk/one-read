@@ -15,6 +15,7 @@ type LookupResult = {
   periodEndsAt?: string;
   articlePreferencesComplete: boolean;
   filmPreferencesComplete: boolean;
+  billingManageable: boolean;
 };
 
 export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: string }) {
@@ -216,7 +217,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
               >
                 {t.editPreferences}
               </Link>
-              {(result.state === "trialing" ||
+              {result.billingManageable && (result.state === "trialing" ||
                 result.state === "active_paid" ||
                 result.state === "canceled_active" ||
                 result.state === "active_email_paused" ||
