@@ -161,6 +161,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t.placeholder}
+              aria-label={t.placeholder}
               autoComplete="email"
               className="focus-ring h-12 w-full rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink"
             />
@@ -185,6 +186,8 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="123456"
+              aria-label={signup.verify.title}
+              autoComplete="one-time-code"
               maxLength={6}
               className="focus-ring h-12 w-full max-w-[14rem] rounded-full border border-[var(--theme-border)] bg-white px-5 text-center font-sans text-[18px] tracking-[.3em] text-ink"
             />

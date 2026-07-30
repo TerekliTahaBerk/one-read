@@ -44,6 +44,7 @@ export default async function SettingsPage(
   const resend = getResendStatus();
   const paymentsReady =
     oneReadBillingConfigured() && Boolean(process.env.POLAR_ACCESS_TOKEN);
+  const sentryReady = Boolean(process.env.SENTRY_DSN && process.env.NEXT_PUBLIC_SENTRY_DSN);
   const checks: [string, boolean, string][] = [
     ["Email delivery", resend.hasApiKey, resend.hasApiKey ? resend.from : "RESEND_API_KEY missing"],
     ["Verified sender", !resend.usingFallbackSender, resend.usingFallbackSender ? "Development fallback sender" : resend.from],
@@ -52,6 +53,7 @@ export default async function SettingsPage(
     ["Email verification", emailVerificationSecretConfigured() && verificationEmailConfigured(), emailVerificationSecretConfigured() && verificationEmailConfigured() ? "Codes can be delivered" : "Verification secret or delivery missing"],
     ["Cron security", Boolean(process.env.CRON_SECRET), process.env.CRON_SECRET ? "Protected" : "CRON_SECRET missing"],
     ["Admin login", adminLoginConfigured(), adminLoginConfigured() ? "Configured" : "Credentials or session secret missing"],
+    ["Error monitoring", sentryReady, sentryReady ? "Server and browser reporting configured" : "Sentry DSN missing or partial"],
   ];
 
   return (
@@ -67,6 +69,7 @@ export default async function SettingsPage(
             </div>
             <SettingToggle
               settingKey={SETTING_KEYS.oneArticleCron}
+              label="OneArticle automatic dispatch"
               initial={controls.oneArticle.cronEnabled}
               onLabel="Enabled"
               offLabel="Paused"
@@ -82,6 +85,7 @@ export default async function SettingsPage(
             </div>
             <SettingToggle
               settingKey={SETTING_KEYS.oneArticleDryRun}
+              label="OneArticle preview-only delivery mode"
               initial={controls.oneArticle.dryRun}
               onLabel="Preview only"
               offLabel="Live delivery"
@@ -102,6 +106,7 @@ export default async function SettingsPage(
             </div>
             <SettingToggle
               settingKey={SETTING_KEYS.filmCron}
+              label="OneFilm automatic dispatch"
               initial={controls.film.cronEnabled}
               onLabel="Enabled"
               offLabel="Paused"
@@ -117,6 +122,7 @@ export default async function SettingsPage(
             </div>
             <SettingToggle
               settingKey={SETTING_KEYS.filmDryRun}
+              label="OneFilm preview-only delivery mode"
               initial={controls.film.dryRun}
               onLabel="Preview only"
               offLabel="Live delivery"

@@ -57,6 +57,14 @@ export function getLaunchReadiness(): ReadinessCheck[] {
       : "Missing — real email delivery is disabled. Rendering-only mode.",
   });
 
+  checks.push({
+    key: "EMAIL_VERIFICATION_SECRET",
+    status: has(process.env.EMAIL_VERIFICATION_SECRET) ? "pass" : "missing",
+    explanation: has(process.env.EMAIL_VERIFICATION_SECRET)
+      ? "Email verification codes and sessions are signed."
+      : "Missing — subscriber signup and account management cannot verify email ownership.",
+  });
+
   const hasFrom =
     has(process.env.FROM_EMAIL) || has(process.env.RESEND_FROM);
   checks.push({
@@ -205,6 +213,11 @@ export function getLaunchReadiness(): ReadinessCheck[] {
       ok: has(process.env.POLAR_ONEFILM_PRODUCT_ID) || has(process.env.POLAR_ONE_FILM_PRODUCT_ID),
       explanation: "OneFilm Polar product id",
     },
+    {
+      key: "POLAR_ONEREAD_PRODUCT_ID",
+      ok: has(process.env.POLAR_ONEREAD_PRODUCT_ID),
+      explanation: "OneRead umbrella Polar product id",
+    },
   ];
   for (const item of polarChecks) {
     const required = polarSelected || isProd;
@@ -245,6 +258,16 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     explanation: has(model)
       ? `Overridden to "${model}".`
       : "Not set — using the provider's safe default model.",
+  });
+
+  const sentryConfigured =
+    has(process.env.SENTRY_DSN) && has(process.env.NEXT_PUBLIC_SENTRY_DSN);
+  checks.push({
+    key: "SENTRY_DSN / NEXT_PUBLIC_SENTRY_DSN",
+    status: sentryConfigured ? "pass" : "warn",
+    explanation: sentryConfigured
+      ? "Server, edge, and browser error reporting are configured."
+      : "Missing or partial — some production errors may not reach Sentry.",
   });
 
   checks.push({

@@ -19,4 +19,26 @@ describe("launch readiness", () => {
     const check = getLaunchReadiness().find((c) => c.key === "GEMINI_API_KEY / provider key");
     expect(check?.status).toBe("missing");
   });
+
+  it("treats subscriber verification and the OneRead product as launch blockers", () => {
+    process.env.NODE_ENV = "production";
+    process.env.BILLING_PROVIDER = "polar";
+    delete process.env.EMAIL_VERIFICATION_SECRET;
+    delete process.env.POLAR_ONEREAD_PRODUCT_ID;
+
+    const checks = getLaunchReadiness();
+
+    expect(checks.find((c) => c.key === "EMAIL_VERIFICATION_SECRET")?.status).toBe("missing");
+    expect(checks.find((c) => c.key === "POLAR_ONEREAD_PRODUCT_ID")?.status).toBe("missing");
+  });
+
+  it("passes the OneRead launch-critical configuration when present", () => {
+    process.env.EMAIL_VERIFICATION_SECRET = "configured-for-test";
+    process.env.POLAR_ONEREAD_PRODUCT_ID = "product_test";
+
+    const checks = getLaunchReadiness();
+
+    expect(checks.find((c) => c.key === "EMAIL_VERIFICATION_SECRET")?.status).toBe("pass");
+    expect(checks.find((c) => c.key === "POLAR_ONEREAD_PRODUCT_ID")?.status).toBe("pass");
+  });
 });

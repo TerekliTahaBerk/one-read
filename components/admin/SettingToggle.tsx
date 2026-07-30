@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
  */
 export function SettingToggle({
   settingKey,
+  label,
   initial,
   onLabel = "On",
   offLabel = "Off",
@@ -17,6 +18,8 @@ export function SettingToggle({
   confirmOff,
 }: {
   settingKey: string;
+  /** Accessible control name, independent from the visual status label. */
+  label: string;
   initial: boolean;
   onLabel?: string;
   offLabel?: string;
@@ -64,6 +67,7 @@ export function SettingToggle({
       <button
         type="button"
         role="switch"
+        aria-label={label}
         aria-checked={on}
         disabled={busy}
         onClick={toggle}

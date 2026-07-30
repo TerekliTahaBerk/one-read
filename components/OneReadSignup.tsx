@@ -256,7 +256,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
         {step === "email" && (
           <StepShell title={t.email.title} support={t.email.support}>
             <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email.placeholder} autoComplete="email" className={inputClass} />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.email.placeholder} aria-label={t.email.placeholder} autoComplete="email" className={inputClass} />
               <Submit busy={busy} wait={t.pleaseWait}>{t.email.cta}</Submit>
             </form>
           </StepShell>
@@ -265,7 +265,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
         {step === "verify" && (
           <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
             <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
-              <input type="text" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" maxLength={6} className={`${inputClass} max-w-[14rem] text-center text-[18px] tracking-[.3em]`} />
+              <input type="text" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" aria-label={t.verify.title} autoComplete="one-time-code" maxLength={6} className={`${inputClass} max-w-[14rem] text-center text-[18px] tracking-[.3em]`} />
               <Submit busy={busy} wait={t.pleaseWait}>{t.verify.cta}</Submit>
             </form>
           </StepShell>

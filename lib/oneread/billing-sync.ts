@@ -26,6 +26,7 @@ const STATUS_PRIORITY: Record<string, number> = {
   active: 5,
   trialing: 4,
   past_due: 3,
+  unpaid: 3,
   canceled: 2,
   incomplete: 1,
   incomplete_expired: 0,
