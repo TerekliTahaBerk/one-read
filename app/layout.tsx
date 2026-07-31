@@ -7,6 +7,7 @@ import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
 import { cookies } from "next/headers";
 import { normalizeSiteLocale, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
 import { getSiteOrigin } from "@/lib/site-url";
+import { Analytics } from "@vercel/analytics/next";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -74,6 +75,7 @@ export default async function RootLayout(
           src="https://tally.so/widgets/embed.js"
           strategy="afterInteractive"
         />
+        <Analytics />
       </body>
     </html>
   );
