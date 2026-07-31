@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "frame-src https://tally.so https://*.tally.so",
-  "connect-src 'self' https://*.sentry.io https://tally.so https://*.tally.so",
+  "connect-src 'self' https://*.sentry.io https://tally.so https://*.tally.so https://va.vercel-scripts.com",
   "upgrade-insecure-requests",
 ].join("; ");
 
