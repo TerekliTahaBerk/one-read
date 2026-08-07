@@ -18,6 +18,11 @@ Do not accept paid traffic until every item is green:
 
 ## Standard release
 
+**Merging to `main` is the release.** There is exactly one way a normal
+production deployment is created: the Vercel Git integration builds the merged
+commit. Do not run `vercel --prod`, and do not redeploy from the dashboard —
+both produce a second artifact for a commit that already has one.
+
 1. Review `git diff` and commit the exact release.
 2. Run:
 
@@ -29,12 +34,73 @@ Do not accept paid traffic until every item is green:
    npx prisma migrate status
    ```
 
-3. Push the release commit to `main`.
-4. Deploy production from that commit.
+3. Open a pull request and merge it into `main`. Vercel builds and promotes
+   that commit; the **Production release** workflow then verifies the
+   deployment's provenance and applies any pending migrations.
+4. Confirm the release is the one you intended:
+
+   ```bash
+   npm run release:verify
+   ```
+
 5. Confirm `/`, `/subscribe`, `/pricing`, `/article`, `/film`, `/terms`,
    `/privacy`, `/robots.txt` and `/sitemap.xml`.
 6. Open `/admin/settings` and verify every readiness signal.
 7. Perform one controlled subscriber journey before enabling public traffic.
+
+## Release provenance
+
+A production artifact must be rebuildable from a commit on `main`. Three guards
+enforce that, and each covers what the previous one cannot:
+
+| Guard | Runs | Blocks |
+| --- | --- | --- |
+| `scripts/verify-build-provenance.mjs` | inside every Vercel build (`vercel.json` build command) | production builds whose sources differ from the claimed commit, whose commit is not on `main`, or that carry no commit at all |
+| `scripts/deploy-production.mjs` | the emergency CLI path | dirty trees, unpushed commits, and second deployments of a commit that already has one |
+| `scripts/verify-release-provenance.mjs` | `npm run release:verify`, the release workflow, and a nightly audit | a production domain pointing at an unverifiable artifact, and duplicate deployments per commit |
+
+The build guard is the load-bearing one: it runs whatever created the
+deployment, so a failed check means the build errors and the production domain
+keeps serving the previous good artifact. It proves cleanliness directly by
+comparing every tracked file against the commit's tree on GitHub — Vercel's
+`gitDirty` flag lives on the deployment record and is not readable from inside
+a build.
+
+Rules are enforced from `ENFORCED_FROM` in `scripts/release/provenance.mjs`
+onward. Deployments before that date contain known duplicates and dirty
+artifacts; the audit reports them and does not fail on them.
+
+Configuration this depends on:
+
+- Repository secrets: `VERCEL_TOKEN` (read access for the audit),
+  `PRISMA_DATABASE_URL` (production database for migrations).
+- Repository variable: `VERCEL_SCOPE` (`tereklitahaberks-projects`).
+- Optional Vercel environment variable: `RELEASE_GITHUB_TOKEN`, a read-only
+  token that lifts the build guard off GitHub's 60 requests/hour
+  unauthenticated limit. Add it if builds start failing with
+  `provenance_unverifiable`.
+
+### Emergency deploy
+
+Only for a Git-integration outage or a rollback to an older commit. It still
+refuses a dirty tree, an unpushed commit, and a commit that already has a
+production deployment.
+
+```bash
+npm run deploy:emergency -- --reason "vercel git integration outage, INC-14"
+```
+
+Nothing is uploaded without `--yes`; run it once to read the plan, then again
+with `--yes`. The reason is stamped into the deployment metadata as
+`releaseChannel=emergency`, which is what the audit uses to tell a deliberate
+emergency deploy apart from a stray `vercel --prod`. Verify afterwards with
+`npm run release:verify`.
+
+If the build guard itself is the thing that is broken, set
+`RELEASE_PROVENANCE_GUARD=off` in the Vercel project's environment variables.
+It is a project setting rather than a flag so that turning it off is a
+deliberate, recorded act, and every build log says loudly that the artifact is
+unverified. Remove it as soon as the incident is over.
 
 ## Editorial checklist
 
@@ -121,9 +187,15 @@ Response:
 
 ### Rollback
 
-- Redeploy the last known-good Git commit.
+- Prefer promoting the last known-good production deployment in Vercel: it is
+  the same verified artifact, so nothing is rebuilt and nothing new is created.
+- If it must be rebuilt, check out the known-good commit and use the emergency
+  path above. It permits an older commit — it only requires that the commit is
+  on `main` — and it will tell you that production is being rolled back.
 - Do not roll back an applied database migration destructively.
 - Keep forward-compatible migrations and ship a corrective migration instead.
+  Migrations are applied after the deployment goes live, so a release must work
+  against both the old and the new schema.
 
 ## Weekly checks
 

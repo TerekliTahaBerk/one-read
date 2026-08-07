@@ -1,0 +1,44 @@
+name: Deployment provenance
+
+# Standing check that the production domain still points at an artifact that can
+# be rebuilt from Git. The release workflow only sees deployments that arrive
+# through a GitHub deployment event; this catches everything else — a dashboard
+# rollback to an old artifact, a manual alias promotion, or a `vercel --prod`
+# from someone's laptop.
+#
+# A red run here is the signal that production drifted off the Git-only path.
+
+on:
+  schedule:
+    # 07:20 Europe/Istanbul — after the editorial dispatch window, so an alert
+    # here is never competing with a delivery incident.
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit production deployments
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@54.4.1
+
+      - name: Audit production provenance
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
+          RELEASE_GITHUB_TOKEN: ${{ github.token }}
+        run: npm run release:verify

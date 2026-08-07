@@ -68,7 +68,12 @@ Missing-edition, zero-delivery and failed-run alerts are sent to `ADMIN_EMAIL`.
 
 ## Production
 
-Deployment and incident procedures are in
+Merging to `main` is the release. The Vercel Git integration is the only source
+of a normal production deployment, and a build guard refuses any production
+build that cannot be reproduced from a commit on `main`. `npm run release:verify`
+reports what the production domain is actually serving and where it came from.
+
+Deployment and incident procedures, including the emergency deploy path, are in
 [`docs/LAUNCH_RUNBOOK.md`](docs/LAUNCH_RUNBOOK.md). Never commit real secrets.
 Use `.env.example` as the configuration contract and store production values in
 Vercel.
