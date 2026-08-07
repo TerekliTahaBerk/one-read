@@ -13,6 +13,7 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/admin/audit";
+import { reportSettingsFallback } from "@/lib/observability";
 
 export interface ProductControls {
   cronEnabled: boolean;
@@ -130,38 +131,57 @@ function resolveDays(map: Map<string, string>, key: SettingKey, env: string | un
   return normalizeDays(map.get(key) ?? "") ?? normalizeDays(env ?? "") ?? fallback;
 }
 
+export interface ControlsSnapshot {
+  controls: Controls;
+  /** True when the `Setting` read failed and env defaults were used instead. */
+  degraded: boolean;
+}
+
 /**
  * The effective control snapshot. DB-unreachable is tolerated: on any read
  * error we fall back to pure env defaults so a database blip never silently
- * flips sending behaviour.
+ * flips sending behaviour. The fallback is reported out-of-band — silently
+ * serving env defaults would hide the first symptom of a database outage.
  */
-export const getControls = cache(async (): Promise<Controls> => {
+export const readControls = cache(async (): Promise<ControlsSnapshot> => {
   let map = new Map<string, string>();
+  let degraded = false;
   try {
     const rows = await prisma.setting.findMany({ where: { key: { in: ALL_KEYS } } });
     map = new Map(rows.map((r) => [r.key, r.value]));
-  } catch {
+  } catch (error) {
     map = new Map();
+    degraded = true;
+    // Awaited, not fire-and-forget: on a serverless runtime the function is
+    // frozen at response time and an unflushed Sentry event is a lost one.
+    await reportSettingsFallback(error);
   }
   const K = SETTING_KEYS;
   return {
-    oneArticle: {
-      cronEnabled: resolveBool(map, K.oneArticleCron),
-      dryRun: resolveBool(map, K.oneArticleDryRun),
-      requireApproval: resolveBool(map, K.oneArticleApproval),
-    },
-    film: {
-      cronEnabled: resolveBool(map, K.filmCron),
-      dryRun: resolveBool(map, K.filmDryRun),
-      requireApproval: resolveBool(map, K.filmApproval),
-    },
-    lingo: {
-      cronEnabled: resolveBool(map, K.lingoCron),
-      dryRun: resolveBool(map, K.lingoDryRun),
-      requireApproval: resolveBool(map, K.lingoApproval),
+    degraded,
+    controls: {
+      oneArticle: {
+        cronEnabled: resolveBool(map, K.oneArticleCron),
+        dryRun: resolveBool(map, K.oneArticleDryRun),
+        requireApproval: resolveBool(map, K.oneArticleApproval),
+      },
+      film: {
+        cronEnabled: resolveBool(map, K.filmCron),
+        dryRun: resolveBool(map, K.filmDryRun),
+        requireApproval: resolveBool(map, K.filmApproval),
+      },
+      lingo: {
+        cronEnabled: resolveBool(map, K.lingoCron),
+        dryRun: resolveBool(map, K.lingoDryRun),
+        requireApproval: resolveBool(map, K.lingoApproval),
+      },
     },
   };
 });
+
+export async function getControls(): Promise<Controls> {
+  return (await readControls()).controls;
+}
 
 /** Full, typed runtime configuration used by both the admin panel and cron. */
 export const getRuntimeSettings = cache(async (): Promise<RuntimeSettings> => {

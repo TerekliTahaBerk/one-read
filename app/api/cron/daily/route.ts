@@ -1,15 +1,10 @@
-import { NextResponse } from "next/server";
-import { getControls } from "@/lib/admin/settings-store";
+import { readControls } from "@/lib/admin/settings-store";
 import {
-  finishRun,
-  notifyMissingScheduledEdition,
-  notifyRunFailure,
-  notifyZeroDelivery,
-  startRun,
-} from "@/lib/admin/operational-runs";
-import { recordAudit } from "@/lib/admin/audit";
+  authorizeCronRequest,
+  runEditorialCron,
+  unauthorizedCronResponse,
+} from "@/lib/admin/editorial-cron";
 import { dispatchDueEditorialIssues } from "@/lib/one-article/editorial";
-import { getResendStatus } from "@/lib/resend";
 import { ONE_ARTICLE_PRODUCT_KEY } from "@/lib/options";
 
 export const runtime = "nodejs";
@@ -19,77 +14,23 @@ export const maxDuration = 300;
 /**
  * OneArticle editorial dispatcher. Content creation is deliberately absent:
  * the panel owns copy, readiness and scheduling; cron only sends due editions.
+ * Run tracking and outage handling are shared with OneFilm in
+ * `@/lib/admin/editorial-cron`.
  */
 async function handler(request: Request): Promise<Response> {
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authorizeCronRequest(request)) return unauthorizedCronResponse();
 
-  const controls = (await getControls()).oneArticle;
-  const run = await startRun({
+  const snapshot = await readControls();
+  return runEditorialCron({
     productKey: ONE_ARTICLE_PRODUCT_KEY,
+    productName: "OneArticle",
     route: "/api/cron/daily",
-    dryRun: false,
-    requireApproval: true,
-    metadata: { mode: "manual-editorial-dispatch", cronEnabled: controls.cronEnabled },
+    auditAction: "oneArticle.editorial.dispatch",
+    sendDays: [1, 2, 3, 4, 5],
+    controls: snapshot.controls.oneArticle,
+    controlsDegraded: snapshot.degraded,
+    dispatch: dispatchDueEditorialIssues,
   });
-  if (!controls.cronEnabled) {
-    await finishRun({ id: run.id, status: "SKIPPED", error: "cron_disabled" });
-    return NextResponse.json({ ok: true, skipped: true, reason: "cron_disabled" });
-  }
-  if (controls.dryRun) {
-    await finishRun({ id: run.id, status: "SKIPPED", error: "dry_run_enabled" });
-    return NextResponse.json({ ok: true, skipped: true, reason: "dry_run_enabled" });
-  }
-
-  try {
-    if (!getResendStatus().hasApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
-    }
-    const result = await dispatchDueEditorialIssues();
-    await finishRun({
-      id: run.id,
-      status: "SUCCESS",
-      generatedCount: 0,
-      sentCount: result.sent,
-      skippedCount: result.skipped,
-      failedCount: result.failed,
-      metadata: { ...result },
-    });
-    await recordAudit({
-      actor: "cron",
-      action: "oneArticle.editorial.dispatch",
-      targetType: "OperationalRun",
-      targetId: run.id,
-      metadata: { ...result },
-    });
-    if (result.sent === 0) {
-      await notifyZeroDelivery({
-        productName: "OneArticle",
-        route: "/api/cron/daily",
-        eligible: result.recipients,
-      });
-    }
-    await notifyMissingScheduledEdition({
-      productKey: ONE_ARTICLE_PRODUCT_KEY,
-      productName: "OneArticle",
-      route: "/api/cron/daily",
-      issuesDispatched: result.issues,
-      sendDays: [1, 2, 3, 4, 5],
-    });
-    return NextResponse.json({ ok: true, ...result });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "editorial_dispatch_failed";
-    await finishRun({ id: run.id, status: "FAILED", error: message });
-    await notifyRunFailure({
-      productName: "OneArticle",
-      route: "/api/cron/daily",
-      error: message,
-    });
-    return NextResponse.json({ ok: false, error: "Editorial dispatch failed" }, { status: 500 });
-  }
 }
 
 export const GET = handler;

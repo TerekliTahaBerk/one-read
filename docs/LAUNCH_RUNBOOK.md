@@ -69,6 +69,49 @@ one deduplicated alert to the admin address.
 - Retry through the admin action; idempotency prevents duplicate successful
   deliveries.
 
+### Cron returned 500 / database outage
+
+Both editorial crons run every ten minutes and share one failure contract
+(`lib/admin/editorial-cron.ts`). A failed invocation answers 500 with a
+machine-readable body:
+
+```
+{ "ok": false, "code": "P1001", "stage": "start", "retryable": true,
+  "runId": null, "runRecorded": false }
+```
+
+- `stage: "start"` — the run row was never created. **The admin panel will show
+  nothing for this invocation.** Look in Vercel runtime logs and Sentry for the
+  structured event `cron_failure`, plus the admin email (it says explicitly that
+  no run row exists). The companion event `settings_read_degraded` means the
+  panel controls fell back to environment defaults for the same reason.
+- `stage: "dispatch"` — the run row exists; open Admin → Run history for the
+  error, and check per-recipient delivery rows.
+- `retryable: true` — a transient Prisma/connection fault (`P1001`, `P1002`,
+  `P1008`, `P1017`, `P2024`, `P2034`). `retryable: false` needs a fix first.
+
+Response:
+
+1. Confirm the database is actually down (provider status, `db.prisma.io:5432`).
+   `P1001` on `/api/cron/one-film` and `/api/cron/daily` at once means
+   infrastructure, not editorial.
+2. **Do not re-run the cron by hand while the database is unreachable.** Opening
+   the run is retried three times in-process with backoff; beyond that, the next
+   ten-minute tick is the retry.
+3. Once the database is back, wait one tick and confirm a `SUCCESS` run appears.
+   No manual replay is needed and none should be issued: a re-run cannot
+   double-send. Editions are claimed with a `SCHEDULED → SENDING` compare-and-set,
+   each recipient has a unique delivery row, and every send carries a stable
+   provider idempotency key.
+4. Runs the outage left stuck in `RUNNING` are closed automatically by the next
+   invocation, 15 minutes after they started, as
+   `abandoned_run: no outcome recorded`. Editions stuck in `SENDING` are released
+   back to `SCHEDULED` on the same window and re-sent safely. If a run still
+   shows `RUNNING` after two healthy ticks, the cron is not firing at all —
+   check the Vercel cron schedule and `CRON_SECRET`.
+5. If the outage spanned a publishing window (Article Mon–Fri, Film Sat), verify
+   the edition actually went out before rescheduling anything by hand.
+
 ### Compromised admin credential
 
 - Rotate the affected password hash and `ADMIN_SESSION_SECRET`.
