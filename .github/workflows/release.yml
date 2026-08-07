@@ -1,0 +1,99 @@
+name: Production release
+
+# Binds the two halves of a release to one another. A production deployment is
+# only treated as released once its provenance is verified, and the database
+# migrations for that release run in the *same* job, checked out at the *same*
+# commit the deployment was built from. There is no other path that applies
+# migrations to production, so "which artifact is this migration for?" always
+# has an answer.
+#
+# Ordering note: Vercel builds as soon as `main` moves, so this runs *after* the
+# new code is live. Migrations must therefore stay forward-compatible — expand
+# first, contract in a later release — exactly as the rollback section of
+# docs/LAUNCH_RUNBOOK.md requires.
+#
+# Required repository secrets:
+#   VERCEL_TOKEN          — read access for the provenance audit
+#   PRISMA_DATABASE_URL   — production database; without it migrations are
+#                           skipped loudly rather than applied blindly
+# Required repository variable:
+#   VERCEL_SCOPE          — the Vercel team slug (tereklitahaberks-projects)
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      deployment:
+        description: "Vercel deployment URL to audit (defaults to whatever the production domain serves)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Verify provenance, then migrate
+    # Only a *successful production* deployment is a release. Preview
+    # deployments and in-flight states are ignored.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       (github.event.deployment.environment == 'Production' ||
+        github.event.deployment.environment == 'production'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the deployed commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Pinned deliberately: the audit parses `vercel list --format json`, and
+      # that shape is a CLI implementation detail. Re-check the output before
+      # bumping this version.
+      - name: Install Vercel CLI
+        run: npm install --global vercel@54.4.1
+
+      - name: Verify release provenance
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
+          RELEASE_GITHUB_TOKEN: ${{ github.token }}
+          # Read through an env var rather than interpolated into the script:
+          # target_url is supplied by the deployment provider.
+          TARGET_URL: ${{ github.event.deployment_status.target_url || inputs.deployment }}
+        run: |
+          if [ -n "$TARGET_URL" ]; then
+            npm run release:verify -- --deployment "$TARGET_URL"
+          else
+            npm run release:verify
+          fi
+
+      - name: Apply database migrations
+        env:
+          PRISMA_DATABASE_URL: ${{ secrets.PRISMA_DATABASE_URL }}
+          RELEASE_SHA: ${{ github.event.deployment.sha || github.sha }}
+        run: |
+          if [ -z "$PRISMA_DATABASE_URL" ]; then
+            echo "::warning::PRISMA_DATABASE_URL is not configured — migrations were NOT applied for $RELEASE_SHA."
+            echo "- ⚠️ Migrations skipped: no \`PRISMA_DATABASE_URL\` secret" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Applying migrations for $RELEASE_SHA"
+          npx prisma migrate deploy
+          npx prisma migrate status
+
+          echo "- ✅ Migrations applied for \`$RELEASE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
