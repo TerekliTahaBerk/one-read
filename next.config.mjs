@@ -1,4 +1,5 @@
 import { withSentryConfig } from "@sentry/nextjs";
+import { pageExtensionsFor } from "./lib/security/route-policy.mjs";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -19,6 +20,11 @@ const contentSecurityPolicy = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Decides whether the dev/test mock billing files (`*.mock.ts[x]`) count as
+  // routes at all. In production they are left out, so those endpoints are not
+  // compiled, not bundled, and absent from the route manifest — see
+  // lib/security/route-policy.mjs. CI re-checks the built manifest.
+  pageExtensions: pageExtensionsFor(process.env),
   async headers() {
     return [
       {

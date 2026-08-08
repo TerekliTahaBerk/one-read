@@ -1,5 +1,6 @@
 import type { BillingInterval } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
+import { mockBillingSurfaceEnabled } from "@/lib/security/route-policy.mjs";
 import { findOneArticleSubscription, preferencesComplete } from "@/lib/subscriptions";
 import type {
   BillingProvider,
@@ -16,8 +17,10 @@ import type {
  * can be exercised locally. Selected with BILLING_PROVIDER=mock.
  *
  * Mock state is mutated by the local mock-checkout / mock-portal pages, which
- * call the /api/subscribe/mock-* endpoints. Those endpoints (and these helpers)
- * must never run in production unless explicitly opted in — see isMockAllowed.
+ * call the /api/subscribe/mock-* endpoints. Those files are named `*.mock.ts[x]`
+ * and are excluded from `pageExtensions` in production, so on the production
+ * deployment they are not routes at all — see isMockAllowed for the runtime
+ * half of the same guarantee.
  */
 
 const PROVIDER = "mock" as const;
@@ -25,15 +28,27 @@ const MOCK_CUSTOMER_PREFIX = "mock_cus_";
 const MOCK_SUB_PREFIX = "mock_sub_";
 
 /**
- * Whether mock billing is permitted in the current environment. Mock is a
- * dev/test tool: blocked in production unless MOCK_BILLING_PREVIEW=true is set
- * deliberately (e.g. a staging preview). Real fake-paid access is never created
- * silently in prod.
+ * Whether mock billing is permitted in the current environment.
+ *
+ * Defers to the shared route policy so the runtime answer can never disagree
+ * with the build-time one. On the production deployment this is always false —
+ * MOCK_BILLING_PREVIEW cannot reopen it there. Previews and local development
+ * are unaffected.
  */
 export function isMockAllowed(): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
-  return process.env.MOCK_BILLING_PREVIEW === "true";
+  return mockBillingSurfaceEnabled(process.env);
 }
+
+/**
+ * Refusal returned by every mock mutation when the surface is disabled.
+ *
+ * The guard lives on the state-writing helpers rather than only on the routes
+ * because the routes are not the sole caller — MockBillingProvider reaches
+ * these same functions through the BillingProvider interface, which any billing
+ * route can hold. Guarding here means "no code path writes fake paid state in
+ * production" is true by construction, not by route inventory.
+ */
+const MOCK_DISABLED = { ok: false as const, reason: "mock_billing_disabled" };
 
 /** Adds one plan interval (1 month) to a date. */
 export function addInterval(from: Date, _plan: BillingInterval): Date {
@@ -56,6 +71,7 @@ export async function completeMockCheckout(
   plan: BillingInterval,
   now: Date = new Date(),
 ): Promise<{ ok: boolean; reason?: string }> {
+  if (!isMockAllowed()) return MOCK_DISABLED;
   const sub = await findOneArticleSubscription(email);
   if (!sub) return { ok: false, reason: "no_subscription" };
   if (!preferencesComplete(sub.preferences)) return { ok: false, reason: "incomplete_preferences" };
@@ -86,6 +102,7 @@ export async function completeMockCheckout(
 }
 
 export async function mockCancelAtPeriodEnd(email: string, now: Date = new Date()) {
+  if (!isMockAllowed()) return MOCK_DISABLED;
   const sub = await findOneArticleSubscription(email);
   if (!sub) return { ok: false, reason: "no_subscription" };
   if (sub.status !== "ACTIVE_PAID") return { ok: false, reason: "not_active_paid" };
@@ -97,6 +114,7 @@ export async function mockCancelAtPeriodEnd(email: string, now: Date = new Date(
 }
 
 export async function mockResume(email: string, now: Date = new Date()) {
+  if (!isMockAllowed()) return MOCK_DISABLED;
   const sub = await findOneArticleSubscription(email);
   if (!sub) return { ok: false, reason: "no_subscription" };
   // Only resumable while still inside the paid period.
@@ -111,6 +129,7 @@ export async function mockResume(email: string, now: Date = new Date()) {
 }
 
 export async function mockPaymentFailed(email: string, now: Date = new Date()) {
+  if (!isMockAllowed()) return MOCK_DISABLED;
   const sub = await findOneArticleSubscription(email);
   if (!sub) return { ok: false, reason: "no_subscription" };
   if (sub.status !== "ACTIVE_PAID") return { ok: false, reason: "not_active_paid" };
@@ -122,6 +141,7 @@ export async function mockPaymentFailed(email: string, now: Date = new Date()) {
 }
 
 export async function mockPaymentRecovered(email: string, now: Date = new Date()) {
+  if (!isMockAllowed()) return MOCK_DISABLED;
   const sub = await findOneArticleSubscription(email);
   if (!sub) return { ok: false, reason: "no_subscription" };
   if (sub.status !== "PAST_DUE") return { ok: false, reason: "not_past_due" };
