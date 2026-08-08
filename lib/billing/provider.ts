@@ -33,7 +33,10 @@ export function getBillingProvider(): BillingProvider {
     // Phase 6: case "stripe": cached = new StripeBillingProvider(); break;
     default:
       // No real provider implemented yet — fall back to mock so dev keeps
-      // working. Production safety for mock lives in lib/billing/mock.ts.
+      // working. This is safe in production because the mock provider is inert
+      // there: every state-writing helper in lib/billing/mock.ts refuses when
+      // the mock surface is disabled, so a misconfigured BILLING_PROVIDER
+      // cannot mint paid access — it can only fail.
       cached = new MockBillingProvider();
   }
   return cached;

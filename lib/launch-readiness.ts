@@ -7,6 +7,7 @@
  * numeric thresholds) may be echoed since it's useful and not sensitive.
  */
 
+import { mockBillingSurfaceEnabled } from "./security/route-policy.mjs";
 import {
   MIN_ARTICLE_SCORE,
   MIN_DELIVERY_SCORE,
@@ -138,7 +139,10 @@ export function getLaunchReadiness(): ReadinessCheck[] {
   // retained for local fixtures only.
   const billingProvider = (process.env.BILLING_PROVIDER || "").toLowerCase();
   const isProd = process.env.NODE_ENV === "production";
-  const mockPreview = process.env.MOCK_BILLING_PREVIEW === "true";
+  // Not the same question as "is MOCK_BILLING_PREVIEW set": on the production
+  // deployment the mock surface is off no matter what. See
+  // lib/security/route-policy.mjs.
+  const mockUsable = mockBillingSurfaceEnabled(process.env);
   const polarServer = (process.env.POLAR_SERVER || "sandbox").toLowerCase();
   const missingPolar = [
     !has(process.env.POLAR_ACCESS_TOKEN) ? "POLAR_ACCESS_TOKEN" : null,
@@ -155,12 +159,12 @@ export function getLaunchReadiness(): ReadinessCheck[] {
       ? "Missing — no payment provider configured. Paid subscriptions cannot be charged."
       : "Not set — defaults to the dev mock provider locally.";
   } else if (billingProvider === "mock") {
-    billingStatus = isProd && !mockPreview ? "missing" : isProd ? "warn" : "pass";
+    billingStatus = isProd && !mockUsable ? "missing" : isProd ? "warn" : "pass";
     billingExplanation =
-      isProd && !mockPreview
-        ? "Mock billing is enabled in production — fake paid access is blocked. Set BILLING_PROVIDER=polar."
+      isProd && !mockUsable
+        ? "Mock billing is selected but permanently disabled here — no payment can be taken and no access granted. Set BILLING_PROVIDER=polar."
         : isProd
-          ? "Mock billing in production via MOCK_BILLING_PREVIEW (staging/preview only)."
+          ? "Mock billing on a preview deployment (fixtures only). It can never turn on in production."
           : "Dev mock provider — simulates the paid lifecycle, no real charges.";
   } else if (billingProvider === "polar") {
     const polarReady = missingPolar.length === 0;

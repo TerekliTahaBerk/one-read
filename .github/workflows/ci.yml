@@ -1,15 +1,62 @@
 name: CI
 
+# The merge gate for OneRead. README lists lint, tests, the production build and
+# the production dependency audit as release gates; this workflow is what makes
+# them gates rather than things a developer is trusted to remember.
+#
+# Each gate is its own job with a STABLE name, because those names are what
+# GitHub branch protection matches when you mark a check as required. Renaming a
+# job silently un-requires it, so treat these names as an interface:
+#
+#   Lint
+#   Unit tests
+#   Production build
+#   Prisma migrations
+#   Production dependency audit
+#
+# They run in parallel deliberately: a PR that breaks two things should report
+# both on the first run rather than one per push.
+
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# A newer push to the same PR makes the in-flight run irrelevant. `main` is
+# excluded from cancellation so every commit on the default branch keeps a
+# complete, attributable result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Fixture values only. Every one of these is deliberately fake and inert:
+  # nothing here authenticates to a real service, and no secret is needed to run
+  # the gates. The database URL points at a database that does not exist — the
+  # unit suite mocks Prisma, and `next build` only needs the variable to be
+  # parseable, never reachable. The one job that wants a live database (Prisma
+  # migrations) overrides it with its own service container.
+  #
+  # If a gate ever needs a real secret to pass, that is a signal the gate is
+  # testing configuration rather than code — fix the code, don't add the secret.
+  PRISMA_DATABASE_URL: postgresql://oneread:oneread@localhost:5432/oneread_ci
+  DATABASE_URL: postgresql://oneread:oneread@localhost:5432/oneread_ci
+  PUBLIC_BASE_URL: http://localhost:3000
+  NEXT_PUBLIC_BASE_URL: http://localhost:3000
+  EMAIL_VERIFICATION_SECRET: ci-fixture-not-a-real-secret
+  ADMIN_SESSION_SECRET: ci-fixture-not-a-real-secret
+  CRON_SECRET: ci-fixture-not-a-real-secret
+  # Keep Sentry inert: with no auth token the Next config disables source-map
+  # upload, so CI never touches a release artifact.
+  SENTRY_AUTH_TOKEN: ""
+
 jobs:
-  ci:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    env:
-      PRISMA_DATABASE_URL: postgresql://user:pass@localhost:5432/ci
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +67,161 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run lint
+      - name: ESLint
+        run: npm run lint
 
-      - run: npm run test
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - run: npm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vitest with coverage
+        run: npm run test:coverage
+
+      # Uploaded even on failure: a red suite is exactly when you want to see
+      # which paths were and were not exercised.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: error
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `postinstall` runs `prisma generate`, so a schema that cannot produce a
+      # client fails here before anything is compiled against it.
+      - run: npm ci
+
+      - name: Verify the Prisma client is generated
+        run: |
+          if [ ! -d node_modules/.prisma/client ]; then
+            echo "::error::prisma generate did not produce a client — the build would compile against a stale or missing @prisma/client."
+            exit 1
+          fi
+          npx prisma validate
+
+      # No VERCEL_ENV and NODE_ENV=production, which is what makes this a
+      # production-shaped artifact: lib/security/route-policy.mjs drops the mock
+      # billing surface from `pageExtensions` under exactly these conditions.
+      - name: Build
+        run: npm run build
+
+      # The independent check on the build's *output*. `pageExtensions` is the
+      # mechanism; this is the proof. It fails the job if a dev/test-only route
+      # reached the artifact.
+      - name: Verify production route manifest
+        run: npm run verify:routes
+
+      - name: Upload route manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-manifest
+          path: .next/app-path-routes-manifest.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  migrations:
+    name: Prisma migrations
+    runs-on: ubuntu-latest
+
+    # A throwaway database so the migration history is replayed for real. The
+    # alternative — trusting that the committed SQL still applies — is how a
+    # release discovers a broken migration in production.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: oneread
+          POSTGRES_PASSWORD: oneread
+          POSTGRES_DB: oneread_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PRISMA_DATABASE_URL: postgresql://oneread:oneread@localhost:5432/oneread_ci
+      DATABASE_URL: postgresql://oneread:oneread@localhost:5432/oneread_ci
+      SHADOW_DATABASE_URL: postgresql://oneread:oneread@localhost:5432/oneread_shadow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate the schema
+        run: npx prisma validate
+
+      - name: Create the shadow database
+        run: |
+          PGPASSWORD=oneread psql -h localhost -U oneread -d oneread_ci \
+            -c 'CREATE DATABASE oneread_shadow;'
+
+      - name: Apply the full migration history
+        run: npx prisma migrate deploy
+
+      - name: Confirm no migration is pending
+        run: npx prisma migrate status
+
+      # Catches the most common release-breaking mistake: editing schema.prisma
+      # and generating a client from it without committing the migration. The
+      # deployed code would then expect columns production does not have.
+      # --exit-code makes "there is a difference" a failure (exit 2).
+      - name: Check the schema matches the migration history
+        run: |
+          if ! npx prisma migrate diff \
+            --from-migrations ./prisma/migrations \
+            --to-schema-datamodel ./prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code; then
+            echo "::error::prisma/schema.prisma has changes that no migration reproduces. Run \`npm run db:migrate\` and commit the generated migration."
+            exit 1
+          fi
+
+  audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Production tree only — a dev-only advisory is not in the shipped
+      # artifact and must not be able to block a release. Findings are written
+      # to the job summary so a failure is readable without opening the log.
+      - name: Audit production dependencies
+        run: npm run audit:prod
