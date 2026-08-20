@@ -32,7 +32,10 @@
 
 import { readFileSync } from "node:fs";
 
-import { diffTreeAgainstWorkspace, makeIgnoreMatcher } from "./release/git-tree.mjs";
+import {
+  diffTreeAgainstWorkspace,
+  makeProvenanceIgnoreMatcher,
+} from "./release/git-tree.mjs";
 import {
   commitIsOnMain,
   fetchCommitTree,
@@ -68,9 +71,9 @@ function log(message = "") {
 
 function readIgnoreMatcher() {
   try {
-    return makeIgnoreMatcher(readFileSync(".vercelignore", "utf8").split("\n"));
+    return makeProvenanceIgnoreMatcher(readFileSync(".vercelignore", "utf8").split("\n"));
   } catch {
-    return () => false;
+    return makeProvenanceIgnoreMatcher([]);
   }
 }
 

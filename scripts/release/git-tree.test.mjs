@@ -2,7 +2,12 @@ import { execFileSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
-import { diffTreeAgainstWorkspace, gitBlobSha1, makeIgnoreMatcher } from "./git-tree.mjs";
+import {
+  diffTreeAgainstWorkspace,
+  gitBlobSha1,
+  makeIgnoreMatcher,
+  makeProvenanceIgnoreMatcher,
+} from "./git-tree.mjs";
 
 describe("gitBlobSha1", () => {
   it("matches git's own object id", () => {
@@ -123,5 +128,23 @@ describe("makeIgnoreMatcher", () => {
     expect(matches("lib/prisma.ts")).toBe(false);
     expect(matches("app/env.ts")).toBe(false);
     expect(matches("docs/.environment")).toBe(false);
+  });
+});
+
+describe("makeProvenanceIgnoreMatcher", () => {
+  const matches = makeProvenanceIgnoreMatcher([".env", ".env.*", ".vercel"]);
+
+  it("skips Vercel's platform-managed project configuration", () => {
+    expect(matches("vercel.json")).toBe(true);
+  });
+
+  it("does not skip similarly named application files", () => {
+    expect(matches("config/vercel.json")).toBe(false);
+    expect(matches("vercel.json.backup")).toBe(false);
+  });
+
+  it("retains the deployment ignore rules", () => {
+    expect(matches(".env.example")).toBe(true);
+    expect(matches("lib/prisma.ts")).toBe(false);
   });
 });

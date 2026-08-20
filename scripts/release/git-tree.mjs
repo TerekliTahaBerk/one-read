@@ -94,3 +94,17 @@ export function makeIgnoreMatcher(patterns) {
 
   return (path) => matchers.some((matcher) => matcher.test(path));
 }
+
+/**
+ * Vercel consumes project configuration before the user build starts and may
+ * materialize `vercel.json` differently in the build workspace. Comparing that
+ * platform-managed copy byte-for-byte with Git therefore creates a false dirty
+ * result. The effective build command is still protected: reaching the guard
+ * proves that Vercel invoked it.
+ */
+const PLATFORM_MANAGED_PATHS = new Set(["vercel.json"]);
+
+export function makeProvenanceIgnoreMatcher(patterns) {
+  const ignoredByDeployment = makeIgnoreMatcher(patterns);
+  return (path) => PLATFORM_MANAGED_PATHS.has(path) || ignoredByDeployment(path);
+}
