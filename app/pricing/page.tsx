@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Pricing — OneRead",
   description:
     "One monthly OneRead subscription delivers OneArticle every weekday.",
+  alternates: { canonical: "/pricing" },
   robots: { index: true, follow: true },
 };
 

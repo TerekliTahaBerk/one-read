@@ -4,6 +4,7 @@ import { EditorialStandardsContent } from "@/components/EditorialStandardsConten
 export const metadata: Metadata = {
   title: "Editorial standards — OneRead",
   description: "How OneRead selects, verifies, reviews, and publishes OneArticle editions.",
+  alternates: { canonical: "/editorial" },
 };
 
 export default function EditorialStandardsPage() {

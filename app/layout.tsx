@@ -27,7 +27,6 @@ export const metadata: Metadata = {
   title: "OneRead — One useful email at a time.",
   description:
     "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
-  alternates: { canonical: "/" },
   openGraph: {
     title: "OneRead — One useful email at a time.",
     description:

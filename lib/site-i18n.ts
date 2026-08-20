@@ -54,8 +54,8 @@ const en = {
     minRead: "min read",
   },
   family: {
-    title: "Meet the OneRead family.",
-    intro: "Each one does a single job quietly, then gets out of the way.",
+    title: "Meet OneArticle.",
+    intro: "One carefully edited article brief arrives every weekday morning, then gets out of the way.",
     article: "Weekday article brief",
   },
   pricing: {
