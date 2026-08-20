@@ -66,8 +66,8 @@ model Subscriber {
 }
 
 /// Umbrella-level identity: one row per unique email across all OneRead
-/// products. A Contact can hold many ProductSubscriptions (one-article today,
-/// one-lingo / one-goal later).
+/// products. OneArticle is the only production product. Film/Lingo relations
+/// below are legacy-retained historical data and are not reachable at runtime.
 model Contact {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -120,6 +120,9 @@ model ProductSubscription {
   canceledAt                DateTime?
   pastDueAt                 DateTime?
   paidAt                    DateTime?
+  /// Provider event/snapshot time that last changed billing lifecycle state.
+  /// Older webhook deliveries are ignored so reordered events cannot regress access.
+  billingStateUpdatedAt     DateTime?
 
   // Email delivery (independent of access)
   /// "SUBSCRIBED" | "UNSUBSCRIBED" | "SUPPRESSED"
@@ -149,6 +152,7 @@ model ProductSubscription {
   @@index([productKey, status])
   @@index([trialEndsAt])
   @@index([providerSubscriptionId])
+  @@index([billingStateUpdatedAt])
 }
 
 /// One-Article-specific personalization preferences for a ProductSubscription.
@@ -572,6 +576,7 @@ model EmailVerificationCode {
 // ------------------------------------------------------------------------
 
 /// OneLingo-specific preferences for a ProductSubscription (productKey =
+/// LEGACY RETAINED: OneLingo is retired from all production routes and jobs.
 /// "one-lingo"). Sibling to ArticlePreferences; the two never overlap because a
 /// ProductSubscription is scoped to a single product. Completing preferences
 /// never grants access — Polar remains the source of truth.
@@ -685,7 +690,8 @@ model LingoDailySend {
 }
 
 // ------------------------------------------------------------------------
-// OneFilm — daily film-note product
+// LEGACY RETAINED: OneFilm models preserve historical data only. No production
+// route, checkout, admin action, cron, or dispatcher uses these tables.
 // ------------------------------------------------------------------------
 
 /// OneFilm-specific preferences for a ProductSubscription (productKey =

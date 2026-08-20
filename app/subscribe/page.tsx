@@ -4,7 +4,8 @@ import { OneReadSignup } from "@/components/OneReadSignup";
 export const metadata: Metadata = {
   title: "Start OneRead",
   description:
-    "Set up OneArticle and OneFilm — one OneRead subscription covers both.",
+    "Choose your OneArticle reading preferences and continue to secure checkout.",
+  robots: { index: false, follow: false },
 };
 
 export default async function SubscribePage(

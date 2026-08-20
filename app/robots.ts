@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         "/subscribe",
         "/preferences",
         "/unsubscribe",
-        "/waitlist",
+        "/subscribe/success",
       ],
     },
     sitemap: absoluteSiteUrl("/sitemap.xml"),

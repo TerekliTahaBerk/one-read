@@ -82,6 +82,7 @@ describe("POST /api/webhook/polar", () => {
         clientVersion: "5.18.0",
       }),
     );
+    prisma.billingEvent.findUnique.mockResolvedValue({ processedAt: new Date() } as any);
 
     const response = await POST(makeRequest({ type: "order.paid" }));
     const json = await response.json();
@@ -112,5 +113,27 @@ describe("POST /api/webhook/polar", () => {
       data: { processedAt: expect.any(Date) },
     });
     expect(json).toEqual({ ok: true });
+  });
+
+  it("retries an event row that exists but was never processed", async () => {
+    const payload = {
+      type: "subscription.active",
+      timestamp: new Date(),
+      data: { id: "provider_sub_1", status: "active" },
+    };
+    validateEvent.mockReturnValue(payload);
+    prisma.billingEvent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("duplicate", {
+        code: "P2002",
+        clientVersion: "5.18.0",
+      }),
+    );
+    prisma.billingEvent.findUnique.mockResolvedValue({ processedAt: null } as any);
+
+    const response = await POST(makeRequest({ type: payload.type }));
+
+    expect(response.status).toBe(200);
+    expect(applyPolarWebhookPayload).toHaveBeenCalledWith(payload);
+    expect(prisma.billingEvent.update).toHaveBeenCalled();
   });
 });

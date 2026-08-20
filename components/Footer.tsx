@@ -102,10 +102,7 @@ export function Footer({
       </footer>
 
       <a
-        href="#tally-open=PdPQl1&tally-emoji-text=👋&tally-emoji-animation=wave"
-        data-tally-open="PdPQl1"
-        data-tally-emoji-text="👋"
-        data-tally-emoji-animation="wave"
+        href="mailto:hello@oneread.email?subject=OneRead%20feedback"
         aria-label={dictionary.footer.feedback}
         title={dictionary.footer.feedback}
         className="feedback-launcher focus-ring fixed z-50 inline-flex h-12 w-12 select-none items-center justify-center rounded-full sm:h-[52px] sm:w-[52px]"

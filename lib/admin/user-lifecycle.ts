@@ -40,10 +40,6 @@ export type UserSubscriptionSnapshot = {
   preferences?: {
     summaryLanguage: string | null;
   } | null;
-  filmPreferences?: {
-    emailLanguage: string;
-    preferredGenres: string[];
-  } | null;
 };
 
 export type UserJourneyInput = {
@@ -75,23 +71,13 @@ export function analyzeUserJourney(input: UserJourneyInput): UserJourney {
   const subscriptions = input.subscriptions;
   const oneRead = subscriptions.find((sub) => sub.productKey === "one-read");
   const article = subscriptions.find((sub) => sub.productKey === "one-article");
-  const film = subscriptions.find((sub) => sub.productKey === "one-film");
 
   const articleExpected = Boolean(oneRead || article);
-  const filmExpected = Boolean(oneRead || film);
   const articleComplete = Boolean(article?.preferences?.summaryLanguage);
-  const filmComplete = Boolean(
-    film?.filmPreferences?.emailLanguage
-      && film.filmPreferences.preferredGenres.length > 0,
-  );
-  const expectedPreferenceProducts =
-    Number(articleExpected) + Number(filmExpected);
-  const completedPreferenceProducts =
-    Number(articleExpected && articleComplete)
-    + Number(filmExpected && filmComplete);
+  const expectedPreferenceProducts = Number(articleExpected);
+  const completedPreferenceProducts = Number(articleExpected && articleComplete);
   const missingPreferenceProducts = [
     articleExpected && !articleComplete ? "OneArticle" : null,
-    filmExpected && !filmComplete ? "OneFilm" : null,
   ].filter((value): value is string => Boolean(value));
 
   let preferences: UserPreferenceState = "NOT_APPLICABLE";

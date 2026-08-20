@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  *   ?send=<DailySend.id>   — preferred, opaque, comes from the email
  *   ?email=<email>         — fallback for support cases (web only)
  *   ?subscription=<ProductSubscription.unsubscribeToken>
- *                          — product-scoped fallback used by OneLingo
+ *                          — opaque OneArticle subscription token
  *   ?preview=1             — used by /api/admin/test-email previews;
  *                            renders the page without mutating anything.
  *
@@ -200,5 +200,5 @@ async function applyUnsubscribe(
 }
 
 function productLabel(productKey: string): string {
-  return productKey === "one-lingo" ? "OneLingo" : "OneRead";
+  return productKey === "one-article" ? "OneArticle" : "OneRead";
 }

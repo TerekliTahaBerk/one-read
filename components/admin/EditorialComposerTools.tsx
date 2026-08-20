@@ -132,7 +132,7 @@ export function EmailPreviewPanel({
   language,
 }: {
   html: string;
-  product: "OneArticle" | "OneFilm";
+  product: "OneArticle";
   subject: string;
   previewText: string;
   language: string;

@@ -129,7 +129,7 @@ export interface RunFailureClassification {
 
 /**
  * Turns any thrown value into the shape both the run row and the out-of-band
- * alert record, so OneArticle and OneFilm report identical failure semantics.
+ * alert record, so OneArticle reports consistent failure semantics.
  */
 export function classifyRunFailure(error: unknown): RunFailureClassification {
   const raw = error as { code?: unknown; errorCode?: unknown } | null;

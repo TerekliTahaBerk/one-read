@@ -16,22 +16,18 @@ import { productThemes } from "@/lib/product-themes";
 /**
  * The brand wordmark always reads `One` + a changing suffix. Only the suffix
  * is ever typed or deleted — `One` stays fixed. The public site currently
- * introduces OneRead, OneArticle, and OneFilm — the products in the
- * OneRead family visible today. Still-hidden product names stay out of the
- * opening animation.
+ * introduces OneRead and its sole launch product, OneArticle.
  */
-type ColorKey = "read" | "article" | "film";
+type ColorKey = "read" | "article";
 
 const SEQUENCE: { suffix: string; color: ColorKey }[] = [
   { suffix: "Read", color: "read" },
   { suffix: "Article", color: "article" },
-  { suffix: "Film", color: "film" },
 ];
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
   read: "#1A1A1A",
   article: productThemes.article.accent,
-  film: productThemes.film.accent,
 };
 
 /** Only these public, top-of-funnel pages get the opening animation. */
@@ -40,8 +36,6 @@ const PUBLIC_PATHS = new Set([
   "/article",
   "/article/pricing",
   "/article/subscribe",
-  "/film",
-  "/film/pricing",
   "/pricing",
   "/subscribe",
 ]);

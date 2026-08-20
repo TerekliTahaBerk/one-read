@@ -36,9 +36,11 @@ describe("applyPolarWebhookPayload", () => {
   const baseSub = {
     id: "sub_1",
     contactId: "contact_1",
+    productKey: "one-read",
     plan: "monthly",
     paidAt: null,
     trialUsedAt: null,
+    billingStateUpdatedAt: null,
   };
 
   function mockFoundSubscriptionByMetadataId() {
@@ -200,5 +202,40 @@ describe("applyPolarWebhookPayload", () => {
     expect(prisma.productSubscription.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "sub_1" } }),
     );
+  });
+
+  it("ignores an event whose Polar product does not match the subscription", async () => {
+    mockFoundSubscriptionByMetadataId();
+
+    await applyPolarWebhookPayload({
+      type: "order.paid",
+      timestamp: new Date(),
+      data: {
+        productId: "retired_or_unknown_product",
+        metadata: { productSubscriptionId: "sub_1" },
+        subscriptionId: "provider_sub_1",
+      },
+    });
+
+    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+  });
+
+  it("does not let an older webhook overwrite newer billing state", async () => {
+    prisma.productSubscription.findUnique.mockResolvedValue({
+      ...baseSub,
+      billingStateUpdatedAt: new Date("2026-08-20T12:00:00Z"),
+    } as any);
+
+    await applyPolarWebhookPayload({
+      type: "subscription.revoked",
+      timestamp: new Date("2026-08-20T11:59:59Z"),
+      data: {
+        id: "provider_sub_1",
+        status: "revoked",
+        metadata: { productSubscriptionId: "sub_1" },
+      },
+    });
+
+    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
   });
 });

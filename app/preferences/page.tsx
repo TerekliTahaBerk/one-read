@@ -4,6 +4,7 @@ import { OneReadPreferences } from "@/components/OneReadPreferences";
 export const metadata: Metadata = {
   title: "Manage OneRead",
   description: "Check your OneRead subscription status and edit your OneArticle reading language.",
+  robots: { index: false, follow: false },
 };
 
 export default async function PreferencesPage(

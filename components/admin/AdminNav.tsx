@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { PRODUCTS } from "@/lib/admin/products";
 
 /**
  * Left navigation for the admin. Highlights the active section and expands the
@@ -21,26 +20,12 @@ type NavItem = {
   disabled?: boolean;
 };
 
-/**
- * Derive a product's nav badge from the canonical catalog so it never goes
- * stale: "Waitlist" for pre-launch, "Hidden" for a live product not shown on
- * the public site, and no badge for a fully live + public product.
- */
-function productBadge(key: string): string | undefined {
-  const p = PRODUCTS.find((x) => x.key === key);
-  if (!p) return undefined;
-  if (p.status === "waitlist") return "Waitlist";
-  if (!p.publicVisible) return "Hidden";
-  return undefined;
-}
-
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Main",
     items: [
       { href: "/admin", label: "Overview", icon: "grid" },
       { href: "/admin/users", label: "Users", matchPrefix: "/admin/users", icon: "users" },
-      { href: "/admin/products", label: "Products", icon: "box" },
     ],
   },
   {
@@ -51,13 +36,6 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         label: "OneArticle",
         matchPrefix: "/admin/one-article",
         icon: "doc",
-      },
-      {
-        href: "/admin/one-film",
-        label: "OneFilm",
-        matchPrefix: "/admin/one-film",
-        badge: productBadge("one-film"),
-        icon: "film",
       },
     ],
   },
@@ -86,13 +64,6 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/admin/one-article/subscribers", label: "Subscribers" },
     { href: "/admin/one-article/issues", label: "Editions" },
     { href: "/admin/one-article/sends", label: "Deliveries" },
-  ],
-  "/admin/one-film": [
-    { href: "/admin/one-film", label: "Overview" },
-    { href: "/admin/one-film/new", label: "New edition" },
-    { href: "/admin/one-film/subscribers", label: "Subscribers" },
-    { href: "/admin/one-film/issues", label: "Editions" },
-    { href: "/admin/one-film/sends", label: "Deliveries" },
   ],
 };
 

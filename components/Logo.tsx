@@ -14,7 +14,7 @@ type Props = {
  *
  * The default "OneRead" mark renders the illustrated wordmark (the reading
  * mascot) as a raster asset — it's a specific piece of artwork, not typesetting.
- * Other product labels (OneArticle, OneFilm, OneLingo, …) still render as live
+ * The OneArticle product label renders as live
  * text in the brand serif (Fraunces) since they don't have their own mark yet.
  *
  * Defaults to linking home so it can double as the (intentionally minimal)

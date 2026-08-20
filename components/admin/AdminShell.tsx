@@ -13,8 +13,7 @@ import { AdminNav } from "./AdminNav";
  * sidebar inline; on small screens it collapses into a slide-in drawer.
  *
  * The base palette is neutral white (matching the public site chrome); the
- * single accent is a CSS variable that the shell recolours per product section
- * (OneArticle blue, OneLingo purple, OneFilm mauve, OneRead ink) from the
+ * single accent is a CSS variable that the shell recolours for OneArticle
  * canonical values in lib/product-themes.ts. Accent-driven `admin-*` tokens
  * pick up the variable automatically, so nothing else needs to know the theme.
  */
@@ -23,18 +22,12 @@ import { AdminNav } from "./AdminNav";
 const ADMIN_THEMES = {
   read: { accent: "#111111", strong: "#000000", tint: "#F2F2F2" },
   article: { accent: "#3F6FA8", strong: "#345C8C", tint: "#DDEEFF" },
-  lingo: { accent: "#6F5AA8", strong: "#5B4890", tint: "#EEE7FB" },
-  film: { accent: "#7B5E8E", strong: "#664B77", tint: "#F1E8F5" },
 } as const;
 
 function adminThemeVars(pathname: string): CSSProperties {
   const t = pathname.startsWith("/admin/one-article")
     ? ADMIN_THEMES.article
-    : pathname.startsWith("/admin/one-lingo")
-      ? ADMIN_THEMES.lingo
-      : pathname.startsWith("/admin/one-film")
-        ? ADMIN_THEMES.film
-        : ADMIN_THEMES.read;
+    : ADMIN_THEMES.read;
   return {
     "--admin-accent": t.accent,
     "--admin-accent-strong": t.strong,
@@ -45,20 +38,14 @@ function adminThemeVars(pathname: string): CSSProperties {
 const CRUMB_LABELS: Record<string, string> = {
   admin: "Admin",
   "one-article": "OneArticle",
-  "one-lingo": "OneLingo",
-  "one-film": "OneFilm",
   users: "Users",
-  products: "Products",
   settings: "Settings",
   audit: "Audit log",
-  "manual-article": "Manual article",
   new: "New edition",
   subscribers: "Subscribers",
   issues: "Editions",
   articles: "Articles",
   sends: "Deliveries",
-  lessons: "Lessons",
-  catalog: "Catalog",
 };
 
 function labelFor(segment: string): string {

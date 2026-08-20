@@ -151,6 +151,7 @@ export async function reconcileOneReadBillingFromPolar(
         pastDueAt:
           status === "PAST_DUE" ? current.pastDueAt ?? new Date() : null,
         paidAt,
+        billingStateUpdatedAt: new Date(),
       },
     });
   } catch (error) {

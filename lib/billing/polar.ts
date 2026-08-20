@@ -2,12 +2,8 @@ import { Polar } from "@polar-sh/sdk";
 import type { BillingInterval } from "@/lib/options";
 import {
   ONE_ARTICLE_PRODUCT_KEY,
-  ONE_LINGO_PRODUCT_KEY,
-  ONE_FILM_PRODUCT_KEY,
   ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
-import { lingoPolarProductId } from "@/lib/lingo/config";
-import { filmPolarProductId } from "@/lib/film/config";
 import { oneReadPolarProductId } from "@/lib/oneread/config";
 import { prisma } from "@/lib/prisma";
 import {
@@ -38,31 +34,12 @@ export function getPolarServer(): PolarServer {
 }
 
 /**
- * Resolves the Polar product id for a product. OneArticle keeps its env/default
- * behavior. OneLingo NEVER falls back to the OneArticle id — when unconfigured
- * it throws a safe "billing not configured" error the route can surface.
+ * Resolves the Polar product id for the current umbrella checkout or the
+ * retained standalone OneArticle billing path.
  */
 export function getPolarProductId(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): string {
-  if (productKey === ONE_LINGO_PRODUCT_KEY) {
-    const id = lingoPolarProductId();
-    if (!id) {
-      throw new Error(
-        "OneLingo billing is not configured. Missing: POLAR_ONE_LINGO_PRODUCT_ID.",
-      );
-    }
-    return id;
-  }
-  if (productKey === ONE_FILM_PRODUCT_KEY) {
-    const id = filmPolarProductId();
-    if (!id) {
-      throw new Error(
-        "OneFilm billing is not configured. Missing: POLAR_ONEFILM_PRODUCT_ID.",
-      );
-    }
-    return id;
-  }
   if (productKey === ONE_READ_PRODUCT_KEY) {
     const id = oneReadPolarProductId();
     if (!id) {
@@ -106,18 +83,6 @@ export function getPolarClient(): Polar {
   return new Polar({ accessToken, server: getPolarServer() });
 }
 
-/** Product-relative path segment, e.g. "article", "lingo", "news", "film". */
-function productPathSegment(productKey: string): string {
-  switch (productKey) {
-    case ONE_LINGO_PRODUCT_KEY:
-      return "lingo";
-    case ONE_FILM_PRODUCT_KEY:
-      return "film";
-    default:
-      return "article";
-  }
-}
-
 function checkoutReturnUrl(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): string | undefined {
@@ -134,17 +99,8 @@ function checkoutReturnUrl(
   ) {
     return process.env.POLAR_ONE_ARTICLE_RETURN_URL;
   }
-  if (
-    productKey === ONE_LINGO_PRODUCT_KEY &&
-    has(process.env.POLAR_ONE_LINGO_RETURN_URL)
-  ) {
-    return process.env.POLAR_ONE_LINGO_RETURN_URL;
-  }
-  if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_RETURN_URL)) {
-    return process.env.POLAR_ONEFILM_RETURN_URL;
-  }
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-  return base ? `${base}/${productPathSegment(productKey)}/subscribe` : undefined;
+  return base ? `${base}/article/subscribe` : undefined;
 }
 
 function checkoutSuccessUrl(
@@ -157,8 +113,7 @@ function checkoutSuccessUrl(
     const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
     return `${base}/subscribe/success?checkout_id={CHECKOUT_ID}`;
   }
-  // OneArticle honors the explicit POLAR_SUCCESS_URL env (back-compat). Other
-  // products build a product-aware URL from PUBLIC_BASE_URL.
+  // OneArticle honors the explicit POLAR_SUCCESS_URL env for back-compat.
   if (productKey === ONE_ARTICLE_PRODUCT_KEY && has(process.env.POLAR_SUCCESS_URL)) {
     return process.env.POLAR_SUCCESS_URL as string;
   }
@@ -168,17 +123,8 @@ function checkoutSuccessUrl(
   ) {
     return process.env.POLAR_ONE_ARTICLE_SUCCESS_URL;
   }
-  if (
-    productKey === ONE_LINGO_PRODUCT_KEY &&
-    has(process.env.POLAR_ONE_LINGO_SUCCESS_URL)
-  ) {
-    return process.env.POLAR_ONE_LINGO_SUCCESS_URL;
-  }
-  if (productKey === ONE_FILM_PRODUCT_KEY && has(process.env.POLAR_ONEFILM_SUCCESS_URL)) {
-    return process.env.POLAR_ONEFILM_SUCCESS_URL as string;
-  }
   const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-  return `${base}/${productPathSegment(productKey)}/subscribe/success?checkout_id={CHECKOUT_ID}`;
+  return `${base}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
 }
 
 function planFromInterval(interval: string | null): BillingInterval | null {
@@ -341,24 +287,50 @@ function metadataValue(data: PolarData, key: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function productKeyForPolarData(data: PolarData): string {
-  const metadataProductKey = metadataValue(data, "productKey");
-  if (metadataProductKey) return metadataProductKey;
+const SUPPORTED_BILLING_PRODUCT_KEYS = new Set([
+  ONE_READ_PRODUCT_KEY,
+  ONE_ARTICLE_PRODUCT_KEY,
+]);
 
-  const productId =
-    typeof data.productId === "string"
-      ? data.productId
-      : typeof data.product?.id === "string"
-        ? data.product.id
+function eventProductId(data: PolarData): string | null {
+  return typeof data.productId === "string"
+    ? data.productId
+    : typeof data.product?.id === "string"
+      ? data.product.id
+      : null;
+}
+
+function supportedProductKeyForPolarData(data: PolarData): string | null {
+  const metadataProductKey = metadataValue(data, "productKey");
+  const productId = eventProductId(data);
+  if (metadataProductKey && SUPPORTED_BILLING_PRODUCT_KEYS.has(metadataProductKey)) {
+    if (!productId) return metadataProductKey;
+    try {
+      return productId === getPolarProductId(metadataProductKey)
+        ? metadataProductKey
         : null;
-  if (!productId) return ONE_ARTICLE_PRODUCT_KEY;
+    } catch {
+      return null;
+    }
+  }
+
+  if (!productId) return null;
   if (productId === oneReadPolarProductId()) return ONE_READ_PRODUCT_KEY;
-  if (productId === filmPolarProductId()) return ONE_FILM_PRODUCT_KEY;
-  if (productId === lingoPolarProductId()) return ONE_LINGO_PRODUCT_KEY;
   if (productId === getPolarProductId(ONE_ARTICLE_PRODUCT_KEY)) {
     return ONE_ARTICLE_PRODUCT_KEY;
   }
-  return ONE_ARTICLE_PRODUCT_KEY;
+  return null;
+}
+
+function eventMatchesSubscription(data: PolarData, productKey: string): boolean {
+  if (!SUPPORTED_BILLING_PRODUCT_KEYS.has(productKey)) return false;
+  const productId = eventProductId(data);
+  if (!productId) return true;
+  try {
+    return productId === getPolarProductId(productKey);
+  } catch {
+    return false;
+  }
 }
 
 async function findSubscriptionForPolarData(data: PolarData) {
@@ -368,25 +340,29 @@ async function findSubscriptionForPolarData(data: PolarData) {
       where: { id: metadataSubId },
       include: { preferences: true },
     });
-    if (sub) return sub;
+    if (sub && eventMatchesSubscription(data, sub.productKey)) return sub;
   }
 
   const providerSubscriptionId = data.subscriptionId ?? data.id;
   if (typeof providerSubscriptionId === "string") {
     const sub = await prisma.productSubscription.findFirst({
-      where: { providerSubscriptionId },
+      where: {
+        providerSubscriptionId,
+        productKey: { in: [ONE_READ_PRODUCT_KEY, ONE_ARTICLE_PRODUCT_KEY] },
+      },
       include: { preferences: true },
     });
-    if (sub) return sub;
+    if (sub && eventMatchesSubscription(data, sub.productKey)) return sub;
   }
 
   // The remaining fallbacks need to know which product this event is for.
   // Trust the productKey we stamped into checkout metadata; default to
   // OneArticle for legacy events that predate the field. The strong lookups
   // above (productSubscriptionId / providerSubscriptionId) already disambiguate
-  // products, so an OneLingo purchase can never resolve to an OneArticle row
-  // here, and vice-versa.
-  const productKey = productKeyForPolarData(data);
+  // products, so an unknown or retired purchase can never resolve to an active
+  // OneArticle row here.
+  const productKey = supportedProductKeyForPolarData(data);
+  if (!productKey) return null;
 
   const contactId =
     metadataValue(data, "contactId") ??
@@ -430,9 +406,16 @@ export async function applyPolarWebhookPayload(payload: {
 
   const sub = await findSubscriptionForPolarData(data);
   if (!sub) return;
+  if (
+    sub.billingStateUpdatedAt &&
+    payload.timestamp.getTime() < sub.billingStateUpdatedAt.getTime()
+  ) {
+    return;
+  }
 
   const update: Record<string, any> = {
     paymentProvider: PROVIDER,
+    billingStateUpdatedAt: payload.timestamp,
   };
 
   const customerId = data.customerId ?? data.customer?.id;

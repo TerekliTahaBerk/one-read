@@ -6,11 +6,6 @@ export const metadata: Metadata = {
   description: "Your OneArticle checkout is complete and activation is syncing.",
 };
 
-export default async function SubscribeSuccessPage(
-  props: {
-    searchParams: Promise<{ checkout_id?: string; email?: string }>;
-  }
-) {
-  const searchParams = await props.searchParams;
-  return <ArticleSubscribeSuccessContent searchParams={searchParams} />;
+export default function SubscribeSuccessPage() {
+  return <ArticleSubscribeSuccessContent />;
 }

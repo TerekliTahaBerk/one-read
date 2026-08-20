@@ -18,7 +18,7 @@ describe("public legal copy", () => {
     for (const legal of Object.values(LEGAL_DICTIONARIES)) {
       const terms = flatten(legal.terms);
       expect(terms).toContain("OneArticle");
-      expect(terms).toContain("OneFilm");
+      expect(terms).not.toContain("OneFilm");
       expect(terms).toMatch(/monthly|aylık|monat|mensuel/i);
       expect(terms).toContain("USD");
       expect(terms).toMatch(/Türkiye/);

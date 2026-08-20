@@ -3,16 +3,13 @@ import {
   parseEmail,
   ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
-  ONE_FILM_PRODUCT_KEY,
 } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import {
   resolveOneReadState,
   resolveOneArticleEligibilityForContact,
-  resolveOneFilmEligibilityForContact,
 } from "@/lib/oneread/access";
 import { preferencesComplete } from "@/lib/subscriptions";
-import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { reconcileOneReadBillingFromPolar } from "@/lib/oneread/billing-sync";
 
@@ -55,11 +52,10 @@ export async function POST(request: Request) {
             in: [
               ONE_READ_PRODUCT_KEY,
               ONE_ARTICLE_PRODUCT_KEY,
-              ONE_FILM_PRODUCT_KEY,
             ],
           },
         },
-        include: { preferences: true, filmPreferences: true },
+        include: { preferences: true },
       },
     },
   });
@@ -69,24 +65,17 @@ export async function POST(request: Request) {
       ok: true,
       ...state,
       articlePreferencesComplete: false,
-      filmPreferencesComplete: false,
     });
   }
 
   const articleHolder = contact.subscriptions.find((s) => s.productKey === ONE_ARTICLE_PRODUCT_KEY);
-  const filmHolder = contact.subscriptions.find((s) => s.productKey === ONE_FILM_PRODUCT_KEY);
-  const [articleEligibility, filmEligibility] = await Promise.all([
-    resolveOneArticleEligibilityForContact(contact.id),
-    resolveOneFilmEligibilityForContact(contact.id),
-  ]);
+  const articleEligibility = await resolveOneArticleEligibilityForContact(contact.id);
 
   return NextResponse.json({
     ok: true,
     ...state,
     articlePreferencesComplete: preferencesComplete(articleHolder?.preferences ?? null),
-    filmPreferencesComplete: filmPreferencesComplete(filmHolder?.filmPreferences ?? null),
     articleEligibilityReason: articleEligibility.reason,
-    filmEligibilityReason: filmEligibility.reason,
     billingManageable: contact.subscriptions.some(
       (subscription) =>
         subscription.productKey === ONE_READ_PRODUCT_KEY &&

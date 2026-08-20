@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { OpeningLoader } from "@/components/OpeningLoader";
 import { SiteLanguageProvider } from "@/components/SiteLanguageProvider";
@@ -27,11 +26,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
   title: "OneRead — One useful email at a time.",
   description:
-    "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
+    "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
+      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
     type: "website",
     siteName: "OneRead",
     url: "/",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead brings small, single-purpose notes to your inbox — an article for the morning, a film for the weekend, and more quiet tools as they join the family.",
+      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
     images: ["/opengraph-image"],
   },
 };
@@ -71,10 +71,6 @@ export default async function RootLayout(
           {children}
           <OpeningLoader />
         </SiteLanguageProvider>
-        <Script
-          src="https://tally.so/widgets/embed.js"
-          strategy="afterInteractive"
-        />
         <Analytics />
       </body>
     </html>

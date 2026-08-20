@@ -63,9 +63,19 @@ export async function POST(request: Request) {
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2002"
     ) {
-      return NextResponse.json({ ok: true, duplicate: true });
+      const existing = await prisma.billingEvent.findUnique({
+        where: { providerEventId },
+        select: { processedAt: true },
+      });
+      if (existing?.processedAt) {
+        return NextResponse.json({ ok: true, duplicate: true });
+      }
+      // A previous delivery inserted the audit row but failed before applying
+      // it. Continue so Polar's retry can finish the event instead of being
+      // acknowledged and lost forever.
+    } else {
+      throw err;
     }
-    throw err;
   }
 
   await applyPolarWebhookPayload(payload as any);

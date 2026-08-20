@@ -32,13 +32,13 @@ const en: LegalDictionary = {
     title: "Terms of Service",
     lastUpdated: "July 25, 2026",
     intro: [
-      "These terms govern your use of OneRead — one monthly subscription that includes OneArticle and OneFilm. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
+      "These terms govern your use of OneRead — a monthly subscription that includes OneArticle. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
     ],
     sections: [
       {
         heading: "The service",
         paragraphs: [
-          "OneRead currently includes **OneArticle**, a weekday article brief delivered in your chosen reading language, and **OneFilm**, a Saturday film note delivered in English or Turkish. We aim to deliver each email reliably around its scheduled time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
+          "OneRead currently includes **OneArticle**, a weekday article brief delivered in your chosen reading language. We aim to deliver each email reliably around its scheduled time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
         ],
       },
       {
@@ -77,7 +77,7 @@ const en: LegalDictionary = {
         heading: "Content and intellectual property",
         paragraphs: [
           "Each OneArticle email contains **original editorial writing** about a source article, together with a link to it. We summarize and comment — we don't reproduce source material in full and we don't publish full translations of it. The source **remains the property of its respective publisher**, and nothing in our emails should be read as OneRead claiming to be that publisher or as an endorsement by them.",
-          "Our emails are provided for your **personal, non-commercial use**. The OneRead, OneArticle, and OneFilm names, design, and the summaries and commentary we write remain ours or our licensors'. You may read and share a link to an email, but you may not copy, resell, redistribute, scrape, or archive our content on a systematic basis.",
+          "Our emails are provided for your **personal, non-commercial use**. The OneRead and OneArticle names, design, and the summaries and commentary we write remain ours or our licensors'. You may read and share a link to an email, but you may not copy, resell, redistribute, scrape, or archive our content on a systematic basis.",
         ],
       },
       {
@@ -89,7 +89,7 @@ const en: LegalDictionary = {
       {
         heading: "Editorial process and accuracy",
         paragraphs: [
-          "OneArticle and OneFilm editions are selected, written, reviewed, and scheduled by a human editor. Software tools may assist research, formatting, and quality checks, but no edition is sent without explicit editorial approval. Despite that review, an edition may still contain errors, omissions, or simplifications. For anything that matters, read the linked source or verify film details independently. Nothing we send is professional advice — legal, financial, medical, or otherwise.",
+          "OneArticle editions are selected, written, reviewed, and scheduled by a human editor. Software tools may assist research, formatting, and quality checks, but no edition is sent without explicit editorial approval. Despite that review, an edition may still contain errors, omissions, or simplifications. For anything that matters, read the linked source. Nothing we send is professional advice — legal, financial, medical, or otherwise.",
         ],
       },
       {
@@ -134,7 +134,7 @@ const en: LegalDictionary = {
     title: "Privacy Policy",
     lastUpdated: "July 25, 2026",
     intro: [
-      "OneRead is built around a simple idea: a genuinely useful email, and nothing more. That restraint extends to your data. We collect only what we need to run OneArticle and OneFilm, we never sell it, and we don't track you around the web. This policy explains what we collect, why, and the choices you have.",
+      "OneRead is built around a simple idea: a genuinely useful email, and nothing more. That restraint extends to your data. We collect only what we need to run OneArticle, we never sell it, and we don't track you around the web. This policy explains what we collect, why, and the choices you have.",
     ],
     sections: [
       {
@@ -254,13 +254,13 @@ const tr: LegalDictionary = {
     title: "Kullanım Koşulları",
     lastUpdated: "25 Temmuz 2026",
     intro: [
-      "Bu koşullar, OneArticle ve OneFilm'i kapsayan aylık OneRead aboneliğini kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
+      "Bu koşullar, OneArticle'ı kapsayan aylık OneRead aboneliğini kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
     ],
     sections: [
       {
         heading: "Hizmet",
         paragraphs: [
-          "OneRead şu anda seçtiğiniz okuma dilinde hafta içi gönderilen **OneArticle** makale özetini ve İngilizce veya Türkçe cumartesi gönderilen **OneFilm** film notunu içerir. Her e-postayı planlanan zamanda güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
+          "OneRead şu anda seçtiğiniz okuma dilinde hafta içi gönderilen **OneArticle** makale özetini içerir. Her e-postayı planlanan zamanda güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
         ],
       },
       {
@@ -299,7 +299,7 @@ const tr: LegalDictionary = {
         heading: "İçerik ve fikri mülkiyet",
         paragraphs: [
           "Her OneArticle e-postası, kaynak makaleye bağlantıyla birlikte **özgün editoryal yazı** içerir. Özetler ve yorumlarız; kaynak materyali tam olarak yeniden üretmeyiz ve tam çevirisini yayımlamayız. Kaynak **ilgili yayıncısının mülkiyetinde kalır** ve e-postalarımızdaki hiçbir ifade OneRead'in o yayıncı olduğu veya o yayıncı tarafından onaylandığı şeklinde yorumlanamaz.",
-          "E-postalarımız **kişisel, ticari olmayan kullanımınız** için sunulur. OneRead, OneArticle ve OneFilm adları, tasarımı ile yazdığımız özet ve yorumlar bize veya lisans verenlerimize aittir. Bir e-postayı okuyabilir ve bağlantısını paylaşabilirsiniz; ancak içeriklerimizi sistematik biçimde kopyalayamaz, yeniden satamaz, dağıtamaz, kazıyamaz veya arşivleyemezsiniz.",
+          "E-postalarımız **kişisel, ticari olmayan kullanımınız** için sunulur. OneRead ve OneArticle adları, tasarımı ile yazdığımız özet ve yorumlar bize veya lisans verenlerimize aittir. Bir e-postayı okuyabilir ve bağlantısını paylaşabilirsiniz; ancak içeriklerimizi sistematik biçimde kopyalayamaz, yeniden satamaz, dağıtamaz, kazıyamaz veya arşivleyemezsiniz.",
         ],
       },
       {
@@ -311,7 +311,7 @@ const tr: LegalDictionary = {
       {
         heading: "Editoryal süreç ve doğruluk",
         paragraphs: [
-          "OneArticle ve OneFilm gönderileri bir insan editör tarafından seçilir, yazılır, kontrol edilir ve zamanlanır. Yazılım araçları araştırma, biçimlendirme ve kalite kontrollerine yardımcı olabilir; ancak açık editoryal onay olmadan hiçbir gönderi yollanmaz. Bu incelemeye rağmen hata, eksik veya basitleştirme olabilir. Önemli konularda bağlantılı kaynağı okuyun veya film bilgilerini bağımsız doğrulayın. Gönderdiğimiz içerikler profesyonel tavsiye değildir.",
+          "OneArticle gönderileri bir insan editör tarafından seçilir, yazılır, kontrol edilir ve zamanlanır. Yazılım araçları araştırma, biçimlendirme ve kalite kontrollerine yardımcı olabilir; ancak açık editoryal onay olmadan hiçbir gönderi yollanmaz. Bu incelemeye rağmen hata, eksik veya basitleştirme olabilir. Önemli konularda bağlantılı kaynağı okuyun. Gönderdiğimiz içerikler profesyonel tavsiye değildir.",
         ],
       },
       {
@@ -356,7 +356,7 @@ const tr: LegalDictionary = {
     title: "Gizlilik Politikası",
     lastUpdated: "25 Temmuz 2026",
     intro: [
-      "OneRead basit bir fikir üzerine kuruludur: gerçekten yararlı tek bir e-posta, fazlası değil. OneArticle ve OneFilm'i yürütmek için gereken en az bilgiyi topluyoruz, bunu asla satmıyoruz ve sizi internette takip etmiyoruz.",
+      "OneRead basit bir fikir üzerine kuruludur: gerçekten yararlı tek bir e-posta, fazlası değil. OneArticle'ı yürütmek için gereken en az bilgiyi topluyoruz, bunu asla satmıyoruz ve sizi internette takip etmiyoruz.",
     ],
     sections: [
       {
@@ -476,13 +476,13 @@ const de: LegalDictionary = {
     title: "Nutzungsbedingungen",
     lastUpdated: "25. Juli 2026",
     intro: [
-      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Monatsabonnement, das OneArticle und OneFilm umfasst. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
+      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Monatsabonnement, das OneArticle umfasst. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
     ],
     sections: [
       {
         heading: "Der Dienst",
         paragraphs: [
-          "OneRead umfasst derzeit **OneArticle**, ein werktägliches Artikelbriefing in Ihrer gewählten Lesesprache, und **OneFilm**, eine samstägliche Filmnotiz auf Englisch oder Türkisch. Wir sind bestrebt, jede E-Mail zuverlässig zum geplanten Zeitpunkt zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern.",
+          "OneRead umfasst derzeit **OneArticle**, ein werktägliches Artikelbriefing in Ihrer gewählten Lesesprache. Wir sind bestrebt, jede E-Mail zuverlässig zum geplanten Zeitpunkt zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern.",
         ],
       },
       {
@@ -521,7 +521,7 @@ const de: LegalDictionary = {
         heading: "Inhalte und geistiges Eigentum",
         paragraphs: [
           "Jede OneArticle-E-Mail enthält eine **eigenständige redaktionelle Einordnung** eines Quellartikels samt Link dorthin. Wir fassen zusammen und ordnen ein — wir geben Quellmaterial nicht vollständig wieder und veröffentlichen keine vollständigen Übersetzungen davon. Die Quelle **bleibt Eigentum des jeweiligen Verlags**; nichts in unseren E-Mails ist so zu verstehen, dass OneRead sich als dieser Verlag ausgibt oder von ihm unterstützt wird.",
-          "Unsere E-Mails sind für Ihre **persönliche, nicht kommerzielle Nutzung** bestimmt. Die Namen OneRead, OneArticle und OneFilm, das Design sowie die von uns verfassten Zusammenfassungen und Einordnungen bleiben unser Eigentum oder das unserer Lizenzgeber. Sie dürfen eine E-Mail lesen und einen Link dazu teilen, jedoch unsere Inhalte nicht systematisch kopieren, weiterverkaufen, verbreiten, extrahieren oder archivieren.",
+          "Unsere E-Mails sind für Ihre **persönliche, nicht kommerzielle Nutzung** bestimmt. Die Namen OneRead und OneArticle, das Design sowie die von uns verfassten Zusammenfassungen und Einordnungen bleiben unser Eigentum oder das unserer Lizenzgeber. Sie dürfen eine E-Mail lesen und einen Link dazu teilen, jedoch unsere Inhalte nicht systematisch kopieren, weiterverkaufen, verbreiten, extrahieren oder archivieren.",
         ],
       },
       {
@@ -533,7 +533,7 @@ const de: LegalDictionary = {
       {
         heading: "Redaktioneller Prozess und Genauigkeit",
         paragraphs: [
-          "OneArticle- und OneFilm-Ausgaben werden von einem menschlichen Redakteur ausgewählt, verfasst, geprüft und geplant. Software kann Recherche, Formatierung und Qualitätskontrollen unterstützen; ohne ausdrückliche redaktionelle Freigabe wird jedoch keine Ausgabe versendet. Trotz Prüfung können Fehler oder Vereinfachungen vorkommen. Lesen Sie bei wichtigen Themen die verlinkte Quelle oder prüfen Sie Filmdetails eigenständig.",
+          "OneArticle-Ausgaben werden von einem menschlichen Redakteur ausgewählt, verfasst, geprüft und geplant. Software kann Recherche, Formatierung und Qualitätskontrollen unterstützen; ohne ausdrückliche redaktionelle Freigabe wird jedoch keine Ausgabe versendet. Trotz Prüfung können Fehler oder Vereinfachungen vorkommen. Lesen Sie bei wichtigen Themen die verlinkte Quelle.",
         ],
       },
       {
@@ -578,7 +578,7 @@ const de: LegalDictionary = {
     title: "Datenschutzerklärung",
     lastUpdated: "25. Juli 2026",
     intro: [
-      "OneRead beruht auf einer einfachen Idee: eine wirklich nützliche E-Mail, mehr nicht. Wir erheben nur, was wir für OneArticle und OneFilm benötigen, verkaufen die Daten nie und verfolgen Sie nicht im Web.",
+      "OneRead beruht auf einer einfachen Idee: eine wirklich nützliche E-Mail, mehr nicht. Wir erheben nur, was wir für OneArticle benötigen, verkaufen die Daten nie und verfolgen Sie nicht im Web.",
     ],
     sections: [
       {
@@ -698,13 +698,13 @@ const fr: LegalDictionary = {
     title: "Conditions d'utilisation",
     lastUpdated: "25 juillet 2026",
     intro: [
-      "Ces conditions régissent votre utilisation d'OneRead — un abonnement mensuel qui inclut OneArticle et OneFilm. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
+      "Ces conditions régissent votre utilisation d'OneRead — un abonnement mensuel qui inclut OneArticle. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
     ],
     sections: [
       {
         heading: "Le service",
         paragraphs: [
-          "OneRead inclut actuellement **OneArticle**, une note article envoyée en semaine dans la langue de lecture choisie, et **OneFilm**, une note cinéma du samedi en anglais ou en turc. Nous nous efforçons de livrer chaque e-mail à l'heure prévue, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer.",
+          "OneRead inclut actuellement **OneArticle**, une note article envoyée en semaine dans la langue de lecture choisie. Nous nous efforçons de livrer chaque e-mail à l'heure prévue, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer.",
         ],
       },
       {
@@ -743,7 +743,7 @@ const fr: LegalDictionary = {
         heading: "Contenu et propriété intellectuelle",
         paragraphs: [
           "Chaque e-mail OneArticle contient une **rédaction éditoriale originale** sur un article source, accompagnée d'un lien vers celui-ci. Nous résumons et commentons — nous ne reproduisons pas intégralement le contenu source et n'en publions pas de traduction complète. La source **demeure la propriété de son éditeur respectif**, et rien dans nos e-mails ne doit être interprété comme le fait qu'OneRead se présente comme cet éditeur ou bénéficie de son approbation.",
-          "Nos e-mails sont fournis pour votre **usage personnel et non commercial**. Les noms OneRead, OneArticle et OneFilm, leur design, ainsi que les résumés et commentaires que nous rédigeons demeurent notre propriété ou celle de nos concédants de licence. Vous pouvez lire un e-mail et partager un lien vers celui-ci, mais vous ne pouvez pas copier, revendre, redistribuer, collecter ou archiver notre contenu de manière systématique.",
+          "Nos e-mails sont fournis pour votre **usage personnel et non commercial**. Les noms OneRead et OneArticle, leur design, ainsi que les résumés et commentaires que nous rédigeons demeurent notre propriété ou celle de nos concédants de licence. Vous pouvez lire un e-mail et partager un lien vers celui-ci, mais vous ne pouvez pas copier, revendre, redistribuer, collecter ou archiver notre contenu de manière systématique.",
         ],
       },
       {
@@ -755,7 +755,7 @@ const fr: LegalDictionary = {
       {
         heading: "Processus éditorial et exactitude",
         paragraphs: [
-          "Les éditions OneArticle et OneFilm sont sélectionnées, rédigées, vérifiées et programmées par un éditeur humain. Des outils logiciels peuvent aider la recherche, la mise en forme et les contrôles qualité, mais aucune édition n'est envoyée sans validation éditoriale explicite. Malgré cette vérification, des erreurs ou simplifications restent possibles.",
+          "Les éditions OneArticle sont sélectionnées, rédigées, vérifiées et programmées par un éditeur humain. Des outils logiciels peuvent aider la recherche, la mise en forme et les contrôles qualité, mais aucune édition n'est envoyée sans validation éditoriale explicite. Malgré cette vérification, des erreurs ou simplifications restent possibles.",
         ],
       },
       {
@@ -800,7 +800,7 @@ const fr: LegalDictionary = {
     title: "Politique de confidentialité",
     lastUpdated: "25 juillet 2026",
     intro: [
-      "OneRead repose sur une idée simple : un e-mail réellement utile, rien de plus. Nous ne collectons que ce dont nous avons besoin pour faire fonctionner OneArticle et OneFilm, nous ne vendons jamais ces données et nous ne vous suivons pas sur le web.",
+      "OneRead repose sur une idée simple : un e-mail réellement utile, rien de plus. Nous ne collectons que ce dont nous avons besoin pour faire fonctionner OneArticle, nous ne vendons jamais ces données et nous ne vous suivons pas sur le web.",
     ],
     sections: [
       {

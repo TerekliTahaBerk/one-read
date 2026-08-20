@@ -4,7 +4,7 @@ import { getSortedBlogPosts } from "@/lib/blog";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
 const description =
-  "Practical essays from OneRead on intentional reading, editorial curation, calmer email, and choosing films without endless scrolling.";
+  "Practical essays from OneRead on intentional reading, editorial curation, and calmer email.";
 
 export const metadata: Metadata = {
   title: "Intentional Reading & Editorial Curation — OneRead Journal",
@@ -15,7 +15,6 @@ export const metadata: Metadata = {
     "information overload",
     "editorial curation",
     "calm technology",
-    "film recommendations",
   ],
   alternates: {
     canonical: "/blog",

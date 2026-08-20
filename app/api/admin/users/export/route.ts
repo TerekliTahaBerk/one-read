@@ -15,7 +15,8 @@ export async function GET(request: Request): Promise<Response> {
     prisma.contact.findMany({
       include: {
         subscriptions: {
-          include: { preferences: true, filmPreferences: true },
+          where: { productKey: { in: ["one-read", "one-article"] } },
+          include: { preferences: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -73,17 +74,6 @@ export async function GET(request: Request): Promise<Response> {
     "article_source_language",
     "article_reading_language",
     "article_timezone",
-    "one_film_status",
-    "one_film_delivery",
-    "film_email_language",
-    "film_genres",
-    "film_moods",
-    "film_decades",
-    "film_languages",
-    "film_platforms",
-    "film_spoiler_preference",
-    "film_discovery_style",
-    "film_runtime_preference",
   ];
 
   const lines = [csvRow(header)];
@@ -92,9 +82,7 @@ export async function GET(request: Request): Promise<Response> {
     exportedEmails.add(contact.email.toLowerCase());
     const umbrella = contact.subscriptions.find((sub) => sub.productKey === "one-read");
     const article = contact.subscriptions.find((sub) => sub.productKey === "one-article");
-    const film = contact.subscriptions.find((sub) => sub.productKey === "one-film");
     const articlePrefs = article?.preferences;
-    const filmPrefs = film?.filmPreferences;
     const verification = verificationByEmail.get(contact.email.toLowerCase());
     const journey = analyzeUserJourney({
       subscriptions: contact.subscriptions,
@@ -126,17 +114,6 @@ export async function GET(request: Request): Promise<Response> {
       articlePrefs?.sourceLanguage,
       articlePrefs?.summaryLanguage,
       articlePrefs?.timezone,
-      film?.status,
-      film?.emailDeliveryStatus,
-      filmPrefs?.emailLanguage,
-      filmPrefs?.preferredGenres,
-      filmPrefs?.moods,
-      filmPrefs?.decades,
-      filmPrefs?.languages,
-      filmPrefs?.platforms,
-      filmPrefs?.spoilerPreference,
-      filmPrefs?.familiarity,
-      filmPrefs?.runtimePreference,
     ]));
   }
 

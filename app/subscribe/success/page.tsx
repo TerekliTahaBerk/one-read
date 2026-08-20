@@ -1,5 +1,4 @@
-"use client";;
-import { use } from "react";
+"use client";
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -9,18 +8,10 @@ import { Logo } from "@/components/Logo";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { productThemes } from "@/lib/product-themes";
 
-export default function SubscribeSuccessPage(
-  props: {
-    searchParams: Promise<{ checkout_id?: string; email?: string }>;
-  }
-) {
-  const searchParams = use(props.searchParams);
+export default function SubscribeSuccessPage() {
   const { dictionary } = useSiteLanguage();
   const t = dictionary.subscribeSuccess;
   const theme = productThemes.read;
-  const preferencesHref = searchParams.email
-    ? `/preferences?email=${encodeURIComponent(searchParams.email)}`
-    : "/preferences";
 
   return (
     <main
@@ -49,13 +40,8 @@ export default function SubscribeSuccessPage(
         <p className="font-sans text-[15px] sm:text-[15.5px] leading-[1.65] text-ash mt-5 max-w-[42ch]">
           {t.body}
         </p>
-        {searchParams.checkout_id ? (
-          <p className="font-mono text-[11px] text-fog mt-4">
-            {t.checkoutLabel.replace("{id}", searchParams.checkout_id)}
-          </p>
-        ) : null}
         <Link
-          href={preferencesHref}
+          href="/preferences"
           className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-[var(--theme-accent)] px-5 font-sans text-[15px] text-white"
         >
           {t.cta}

@@ -224,7 +224,7 @@ export const BLOG_POSTS: BlogPost[] = [
     productLink: {
       href: "/editorial",
       label: "Read our editorial standards",
-      description: "See the principles applied across OneArticle and OneFilm.",
+      description: "See the principles applied to OneArticle.",
     },
   },
   {
@@ -425,9 +425,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     relatedSlugs: ["the-case-against-the-feed", "what-makes-a-newsletter-worth-opening"],
     productLink: {
-      href: "/film",
-      label: "Meet OneFilm",
-      description: "One thoughtful film note for Saturday.",
+      href: "/article",
+      label: "Meet OneArticle",
+      description: "One thoughtful article briefing every weekday.",
     },
   },
 ];

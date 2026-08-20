@@ -1,6 +1,6 @@
 /**
- * Send-day gating shared by the OneArticle (weekday) and OneFilm (Saturday)
- * crons. Computes the local day-of-week in a given IANA timezone so a UTC
+ * Send-day gating for the OneArticle weekday cron. Computes the local
+ * day-of-week in a given IANA timezone so a UTC
  * cron trigger still respects "Monday morning in Istanbul", etc.
  */
 
@@ -32,17 +32,7 @@ export function isSendDay(date: Date, timeZone: string, sendDays: readonly DayCo
 }
 
 export const ONE_ARTICLE_DEFAULT_SEND_DAYS: readonly DayCode[] = ["MON", "TUE", "WED", "THU", "FRI"];
-export const ONE_FILM_DEFAULT_SEND_DAYS: readonly DayCode[] = ["SAT"];
 
 export function oneArticleSendDays(override?: string): DayCode[] {
   return parseSendDays(override ?? process.env.ONE_ARTICLE_SEND_DAYS, ONE_ARTICLE_DEFAULT_SEND_DAYS);
-}
-
-export function oneFilmSendDays(override?: string): DayCode[] {
-  return parseSendDays(override ?? process.env.ONE_FILM_SEND_DAYS, ONE_FILM_DEFAULT_SEND_DAYS);
-}
-
-export const ONE_LINGO_DEFAULT_SEND_DAYS: readonly DayCode[] = ["MON", "TUE", "WED", "THU", "FRI"];
-export function oneLingoSendDays(override?: string): DayCode[] {
-  return parseSendDays(override ?? process.env.ONE_LINGO_SEND_DAYS, ONE_LINGO_DEFAULT_SEND_DAYS);
 }

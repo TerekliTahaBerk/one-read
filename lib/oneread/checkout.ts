@@ -1,7 +1,6 @@
 import {
   ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
-  ONE_FILM_PRODUCT_KEY,
 } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import {
@@ -9,7 +8,6 @@ import {
   createPolarCustomerPortalUrl,
 } from "@/lib/billing/polar";
 import { preferencesComplete } from "@/lib/subscriptions";
-import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import { ensureOneReadSubscription } from "@/lib/oneread/access";
 import { reconcileOneReadBillingFromPolar } from "@/lib/oneread/billing-sync";
 import { hasValidAccess } from "@/lib/billing/access";
@@ -21,8 +19,7 @@ export type OneReadCheckoutResult =
   | { kind: "redirect"; url: string };
 
 /**
- * Starts (or resumes) a OneRead checkout. Both included products must be set
- * up before Polar checkout is allowed.
+ * Starts (or resumes) the OneRead checkout after OneArticle preferences are complete.
  */
 export async function createOneReadCheckoutSession(
   email: string,
@@ -34,20 +31,11 @@ export async function createOneReadCheckoutSession(
       where: { id: ensured.id },
     })) ?? ensured;
 
-  const [articleHolder, filmHolder] = await Promise.all([
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
-      include: { preferences: true },
-    }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-      include: { filmPreferences: true },
-    }),
-  ]);
-  if (
-    !preferencesComplete(articleHolder?.preferences ?? null) ||
-    !filmPreferencesComplete(filmHolder?.filmPreferences ?? null)
-  ) {
+  const articleHolder = await prisma.productSubscription.findUnique({
+    where: { contactId_productKey: { contactId: sub.contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
+    include: { preferences: true },
+  });
+  if (!preferencesComplete(articleHolder?.preferences ?? null)) {
     return { kind: "needs_setup" };
   }
 

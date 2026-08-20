@@ -1,5 +1,5 @@
 /**
- * The one editorial-cron handler body, shared by OneArticle and OneFilm.
+ * The OneArticle editorial-cron handler body.
  *
  * Both products dispatch manually written editions on the same schedule and
  * must fail the same way, so the ordering below is the contract:

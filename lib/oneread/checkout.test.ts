@@ -42,15 +42,10 @@ const baseSubscription = {
 const articleHolder = {
   preferences: { summaryLanguage: "English", interests: ["Finance"] },
 };
-const filmHolder = {
-  filmPreferences: { emailLanguage: "English", preferredGenres: ["Drama"] },
-};
-
 function mockCheckoutReads(subscription: Record<string, unknown>) {
   prisma.productSubscription.findUnique
     .mockResolvedValueOnce(subscription as any)
-    .mockResolvedValueOnce(articleHolder as any)
-    .mockResolvedValueOnce(filmHolder as any);
+    .mockResolvedValueOnce(articleHolder as any);
 }
 
 beforeEach(() => {

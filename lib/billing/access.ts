@@ -41,7 +41,6 @@ export type EligibilityReason =
   | "ok"
   | "incomplete_preferences"
   | "missing_language_preferences"
-  | "missing_film_preferences"
   | "missing_article_preferences"
   | "email_unsubscribed"
   | "email_suppressed"
@@ -56,9 +55,7 @@ export type EligibilityReason =
   /** OneRead umbrella access grants this product (see lib/oneread/access.ts). */
   | "included_in_oneread"
   /** A pre-existing standalone OneArticle subscription grants access directly. */
-  | "legacy_one_article_access"
-  /** A pre-existing standalone OneFilm subscription grants access directly. */
-  | "legacy_one_film_access";
+  | "legacy_one_article_access";
 
 export interface EligibilityResult {
   allowed: boolean;
@@ -142,8 +139,7 @@ export function hasValidAccess(
 
 /**
  * The single source of truth for "should this subscriber receive a daily email
- * for this product right now?". Product-agnostic — OneArticle and OneLingo both
- * route through here. All daily-send logic must use this — never re-implement
+ * for this product right now?". All OneArticle send logic must use this — never re-implement
  * these checks inline.
  *
  * A subscriber is eligible only if ALL hold:

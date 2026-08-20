@@ -32,7 +32,7 @@ describe("analyzeUserJourney", () => {
     })).toMatchObject({
       stage: "NO_PREFERENCES",
       preferences: "NOT_STARTED",
-      missingPreferenceProducts: ["OneArticle", "OneFilm"],
+      missingPreferenceProducts: ["OneArticle"],
     });
   });
 
@@ -45,12 +45,11 @@ describe("analyzeUserJourney", () => {
           productKey: "one-article",
           preferences: { summaryLanguage: "English" },
         },
-        { ...baseSubscription, productKey: "one-film", filmPreferences: null },
       ],
       verificationRequested: true,
       verified: true,
     });
-    expect(result.stage).toBe("PARTIAL_PREFERENCES");
+    expect(result.stage).toBe("AWAITING_PAYMENT");
     expect(result.payment).toBe("NEVER_PAID");
     expect(result.completedPreferenceProducts).toBe(1);
   });
@@ -69,14 +68,6 @@ describe("analyzeUserJourney", () => {
           ...baseSubscription,
           productKey: "one-article",
           preferences: { summaryLanguage: "Turkish" },
-        },
-        {
-          ...baseSubscription,
-          productKey: "one-film",
-          filmPreferences: {
-            emailLanguage: "Turkish",
-            preferredGenres: ["Drama"],
-          },
         },
       ],
       verificationRequested: true,

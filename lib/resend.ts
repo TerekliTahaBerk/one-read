@@ -23,6 +23,7 @@ const FROM =
   process.env.FROM_EMAIL?.trim() ||
   process.env.RESEND_FROM?.trim() ||
   FROM_FALLBACK;
+const REPLY_TO = process.env.RESEND_REPLY_TO?.trim() || undefined;
 
 /**
  * One-shot production warnings. We log on the first call rather than at
@@ -78,12 +79,14 @@ export async function sendDailyEmail(args: {
   html: string;
   /** Stable key used by Resend to prevent duplicate delivery across retries. */
   idempotencyKey?: string;
+  /** Editorial-only one-click unsubscribe endpoint. Omit for transactional mail. */
+  unsubscribeUrl?: string;
 }): Promise<{ messageId?: string }> {
   warnIfMisconfigured();
   if (!resend) {
     console.warn(
       "[resend] RESEND_API_KEY is not set; skipping daily email for",
-      args.to,
+      "(recipient redacted)",
     );
     return {};
   }
@@ -95,6 +98,15 @@ export async function sendDailyEmail(args: {
       subject: args.subject,
       text: args.text,
       html: args.html,
+      ...(REPLY_TO ? { replyTo: REPLY_TO } : {}),
+      ...(args.unsubscribeUrl
+        ? {
+            headers: {
+              "List-Unsubscribe": `<${args.unsubscribeUrl}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+        : {}),
     },
     args.idempotencyKey ? { idempotencyKey: args.idempotencyKey } : undefined,
   );

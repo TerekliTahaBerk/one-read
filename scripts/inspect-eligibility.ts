@@ -60,17 +60,14 @@ if (fail > 0) process.exitCode = 1;
 
 /**
  * OneRead umbrella eligibility matrix. Exercises resolveOneArticleEligibilityForContact
- * / resolveOneFilmEligibilityForContact (lib/oneread/access.ts) against real DB rows —
+ * (lib/oneread/access.ts) against real DB rows —
  * covers umbrella access, legacy-only access, both present, and neither present.
  * Creates its own contacts under the `oneread-fixture-` prefix and cleans them up.
  */
 async function runOneReadMatrix() {
   const { prisma } = await import("../lib/prisma");
-  const {
-    resolveOneArticleEligibilityForContact,
-    resolveOneFilmEligibilityForContact,
-  } = await import("../lib/oneread/access");
-  const { ONE_ARTICLE_PRODUCT_KEY, ONE_FILM_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } = await import(
+  const { resolveOneArticleEligibilityForContact } = await import("../lib/oneread/access");
+  const { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } = await import(
     "../lib/options"
   );
 
@@ -191,34 +188,6 @@ async function runOneReadMatrix() {
       await prisma.productSubscription.deleteMany({ where: { contactId: contact.id } });
       await prisma.contact.delete({ where: { id: contact.id } });
     }
-  }
-
-  // Sanity-check the OneFilm mirror with a single umbrella-access case.
-  const filmContact = await prisma.contact.create({ data: { email: `${PREFIX}film-${Date.now()}@example.com` } });
-  try {
-    await prisma.productSubscription.create({
-      data: { contactId: filmContact.id, productKey: ONE_READ_PRODUCT_KEY, status: "ACTIVE_PAID", paymentProvider: "polar" },
-    });
-    await prisma.productSubscription.create({
-      data: {
-        contactId: filmContact.id,
-        productKey: ONE_FILM_PRODUCT_KEY,
-        status: "PENDING_PREFERENCES",
-        filmPreferences: {
-          create: { contactId: filmContact.id, emailLanguage: "English", preferredGenres: ["Drama"] },
-        },
-      },
-    });
-    const result = await resolveOneFilmEligibilityForContact(filmContact.id, future);
-    const ok = result.allowed === true && result.reason === "included_in_oneread";
-    if (ok) oneReadPass++;
-    else oneReadFail++;
-    console.log(
-      `${ok ? "PASS" : "FAIL"}  ${"OneFilm: umbrella active".padEnd(42)} allowed=${String(result.allowed).padEnd(5)} reason=${result.reason}`,
-    );
-  } finally {
-    await prisma.productSubscription.deleteMany({ where: { contactId: filmContact.id } });
-    await prisma.contact.delete({ where: { id: filmContact.id } });
   }
 
   console.log(`\n${oneReadPass} passed, ${oneReadFail} failed`);

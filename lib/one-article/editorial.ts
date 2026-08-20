@@ -288,6 +288,7 @@ async function dispatchIssue(
       const rendered = renderEditorialEmail(issue, {
         unsubscribe: `${base}/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`,
       });
+      const oneClickUnsubscribe = `${base}/api/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`;
       const response = await sendDailyEmail({
         to: recipient.contact.email,
         subject: rendered.subject,
@@ -297,6 +298,7 @@ async function dispatchIssue(
           issue.id,
           recipient.contact.id,
         ),
+        unsubscribeUrl: oneClickUnsubscribe,
       });
       await prisma.$transaction([
         prisma.oneArticleDelivery.update({

@@ -10,12 +10,11 @@ const COPY = {
     intro: "OneRead is an early-stage independent editorial project operated from Türkiye. We do not publish invented subscriber counts or anonymous testimonials.",
     cards: [
       ["Human reviewed", "Every edition is written, checked, previewed, and manually scheduled before delivery."],
-      ["Sources shown", "Article notes link to the original work. Film facts and image credits must be verifiable."],
+      ["Sources shown", "Article notes link to the original work and every material claim must be traceable."],
       ["Corrections welcome", "Questions and correction requests go directly to hello@oneread.email."],
     ],
     standards: "Read our editorial standards",
     article: "View a full OneArticle sample",
-    film: "View a full OneFilm sample",
   },
   tr: {
     eyebrow: "Bağımsız ve hesap verebilir",
@@ -23,12 +22,11 @@ const COPY = {
     intro: "OneRead, Türkiye’den işletilen erken aşama bağımsız bir editoryal projedir. Uydurma abone sayıları veya anonim yorumlar yayımlamayız.",
     cards: [
       ["İnsan kontrolü", "Her gönderi teslimattan önce yazılır, kontrol edilir, önizlenir ve manuel olarak zamanlanır."],
-      ["Kaynaklar açık", "Makale notları özgün esere bağlanır. Film bilgileri ve görsel kredileri doğrulanabilir olmalıdır."],
+      ["Kaynaklar açık", "Makale notları özgün esere bağlanır ve önemli iddialar doğrulanabilir olmalıdır."],
       ["Düzeltmeye açık", "Sorular ve düzeltme talepleri doğrudan hello@oneread.email adresine ulaşır."],
     ],
     standards: "Editoryal standartlarımızı oku",
     article: "Tam OneArticle örneğini gör",
-    film: "Tam OneFilm örneğini gör",
   },
   de: {
     eyebrow: "Unabhängig und verantwortlich",
@@ -36,12 +34,11 @@ const COPY = {
     intro: "OneRead ist ein unabhängiges Projekt in einer frühen Phase, betrieben aus Türkiye. Wir veröffentlichen keine erfundenen Abonnentenzahlen oder anonymen Bewertungen.",
     cards: [
       ["Menschlich geprüft", "Jede Ausgabe wird geschrieben, geprüft, als Vorschau kontrolliert und manuell geplant."],
-      ["Quellen sichtbar", "Artikel verlinken das Original; Filmdaten und Bildnachweise müssen überprüfbar sein."],
+      ["Quellen sichtbar", "Artikel verlinken das Original; wesentliche Aussagen müssen überprüfbar sein."],
       ["Korrekturen willkommen", "Hinweise erreichen uns direkt unter hello@oneread.email."],
     ],
     standards: "Redaktionelle Standards lesen",
     article: "Vollständiges OneArticle-Beispiel",
-    film: "Vollständiges OneFilm-Beispiel",
   },
   fr: {
     eyebrow: "Indépendant et responsable",
@@ -49,12 +46,11 @@ const COPY = {
     intro: "OneRead est un projet éditorial indépendant en phase initiale, exploité depuis la Türkiye. Nous ne publions ni faux chiffres d'abonnés ni témoignages anonymes.",
     cards: [
       ["Vérification humaine", "Chaque édition est rédigée, contrôlée, prévisualisée et programmée manuellement."],
-      ["Sources visibles", "Les articles renvoient à l'original ; les faits cinéma et crédits image doivent être vérifiables."],
+      ["Sources visibles", "Les articles renvoient à l'original ; les affirmations importantes doivent être vérifiables."],
       ["Corrections ouvertes", "Les demandes arrivent directement à hello@oneread.email."],
     ],
     standards: "Lire nos normes éditoriales",
     article: "Voir l'exemple OneArticle complet",
-    film: "Voir l'exemple OneFilm complet",
   },
 } as const;
 
@@ -79,7 +75,6 @@ export function EditorialTrust() {
       <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 font-sans text-[13px]">
         <Link href="/editorial" className="link-underline text-ink">{copy.standards}</Link>
         <Link href="/samples/article" className="link-underline text-ink">{copy.article}</Link>
-        <Link href="/samples/film" className="link-underline text-ink">{copy.film}</Link>
       </div>
     </section>
   );

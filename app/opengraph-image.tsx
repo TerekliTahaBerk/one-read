@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "OneRead — One useful email at a time";
+export const alt = "OneRead delivers OneArticle every weekday";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -25,12 +25,12 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", fontSize: 72, lineHeight: 1.05 }}>
-            One useful email
+            One article worth reading
             <br />
-            at a time.
+            every weekday.
           </div>
           <div style={{ display: "flex", color: "#6B5F50", fontSize: 28 }}>
-            OneArticle + OneFilm · $1 per month
+            OneArticle · $1 per month
           </div>
         </div>
         <div style={{ display: "flex", color: "#9C8F7E", fontSize: 24 }}>

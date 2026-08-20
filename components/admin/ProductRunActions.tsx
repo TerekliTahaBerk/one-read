@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Product-level run triggers for OneFilm / OneLingo. "Test run" generates
+ * Product-level run triggers. "Test run" generates
  * today's content and logs the run without emailing anyone; "Run now" performs
  * the real daily run (honouring the product's approval + test-mode settings)
  * and sends approved content. Both are recorded in run history.

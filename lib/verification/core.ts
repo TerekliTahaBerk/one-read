@@ -10,7 +10,7 @@ import { getResendStatus, sendDailyEmail } from "@/lib/resend";
  * any billing/trial access — the billing provider (Polar) remains the sole
  * source of truth. Codes are never stored in plaintext (HMAC only).
  *
- * Each product (OneArticle, OneLingo, …) instantiates this via
+ * OneArticle instantiates this via
  * `createVerification(descriptor)`, which binds the shared crypto/session/rate-
  * limit logic to that product's purposes, cookie name, and email copy. The
  * underlying `EmailVerificationCode` table and `EMAIL_VERIFICATION_SECRET` are

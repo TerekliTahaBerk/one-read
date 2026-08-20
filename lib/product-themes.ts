@@ -16,32 +16,6 @@ export const productThemes = {
     selectedSurface: "#DDEEFF",
     mutedText: "#6B6B6B",
   },
-  lingo: {
-    name: "OneLingo",
-    background: "#F5F1FF",
-    accent: "#6F5AA8",
-    border: "#DED4F5",
-    surface: "#EEE7FB",
-    mutedText: "#6B6B6B",
-  },
-  film: {
-    name: "OneFilm",
-    background: "#F8F4FA",
-    accent: "#7B5E8E",
-    border: "#E3D6EA",
-    surface: "#F1E8F5",
-    hover: "#EADDF1",
-    mutedText: "#6B6B6B",
-  },
-  dish: {
-    name: "OneDish",
-    background: "#FFF6F1",
-    accent: "#B96A4B",
-    border: "#EFD7CB",
-    surface: "#FFECE3",
-    hover: "#FFE2D4",
-    mutedText: "#6B6B6B",
-  },
 } as const;
 
 export type ProductThemeKey = keyof typeof productThemes;

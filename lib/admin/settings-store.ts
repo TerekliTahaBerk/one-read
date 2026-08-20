@@ -23,8 +23,6 @@ export interface ProductControls {
 
 export interface Controls {
   oneArticle: ProductControls;
-  film: ProductControls;
-  lingo: ProductControls;
 }
 
 export interface RuntimeSettings {
@@ -33,8 +31,6 @@ export interface RuntimeSettings {
   minSummaryConfidence: number;
   minDeliveryScore: number;
   oneArticleSendDays: string;
-  filmSendDays: string;
-  lingoSendDays: string;
 }
 
 /** All keys the panel can write. Kept flat and explicit for a clean allow-list. */
@@ -42,18 +38,10 @@ export const SETTING_KEYS = {
   oneArticleCron: "oneArticle.cronEnabled",
   oneArticleDryRun: "oneArticle.dryRun",
   oneArticleApproval: "oneArticle.requireApproval",
-  filmCron: "film.cronEnabled",
-  filmDryRun: "film.dryRun",
-  filmApproval: "film.requireApproval",
-  lingoCron: "lingo.cronEnabled",
-  lingoDryRun: "lingo.dryRun",
-  lingoApproval: "lingo.requireApproval",
   minArticleScore: "quality.minArticleScore",
   minSummaryConfidence: "quality.minSummaryConfidence",
   minDeliveryScore: "quality.minDeliveryScore",
   oneArticleSendDays: "oneArticle.sendDays",
-  filmSendDays: "film.sendDays",
-  lingoSendDays: "lingo.sendDays",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -76,18 +64,6 @@ function envBoolDefault(key: SettingKey): boolean {
       return process.env.ONE_ARTICLE_DRY_RUN === "true"; // default OFF
     case SETTING_KEYS.oneArticleApproval:
       return process.env.ONE_ARTICLE_REQUIRE_APPROVAL !== "false"; // default ON
-    case SETTING_KEYS.filmCron:
-      return process.env.ONEFILM_CRON_ENABLED === "true"; // default OFF
-    case SETTING_KEYS.filmDryRun:
-      return process.env.ONEFILM_DRY_RUN === "true"; // default OFF
-    case SETTING_KEYS.filmApproval:
-      return process.env.ONEFILM_REQUIRE_APPROVAL !== "false"; // default ON
-    case SETTING_KEYS.lingoCron:
-      return process.env.ONELINGO_CRON_ENABLED === "true"; // default OFF
-    case SETTING_KEYS.lingoDryRun:
-      return process.env.ONELINGO_DRY_RUN === "true"; // default OFF
-    case SETTING_KEYS.lingoApproval:
-      return process.env.ONELINGO_REQUIRE_APPROVAL !== "false"; // default ON
     default:
       return false;
   }
@@ -108,8 +84,6 @@ const NUMBER_RULES: Partial<Record<SettingKey, { min: number; max: number; fallb
 
 const DAY_RULES = new Set<SettingKey>([
   SETTING_KEYS.oneArticleSendDays,
-  SETTING_KEYS.filmSendDays,
-  SETTING_KEYS.lingoSendDays,
 ]);
 const VALID_DAYS = new Set(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
 
@@ -165,16 +139,6 @@ export const readControls = cache(async (): Promise<ControlsSnapshot> => {
         dryRun: resolveBool(map, K.oneArticleDryRun),
         requireApproval: resolveBool(map, K.oneArticleApproval),
       },
-      film: {
-        cronEnabled: resolveBool(map, K.filmCron),
-        dryRun: resolveBool(map, K.filmDryRun),
-        requireApproval: resolveBool(map, K.filmApproval),
-      },
-      lingo: {
-        cronEnabled: resolveBool(map, K.lingoCron),
-        dryRun: resolveBool(map, K.lingoDryRun),
-        requireApproval: resolveBool(map, K.lingoApproval),
-      },
     },
   };
 });
@@ -196,8 +160,6 @@ export const getRuntimeSettings = cache(async (): Promise<RuntimeSettings> => {
     minSummaryConfidence: resolveNumber(map, SETTING_KEYS.minSummaryConfidence),
     minDeliveryScore: resolveNumber(map, SETTING_KEYS.minDeliveryScore),
     oneArticleSendDays: resolveDays(map, SETTING_KEYS.oneArticleSendDays, process.env.ONE_ARTICLE_SEND_DAYS, "MON,TUE,WED,THU,FRI"),
-    filmSendDays: resolveDays(map, SETTING_KEYS.filmSendDays, process.env.ONE_FILM_SEND_DAYS, "SAT"),
-    lingoSendDays: resolveDays(map, SETTING_KEYS.lingoSendDays, process.env.ONE_LINGO_SEND_DAYS, "MON,TUE,WED,THU,FRI"),
   };
 });
 

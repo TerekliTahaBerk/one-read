@@ -14,8 +14,7 @@ export const maxDuration = 300;
 /**
  * OneArticle editorial dispatcher. Content creation is deliberately absent:
  * the panel owns copy, readiness and scheduling; cron only sends due editions.
- * Run tracking and outage handling are shared with OneFilm in
- * `@/lib/admin/editorial-cron`.
+ * Run tracking and outage handling live in `@/lib/admin/editorial-cron`.
  */
 async function handler(request: Request): Promise<Response> {
   if (!authorizeCronRequest(request)) return unauthorizedCronResponse();

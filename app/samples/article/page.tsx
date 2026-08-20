@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ArticleSamplePage() {
-  return <SamplePageContent product="article" />;
+  return <SamplePageContent />;
 }

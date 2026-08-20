@@ -5,14 +5,12 @@ import { absoluteSiteUrl } from "@/lib/site-url";
 const PUBLIC_ROUTES = [
   "/",
   "/article",
-  "/film",
   "/pricing",
   "/blog",
   "/terms",
   "/privacy",
   "/editorial",
   "/samples/article",
-  "/samples/film",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -22,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       ? { lastModified: new Date(getLatestBlogUpdate()) }
       : {}),
     changeFrequency: route === "/" ? "weekly" as const : "monthly" as const,
-    priority: route === "/" ? 1 : route === "/article" || route === "/film" ? 0.9 : 0.7,
+    priority: route === "/" ? 1 : route === "/article" ? 0.9 : 0.7,
   }));
 
   const posts = BLOG_POSTS.map((post) => ({

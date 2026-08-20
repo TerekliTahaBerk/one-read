@@ -63,6 +63,13 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!result.emailSent && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { ok: false, error: "verification_delivery_failed" },
+      { status: 503 },
+    );
+  }
+
   return NextResponse.json({
     ...GENERIC,
     cooldownSeconds: result.cooldownSeconds,

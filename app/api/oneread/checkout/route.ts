@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * POST /api/oneread/checkout
  * Body: { email: string }
  *
- * Starts the single OneRead checkout (covers OneArticle and OneFilm).
+ * Starts the single OneRead checkout for OneArticle.
  * Returns one of:
  *   { ok, action: "redirect", url }        — go complete checkout
  *   { ok, action: "needs_setup" }          — finish preferences first

@@ -1,15 +1,13 @@
-import type { ProductSubscription, ArticlePreferences, FilmPreferences } from "@prisma/client";
+import type { ProductSubscription, ArticlePreferences } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   ONE_READ_PRODUCT_KEY,
   ONE_ARTICLE_PRODUCT_KEY,
-  ONE_FILM_PRODUCT_KEY,
   isAlwaysSubscribed,
 } from "@/lib/options";
 import { ONE_READ_INCLUDED_PRODUCT_KEYS } from "@/lib/oneread/config";
 import { hasValidAccess, type EligibilityResult } from "@/lib/billing/access";
 import { preferencesComplete } from "@/lib/subscriptions";
-import { filmPreferencesComplete } from "@/lib/film/subscriptions";
 import type { SubscribeLookupResult } from "@/lib/subscriptions";
 
 /**
@@ -21,11 +19,10 @@ import type { SubscribeLookupResult } from "@/lib/subscriptions";
  *
  * Access to OneArticle is granted if EITHER its own row has valid
  * access (legacy path) OR the contact's `one-read` row has valid access
- * (umbrella path). This is fully additive — no schema changes, no migration.
+ * (current billing path). This is fully additive — no destructive migration.
  */
 
 type ArticleHolder = ProductSubscription & { preferences: ArticlePreferences | null };
-type FilmHolder = ProductSubscription & { filmPreferences: FilmPreferences | null };
 
 /** Ensures a Contact + `one-read` ProductSubscription exist for the email. */
 export async function ensureOneReadSubscription(
@@ -72,30 +69,14 @@ export async function ensureArticlePreferencesHolder(contactId: string): Promise
   });
 }
 
-/** Ensures the OneFilm preferences-holder row exists for a contact. */
-export async function ensureFilmPreferencesHolder(contactId: string): Promise<FilmHolder> {
-  const existing = await prisma.productSubscription.findUnique({
-    where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-    include: { filmPreferences: true },
-  });
-  if (existing) return existing;
-
-  return prisma.productSubscription.create({
-    data: {
-      contactId,
-      productKey: ONE_FILM_PRODUCT_KEY,
-      status: "PENDING_PREFERENCES",
-    },
-    include: { filmPreferences: true },
-  });
-}
-
-/** Generic dispatcher over the holder-ensure functions above. */
+/** Generic dispatcher retained for callers that pass the active product key. */
 export async function ensureProductPreferencesHolder(
   contactId: string,
   productKey: string,
 ): Promise<ProductSubscription> {
-  if (productKey === ONE_FILM_PRODUCT_KEY) return ensureFilmPreferencesHolder(contactId);
+  if (productKey !== ONE_ARTICLE_PRODUCT_KEY) {
+    throw new Error("unsupported_product");
+  }
   return ensureArticlePreferencesHolder(contactId);
 }
 
@@ -170,51 +151,25 @@ export async function resolveOneArticleEligibilityForContact(
   );
 }
 
-export async function resolveOneFilmEligibilityForContact(
-  contactId: string,
-  now: Date = new Date(),
-): Promise<EligibilityResult> {
-  const holder = await prisma.productSubscription.findUnique({
-    where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-    include: { filmPreferences: true },
-  });
-  const hasCompletePreferences = filmPreferencesComplete(holder?.filmPreferences ?? null);
-  return resolveProductEligibility(
-    contactId,
-    holder,
-    hasCompletePreferences,
-    "missing_film_preferences",
-    "legacy_one_film_access",
-    now,
-  );
-}
-
 /**
- * Once OneArticle and OneFilm preferences are complete, the `one-read`
- * row can move from PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors
+ * Once OneArticle preferences are complete, the `one-read` row can move from
+ * PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors
  * `markReadyForCheckout` in lib/subscriptions.ts — never touches trial fields,
  * Polar owns those.
  */
 export async function markOneReadReadyForCheckoutIfEligible(
   contactId: string,
 ): Promise<ProductSubscription | null> {
-  const [oneRead, articleHolder, filmHolder] = await Promise.all([
+  const [oneRead, articleHolder] = await Promise.all([
     findOneReadRow(contactId),
     prisma.productSubscription.findUnique({
       where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
       include: { preferences: true },
     }),
-    prisma.productSubscription.findUnique({
-      where: { contactId_productKey: { contactId, productKey: ONE_FILM_PRODUCT_KEY } },
-      include: { filmPreferences: true },
-    }),
   ]);
   if (!oneRead) return null;
 
-  if (
-    !preferencesComplete(articleHolder?.preferences ?? null) ||
-    !filmPreferencesComplete(filmHolder?.filmPreferences ?? null)
-  ) {
+  if (!preferencesComplete(articleHolder?.preferences ?? null)) {
     return oneRead;
   }
 

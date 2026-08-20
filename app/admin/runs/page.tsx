@@ -22,7 +22,7 @@ export default async function RunsPage(
   const guard = await guardAdminPage("/admin/runs", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
   const product = typeof searchParams.product === "string" ? searchParams.product : undefined;
-  const activeProducts = ["one-article", "one-film"];
+  const activeProducts = ["one-article"];
   const selectedProduct = product && activeProducts.includes(product) ? product : undefined;
   const runs = await prisma.operationalRun.findMany({
     where: selectedProduct ? { productKey: selectedProduct } : { productKey: { in: activeProducts } },
@@ -36,9 +36,8 @@ export default async function RunsPage(
           defaultValue={selectedProduct ?? ""}
           className={adminControlClass}
         >
-          <option value="">All live products</option>
+          <option value="">OneArticle</option>
           <option value="one-article">OneArticle</option>
-          <option value="one-film">OneFilm</option>
         </select>
       </AdminFilterField>
       <button className={adminFilterButtonClass}>

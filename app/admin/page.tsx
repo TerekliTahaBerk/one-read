@@ -8,7 +8,6 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getOverviewMetrics } from "@/lib/admin/queries";
 import {
   getOneArticleHealth,
-  getOneFilmHealth,
 } from "@/lib/admin/health";
 import { fmtAgo, fmtWhen } from "@/lib/admin/format";
 
@@ -29,13 +28,12 @@ export default async function AdminOverviewPage(
   const guard = await guardAdminPage("/admin", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [m, oneArticle, oneFilm] = await Promise.all([
+  const [m, oneArticle] = await Promise.all([
     getOverviewMetrics(),
     getOneArticleHealth(),
-    getOneFilmHealth(),
   ]);
 
-  const products = [oneArticle, oneFilm];
+  const products = [oneArticle];
   const problems = products.filter((p) => p.health === "problem").length;
   const attention = products.filter((p) => p.health === "attention").length;
 
@@ -48,7 +46,7 @@ export default async function AdminOverviewPage(
         : "OneRead operations are healthy";
   const systemDetail =
     systemHealth === "ok"
-      ? "OneArticle and OneFilm delivery and scheduling are healthy."
+      ? "OneArticle delivery and scheduling are healthy."
       : "The product cards below show exactly what needs a look.";
 
   const accessOrder = [
@@ -73,7 +71,7 @@ export default async function AdminOverviewPage(
         />
       </AdminCard>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-4">
         {products.map((p) => (
           <ProductHealthCard
             key={p.key}

@@ -7,12 +7,12 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self' https://polar.sh https://*.polar.sh",
-  "script-src 'self' 'unsafe-inline' https://tally.so https://*.tally.so",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "frame-src https://tally.so https://*.tally.so",
-  "connect-src 'self' https://*.sentry.io https://tally.so https://*.tally.so https://va.vercel-scripts.com",
+  "frame-src 'none'",
+  "connect-src 'self' https://*.sentry.io https://va.vercel-scripts.com",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -36,7 +36,7 @@ const nextConfig = {
             ? [
                 {
                   key: "Strict-Transport-Security",
-                  value: "max-age=63072000; includeSubDomains; preload",
+                  value: "max-age=31536000; includeSubDomains",
                 },
               ]
             : []),

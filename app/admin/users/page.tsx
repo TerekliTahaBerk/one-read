@@ -44,7 +44,8 @@ export default async function AdminUsersPage(
     prisma.contact.findMany({
       include: {
         subscriptions: {
-          include: { preferences: true, filmPreferences: true },
+          where: { productKey: { in: ["one-read", "one-article"] } },
+          include: { preferences: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -288,7 +289,6 @@ export default async function AdminUsersPage(
           rows={filteredRows.map((row) => {
             const subscriptions = row.contact?.subscriptions ?? [];
             const article = subscriptions.find((sub) => sub.productKey === "one-article");
-            const film = subscriptions.find((sub) => sub.productKey === "one-film");
             return [
               <div key="email" className="min-w-52">
                 <div className="font-medium text-admin-ink">{row.email}</div>
@@ -320,8 +320,7 @@ export default async function AdminUsersPage(
               <ProductSummary key="products" subscriptions={subscriptions} />,
               <div key="delivery" className="space-y-1">
                 {article && <StatusBadge value={article.emailDeliveryStatus} />}
-                {film && <StatusBadge value={film.emailDeliveryStatus} />}
-                {!article && !film && <span className="text-admin-muted">—</span>}
+                {!article && <span className="text-admin-muted">—</span>}
               </div>,
               <span key="activity" className="whitespace-nowrap text-admin-body">
                 {fmtDateTime(row.lastActivityAt)}
@@ -446,8 +445,6 @@ function FilterSelect({
 const PRODUCT_LABELS: Record<string, string> = {
   "one-read": "OneRead",
   "one-article": "Article",
-  "one-film": "Film",
-  "one-lingo": "Lingo",
 };
 
 const OPTION_LABELS: Record<string, string> = {

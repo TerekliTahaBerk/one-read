@@ -52,10 +52,18 @@ export function getLaunchReadiness(): ReadinessCheck[] {
 
   checks.push({
     key: "RESEND_API_KEY",
-    status: has(process.env.RESEND_API_KEY) ? "pass" : "warn",
+    status: has(process.env.RESEND_API_KEY) ? "pass" : "missing",
     explanation: has(process.env.RESEND_API_KEY)
       ? "Email delivery enabled."
       : "Missing — real email delivery is disabled. Rendering-only mode.",
+  });
+
+  checks.push({
+    key: "RESEND_WEBHOOK_SECRET",
+    status: has(process.env.RESEND_WEBHOOK_SECRET) ? "pass" : "missing",
+    explanation: has(process.env.RESEND_WEBHOOK_SECRET)
+      ? "Bounce and complaint webhooks are signed."
+      : "Missing — bounce and complaint suppression cannot be trusted or applied.",
   });
 
   checks.push({
@@ -70,7 +78,7 @@ export function getLaunchReadiness(): ReadinessCheck[] {
     has(process.env.FROM_EMAIL) || has(process.env.RESEND_FROM);
   checks.push({
     key: "FROM_EMAIL",
-    status: hasFrom ? "pass" : "warn",
+    status: hasFrom ? "pass" : "missing",
     explanation: hasFrom
       ? "Verified sender configured."
       : "Missing — using dev fallback sender (only delivers to the Resend account owner).",
@@ -211,11 +219,6 @@ export function getLaunchReadiness(): ReadinessCheck[] {
       key: "POLAR_ONE_ARTICLE_PRODUCT_ID",
       ok: has(process.env.POLAR_ONE_ARTICLE_PRODUCT_ID),
       explanation: "OneArticle Polar product id",
-    },
-    {
-      key: "POLAR_ONEFILM_PRODUCT_ID",
-      ok: has(process.env.POLAR_ONEFILM_PRODUCT_ID) || has(process.env.POLAR_ONE_FILM_PRODUCT_ID),
-      explanation: "OneFilm Polar product id",
     },
     {
       key: "POLAR_ONEREAD_PRODUCT_ID",

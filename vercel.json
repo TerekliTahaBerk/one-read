@@ -8,10 +8,6 @@
     {
       "path": "/api/cron/daily",
       "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/one-film",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
