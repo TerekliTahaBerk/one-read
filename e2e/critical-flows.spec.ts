@@ -1,10 +1,19 @@
 import { expect, test } from "@playwright/test";
 
 test("public product surfaces render", async ({ page }) => {
-  for (const path of ["/", "/pricing", "/samples/article", "/samples/news", "/editorial", "/terms", "/privacy"]) {
+  for (const path of ["/", "/article", "/news", "/pricing", "/samples/article", "/samples/news", "/editorial", "/terms", "/privacy"]) {
     await page.goto(path);
     await expect(page.locator("h1").first()).toBeVisible();
   }
+});
+
+test("OneNews is discoverable as a mascot and has a product-aware landing page", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /OneNews — one important story/i })).toHaveAttribute("href", "/news");
+  await page.goto("/news");
+  await expect(page.getByRole("heading", { name: /One story worth understanding/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Choose OneNews" })).toHaveAttribute("href", "/subscribe?offer=one-news&interval=annual");
+  await expect(page.getByRole("link", { name: /full OneNews sample/i })).toHaveAttribute("href", "/samples/news");
 });
 
 test("bundle signup is annual-first and sends a semantic checkout request", async ({ page }) => {

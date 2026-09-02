@@ -4,6 +4,7 @@ import { absoluteSiteUrl } from "@/lib/site-url";
 const PUBLIC_ROUTES = [
   "/",
   "/article",
+  "/news",
   "/pricing",
   "/terms",
   "/privacy",

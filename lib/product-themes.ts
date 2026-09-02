@@ -16,6 +16,15 @@ export const productThemes = {
     selectedSurface: "#DDEEFF",
     mutedText: "#6B6B6B",
   },
+  news: {
+    name: "OneNews",
+    background: "#FFFBF0",
+    accent: "#8A681B",
+    border: "#EEE2BC",
+    surface: "#FFF6D9",
+    selectedSurface: "#F8EDC3",
+    mutedText: "#6B6B6B",
+  },
 } as const;
 
 export type ProductThemeKey = keyof typeof productThemes;

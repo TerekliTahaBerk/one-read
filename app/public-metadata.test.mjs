@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const routePages = [
   ["/", "page.tsx"],
   ["/article", "article/page.tsx"],
+  ["/news", "news/page.tsx"],
   ["/pricing", "pricing/page.tsx"],
   ["/editorial", "editorial/page.tsx"],
   ["/samples/article", "samples/article/page.tsx"],

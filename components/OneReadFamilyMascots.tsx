@@ -28,6 +28,28 @@ export function OneArticleMascotArt() {
   );
 }
 
+export function OneNewsMascotArt() {
+  return (
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 160 160" className="h-full w-full overflow-visible">
+      <g fill="none" stroke="#1A1A1A" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M61 112c-3 10-4 18-4 27M57 139l-8 1M97 111c3 10 5 18 7 27M104 138l8 1" strokeWidth="3" />
+        <path d="M47 97C34 88 35 73 45 65c-2-14 10-24 23-20 8-12 24-11 31 1 14-2 24 10 20 23 11 7 11 23 1 31-1 13-14 21-26 16-10 9-26 6-31-7-7 1-12-3-16-12Z" fill="#1A1A1A" strokeWidth="2.5" />
+        <g className="mascot-eyes">
+          <ellipse cx="68" cy="72" rx="10" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
+          <ellipse cx="91" cy="72" rx="10" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
+          <circle className="mascot-pupil" cx="70" cy="78" r="3.6" fill="#1A1A1A" stroke="none" />
+          <circle className="mascot-pupil" cx="89" cy="78" r="3.6" fill="#1A1A1A" stroke="none" />
+        </g>
+        <path d="M51 94c-8 1-13 4-17 10M109 94c8 1 13 5 17 10" strokeWidth="3" />
+        <g className="family-object">
+          <path d="M31 99l48 13 49-13-7 36-42-11-41 11Z" fill="#F5E6A8" strokeWidth="2.5" />
+          <path d="M79 112v12M40 106l29 8M89 114l29-8M43 114l22 6M92 120l22-6" strokeWidth="1.8" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 export function OneReadFamilyMascots() {
   const { dictionary } = useSiteLanguage();
 
@@ -37,11 +59,18 @@ export function OneReadFamilyMascots() {
         {dictionary.family.title}
       </h2>
       <p className="mx-auto mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash sm:text-[15px]">{dictionary.family.intro}</p>
-      <Link href="/article" aria-label={`OneArticle — ${dictionary.family.article}`} className="family-mascot focus-ring group mx-auto mt-8 block max-w-[18rem] rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75 sm:mt-10">
-        <div className="family-mascot-figure mx-auto h-[9.25rem] w-[9.25rem]"><OneArticleMascotArt /></div>
-        <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">OneArticle</h3>
-        <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{dictionary.family.article}</p>
-      </Link>
+      <div className="mx-auto mt-8 grid max-w-[38rem] gap-5 sm:mt-10 sm:grid-cols-2">
+        <Link href="/article" aria-label={`OneArticle — ${dictionary.family.article}`} className="family-mascot focus-ring group block rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75">
+          <div className="family-mascot-figure mx-auto h-[9.25rem] w-[9.25rem]"><OneArticleMascotArt /></div>
+          <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">OneArticle</h3>
+          <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{dictionary.family.article}</p>
+        </Link>
+        <Link href="/news" aria-label="OneNews — one important story, three times a week" className="family-mascot focus-ring group block rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75">
+          <div className="family-mascot-figure mx-auto h-[9.25rem] w-[9.25rem]"><OneNewsMascotArt /></div>
+          <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">OneNews</h3>
+          <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">Mon / Wed / Fri news brief</p>
+        </Link>
+      </div>
     </section>
   );
 }
