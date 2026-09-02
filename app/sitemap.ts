@@ -9,6 +9,7 @@ const PUBLIC_ROUTES = [
   "/privacy",
   "/editorial",
   "/samples/article",
+  "/samples/news",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {

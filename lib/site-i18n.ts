@@ -60,7 +60,7 @@ const en = {
       "OneArticle — one article brief every weekday morning",
       "OneFilm — one film note every Saturday",
       "Edit your preferences anytime",
-      "One-click cancel — no questions asked",
+      "Cancel anytime through the secure billing portal",
     ],
     cta: "Start OneRead",
     trustNotes: ["OneArticle included", "OneFilm included", "No app", "Cancel anytime", "Billing handled securely by Polar"],

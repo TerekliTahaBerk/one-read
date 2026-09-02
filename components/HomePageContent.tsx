@@ -47,7 +47,7 @@ export function HomePageContent() {
               reveal-item reveal-item-2
             "
           >
-            {dictionary.home.title}
+            The internet has too much. We pick one.
           </h1>
 
           <p
@@ -60,7 +60,7 @@ export function HomePageContent() {
               reveal-item reveal-item-3
             "
           >
-            {dictionary.home.intro}
+            Someone trustworthy spends the time deciding what deserves yours. Human-reviewed editions, clear sources, and corrections when we get something wrong.
           </p>
 
           <div
@@ -72,7 +72,7 @@ export function HomePageContent() {
           >
             <Link
               href="/subscribe"
-              onClick={() => trackEvent("subscribe_cta_clicked", { product: "one-article" })}
+              onClick={() => trackEvent("subscribe_cta_clicked", { product: "one-read" })}
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full bg-ink px-6 font-sans text-[14px] font-medium
@@ -80,7 +80,7 @@ export function HomePageContent() {
                 sm:w-auto
               "
             >
-              {dictionary.common.startOneRead}
+              Choose your OneRead
             </Link>
           </div>
 
@@ -90,11 +90,16 @@ export function HomePageContent() {
               text-center reveal-item reveal-item-4
             "
           >
-            {dictionary.home.priceNote}
+            OneArticle from $18/year · OneNews from $27/year · Both for $36/year
           </p>
 
           <div className="w-full reveal-item reveal-item-4">
             <OneReadFamilyMascots />
+            <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
+              <ProductLink href="/samples/article" title="OneArticle" body="One carefully edited article worth your time. Weekday mornings." />
+              <ProductLink href="/samples/news" title="OneNews" body="One important story worth understanding. Mon / Wed / Fri." />
+              <ProductLink href="/pricing" title="OneRead" body="Get both editorial products with one subscription." />
+            </div>
             <EditorialTrust />
           </div>
         </section>
@@ -107,4 +112,8 @@ export function HomePageContent() {
       />
     </main>
   );
+}
+
+function ProductLink({ href, title, body }: { href: string; title: string; body: string }) {
+  return <Link href={href} className="focus-ring rounded-2xl border border-black/10 bg-white/70 p-5"><strong className="font-serif text-xl">{title}</strong><span className="mt-2 block font-sans text-sm leading-6 text-ash">{body}</span></Link>;
 }

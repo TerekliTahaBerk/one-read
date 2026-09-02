@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
-import { resumeEmailDelivery } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +19,5 @@ export async function POST(request: Request) {
   if (!hasVerifiedEmail(email)) {
     return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
   }
-  const resumed = await resumeEmailDelivery(email);
-  return NextResponse.json({ ok: true, resumed });
+  return NextResponse.json({ ok: false, error: "use_product_email_preferences" }, { status: 410 });
 }

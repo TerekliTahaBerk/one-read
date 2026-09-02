@@ -117,7 +117,7 @@ export function ArticleLanding() {
 
         <p className="mt-5 text-center font-sans text-[12.5px] leading-[1.55] text-fog animate-rise-delayed-2">
           {dictionary.common.includedIn}{" "}
-          <Link href="/subscribe" className="link-underline text-ink hover:text-ink">
+          <Link href="/pricing" className="link-underline text-ink hover:text-ink">
             OneRead
           </Link>{" "}
           — {dictionary.common.subscriptionCovers}
@@ -125,10 +125,10 @@ export function ArticleLanding() {
 
         <div className="mt-7 flex w-full flex-col items-center gap-3 animate-rise-delayed-3 sm:mt-8 sm:flex-row sm:justify-center">
           <Link
-            href="/subscribe"
+            href="/subscribe?offer=one-article&interval=annual"
             className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 sm:w-auto"
           >
-            {dictionary.common.startOneRead}
+            Choose OneArticle
           </Link>
         </div>
 

@@ -18,6 +18,7 @@ const COPY = {
     ],
     samples: "See the actual format before subscribing:",
     article: "Full OneArticle sample",
+    news: "Full OneNews sample",
   },
   tr: {
     title: "Editoryal standartlar",
@@ -31,6 +32,7 @@ const COPY = {
     ],
     samples: "Abone olmadan önce gerçek formatı görün:",
     article: "Tam OneArticle örneği",
+    news: "Tam OneNews örneği",
   },
   de: {
     title: "Redaktionelle Standards",
@@ -44,6 +46,7 @@ const COPY = {
     ],
     samples: "Sehen Sie das echte Format vor dem Abonnement:",
     article: "Vollständiges OneArticle-Beispiel",
+    news: "Vollständiges OneNews-Beispiel",
   },
   fr: {
     title: "Normes éditoriales",
@@ -57,6 +60,7 @@ const COPY = {
     ],
     samples: "Consultez le vrai format avant de vous abonner :",
     article: "Exemple OneArticle complet",
+    news: "Exemple OneNews complet",
   },
 } as const;
 
@@ -78,9 +82,14 @@ export function EditorialStandardsContent() {
           {items.length > 0 && <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>}
         </Fragment>
       ))}
+      <h2>How OneNews is edited</h2>
+      <p>OneNews explains one important story three times a week. Editors use multiple credible sources and primary records where possible, label developing information with an exact as-of time, distinguish contested claims from established facts, and consider political fairness without manufacturing false balance.</p>
+      <h2>Corrections</h2>
+      <p>Factual corrections are acknowledged visibly. Material corrections carry a note, and subscribers may receive a concise correction email when a human editor decides it is warranted. Software and AI tools may assist research or quality checks; a human editor remains responsible for selection, review, approval, and publication.</p>
       <h2>{copy.samples}</h2>
       <ul>
         <li><Link href="/samples/article">{copy.article}</Link></li>
+        <li><Link href="/samples/news">{copy.news}</Link></li>
       </ul>
     </LegalLayout>
   );

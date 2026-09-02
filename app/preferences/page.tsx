@@ -3,7 +3,7 @@ import { OneReadPreferences } from "@/components/OneReadPreferences";
 
 export const metadata: Metadata = {
   title: "My OneRead",
-  description: "Check your OneRead subscription status and edit your OneArticle reading language.",
+  description: "Manage OneArticle and OneNews email delivery separately from billing.",
   robots: { index: false, follow: false },
 };
 
