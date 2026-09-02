@@ -17,6 +17,8 @@ import {
   type PresentableSubscription,
 } from "@/lib/billing/presentation";
 import { GRANDFATHER_FORFEIT_WARNING } from "@/lib/billing/transitions";
+import { resolveEntitlements } from "@/lib/products/entitlements";
+import { PRODUCT_ONE_ARTICLE, PRODUCT_ONE_NEWS } from "@/lib/products/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
             in: [
               ONE_READ_PRODUCT_KEY,
               ONE_ARTICLE_PRODUCT_KEY,
+              PRODUCT_ONE_NEWS,
             ],
           },
         },
@@ -75,16 +78,31 @@ export async function POST(request: Request) {
 
   const articleHolder = contact.subscriptions.find((s) => s.productKey === ONE_ARTICLE_PRODUCT_KEY);
   const articleEligibility = await resolveOneArticleEligibilityForContact(contact.id);
+  const newsHolder = contact.subscriptions.find((s) => s.productKey === PRODUCT_ONE_NEWS);
+  const entitlements = resolveEntitlements(contact.subscriptions);
+  const language = articleHolder?.preferences?.summaryLanguage ?? null;
 
   return NextResponse.json({
     ok: true,
     ...state,
     articlePreferencesComplete: preferencesComplete(articleHolder?.preferences ?? null),
     articleEligibilityReason: articleEligibility.reason,
+    products: {
+      [PRODUCT_ONE_ARTICLE]: {
+        active: entitlements.byProduct[PRODUCT_ONE_ARTICLE].granted,
+        cadence: "Weekdays · Morning",
+        language,
+        emailStatus: articleHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
+      },
+      [PRODUCT_ONE_NEWS]: {
+        active: entitlements.byProduct[PRODUCT_ONE_NEWS].granted,
+        cadence: "Mon / Wed / Fri",
+        language,
+        emailStatus: newsHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
+      },
+    },
     billingManageable: contact.subscriptions.some(
-      (subscription) =>
-        subscription.productKey === ONE_READ_PRODUCT_KEY &&
-        subscription.paymentProvider === "polar" &&
+      (subscription) => subscription.paymentProvider === "polar" &&
         Boolean(subscription.providerCustomerId || subscription.providerSubscriptionId),
     ),
     billing: await describeBillingForSubscriber(contact.subscriptions),

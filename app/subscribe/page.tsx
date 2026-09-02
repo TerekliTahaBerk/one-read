@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 export default async function SubscribePage(
   props: {
-    searchParams: Promise<{ email?: string }>;
+    searchParams: Promise<{ email?: string; offer?: string; interval?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
-  return <OneReadSignup initialEmail={searchParams.email ?? ""} />;
+  return <OneReadSignup initialEmail={searchParams.email ?? ""} initialOffer={searchParams.offer} initialInterval={searchParams.interval} />;
 }

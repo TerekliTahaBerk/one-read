@@ -7,14 +7,12 @@
  * accepted from, or echoed back to, the client — so a caller cannot name the
  * Polar product they would like to be billed for.
  *
- * The legacy `$1` umbrella flow in lib/oneread/checkout.ts is untouched and
- * still serves the live signup page. It is a separate code path on purpose:
- * pointing it at this module would reprice new signups the moment the new
- * product ids were configured.
+ * The closed legacy `$1` flow remains inbound-only for historical recognition.
+ * Every public new-customer checkout uses this semantic offer path.
  */
 
 import { prisma } from "@/lib/prisma";
-import { createPolarOfferCheckout, polarPlanChange } from "@/lib/billing/polar";
+import { createPolarCustomerPortalUrl, createPolarOfferCheckout, polarPlanChange } from "@/lib/billing/polar";
 import {
   MissingPolarOfferConfigError,
   resolveCheckoutProductId,
@@ -196,4 +194,20 @@ export async function changeOffer(args: {
 /** Human label for an offer, for confirmation copy. */
 export function offerDisplayName(offer: OfferKey): string {
   return OFFERS[offer].displayName;
+}
+
+/** Opens Polar for any verified contact with a manageable current subscription. */
+export async function createOfferPortalUrl(email: string): Promise<string> {
+  const contact = await prisma.contact.findUnique({ where: { email }, select: { id: true } });
+  if (!contact) throw new Error("billing_subscription_not_found");
+  const sub = await prisma.productSubscription.findFirst({
+    where: {
+      contactId: contact.id,
+      paymentProvider: "polar",
+      OR: [{ providerCustomerId: { not: null } }, { providerSubscriptionId: { not: null } }],
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!sub) throw new Error("billing_subscription_not_found");
+  return createPolarCustomerPortalUrl(sub, sub.productKey);
 }

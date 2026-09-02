@@ -1,318 +1,122 @@
 "use client";
 
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
-import { LanguagePill } from "@/components/LanguagePill";
-import { useSiteLanguage } from "@/components/SiteLanguageProvider";
-import { productThemes } from "@/lib/product-themes";
-import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
-import {
-  SUMMARY_LANGUAGES,
-  isLikelyEmail,
-} from "@/lib/options";
+import { SUMMARY_LANGUAGES, isLikelyEmail } from "@/lib/options";
+import { OFFERS, OFFER_KEYS, type BillingIntervalKey, type OfferKey } from "@/lib/products/registry";
 import { trackEvent } from "@/lib/analytics";
 
-/** Only product the public signup sells today. */
-const ONE_ARTICLE_PRODUCT = "one-article";
-
-type Step = "email" | "verify" | "article-prefs" | "review";
-
-/** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
-function themeForStep(step: Step) {
-  if (step === "article-prefs") return productThemes.article;
-  return productThemes.read;
-}
+type Step = "plan" | "email" | "verify" | "language" | "review" | "transition";
+const CADENCE: Record<OfferKey, string> = {
+  "one-article": "Weekday mornings",
+  "one-news": "Mon / Wed / Fri during beta",
+  "one-read": "OneArticle + OneNews",
+};
 
 async function postJson(url: string, body: unknown) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, data };
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  return { response, data: await response.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) {
-  const { dictionary } = useSiteLanguage();
-  const t = dictionary.signup;
-  const [step, setStep] = useState<Step>("email");
-  const theme = themeForStep(step);
-  const [email, setEmail] = useState(initialEmail);
+export function OneReadSignup(props: { initialEmail?: string; initialOffer?: string; initialInterval?: string }) {
+  const initialOffer = (OFFER_KEYS as readonly string[]).includes(props.initialOffer ?? "") ? props.initialOffer as OfferKey : null;
+  const [step, setStep] = useState<Step>(initialOffer ? "email" : "plan");
+  const [offer, setOffer] = useState<OfferKey>(initialOffer ?? "one-read");
+  const [interval, setInterval] = useState<BillingIntervalKey>(props.initialInterval === "monthly" ? "monthly" : "annual");
+  const [email, setEmail] = useState(props.initialEmail ?? "");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState("English");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [transitionMessage, setTransitionMessage] = useState<string | null>(null);
+  const [grandfathered, setGrandfathered] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const price = OFFERS[offer].prices[interval];
 
-  const [summaryLanguage, setSummaryLanguage] = useState<string>("English");
-
-
-  async function submitEmail(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!isLikelyEmail(email)) {
-      setError(t.errors.invalidEmail);
-      return;
-    }
+  async function requestCode(event: FormEvent) {
+    event.preventDefault(); setError(null);
+    if (!isLikelyEmail(email)) return setError("Enter a valid email address.");
     setBusy(true);
-    const { ok, data } = await postJson("/api/oneread/verification/request", { email });
+    const { response } = await postJson("/api/oneread/verification/request", { email });
     setBusy(false);
-    if (!ok && data.error && data.error !== "invalid_request") {
-      setError(t.errors.generic);
-      return;
-    }
-    trackEvent("verification_requested", { product: ONE_ARTICLE_PRODUCT });
+    if (!response.ok) return setError("We could not send a code. Please try again.");
     setStep("verify");
   }
 
-  async function submitCode(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!/^\d{6}$/.test(code.trim())) {
-      setError(t.errors.invalidCode);
-      return;
-    }
+  async function verify(event: FormEvent) {
+    event.preventDefault(); setError(null);
+    if (!/^\d{6}$/.test(code.trim())) return setError("Enter the six-digit code.");
     setBusy(true);
-    const { ok, data } = await postJson("/api/oneread/verification/confirm", {
-      email,
-      code: code.trim(),
-    });
+    const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim() });
     setBusy(false);
-    if (!ok) {
-      setError(
-        data.error === "incorrect"
-          ? t.errors.codeIncorrect
-          : data.error === "expired"
-            ? t.errors.codeExpired
-            : t.errors.generic,
-      );
-      return;
-    }
-    trackEvent("email_verified", { product: ONE_ARTICLE_PRODUCT });
-    setStep(data.articlePreferencesComplete ? "review" : "article-prefs");
+    if (!response.ok) return setError(data.error === "incorrect" ? "That code is not correct." : "The code could not be verified.");
+    setStep("language");
   }
 
-  async function submitArticlePreferences(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setBusy(true);
-    const { ok } = await postJson("/api/oneread/article-preferences", {
-      email,
-      summaryLanguage,
-    });
+  async function saveLanguage(event: FormEvent) {
+    event.preventDefault(); setError(null); setBusy(true);
+    const { response } = await postJson("/api/oneread/article-preferences", { email, offer, summaryLanguage: language });
     setBusy(false);
-    if (!ok) {
-      setError(t.errors.generic);
-      return;
-    }
-    trackEvent("preferences_completed", {
-      product: ONE_ARTICLE_PRODUCT,
-      readingLanguage: summaryLanguage,
-    });
+    if (!response.ok) return setError("We could not save your reading language.");
     setStep("review");
   }
 
-  async function startCheckout() {
-    setError(null);
-    trackEvent("checkout_started", {
-      product: ONE_ARTICLE_PRODUCT,
-      readingLanguage: summaryLanguage,
-    });
-    setBusy(true);
-    const { ok, data } = await postJson("/api/oneread/checkout", { email });
+  async function checkout() {
+    setBusy(true); setError(null);
+    trackEvent("checkout_started", { offer, interval, language });
+    const { response, data } = await postJson("/api/billing/checkout", { email, offer, interval });
     setBusy(false);
-    if (!ok) {
-      setError(
-        typeof data.error === "string"
-          ? data.error
-          : t.errors.generic,
-      );
-      return;
-    }
-    if (data.action === "redirect" && data.url) {
-      window.location.href = data.url;
-      return;
-    }
-    if (data.action === "already_active" && data.url) {
-      window.location.href = data.url;
-      return;
-    }
-    if (data.action === "needs_setup") {
-      setError(t.errors.needsSetup);
-      setStep("article-prefs");
-    }
+    if (!response.ok) { trackEvent("checkout_failed", { offer, interval }); return setError(String(data.error ?? "Checkout is unavailable.")); }
+    if (data.action === "redirect" && typeof data.url === "string") return window.location.assign(data.url);
+    if (data.action === "already_active") return window.location.assign("/preferences");
+    if (data.action === "transition_required") await previewTransition();
   }
 
-  return (
-    <main
-      className="relative min-h-svh w-full flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5"
-      style={
-        {
-          backgroundColor: theme.background,
-          "--theme-accent": theme.accent,
-          "--theme-border": theme.border,
-          "--theme-surface": theme.surface,
-          "--theme-selected-surface": theme.surface,
-          "--theme-page": theme.background,
-          "--theme-focus": theme.accent,
-        } as CSSProperties
-      }
-    >
-      <header className="relative w-full flex justify-center animate-rise">
-        <BackButton href="/" label={dictionary.common.backToOneRead} />
-        <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
-      </header>
+  async function previewTransition() {
+    setBusy(true);
+    const { response, data } = await postJson("/api/billing/plan-change", { email, offer, interval });
+    setBusy(false); setStep("transition");
+    if (data.refusal === "grandfather_acknowledgement_required") {
+      setGrandfathered(true);
+      setTransitionMessage("Your current $1 plan is grandfathered. If you switch plans, this legacy price may not be available again.");
+      return;
+    }
+    if (!response.ok) return setError(String(data.error ?? "This plan change is not available."));
+    const plan = data.plan as { effective?: string } | undefined;
+    setTransitionMessage(plan?.effective === "period_end" ? "This change will take effect at the end of your current billing period." : "Polar will confirm the timing and any exact charge before applying this change.");
+  }
 
-      <section className="flex-1 w-full flex flex-col items-center justify-center max-w-[36rem] mx-auto py-6 sm:py-8">
-        {step === "email" && (
-          <StepShell
-            title={t.email.title}
-            support={t.email.support}
-          >
-            <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
-              <input
-                aria-label={t.email.placeholder}
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.email.placeholder}
-                autoComplete="email"
-                className="focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink"
-              />
-              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.email.cta}</SubmitButton>
-              {error && <ErrorText>{error}</ErrorText>}
-            </form>
-          </StepShell>
-        )}
+  async function confirmTransition() {
+    if (grandfathered && !acknowledged) return setError("Confirm that you understand the grandfathered price will be lost.");
+    setBusy(true); setError(null);
+    const { response, data } = await postJson("/api/billing/plan-change", { email, offer, interval, confirm: true, acknowledgeGrandfatherLoss: acknowledged });
+    setBusy(false);
+    if (!response.ok) return setError(String(data.error ?? "The plan change could not be completed."));
+    window.location.assign("/preferences");
+  }
 
-        {step === "verify" && (
-          <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
-            <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
-              <input
-                aria-label={t.verify.title}
-                type="text"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                className="focus-ring h-12 w-full max-w-[14rem] rounded-full border border-[var(--theme-border)] bg-white px-5 text-center font-sans text-[18px] tracking-[0.3em] text-ink"
-              />
-              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.verify.cta}</SubmitButton>
-              {error && <ErrorText>{error}</ErrorText>}
-              <button
-                type="button"
-                onClick={() => setStep("email")}
-                className="link-underline mt-1 font-sans text-[12.5px] text-fog"
-              >
-                {t.verify.useDifferentEmail}
-              </button>
-            </form>
-          </StepShell>
-        )}
-
-        {step === "article-prefs" && (
-          <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
-            <form onSubmit={submitArticlePreferences} className="w-full flex flex-col items-center gap-5">
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.summaryLanguage}</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {SUMMARY_LANGUAGES.map((lang) => (
-                    <LanguagePill
-                      key={lang}
-                      label={lang}
-                      selected={summaryLanguage === lang}
-                      onClick={() => setSummaryLanguage(lang)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.articlePrefs.cta}</SubmitButton>
-              {error && <ErrorText>{error}</ErrorText>}
-            </form>
-          </StepShell>
-        )}
-
-        {step === "review" && (
-          <StepShell title={t.review.title} support={t.review.support}>
-            <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
-              <p className="text-fog text-[12.5px]">{t.review.emailLabel}</p>
-              <p className="mb-3">{email}</p>
-              <div>
-                <p className="text-fog text-[12.5px]">OneArticle reading language</p>
-                <p className="mb-3">{summaryLanguage}</p>
-              </div>
-              <p className="text-fog text-[12.5px]">{t.review.priceLabel}</p>
-              <p>{ONEREAD_BILLING_LABEL} — {t.review.priceIncluded}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStep("article-prefs")}
-              className="focus-ring mt-4 font-sans text-[13px] text-ash link-underline"
-            >
-              {t.review.editPreferences}
-            </button>
-            <button
-              type="button"
-              onClick={startCheckout}
-              disabled={busy}
-              className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95 disabled:opacity-50"
-            >
-              {busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}
-            </button>
-            {error && <ErrorText>{error}</ErrorText>}
-          </StepShell>
-        )}
-      </section>
-
-      <Footer showBackHome backHref="/" backLabel={dictionary.common.backToOneRead} />
-    </main>
-  );
+  return <main className="min-h-svh bg-[#f6f5f1] px-5 py-6 text-ink sm:px-6">
+    <header className="relative flex justify-center"><BackButton href="/" label="Back to OneRead" /><Logo href="/" /></header>
+    <section className="mx-auto flex min-h-[78vh] w-full max-w-3xl flex-col items-center justify-center py-10">
+      {step === "plan" && <Step title="Choose what deserves your time" support="Annual billing is selected by default. You can switch to monthly.">
+        <div role="radiogroup" aria-label="Choose a OneRead plan" className="grid w-full gap-3 md:grid-cols-3">
+          {OFFER_KEYS.map((key) => <button key={key} type="button" role="radio" aria-checked={offer === key} onClick={() => { setOffer(key); trackEvent("offer_selected", { offer: key }); }} className={`focus-ring rounded-2xl border p-5 text-left ${offer === key ? "border-ink bg-white ring-2 ring-ink" : "border-black/15 bg-white/60"}`}><strong className="font-serif text-xl">{OFFERS[key].displayName}</strong><span className="mt-2 block text-sm text-ash">{OFFERS[key].tagline}</span><span className="mt-4 block text-xs font-medium uppercase tracking-wide text-fog">{CADENCE[key]}</span></button>)}
+        </div>
+        <Interval value={interval} onChange={(value) => { setInterval(value); trackEvent("billing_interval_selected", { interval: value, offer }); }} />
+        <button className={primary} onClick={() => setStep("email")}>Continue with {OFFERS[offer].displayName}</button>
+      </Step>}
+      {step === "email" && <Step title={`Start ${OFFERS[offer].displayName}`} support={`${CADENCE[offer]}. $${price.amountUsd} USD / ${interval === "annual" ? "year" : "month"}. No trial; see a full sample before subscribing.`}><form onSubmit={requestCode} className="flex w-full max-w-sm flex-col gap-3"><label htmlFor="signup-email" className="text-sm">Email address</label><input id="signup-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required className={input} /><button disabled={busy} className={primary}>Email me a code</button></form></Step>}
+      {step === "verify" && <Step title="Check your inbox" support={`We sent a six-digit code to ${email}.`}><form onSubmit={verify} className="flex flex-col items-center gap-3"><label htmlFor="signup-code" className="sr-only">Verification code</label><input id="signup-code" value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className={`${input} max-w-48 text-center tracking-[.3em]`} /><button disabled={busy} className={primary}>Verify email</button></form></Step>}
+      {step === "language" && <Step title="Choose your reading language" support={offer === "one-read" ? "One choice applies to both OneArticle and OneNews." : `One choice for ${OFFERS[offer].displayName}.`}><form onSubmit={saveLanguage} className="flex flex-col items-center gap-5"><div className="flex flex-wrap justify-center gap-2">{SUMMARY_LANGUAGES.map((item) => <button type="button" key={item} aria-pressed={language === item} onClick={() => setLanguage(item)} className={`focus-ring min-h-11 rounded-full border px-4 ${language === item ? "border-ink bg-ink text-white" : "bg-white"}`}>{item}</button>)}</div><button disabled={busy} className={primary}>Continue</button></form></Step>}
+      {step === "review" && <Step title="Review your subscription" support="Email delivery preferences can be changed later without cancelling billing."><div className="w-full max-w-md rounded-2xl border bg-white p-5 text-sm"><b>{OFFERS[offer].displayName}</b><p>{CADENCE[offer]}</p><p className="mt-3">{language}</p><p className="mt-3 text-lg font-semibold">${price.amountUsd} USD / {interval === "annual" ? "year" : "month"}</p><p className="mt-1 text-ash">Cancel anytime through the secure billing portal.</p></div><button disabled={busy} onClick={checkout} className={primary}>Continue to secure checkout</button></Step>}
+      {step === "transition" && <Step title="Confirm your plan change" support={transitionMessage ?? "Review this change before continuing."}>{grandfathered && <label className="flex max-w-lg items-start gap-3 rounded-xl border border-amber-500 bg-amber-50 p-4 text-sm"><input type="checkbox" className="mt-1 size-5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />I understand that switching plans gives up my grandfathered $1 price and it may not be restored.</label>}<button disabled={busy || (grandfathered && !acknowledged)} onClick={confirmTransition} className={primary}>Confirm plan change</button></Step>}
+      {error && <p role="alert" aria-live="assertive" className="mt-5 text-sm text-red-700">{error}</p>}
+    </section><Footer showBackHome /></main>;
 }
 
-function StepShell({
-  title,
-  support,
-  children,
-}: {
-  title: string;
-  support: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="w-full flex flex-col items-center animate-rise-delayed">
-      <h1 className="font-serif font-medium text-[2rem] sm:text-[2.5rem] leading-[1.06] tracking-[-0.02em] text-ink text-center max-w-[20ch]">
-        {title}
-      </h1>
-      <p className="mt-4 max-w-[42ch] font-sans text-[15px] leading-[1.65] text-ash text-center">
-        {support}
-      </p>
-      <div className="mt-7 w-full flex flex-col items-center">{children}</div>
-    </div>
-  );
-}
-
-function SubmitButton({
-  busy,
-  waitLabel,
-  children,
-}: {
-  busy: boolean;
-  waitLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="submit"
-      disabled={busy}
-      className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 disabled:opacity-50"
-    >
-      {busy ? waitLabel : children}
-    </button>
-  );
-}
-
-function ErrorText({ children }: { children: React.ReactNode }) {
-  return <p className="mt-1 font-sans text-[13px] text-red-600">{children}</p>;
-}
+function Step({ title, support, children }: { title: string; support: string; children: React.ReactNode }) { return <div className="flex w-full flex-col items-center gap-6"><div className="text-center"><h1 className="font-serif text-3xl font-medium sm:text-4xl">{title}</h1><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ash">{support}</p></div>{children}</div>; }
+function Interval({ value, onChange }: { value: BillingIntervalKey; onChange: (value: BillingIntervalKey) => void }) { return <fieldset className="my-5 flex gap-2 rounded-full bg-white p-1"><legend className="sr-only">Billing interval</legend>{(["annual", "monthly"] as const).map((item) => <button type="button" key={item} aria-pressed={value === item} onClick={() => onChange(item)} className={`focus-ring min-h-11 rounded-full px-5 text-sm ${value === item ? "bg-ink text-white" : "text-ash"}`}>{item === "annual" ? "Annual · save 25%" : "Monthly"}</button>)}</fieldset>; }
+const input = "focus-ring h-12 w-full rounded-full border border-black/20 bg-white px-5";
+const primary = "focus-ring mt-4 inline-flex min-h-12 items-center justify-center rounded-full bg-ink px-6 text-sm font-medium text-white disabled:opacity-50";

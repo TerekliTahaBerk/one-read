@@ -5,11 +5,11 @@ import {
 } from "@/lib/options";
 import { upsertArticlePreferences } from "@/lib/subscriptions";
 import {
-  ensureOneReadSubscription,
   ensureArticlePreferencesHolder,
-  markOneReadReadyForCheckoutIfEligible,
 } from "@/lib/oneread/access";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
+import { prisma } from "@/lib/prisma";
+import { isOfferKey, PRODUCT_ONE_NEWS } from "@/lib/products/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,9 +42,12 @@ export async function POST(request: Request) {
   if (!summaryLanguage) {
     return NextResponse.json({ ok: false, error: "Please choose a summary language." }, { status: 400 });
   }
+  if (!isOfferKey(payload.offer)) {
+    return NextResponse.json({ ok: false, error: "Please choose a plan." }, { status: 400 });
+  }
   try {
-    const oneRead = await ensureOneReadSubscription(email);
-    const holder = await ensureArticlePreferencesHolder(oneRead.contactId);
+    const contact = await prisma.contact.upsert({ where: { email }, update: {}, create: { email } });
+    const holder = await ensureArticlePreferencesHolder(contact.id);
     await upsertArticlePreferences(holder.id, {
       // Historical personalization columns are intentionally preserved but
       // are no longer collected by the OneArticle product.
@@ -54,7 +57,13 @@ export async function POST(request: Request) {
       sourceLanguage: "Any",
       summaryLanguage,
     });
-    await markOneReadReadyForCheckoutIfEligible(oneRead.contactId);
+    if (payload.offer === PRODUCT_ONE_NEWS || payload.offer === "one-read") {
+      await prisma.productSubscription.upsert({
+        where: { contactId_productKey: { contactId: contact.id, productKey: PRODUCT_ONE_NEWS } },
+        update: {},
+        create: { contactId: contact.id, productKey: PRODUCT_ONE_NEWS, status: "PENDING_PREFERENCES" },
+      });
+    }
   } catch (err) {
     console.error("[/api/oneread/article-preferences] db error:", err);
     return NextResponse.json(

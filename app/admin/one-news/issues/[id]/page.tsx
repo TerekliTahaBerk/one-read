@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { OneNewsIssueEditor } from "@/components/admin/OneNewsIssueEditor";
 import { oneNewsTabs } from "@/lib/admin/one-news-nav";
 import { prisma } from "@/lib/prisma";
+import { OneNewsDeliveryActions } from "@/components/admin/OneNewsDeliveryActions";
+import { fmtDateTime } from "@/lib/admin/format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,9 +26,14 @@ export default async function OneNewsIssuePage(props: {
     include: {
       sources: { orderBy: { sortOrder: "asc" } },
       corrections: { orderBy: { createdAt: "asc" } },
+      deliveries: { orderBy: { updatedAt: "desc" }, take: 50 },
     },
   });
   if (!issue) notFound();
+  const logical = (status: string) => issue.deliveries.filter((row) => row.status === status).length;
+  const provider = (status: string) => issue.deliveries.filter((row) => row.providerStatus === status).length;
+  const failed = logical("FAILED");
+  const ambiguous = logical("RECONCILIATION_REQUIRED");
 
   return (
     <AdminShell
@@ -35,9 +42,22 @@ export default async function OneNewsIssuePage(props: {
       actions={<StatusBadge value={issue.status} />}
     >
       <AdminTabs tabs={oneNewsTabs()} active="issues" />
+      <AdminCard title="Delivery operations" subtitle="Accepted is not mailbox-delivered. Recent rows are bounded to 50 on this detail view.">
+        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div><strong>{logical("SENT")}</strong><br />Accepted</div>
+          <div><strong>{provider("DELIVERED")}</strong><br />Delivered</div>
+          <div><strong>{failed}</strong><br />Failed</div>
+          <div><strong>{ambiguous}</strong><br />Ambiguous</div>
+        </div>
+        <div className="mt-4"><OneNewsDeliveryActions issueId={issue.id} failed={failed} ambiguous={ambiguous} /></div>
+        {issue.deliveries.map((delivery) => <div key={delivery.id} className="mt-3 rounded-lg border p-3 text-xs">
+          <div>{delivery.status} · provider {delivery.providerStatus ?? "pending"} · attempts {delivery.attemptCount}</div>
+          <div className="mt-1 text-admin-muted">Last attempt {fmtDateTime(delivery.lastAttemptAt)}{delivery.failedReason ? ` · ${delivery.failedReason}` : ""}</div>
+        </div>)}
+      </AdminCard>
       <AdminCard
         title="Editorial content"
-        subtitle="The preview below is the exact renderer a future OneNews send will use."
+        subtitle="The preview below is the exact renderer production OneNews delivery uses."
         bodyClassName="p-4"
         containerClassName="overflow-visible"
       >

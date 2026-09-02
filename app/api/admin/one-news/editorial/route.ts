@@ -16,6 +16,7 @@ import {
   type OneNewsIssueInput,
 } from "@/lib/one-news/editorial";
 import type { OneNewsSourceInput } from "@/lib/one-news/validation";
+import { recoverAmbiguousOneNewsIssue, retryFailedOneNewsIssue } from "@/lib/one-news/delivery";
 
 /**
  * Minimal editorial plumbing for OneNews.
@@ -127,6 +128,19 @@ export async function POST(request: Request): Promise<Response> {
           metadata: { decision: correction.correctionEmailDecision },
         });
         return NextResponse.json({ ok: true, correction });
+      }
+      case "retry-failed": {
+        await retryFailedOneNewsIssue(issueId, actor);
+        await recordAudit({ actor, action: "oneNews.delivery.retryFailed", targetType: "OneNewsIssue", targetId: issueId });
+        return NextResponse.json({ ok: true });
+      }
+      case "recover-ambiguous": {
+        if (body.confirmDuplicateRisk !== true) {
+          return NextResponse.json({ ok: false, error: "duplicate_risk_confirmation_required" }, { status: 400 });
+        }
+        await recoverAmbiguousOneNewsIssue(issueId, actor);
+        await recordAudit({ actor, action: "oneNews.delivery.recoverAmbiguous", targetType: "OneNewsIssue", targetId: issueId });
+        return NextResponse.json({ ok: true });
       }
       default:
         return NextResponse.json({ ok: false, error: "unknown_action" }, { status: 400 });

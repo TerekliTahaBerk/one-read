@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { normalizeSiteLocale, SITE_DICTIONARIES, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
 import { TrackEventOnMount } from "@/components/TrackEventOnMount";
+import { describeUnsubscribeTarget } from "@/lib/unsubscribe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,9 +16,10 @@ export default async function UnsubscribePage(props: {
   const t = SITE_DICTIONARIES[locale].unsubscribe;
   const preview = params.preview === "1";
   const done = params.result === "done";
+  const productName = await describeUnsubscribeTarget(params.subscription);
   const message = preview ? t.preview : done ? t.doneGeneric : {
-    headline: "Unsubscribe from OneRead?",
-    body: "Confirm below to stop OneRead emails. Your paid plan and billing will not be changed.",
+    headline: `Unsubscribe from ${productName}?`,
+    body: `Confirm below to stop ${productName} emails. Other product email and your paid plan will not be changed.`,
   };
 
   return <main style={{ margin: 0, background: "#F6F1E6", color: "#1B1612", fontFamily: "ui-sans-serif, system-ui, sans-serif", display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -30,7 +32,8 @@ export default async function UnsubscribePage(props: {
         {params.subscription && <input type="hidden" name="subscription" value={params.subscription} />}
         {params.send && <input type="hidden" name="send" value={params.send} />}
         {params.email && <input type="hidden" name="email" value={params.email} />}
-        <button type="submit" style={{ border: 0, borderRadius: 8, background: "#1B1612", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, padding: "12px 20px" }}>Unsubscribe</button>
+        <button type="submit" style={{ border: 0, borderRadius: 8, background: "#1B1612", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, padding: "12px 20px" }}>Unsubscribe from {productName}</button>
+        {params.subscription && <button type="submit" name="scope" value="all" style={{ display: "block", margin: "12px auto 0", border: "1px solid rgba(27,22,18,.3)", borderRadius: 8, background: "transparent", color: "#1B1612", cursor: "pointer", fontSize: 13, padding: "10px 16px" }}>Turn off all OneRead editorial email</button>}
       </form>}
       {!preview && <div style={{ marginTop: 24, padding: 18, border: "1px solid rgba(107,95,80,.2)", borderRadius: 10 }}><p style={{ color: "#6B5F50", fontSize: 13 }}>Email unsubscribe does not cancel or change your paid plan.</p><Link href="/subscribe" style={{ color: "#1B1612", fontSize: 13, fontWeight: 600 }}>Manage billing</Link></div>}
       <div style={{ marginTop: 32, fontFamily: "ui-serif, Georgia, Cambria, serif", fontStyle: "italic", color: "#9C8F7E", fontSize: 13 }}>{t.tagline}</div>

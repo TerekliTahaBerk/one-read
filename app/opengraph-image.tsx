@@ -30,7 +30,7 @@ export default function OpenGraphImage() {
             every weekday.
           </div>
           <div style={{ display: "flex", color: "#6B5F50", fontSize: 28 }}>
-            OneArticle · $1 per month
+            OneArticle · OneNews · OneRead
           </div>
         </div>
         <div style={{ display: "flex", color: "#9C8F7E", fontSize: 24 }}>

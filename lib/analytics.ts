@@ -15,6 +15,12 @@ export type AnalyticsEvent =
   | "email_verified"
   | "preferences_completed"
   | "checkout_started"
+  | "checkout_failed"
+  | "offer_selected"
+  | "billing_interval_selected"
+  | "product_email_unsubscribed"
+  | "product_email_resubscribed"
+  | "one_news_sample_viewed"
   | "email_unsubscribed"
   | "email_resubscribed";
 
@@ -28,18 +34,22 @@ export type AnalyticsEvent =
 export interface AnalyticsProperties {
   /** Product key, e.g. "one-article". */
   product?: string;
+  offer?: string;
   /** Billing interval when known, e.g. "monthly". */
   interval?: string;
   /** Reading language, e.g. "English". */
   readingLanguage?: string;
+  language?: string;
   /** Explicit, intentionally supported campaign identifier. */
   campaign?: string;
 }
 
 const ALLOWED_KEYS: readonly (keyof AnalyticsProperties)[] = [
   "product",
+  "offer",
   "interval",
   "readingLanguage",
+  "language",
   "campaign",
 ];
 

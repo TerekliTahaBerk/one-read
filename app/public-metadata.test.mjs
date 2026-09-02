@@ -8,6 +8,7 @@ const routePages = [
   ["/pricing", "pricing/page.tsx"],
   ["/editorial", "editorial/page.tsx"],
   ["/samples/article", "samples/article/page.tsx"],
+  ["/samples/news", "samples/news/page.tsx"],
 ];
 
 describe("public page canonical metadata", () => {

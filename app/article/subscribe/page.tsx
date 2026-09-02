@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ArticleSubscribePage() {
-  redirect("/subscribe");
+  redirect("/subscribe?offer=one-article&interval=annual");
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prisma = vi.hoisted(() => ({
-  productSubscription: { updateMany: vi.fn() },
+  productSubscription: { updateMany: vi.fn(), findUnique: vi.fn() },
   dailySend: { findUnique: vi.fn() },
   subscriber: { findUnique: vi.fn(), updateMany: vi.fn() },
 }));
@@ -23,5 +23,14 @@ describe("human unsubscribe mutation", () => {
     });
     const serialized = JSON.stringify(prisma.productSubscription.updateMany.mock.calls);
     expect(serialized).not.toMatch(/status.*CANCELED|cancelAtPeriodEnd|canceledAt/);
+  });
+
+  it("can explicitly stop both editorial products without changing billing", async () => {
+    prisma.productSubscription.findUnique.mockResolvedValue({ contactId: "contact_1" });
+    await unsubscribeHuman({ subscription: "news-token", scope: "all" });
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith({
+      where: { contactId: "contact_1", productKey: { in: ["one-article", "one-news"] } },
+      data: { emailDeliveryStatus: "UNSUBSCRIBED" },
+    });
   });
 });

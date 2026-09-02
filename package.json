@@ -15,6 +15,7 @@
     "release:guard": "node scripts/verify-build-provenance.mjs",
     "verify:routes": "node scripts/verify-route-manifest.mjs",
     "audit:prod": "node scripts/audit-production-deps.mjs",
+    "verify:launch": "node --import tsx scripts/verify-launch-config.ts",
     "deploy:emergency": "node scripts/deploy-production.mjs",
     "db:studio": "prisma studio",
     "db:seed-sources": "node --env-file=.env scripts/seed-sources.mjs",

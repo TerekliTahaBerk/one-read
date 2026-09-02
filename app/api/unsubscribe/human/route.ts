@@ -11,6 +11,7 @@ export async function POST(request: Request): Promise<Response> {
     subscription: stringValue(form.get("subscription")),
     send: stringValue(form.get("send")),
     email: stringValue(form.get("email")),
+    scope: stringValue(form.get("scope")),
   });
   return NextResponse.redirect(new URL("/unsubscribe?result=done", request.url), 303);
 }

@@ -81,6 +81,7 @@ model Contact {
   filmPreferences      FilmPreferences[]
   filmSends            FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
+  oneNewsDeliveries    OneNewsDelivery[]
   oneFilmDeliveries    OneFilmDelivery[]
   mobileSessions       MobileSession[]
   pushDevices          PushDevice[]
@@ -160,6 +161,7 @@ model ProductSubscription {
   lingoSends           LingoDailySend[]
   filmSends            FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
+  oneNewsDeliveries    OneNewsDelivery[]
   oneFilmDeliveries    OneFilmDelivery[]
 
   transitions SubscriptionTransition[]
@@ -1157,10 +1159,53 @@ model OneNewsIssue {
 
   sources     OneNewsSource[]
   corrections OneNewsCorrection[]
+  deliveries  OneNewsDelivery[]
 
   @@index([status, scheduledFor])
   @@index([readingLanguage, status])
   @@index([createdAt])
+}
+
+/// Idempotent per-recipient delivery record for a OneNews edition. Logical
+/// send state and later provider/mailbox state intentionally remain separate.
+model OneNewsDelivery {
+  id                    String @id @default(cuid())
+  issueId               String
+  contactId             String
+  productSubscriptionId String
+
+  /// "QUEUED" | "SENDING" | "SENT" | "FAILED" | "SKIPPED"
+  /// | "RECONCILIATION_REQUIRED"
+  status String @default("QUEUED")
+
+  providerMessageId        String?
+  /// "ACCEPTED" | "DELIVERED" | "DELAYED" | "FAILED" | "BOUNCED" | "COMPLAINED"
+  providerStatus           String?
+  providerStatusAt         DateTime?
+  attemptCount             Int       @default(0)
+  lastAttemptAt            DateTime?
+  providerAcceptedAt       DateTime?
+  reconciliationRequiredAt DateTime?
+  manualRecoveryAt         DateTime?
+  manualRecoveryBy         String?
+  sentAt                   DateTime?
+  deliveredAt              DateTime?
+  failedReason             String?   @db.Text
+  skippedReason            String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue               OneNewsIssue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, contactId])
+  @@index([issueId, status])
+  @@index([productSubscriptionId, status])
+  @@index([status, lastAttemptAt])
+  @@index([providerMessageId])
+  @@index([providerStatus, providerStatusAt])
 }
 
 /// Evidence behind one OneNews edition. Sources belong to the issue: this is

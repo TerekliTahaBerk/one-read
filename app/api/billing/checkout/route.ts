@@ -3,6 +3,7 @@ import { parseEmail } from "@/lib/options";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { parseOfferSelection } from "@/lib/products/registry";
 import { startOfferCheckout } from "@/lib/billing/offer-checkout";
+import { validatePublicLaunchConfiguration } from "@/lib/launch-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,12 @@ export const dynamic = "force-dynamic";
  * product id through this endpoint and have the server bill against it.
  */
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production" && process.env.PUBLIC_CHECKOUT_ENABLED !== "true") {
+    return NextResponse.json({ ok: false, error: "New checkout is not available yet." }, { status: 503 });
+  }
+  if (process.env.NODE_ENV === "production" && !validatePublicLaunchConfiguration().ready) {
+    return NextResponse.json({ ok: false, error: "Checkout configuration is incomplete." }, { status: 503 });
+  }
   let payload: Record<string, unknown>;
   try {
     payload = (await request.json()) as Record<string, unknown>;
