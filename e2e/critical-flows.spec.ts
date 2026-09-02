@@ -46,7 +46,7 @@ test("pricing accurately offers Article and News annual plans", async ({ page })
   await page.goto("/pricing");
   await expect(page.getByText("$18")).toBeVisible();
   await expect(page.getByText("$27")).toBeVisible();
-  await expect(page.getByText("Mon / Wed / Fri during beta")).toBeVisible();
+  await expect(page.getByText("Monday, Wednesday, Friday")).toBeVisible();
   await expect(page.getByRole("button", { name: /Annual · save 25%/ })).toHaveAttribute("aria-pressed", "true");
 });
 
