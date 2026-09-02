@@ -36,6 +36,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         matchPrefix: "/admin/one-article",
         icon: "doc",
       },
+      {
+        href: "/admin/one-news",
+        label: "OneNews",
+        matchPrefix: "/admin/one-news",
+        icon: "doc",
+      },
     ],
   },
   {

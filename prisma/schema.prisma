@@ -1106,3 +1106,117 @@ model WaitlistEntry {
   @@unique([email, product])
   @@index([product, createdAt])
 }
+
+/// One OneNews edition: a single story, selected, sourced and edited by a
+/// human. Deliberately separate from `OneArticleIssue` — the two products
+/// share an inbox, not an editorial model.
+model OneNewsIssue {
+  id              String @id @default(cuid())
+  readingLanguage String
+
+  /// "DRAFT" | "READY" | "SCHEDULED" | "SENDING" | "SENT"
+  /// | "PARTIALLY_FAILED" | "FAILED" | "CANCELED"
+  /// Delivery-side values exist for forward compatibility. No dispatcher
+  /// consumes them yet; C3 only drives the editorial states.
+  status String @default("DRAFT")
+
+  scheduledFor DateTime?
+  timezone     String    @default("Europe/Istanbul")
+
+  subject     String
+  previewText String?
+
+  /// Canonical editorial structure. `whatsContested` is optional by design:
+  /// it appears only when a real, material disagreement exists.
+  headline       String
+  dek            String  @db.Text
+  whatHappened   String  @db.Text
+  whyItMatters   String  @db.Text
+  whatsContested String? @db.Text
+  whatToWatch    String  @db.Text
+
+  /// Set by an editor when the story is still materially developing. It makes
+  /// `asOf` required and turns on the uncertainty notice in the renderer.
+  developing Boolean   @default(false)
+  asOf       DateTime?
+
+  adminNotes String? @db.Text
+
+  createdBy String
+  updatedBy String
+  version   Int    @default(1)
+
+  readyAt     DateTime?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  canceledAt  DateTime?
+  claimedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sources     OneNewsSource[]
+  corrections OneNewsCorrection[]
+
+  @@index([status, scheduledFor])
+  @@index([readingLanguage, status])
+  @@index([createdAt])
+}
+
+/// Evidence behind one OneNews edition. Sources belong to the issue: this is
+/// a transparency record for a specific story, not a reusable source library.
+model OneNewsSource {
+  id      String @id @default(cuid())
+  issueId String
+
+  url         String
+  title       String
+  publication String
+
+  /// "PRIMARY" | "REPORTING" | "ANALYSIS" | "RESEARCH" | "DATA" | "OTHER"
+  /// PRIMARY is the single source of truth for "is this a primary source" —
+  /// there is deliberately no second boolean that could disagree with it.
+  sourceType String @default("REPORTING")
+
+  publishedAt DateTime?
+  accessedAt  DateTime?
+  note        String?   @db.Text
+  sortOrder   Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue OneNewsIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, sortOrder])
+}
+
+/// Append-only record that a published OneNews edition changed. Content fields
+/// are never rewritten; only the operator's correction-email decision moves.
+model OneNewsCorrection {
+  id      String @id @default(cuid())
+  issueId String
+
+  /// "MINOR" | "MATERIAL". MATERIAL means a factual, framing or conclusion
+  /// change a reader would want to know about.
+  type String
+  note String @db.Text
+
+  /// Advisory only. Sending a correction email stays an explicit operator
+  /// decision and is not implemented in this milestone.
+  correctionEmailRecommended Boolean   @default(false)
+  /// "PENDING" | "NOT_NEEDED" | "QUEUED"
+  correctionEmailDecision    String    @default("PENDING")
+  correctionEmailDecidedAt   DateTime?
+  correctionEmailDecidedBy   String?
+
+  versionBefore Int
+  versionAfter  Int
+
+  createdBy String
+  createdAt DateTime @default(now())
+
+  issue OneNewsIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, createdAt])
+}

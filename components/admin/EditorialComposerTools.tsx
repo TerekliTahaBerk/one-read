@@ -132,7 +132,7 @@ export function EmailPreviewPanel({
   language,
 }: {
   html: string;
-  product: "OneArticle";
+  product: "OneArticle" | "OneNews";
   subject: string;
   previewText: string;
   language: string;
@@ -140,7 +140,7 @@ export function EmailPreviewPanel({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [expanded, setExpanded] = useState(false);
   const width = device === "mobile" ? "max-w-[390px]" : "max-w-full";
-  const accent = product === "OneArticle" ? "bg-amber-300" : "bg-purple-200";
+  const accent = product === "OneArticle" ? "bg-amber-300" : "bg-sky-200";
 
   const controls = (
     <div className="flex items-center gap-1">
