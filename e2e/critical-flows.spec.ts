@@ -7,6 +7,20 @@ test("public product surfaces render", async ({ page }) => {
   }
 });
 
+test("homepage exposes the product portfolio and semantic signup routes", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "OneArticle", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "OneNews", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "OneRead", exact: true })).toBeVisible();
+  await expect(page.getByText("Monday, Wednesday, Friday.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Choose OneArticle", exact: true })).toHaveAttribute("href", "/subscribe?offer=one-article&interval=annual");
+  await expect(page.getByRole("link", { name: "Choose OneNews", exact: true })).toHaveAttribute("href", "/subscribe?offer=one-news&interval=annual");
+  await expect(page.getByRole("link", { name: "Choose OneRead", exact: true })).toHaveAttribute("href", "/subscribe?offer=one-read&interval=annual");
+  await expect(page.getByRole("link", { name: "Read a full OneArticle sample" })).toHaveAttribute("href", "/samples/article");
+  await expect(page.getByRole("link", { name: "Read a full OneNews sample" })).toHaveAttribute("href", "/samples/news");
+  await expect(page.locator("body")).not.toContainText(/OneFilm|OneLingo|free trial|\$1 per month/i);
+});
+
 test("bundle signup is annual-first and sends a semantic checkout request", async ({ page }) => {
   await page.route("**/api/oneread/verification/request", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   await page.route("**/api/oneread/verification/confirm", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"articlePreferencesComplete":false}' }));
