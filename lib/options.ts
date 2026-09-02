@@ -37,7 +37,7 @@ export const SUMMARY_LANGUAGES = [
 ] as const;
 export type SummaryLanguage = (typeof SUMMARY_LANGUAGES)[number];
 
-export const BILLING_INTERVALS = ["monthly"] as const;
+export const BILLING_INTERVALS = ["monthly", "annual"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
 /** Product slug for the OneRead billing subscription delivering OneArticle. */

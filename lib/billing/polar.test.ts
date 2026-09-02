@@ -134,6 +134,72 @@ describe("applyPolarWebhookPayload", () => {
     );
   });
 
+  it("persists an annual subscription as plan \"annual\"", async () => {
+    // Regression: the interval mapping previously recognised only "month" and
+    // returned null for anything else, so an annual purchase silently kept the
+    // subscriber's previous monthly plan.
+    mockFoundSubscriptionByMetadataId();
+
+    await applyPolarWebhookPayload({
+      type: "subscription.updated",
+      timestamp: new Date(),
+      data: {
+        id: "provider_sub_1",
+        status: "active",
+        recurringInterval: "year",
+        metadata: { productSubscriptionId: "sub_1" },
+      },
+    });
+
+    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plan: "annual" }),
+      }),
+    );
+  });
+
+  it("persists a monthly subscription as plan \"monthly\"", async () => {
+    mockFoundSubscriptionByMetadataId();
+
+    await applyPolarWebhookPayload({
+      type: "subscription.updated",
+      timestamp: new Date(),
+      data: {
+        id: "provider_sub_1",
+        status: "active",
+        recurringInterval: "month",
+        metadata: { productSubscriptionId: "sub_1" },
+      },
+    });
+
+    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plan: "monthly" }),
+      }),
+    );
+  });
+
+  it("keeps the stored plan when Polar sends an interval we do not model", async () => {
+    mockFoundSubscriptionByMetadataId();
+
+    await applyPolarWebhookPayload({
+      type: "subscription.updated",
+      timestamp: new Date(),
+      data: {
+        id: "provider_sub_1",
+        status: "active",
+        recurringInterval: "week",
+        metadata: { productSubscriptionId: "sub_1" },
+      },
+    });
+
+    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plan: "monthly" }),
+      }),
+    );
+  });
+
   it("unknown event type returns early and never calls update", async () => {
     await applyPolarWebhookPayload({
       type: "ping",

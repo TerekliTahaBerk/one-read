@@ -5,6 +5,7 @@ import {
   ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
 import { oneReadPolarProductId } from "@/lib/oneread/config";
+import { billingIntervalFromProviderInterval } from "@/lib/products/registry";
 import { prisma } from "@/lib/prisma";
 import {
   findOneArticleSubscription,
@@ -127,8 +128,14 @@ function checkoutSuccessUrl(
   return `${base}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
 }
 
+/**
+ * Maps Polar's recurring interval onto the stored `plan` value. Delegates to
+ * the product registry so monthly and annual stay in one vocabulary; returning
+ * null (rather than defaulting) keeps the caller's existing plan when Polar
+ * sends an interval we do not model.
+ */
 function planFromInterval(interval: string | null): BillingInterval | null {
-  return interval === "month" || interval === "monthly" ? "monthly" : null;
+  return billingIntervalFromProviderInterval(interval);
 }
 
 export function mapPolarSubscriptionStatus(status: string): string {
