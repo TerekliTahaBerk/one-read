@@ -1,4 +1,4 @@
-import type { OneArticleIssue, Prisma } from "@prisma/client";
+import { Prisma, type OneArticleIssue } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
@@ -143,6 +143,15 @@ export async function duplicateEditorialIssue(id: string, actor: string): Promis
       headline: source.headline,
       bodyText: source.bodyText,
       bodyHtml: source.bodyHtml,
+      nativeContent: source.nativeContent ?? undefined,
+      mobileEnabled: source.mobileEnabled,
+      mobileExploreEnabled: source.mobileExploreEnabled,
+      mobileListenEnabled: source.mobileListenEnabled,
+      mobileTopics: source.mobileTopics,
+      mobilePriority: source.mobilePriority,
+      mobileDeck: source.mobileDeck,
+      mobileAudioUrl: source.mobileAudioUrl,
+      mobileAudioDurationSeconds: source.mobileAudioDurationSeconds,
       heroImageUrl: source.heroImageUrl,
       heroImageAlt: source.heroImageAlt,
       heroImageCredit: source.heroImageCredit,
@@ -374,6 +383,17 @@ function normalizedIssueData(
     headline: input.headline.trim(),
     bodyText: input.bodyText.trim(),
     bodyHtml: null,
+    nativeContent: Array.isArray(input.nativeContent)
+      ? (input.nativeContent as Prisma.InputJsonValue)
+      : Prisma.JsonNull,
+    mobileEnabled: input.mobileEnabled ?? true,
+    mobileExploreEnabled: input.mobileExploreEnabled ?? true,
+    mobileListenEnabled: input.mobileListenEnabled ?? true,
+    mobileTopics: input.mobileTopics ?? [],
+    mobilePriority: input.mobilePriority ?? 0,
+    mobileDeck: nullable(input.mobileDeck),
+    mobileAudioUrl: nullable(input.mobileAudioUrl),
+    mobileAudioDurationSeconds: input.mobileAudioDurationSeconds ?? null,
     heroImageUrl: nullable(input.heroImageUrl),
     heroImageAlt: nullable(input.heroImageAlt),
     heroImageCredit: nullable(input.heroImageCredit),

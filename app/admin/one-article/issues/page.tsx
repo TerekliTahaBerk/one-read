@@ -68,12 +68,13 @@ export default async function EditorialIssuesPage(
       </AdminFilterBar>
       <AdminCard>
         <AdminTable
-          head={["Headline", "Language", "Status", "Scheduled", "Delivered", "Failed", "Updated", ""]}
+          head={["Headline", "Language", "Status", "Mobile", "Scheduled", "Delivered", "Failed", "Updated", ""]}
           empty="No editorial editions match these filters."
           rows={issues.map((issue) => [
             <span key="h" className="block min-w-[220px] font-medium text-admin-ink">{issue.headline || "Untitled edition"}</span>,
             issue.readingLanguage,
             <StatusBadge key="s" value={issue.status} />,
+            <span key="mobile" className={`whitespace-nowrap text-[11.5px] ${issue.mobileEnabled ? "text-emerald-700" : "text-admin-muted"}`}>{issue.mobileEnabled ? `${issue.mobileExploreEnabled ? "Explore" : "Home"}${issue.mobileListenEnabled ? " + Listen" : ""}` : "Hidden"}</span>,
             <span key="sc" className="whitespace-nowrap text-admin-body">{fmtDateTime(issue.scheduledFor)}</span>,
             deliveryCount(issue.id, "SENT"),
             <span key="f" className={deliveryCount(issue.id, "FAILED") > 0 ? "text-rose-700" : ""}>{deliveryCount(issue.id, "FAILED")}</span>,

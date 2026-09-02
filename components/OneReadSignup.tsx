@@ -1,174 +1,538 @@
 "use client";
 
-import Link from "next/link";
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
+import { Logo } from "@/components/Logo";
 import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
-import { Logo } from "@/components/Logo";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
+import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
 import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
-import { INTERESTS, SOURCE_LANGUAGES, SUMMARY_LANGUAGES, isLikelyEmail } from "@/lib/options";
-import { productThemes } from "@/lib/product-themes";
+import {
+  INTERESTS,
+  SUMMARY_LANGUAGES,
+  SOURCE_LANGUAGES,
+  FILM_GENRES,
+  FILM_EMAIL_LANGUAGES,
+  isLikelyEmail,
+} from "@/lib/options";
 
-type Step = "email" | "verify" | "preferences" | "review" | "active";
+type Product = "article" | "film";
 
-async function postJson(url: string, body: unknown) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return { ok: response.ok, data: await response.json().catch(() => ({})) };
+type Step = "email" | "verify" | "choose" | `${Product}-prefs` | "review" | "done";
+
+const PRODUCT_LABEL: Record<Product, string> = {
+  article: "OneArticle",
+  film: "OneFilm",
+};
+
+/** Each product's own theme key — lets each step (and its ChoiceCard) "wear" that product's color. */
+const PRODUCT_THEME_KEY: Record<Product, ProductThemeKey> = {
+  article: "article",
+  film: "film",
+};
+
+/** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
+function themeForStep(step: Step) {
+  if (step === "article-prefs") return productThemes.article;
+  if (step === "film-prefs") return productThemes.film;
+  return productThemes.read;
 }
 
-export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) {
+async function postJson(url: string, body: unknown) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+export function OneReadSignup() {
   const { dictionary } = useSiteLanguage();
   const t = dictionary.signup;
   const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState(initialEmail);
+  const theme = themeForStep(step);
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [readingLanguage, setReadingLanguage] = useState("English");
-  const [sourceLanguage, setSourceLanguage] = useState("Any");
-  const [interests, setInterests] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  async function submitEmail(event: FormEvent) {
-    event.preventDefault();
+  // Products left to configure after the one currently on screen (drives the
+  // "set up all" flow — one product's form at a time, then on to the next).
+  const [queue, setQueue] = useState<Product[]>([]);
+
+  const [done, setDone] = useState<Record<Product, boolean>>({
+    article: false,
+    film: false,
+  });
+
+  const [interests, setInterests] = useState<string[]>([]);
+  const [summaryLanguage, setSummaryLanguage] = useState<string>("English");
+  const [sourceLanguage, setSourceLanguage] = useState<string>("Any");
+
+  const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
+  const [filmGenres, setFilmGenres] = useState<string[]>([]);
+
+  async function submitEmail(e: FormEvent) {
+    e.preventDefault();
     setError(null);
-    if (!isLikelyEmail(email)) return setError(t.errors.invalidEmail);
+    if (!isLikelyEmail(email)) {
+      setError(t.errors.invalidEmail);
+      return;
+    }
     setBusy(true);
-    const result = await postJson("/api/oneread/verification/request", { email });
+    const { ok, data } = await postJson("/api/oneread/verification/request", { email });
     setBusy(false);
-    if (!result.ok) return setError(t.errors.generic);
+    if (!ok && data.error && data.error !== "invalid_request") {
+      setError(t.errors.generic);
+      return;
+    }
     setStep("verify");
   }
 
-  async function submitCode(event: FormEvent) {
-    event.preventDefault();
+  async function submitCode(e: FormEvent) {
+    e.preventDefault();
     setError(null);
-    if (!/^\d{6}$/.test(code.trim())) return setError(t.errors.invalidCode);
-    setBusy(true);
-    const result = await postJson("/api/oneread/verification/confirm", { email, code: code.trim() });
-    setBusy(false);
-    if (!result.ok) {
-      return setError(result.data.error === "incorrect" ? t.errors.codeIncorrect : result.data.error === "expired" ? t.errors.codeExpired : t.errors.generic);
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError(t.errors.invalidCode);
+      return;
     }
-    const preferences = result.data.articlePreferences;
-    if (preferences) {
-      setInterests(preferences.interests ?? []);
-      setSourceLanguage(preferences.sourceLanguage ?? "Any");
-      setReadingLanguage(preferences.summaryLanguage ?? "English");
-    }
-    setStep("preferences");
-  }
-
-  async function savePreferences(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    if (interests.length === 0) return setError(t.errors.chooseInterest);
     setBusy(true);
-    const result = await postJson("/api/oneread/article-preferences", {
+    const { ok, data } = await postJson("/api/oneread/verification/confirm", {
       email,
-      interests,
-      sourceLanguage,
-      summaryLanguage: readingLanguage,
+      code: code.trim(),
     });
     setBusy(false);
-    if (!result.ok) return setError(t.errors.generic);
-    setStep("review");
+    if (!ok) {
+      setError(
+        data.error === "incorrect"
+          ? t.errors.codeIncorrect
+          : data.error === "expired"
+            ? t.errors.codeExpired
+            : t.errors.generic,
+      );
+      return;
+    }
+    setDone({
+      article: Boolean(data.articlePreferencesComplete),
+      film: Boolean(data.filmPreferencesComplete),
+    });
+    setStep("choose");
+  }
+
+  /** Starts configuring one or more products, one form at a time. */
+  function startFlow(products: Product[]) {
+    if (products.length === 0) return;
+    setQueue(products.slice(1));
+    setStep(`${products[0]}-prefs`);
+  }
+
+  /** After a product's preferences save, move to the next queued one or review. */
+  function advance(justCompleted: Product) {
+    setDone((prev) => ({ ...prev, [justCompleted]: true }));
+    setQueue((prevQueue) => {
+      if (prevQueue.length > 0) {
+        setStep(`${prevQueue[0]}-prefs`);
+        return prevQueue.slice(1);
+      }
+      setStep("review");
+      return prevQueue;
+    });
+  }
+
+  async function submitArticlePreferences(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (interests.length === 0) {
+      setError(t.errors.chooseInterest);
+      return;
+    }
+    setBusy(true);
+    const { ok } = await postJson("/api/oneread/article-preferences", {
+      email,
+      interests,
+      secondaryInterests: interests,
+      summaryLanguage,
+      sourceLanguage,
+    });
+    setBusy(false);
+    if (!ok) {
+      setError(t.errors.generic);
+      return;
+    }
+    advance("article");
+  }
+
+  async function submitFilmPreferences(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (filmGenres.length === 0) {
+      setError(t.errors.chooseGenre);
+      return;
+    }
+    setBusy(true);
+    const { ok } = await postJson("/api/oneread/film-preferences", {
+      email,
+      emailLanguage: filmEmailLanguage,
+      preferredGenres: filmGenres,
+      moods: [],
+      decades: [],
+      languages: [],
+      platforms: [],
+      spoilerPreference: "Spoiler-light",
+      familiarity: "Mixed",
+      runtimePreference: "Any",
+    });
+    setBusy(false);
+    if (!ok) {
+      setError(t.errors.generic);
+      return;
+    }
+    advance("film");
   }
 
   async function startCheckout() {
-    setBusy(true);
     setError(null);
-    const result = await postJson("/api/oneread/checkout", { email });
+    setBusy(true);
+    const { ok, data } = await postJson("/api/oneread/checkout", { email });
     setBusy(false);
-    if (!result.ok) return setError(t.errors.generic);
-    if (result.data.action === "redirect" && result.data.url) {
-      window.location.assign(result.data.url);
+    if (!ok) {
+      setError(
+        typeof data.error === "string"
+          ? data.error
+          : t.errors.generic,
+      );
       return;
     }
-    if (result.data.action === "already_active") return setStep("active");
-    setError(t.errors.needsSetup);
+    if (data.action === "redirect" && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+    if (data.action === "already_active" && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+    if (data.action === "needs_setup") {
+      setError(t.errors.needsSetup);
+      setStep("choose");
+    }
   }
 
+  const anyDone = done.article || done.film;
+
   return (
-    <main className="relative min-h-svh w-full flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5" style={{ backgroundColor: productThemes.read.background, "--theme-accent": productThemes.article.accent, "--theme-border": productThemes.article.border, "--theme-surface": productThemes.article.surface, "--theme-focus": productThemes.article.accent } as CSSProperties}>
+    <main
+      className="relative min-h-svh w-full flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5"
+      style={
+        {
+          backgroundColor: theme.background,
+          "--theme-accent": theme.accent,
+          "--theme-border": theme.border,
+          "--theme-surface": theme.surface,
+          "--theme-selected-surface": theme.surface,
+          "--theme-page": theme.background,
+          "--theme-focus": theme.accent,
+        } as CSSProperties
+      }
+    >
       <header className="relative w-full flex justify-center animate-rise">
         <BackButton href="/" label={dictionary.common.backToOneRead} />
         <Logo href="/" ariaLabel={dictionary.common.oneReadHome} />
       </header>
-      <section className="flex-1 w-full max-w-[36rem] flex flex-col items-center justify-center py-8">
-        {step === "email" && <StepShell title={t.email.title} support={t.email.support}>
-          <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
-            <label className="sr-only" htmlFor="signup-email">{t.email.placeholder}</label>
-            <input id="signup-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t.email.placeholder} autoComplete="email" required className={inputClass} />
-            <Submit busy={busy} wait={t.pleaseWait}>{t.email.cta}</Submit>
-          </form>
-        </StepShell>}
 
-        {step === "verify" && <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
-          <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
-            <label className="sr-only" htmlFor="verification-code">{t.verify.title}</label>
-            <input id="verification-code" type="text" inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={(event) => setCode(event.target.value)} placeholder="123456" autoComplete="one-time-code" maxLength={6} required className={`${inputClass} max-w-[14rem] text-center text-[18px] tracking-[.3em]`} />
-            <Submit busy={busy} wait={t.pleaseWait}>{t.verify.cta}</Submit>
-            <button type="button" onClick={() => { setCode(""); setStep("email"); }} className={secondaryButtonClass}>{t.verify.useDifferentEmail}</button>
-          </form>
-        </StepShell>}
+      <section className="flex-1 w-full flex flex-col items-center justify-center max-w-[36rem] mx-auto py-6 sm:py-8">
+        {step === "email" && (
+          <StepShell
+            title={t.email.title}
+            support={t.email.support}
+          >
+            <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.email.placeholder}
+                autoComplete="email"
+                className="focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink"
+              />
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.email.cta}</SubmitButton>
+              {error && <ErrorText>{error}</ErrorText>}
+            </form>
+          </StepShell>
+        )}
 
-        {step === "preferences" && <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
-          <form onSubmit={savePreferences} className="w-full flex flex-col items-center gap-6">
-            <PreferenceGroup label="Interests">{INTERESTS.map((interest) => <InterestChip key={interest} label={interest} selected={interests.includes(interest)} onClick={() => setInterests(toggleValue(interests, interest))} />)}</PreferenceGroup>
-            <PreferenceGroup label={t.articlePrefs.sourceLanguage}>{SOURCE_LANGUAGES.map((language) => <LanguagePill key={language} label={language} selected={sourceLanguage === language} onClick={() => setSourceLanguage(language)} />)}</PreferenceGroup>
-            <PreferenceGroup label={t.articlePrefs.summaryLanguage}>{SUMMARY_LANGUAGES.map((language) => <LanguagePill key={language} label={language} selected={readingLanguage === language} onClick={() => setReadingLanguage(language)} />)}</PreferenceGroup>
-            <Submit busy={busy} wait={t.pleaseWait}>{t.articlePrefs.cta}</Submit>
-          </form>
-        </StepShell>}
+        {step === "verify" && (
+          <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
+            <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="123456"
+                maxLength={6}
+                className="focus-ring h-12 w-full max-w-[14rem] rounded-full border border-[var(--theme-border)] bg-white px-5 text-center font-sans text-[18px] tracking-[0.3em] text-ink"
+              />
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.verify.cta}</SubmitButton>
+              {error && <ErrorText>{error}</ErrorText>}
+              <button
+                type="button"
+                onClick={() => setStep("email")}
+                className="link-underline mt-1 font-sans text-[12.5px] text-fog"
+              >
+                {t.verify.useDifferentEmail}
+              </button>
+            </form>
+          </StepShell>
+        )}
 
-        {step === "review" && <StepShell title={t.review.title} support={t.review.support}>
-          <div className="w-full rounded-2xl border border-[var(--theme-border)] bg-white p-5">
-            <ReviewRow label="Product" value="OneArticle" />
-            <ReviewRow label={t.articlePrefs.summaryLanguage} value={readingLanguage} />
-            <ReviewRow label="Interests" value={interests.join(", ")} />
-            <ReviewRow label={t.articlePrefs.sourceLanguage} value={sourceLanguage} />
-            <ReviewRow label={t.review.priceLabel} value={ONEREAD_BILLING_LABEL} />
-            <p className="mt-5 border-t border-[var(--theme-border)] pt-4 text-center font-sans text-[12.5px] leading-relaxed text-fog">{t.review.priceIncluded}</p>
-          </div>
-          <button type="button" onClick={startCheckout} disabled={busy} className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-7 font-sans text-[14px] font-medium text-white disabled:opacity-50">{busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}</button>
-          <button type="button" onClick={() => setStep("preferences")} className={secondaryButtonClass}>{t.review.editPreferences}</button>
-        </StepShell>}
+        {step === "choose" && (
+          <StepShell
+            title={t.choose.title}
+            support={t.choose.support}
+          >
+            <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
+              <ChoiceCard
+                title="OneArticle"
+                description={t.choose.articleDescription}
+                cta={done.article ? t.choose.articleCtaEdit : t.choose.articleCta}
+                themeKey={PRODUCT_THEME_KEY.article}
+                onClick={() => startFlow(["article"])}
+              />
+              <ChoiceCard
+                title="OneFilm"
+                description={t.choose.filmDescription}
+                cta={done.film ? t.choose.filmCtaEdit : t.choose.filmCta}
+                themeKey={PRODUCT_THEME_KEY.film}
+                onClick={() => startFlow(["film"])}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => startFlow(["article", "film"])}
+              className="focus-ring mt-4 font-sans text-[13.5px] text-ink link-underline"
+            >
+              {t.choose.setupAll}
+            </button>
+            {anyDone && (
+              <button
+                type="button"
+                onClick={() => setStep("review")}
+                className="focus-ring mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95"
+              >
+                {t.choose.continueReview}
+              </button>
+            )}
+          </StepShell>
+        )}
 
-        {step === "active" && <StepShell title={dictionary.preferences.states.active_paid} support={dictionary.preferences.support}>
-          <Link href={`/preferences?email=${encodeURIComponent(email)}`} className={primaryButtonClass}>{dictionary.preferences.editPreferences}</Link>
-        </StepShell>}
-        {error && <p role="alert" aria-live="assertive" className="mt-4 font-sans text-[13px] text-red-600">{error}</p>}
+        {step === "article-prefs" && (
+          <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
+            <form onSubmit={submitArticlePreferences} className="w-full flex flex-col items-center gap-5">
+              <div className="flex flex-wrap justify-center gap-2">
+                {INTERESTS.map((label) => (
+                  <InterestChip
+                    key={label}
+                    label={label}
+                    selected={interests.includes(label)}
+                    onClick={() =>
+                      setInterests((prev) =>
+                        prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label],
+                      )
+                    }
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.summaryLanguage}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {SUMMARY_LANGUAGES.map((lang) => (
+                    <LanguagePill
+                      key={lang}
+                      label={lang}
+                      selected={summaryLanguage === lang}
+                      onClick={() => setSummaryLanguage(lang)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.sourceLanguage}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {SOURCE_LANGUAGES.map((lang) => (
+                    <LanguagePill
+                      key={lang}
+                      label={lang}
+                      selected={sourceLanguage === lang}
+                      onClick={() => setSourceLanguage(lang)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.articlePrefs.cta}</SubmitButton>
+              {error && <ErrorText>{error}</ErrorText>}
+            </form>
+          </StepShell>
+        )}
+
+        {step === "film-prefs" && (
+          <StepShell title={t.filmPrefs.title} support={t.filmPrefs.support}>
+            <form onSubmit={submitFilmPreferences} className="w-full flex flex-col items-center gap-5">
+              <div className="flex flex-wrap justify-center gap-2">
+                {FILM_GENRES.map((genre) => (
+                  <InterestChip
+                    key={genre}
+                    label={genre}
+                    selected={filmGenres.includes(genre)}
+                    onClick={() =>
+                      setFilmGenres((prev) =>
+                        prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
+                      )
+                    }
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-sans text-[12.5px] text-fog">{t.filmPrefs.emailLanguage}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {FILM_EMAIL_LANGUAGES.map((lang) => (
+                    <LanguagePill
+                      key={lang}
+                      label={lang}
+                      selected={filmEmailLanguage === lang}
+                      onClick={() => setFilmEmailLanguage(lang)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.filmPrefs.cta}</SubmitButton>
+              {error && <ErrorText>{error}</ErrorText>}
+            </form>
+          </StepShell>
+        )}
+
+        {step === "review" && (
+          <StepShell title={t.review.title} support={t.review.support}>
+            <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
+              <p className="text-fog text-[12.5px]">{t.review.emailLabel}</p>
+              <p className="mb-3">{email}</p>
+              {(["article", "film"] as Product[]).map((p) => (
+                <div key={p}>
+                  <p className="text-fog text-[12.5px]">{PRODUCT_LABEL[p]}</p>
+                  <p className="mb-3">{done[p] ? t.review.complete : t.review.notSetUp}</p>
+                </div>
+              ))}
+              <p className="text-fog text-[12.5px]">{t.review.priceLabel}</p>
+              <p>{ONEREAD_BILLING_LABEL} — {t.review.priceIncluded}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStep("choose")}
+              className="focus-ring mt-4 font-sans text-[13px] text-ash link-underline"
+            >
+              {t.review.editPreferences}
+            </button>
+            <button
+              type="button"
+              onClick={startCheckout}
+              disabled={busy || !anyDone}
+              className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95 disabled:opacity-50"
+            >
+              {busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}
+            </button>
+            {error && <ErrorText>{error}</ErrorText>}
+          </StepShell>
+        )}
       </section>
+
       <Footer showBackHome backHref="/" backLabel={dictionary.common.backToOneRead} />
     </main>
   );
 }
 
-function StepShell({ title, support, children }: { title: string; support: string; children: ReactNode }) {
-  return <div className="w-full flex flex-col items-center text-center animate-rise"><h1 className="max-w-[22ch] text-balance font-serif text-[2rem] font-medium leading-[1.07] tracking-[-.015em] text-ink sm:text-[2.5rem]">{title}</h1><p className="mt-4 mb-7 max-w-[42ch] font-sans text-[14.5px] leading-[1.65] text-ash">{support}</p>{children}</div>;
+function StepShell({
+  title,
+  support,
+  children,
+}: {
+  title: string;
+  support: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="w-full flex flex-col items-center animate-rise-delayed">
+      <h1 className="font-serif font-medium text-[2rem] sm:text-[2.5rem] leading-[1.06] tracking-[-0.02em] text-ink text-center max-w-[20ch]">
+        {title}
+      </h1>
+      <p className="mt-4 max-w-[42ch] font-sans text-[15px] leading-[1.65] text-ash text-center">
+        {support}
+      </p>
+      <div className="mt-7 w-full flex flex-col items-center">{children}</div>
+    </div>
+  );
 }
 
-function PreferenceGroup({ label, children }: { label: string; children: ReactNode }) {
-  return <fieldset className="flex w-full flex-col items-center gap-3"><legend className="font-sans text-[11px] uppercase tracking-eyebrow text-fog">{label}</legend><div className="flex flex-wrap justify-center gap-2">{children}</div></fieldset>;
+function SubmitButton({
+  busy,
+  waitLabel,
+  children,
+}: {
+  busy: boolean;
+  waitLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={busy}
+      className="focus-ring inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper transition-[filter] duration-200 hover:brightness-95 disabled:opacity-50"
+    >
+      {busy ? waitLabel : children}
+    </button>
+  );
 }
 
-function Submit({ busy, wait, children }: { busy: boolean; wait: string; children: ReactNode }) {
-  return <button type="submit" disabled={busy} className={primaryButtonClass}>{busy ? wait : children}</button>;
+function ErrorText({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1 font-sans text-[13px] text-red-600">{children}</p>;
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-5 border-b border-[var(--theme-border)] py-3 font-sans text-[14px] last:border-0"><span className="shrink-0 text-fog">{label}</span><span className="text-right font-medium text-ink">{value}</span></div>;
+function ChoiceCard({
+  title,
+  description,
+  cta,
+  themeKey,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  cta: string;
+  themeKey: ProductThemeKey;
+  onClick: () => void;
+}) {
+  const cardTheme = productThemes[themeKey];
+  return (
+    <div
+      className="flex-1 rounded-2xl border bg-white p-5 text-center"
+      style={
+        {
+          borderColor: cardTheme.border,
+          "--card-accent": cardTheme.accent,
+          "--card-surface": cardTheme.surface,
+        } as CSSProperties
+      }
+    >
+      <p className="font-serif text-[1.1rem] font-medium text-ink">{title}</p>
+      <p className="mt-2 font-sans text-[13px] leading-snug text-ash">{description}</p>
+      <button
+        type="button"
+        onClick={onClick}
+        className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--card-accent)] px-4 font-sans text-[13px] font-medium text-[var(--card-accent)] transition-colors duration-200 hover:bg-[var(--card-surface)]"
+      >
+        {cta}
+      </button>
+    </div>
+  );
 }
-
-function toggleValue(values: string[], value: string): string[] { return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]; }
-
-const inputClass = "focus-ring h-12 w-full max-w-[24rem] rounded-full border border-[var(--theme-border)] bg-white px-5 font-sans text-[15px] text-ink";
-const primaryButtonClass = "focus-ring inline-flex h-12 items-center justify-center rounded-full bg-ink px-7 font-sans text-[14px] font-medium text-white hover:bg-ink/90 disabled:opacity-50";
-const secondaryButtonClass = "focus-ring inline-flex h-10 items-center justify-center rounded-full px-4 font-sans text-[13px] text-fog hover:text-ink";

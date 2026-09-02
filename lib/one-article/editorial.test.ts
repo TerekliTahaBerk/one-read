@@ -93,6 +93,23 @@ describe("validateEditorialIssue", () => {
     });
   });
 
+  it("validates panel-controlled mobile metadata and native blocks", () => {
+    expect(validateEditorialDraft({
+      ...valid,
+      mobileTopics: ["Macro", "Science"],
+      mobilePriority: 25,
+      mobileAudioUrl: "https://cdn.oneread.email/audio/edition.mp3",
+      mobileAudioDurationSeconds: 420,
+      nativeContent: [
+        { type: "heading", text: "A useful frame" },
+        { type: "paragraph", text: "The native reading body." },
+      ],
+    })).toEqual({ ok: true });
+    expect(validateEditorialDraft({ ...valid, mobileTopics: ["Sports"] })).toEqual({ ok: false, error: "invalid_mobile_topic" });
+    expect(validateEditorialDraft({ ...valid, mobileAudioUrl: "http://unsafe.example/audio.mp3" })).toEqual({ ok: false, error: "invalid_mobile_audio_url" });
+    expect(validateEditorialDraft({ ...valid, nativeContent: [{ type: "image", url: "javascript:bad", alt: "" }] })).toEqual({ ok: false, error: "invalid_native_content" });
+  });
+
   it("keeps exhausted deliveries visible as failures", () => {
     expect(resolveEditorialIssueDeliveryStatus(0, 1)).toBe("FAILED");
     expect(resolveEditorialIssueDeliveryStatus(4, 1)).toBe("PARTIALLY_FAILED");

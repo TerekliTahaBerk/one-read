@@ -81,6 +81,9 @@ model Contact {
   filmSends        FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
   oneFilmDeliveries OneFilmDelivery[]
+  mobileSessions       MobileSession[]
+  pushDevices          PushDevice[]
+  readingStates        ReadingState[]
 }
 
 /// A single product subscription for a Contact. Holds the access lifecycle,
@@ -457,6 +460,19 @@ model OneArticleIssue {
   headline    String
   bodyText    String  @db.Text
   bodyHtml    String? @db.Text
+  /// Optional native block representation for mobile. Email rendering remains
+  /// based on bodyText/bodyHtml and existing issues use a safe text fallback.
+  nativeContent Json?
+  /// Panel-controlled native app publishing metadata. Defaults preserve the
+  /// behaviour of editions created before mobile controls existed.
+  mobileEnabled        Boolean  @default(true)
+  mobileExploreEnabled Boolean  @default(true)
+  mobileListenEnabled  Boolean  @default(true)
+  mobileTopics         String[] @default([])
+  mobilePriority       Int      @default(0)
+  mobileDeck           String?
+  mobileAudioUrl       String?
+  mobileAudioDurationSeconds Int?
   heroImageUrl    String?
   heroImageAlt    String?
   heroImageCredit String?
@@ -481,9 +497,11 @@ model OneArticleIssue {
   updatedAt DateTime @updatedAt
 
   deliveries OneArticleDelivery[]
+  readingStates ReadingState[]
 
   @@index([status, scheduledFor])
   @@index([readingLanguage, status])
+  @@index([mobileEnabled, mobileExploreEnabled, mobilePriority])
   @@index([createdAt])
 }
 
@@ -514,6 +532,62 @@ model OneArticleDelivery {
   @@unique([issueId, contactId])
   @@index([issueId, status])
   @@index([productSubscriptionId, status])
+}
+
+/// Revocable bearer session for native clients. The raw token is returned once
+/// and stored in Keychain; only an HMAC hash is persisted server-side.
+model MobileSession {
+  id          String   @id @default(cuid())
+  contactId   String
+  selector    String   @unique
+  tokenHash   String
+  deviceLabel String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  lastUsedAt  DateTime @default(now())
+  revokedAt   DateTime?
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, revokedAt])
+  @@index([expiresAt])
+}
+
+/// Optional push destination. Provider tokens are opaque operational
+/// identifiers; the hash is used for deduplication and safe diagnostics.
+model PushDevice {
+  id            String   @id @default(cuid())
+  contactId     String
+  platform      String
+  providerToken String
+  tokenHash     String   @unique
+  enabled       Boolean  @default(true)
+  timezone      String
+  createdAt     DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  revokedAt     DateTime?
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, enabled])
+}
+
+/// Sparse reading checkpoints. Clients write only meaningful thresholds, not
+/// every scroll event.
+model ReadingState {
+  id          String   @id @default(cuid())
+  contactId   String
+  issueId     String
+  progress    Int      @default(0)
+  openedAt    DateTime @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  contact Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  issue   OneArticleIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, issueId])
+  @@index([contactId, updatedAt])
 }
 
 /// User reaction to a delivered article.

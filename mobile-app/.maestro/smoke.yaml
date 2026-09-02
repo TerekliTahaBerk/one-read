@@ -1,0 +1,29 @@
+appId: email.oneread.ios.development
+name: OneRead fixture smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible: "One useful article. Quietly waiting."
+- tapOn: "Sign in with email"
+- tapOn: "Email address"
+- inputText: "reviewer@example.com"
+- tapOn: "Send my code"
+- inputText: "123456"
+- tapOn: "Open OneRead"
+- assertVisible: "The quiet infrastructure that makes a city bearable in summer"
+- tapOn: "The quiet infrastructure that makes a city bearable in summer"
+- assertVisible: "Why it matters"
+- swipe:
+    direction: UP
+    duration: 1200
+- back
+- tapOn: "Listen"
+- assertVisible: "One useful story, read aloud."
+- tapOn: "Home"
+- tapOn: "Explore"
+- assertVisible: "Ideas worth keeping"
+- assertVisible: "You’ve reached the end of this selection."
+- tapOn: "Account and settings"
+- assertVisible: "Morning notification"
+- tapOn: "Sign out"
+- assertVisible: "Sign in with email"

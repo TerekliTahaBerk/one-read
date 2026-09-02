@@ -1,5 +1,9 @@
 # dependencies
 /node_modules
+/mobile-app/node_modules
+/mobile-app/.expo
+/mobile-app/dist
+/mobile-app/coverage
 /.pnp
 .pnp.*
 .yarn/*
@@ -36,5 +40,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+/mobile-app/.env
 next-env.d.ts
 .env*

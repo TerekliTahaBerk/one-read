@@ -20,6 +20,12 @@ import {
   FormattingToolbar,
   SchedulePresets,
 } from "@/components/admin/EditorialComposerTools";
+import {
+  MobileContentControls,
+  MobilePreviewPanel,
+  type MobileEditorialValue,
+  type NativeBlock,
+} from "@/components/admin/MobileEditorialTools";
 
 type EditorIssue = {
   id: string;
@@ -39,9 +45,18 @@ type EditorIssue = {
   ctaLabel: string | null;
   adminNotes: string | null;
   scheduledFor: string | null;
+  nativeContent: unknown;
+  mobileEnabled: boolean;
+  mobileExploreEnabled: boolean;
+  mobileListenEnabled: boolean;
+  mobileTopics: string[];
+  mobilePriority: number;
+  mobileDeck: string | null;
+  mobileAudioUrl: string | null;
+  mobileAudioDurationSeconds: number | null;
 };
 
-type EditorialForm = {
+type EditorialForm = MobileEditorialValue & {
   readingLanguage: string;
   subject: string;
   previewText: string;
@@ -78,6 +93,15 @@ const empty: EditorialForm = {
   sourceUrl: "",
   ctaLabel: "",
   adminNotes: "",
+  nativeContent: [],
+  mobileEnabled: true,
+  mobileExploreEnabled: true,
+  mobileListenEnabled: true,
+  mobileTopics: [],
+  mobilePriority: 0,
+  mobileDeck: "",
+  mobileAudioUrl: "",
+  mobileAudioDurationSeconds: null,
 };
 
 export function EditorialIssueEditor({
@@ -106,6 +130,15 @@ export function EditorialIssueEditor({
             sourceUrl: issue.sourceUrl ?? "",
             ctaLabel: issue.ctaLabel ?? "",
             adminNotes: issue.adminNotes ?? "",
+            nativeContent: isNativeBlocks(issue.nativeContent) ? issue.nativeContent : [],
+            mobileEnabled: issue.mobileEnabled,
+            mobileExploreEnabled: issue.mobileExploreEnabled,
+            mobileListenEnabled: issue.mobileListenEnabled,
+            mobileTopics: issue.mobileTopics,
+            mobilePriority: issue.mobilePriority,
+            mobileDeck: issue.mobileDeck ?? "",
+            mobileAudioUrl: issue.mobileAudioUrl ?? "",
+            mobileAudioDurationSeconds: issue.mobileAudioDurationSeconds,
           }
         : {}),
     }),
@@ -124,6 +157,7 @@ export function EditorialIssueEditor({
     "saved",
   );
   const [message, setMessage] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<"email" | "mobile">("mobile");
   const editable = !issue || ["DRAFT", "READY"].includes(issue.status);
   const dirty = snapshot(form) !== savedSnapshot;
   const checks = useMemo(() => editorialReadinessChecks(form), [form]);
@@ -237,7 +271,13 @@ export function EditorialIssueEditor({
     return () => window.removeEventListener("keydown", saveShortcut);
   }, [busy, editable, persistCurrentDraft]);
 
-  function set(key: keyof EditorialForm, value: string) {
+  function set<K extends keyof EditorialForm>(key: K, value: EditorialForm[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+    setSaveState("unsaved");
+    setMessage(null);
+  }
+
+  function setMobile<K extends keyof MobileEditorialValue>(key: K, value: MobileEditorialValue[K]) {
     setForm((current) => ({ ...current, [key]: value }));
     setSaveState("unsaved");
     setMessage(null);
@@ -505,6 +545,20 @@ export function EditorialIssueEditor({
         <section className={section}>
           <SectionHeading
             step="4"
+            title="Mobile app"
+            description="Control exactly how this edition appears in Home, Explore, Listen and the native reader."
+          />
+          <MobileContentControls
+            value={form}
+            bodyText={form.bodyText}
+            disabled={!editable}
+            onChange={setMobile}
+          />
+        </section>
+
+        <section className={section}>
+          <SectionHeading
+            step="5"
             title="Quality check"
             description="Every item must pass before the edition can be marked ready or scheduled."
           />
@@ -635,13 +689,12 @@ export function EditorialIssueEditor({
         </div>
       </form>
 
-      <EmailPreviewPanel
-        html={previewHtml}
-        product="OneArticle"
-        subject={form.subject}
-        previewText={form.previewText}
-        language={form.readingLanguage}
-      />
+      <div className="self-start">
+        <div className="mb-3 flex rounded-lg border border-admin-line bg-admin-sink p-1" role="tablist" aria-label="Preview channel">
+          {(["mobile", "email"] as const).map((mode) => <button key={mode} type="button" role="tab" aria-selected={previewMode === mode} onClick={() => setPreviewMode(mode)} className={`flex-1 rounded-md px-3 py-2 text-[11.5px] font-medium capitalize transition ${previewMode === mode ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-muted"}`}>{mode}</button>)}
+        </div>
+        {previewMode === "email" ? <EmailPreviewPanel html={previewHtml} product="OneArticle" subject={form.subject} previewText={form.previewText} language={form.readingLanguage} /> : <MobilePreviewPanel headline={form.headline} deck={form.previewText} imageUrl={form.heroImageUrl} value={form} />}
+      </div>
     </div>
   );
 }
@@ -737,6 +790,10 @@ function snapshot(form: EditorialForm): string {
   return JSON.stringify(form);
 }
 
+function isNativeBlocks(value: unknown): value is NativeBlock[] {
+  return Array.isArray(value) && value.every((item) => Boolean(item && typeof item === "object" && "type" in item));
+}
+
 function toLocalDateTime(value: string): string {
   const parts = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Istanbul",
@@ -777,6 +834,12 @@ function humanError(error: string): string {
     issue_not_editable: "This edition can no longer be edited in its current status.",
     email_delivery_not_configured: "Email delivery is not configured.",
     invalid_email: "Enter a valid test email address.",
+    mobile_deck_too_long: "Keep the mobile summary under 320 characters.",
+    invalid_mobile_topic: "Choose only the supported mobile topics.",
+    invalid_mobile_priority: "Mobile priority must be a whole number between 0 and 999.",
+    invalid_mobile_audio_url: "Use a permanent https:// URL for the mastered audio file.",
+    invalid_mobile_audio_duration: "Audio duration must be a positive whole number of seconds.",
+    invalid_native_content: "Complete or remove invalid native content blocks before saving.",
   };
   return messages[error] ?? `The action could not be completed (${error}).`;
 }

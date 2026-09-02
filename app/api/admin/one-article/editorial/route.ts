@@ -125,9 +125,34 @@ function inputFrom(body: Record<string, unknown>): EditorialIssueInput {
     sourceUrl: str(body.sourceUrl),
     ctaLabel: str(body.ctaLabel),
     adminNotes: str(body.adminNotes),
+    nativeContent: Array.isArray(body.nativeContent) ? body.nativeContent : null,
+    mobileEnabled: bool(body.mobileEnabled, true),
+    mobileExploreEnabled: bool(body.mobileExploreEnabled, true),
+    mobileListenEnabled: bool(body.mobileListenEnabled, true),
+    mobileTopics: strings(body.mobileTopics),
+    mobilePriority: integer(body.mobilePriority, 0),
+    mobileDeck: str(body.mobileDeck),
+    mobileAudioUrl: str(body.mobileAudioUrl),
+    mobileAudioDurationSeconds: nullableInteger(body.mobileAudioDurationSeconds),
   };
 }
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function bool(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function integer(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isInteger(value) ? value : fallback;
+}
+
+function nullableInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
 }
