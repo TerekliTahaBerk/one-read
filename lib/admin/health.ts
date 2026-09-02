@@ -3,7 +3,7 @@ import type { Health } from "@/components/admin/HealthCard";
 import { getControls } from "@/lib/admin/settings-store";
 import { fmtAgo, fmtWhen } from "@/lib/admin/format";
 import { getResendStatus } from "@/lib/resend";
-import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
+import { resolveOneArticleEligibilityForContacts } from "@/lib/oneread/access";
 
 export interface ProductHealthSummary {
   key: string;
@@ -38,12 +38,10 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
       select: { startedAt: true, failedCount: true },
     }),
   ]);
-  const eligibility = await Promise.all(
-    subscriptions.map((subscription) =>
-      resolveOneArticleEligibilityForContact(subscription.contactId),
-    ),
+  const eligibility = await resolveOneArticleEligibilityForContacts(
+    subscriptions.map((subscription) => subscription.contactId),
   );
-  const eligibleCount = eligibility.filter((result) => result.allowed).length;
+  const eligibleCount = [...eligibility.values()].filter((result) => result.allowed).length;
   const cronOn = controls.oneArticle.cronEnabled;
   const emailReady = getResendStatus().hasApiKey;
 

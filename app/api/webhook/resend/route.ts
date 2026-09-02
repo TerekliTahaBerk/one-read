@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
-import { resendEventRecipients, verifyResendWebhook } from "@/lib/resend-webhook";
+import { parseResendDeliveryEvent, shouldApplyProviderEvent, verifyResendWebhook } from "@/lib/resend-webhook";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const SUPPRESSION_EVENTS = new Set(["email.bounced", "email.complained"]);
 
 export async function POST(request: Request) {
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
@@ -23,17 +21,31 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
-  const type = (payload as { type?: unknown }).type;
-  if (typeof type !== "string" || !SUPPRESSION_EVENTS.has(type)) {
+  const event = parseResendDeliveryEvent(payload);
+  if (!event) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  const emails = resendEventRecipients(payload);
-  if (emails.length > 0) {
+  if (event.messageId) {
+    const deliveries = await prisma.oneArticleDelivery.findMany({
+      where: { providerMessageId: event.messageId },
+      select: { id: true, providerStatus: true, providerStatusAt: true },
+    });
+    await prisma.$transaction(
+      deliveries
+        .filter((delivery) => shouldApplyProviderEvent(delivery, event))
+        .map((delivery) => prisma.oneArticleDelivery.update({
+          where: { id: delivery.id },
+          data: { providerStatus: event.status, providerStatusAt: event.occurredAt },
+        })),
+    );
+  }
+
+  if ((event.status === "BOUNCED" || event.status === "COMPLAINED") && event.recipients.length > 0) {
     await prisma.productSubscription.updateMany({
       where: {
         productKey: { in: [ONE_READ_PRODUCT_KEY, ONE_ARTICLE_PRODUCT_KEY] },
-        contact: { email: { in: emails } },
+        contact: { email: { in: event.recipients } },
       },
       data: { emailDeliveryStatus: "SUPPRESSED" },
     });

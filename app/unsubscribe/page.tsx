@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { normalizeSiteLocale, SITE_DICTIONARIES, SITE_LOCALE_COOKIE } from "@/lib/site-i18n";
+import { TrackEventOnMount } from "@/components/TrackEventOnMount";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function UnsubscribePage(props: {
   };
 
   return <main style={{ margin: 0, background: "#F6F1E6", color: "#1B1612", fontFamily: "ui-sans-serif, system-ui, sans-serif", display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    {done && <TrackEventOnMount event="email_unsubscribed" properties={{ product: "one-article" }} />}
     <div style={{ maxWidth: 460, textAlign: "center" }}>
       <div style={{ fontFamily: "ui-serif, Georgia, Cambria, serif", fontStyle: "italic", textTransform: "uppercase", letterSpacing: "0.22em", fontSize: 12.5, marginBottom: 32 }}>OneRead</div>
       <h1 style={{ fontFamily: "ui-serif, Georgia, Cambria, serif", fontWeight: 500, fontSize: 28, lineHeight: 1.15, margin: "0 0 14px" }}>{message.headline}</h1>

@@ -3,8 +3,13 @@ import { hasValidAccess } from "@/lib/billing/access";
 
 const originalNodeEnv = process.env.NODE_ENV;
 
+/** NODE_ENV is typed readonly; tests still need to exercise both modes. */
+function setNodeEnv(value: string | undefined) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 afterEach(() => {
-  process.env.NODE_ENV = originalNodeEnv;
+  setNodeEnv(originalNodeEnv);
 });
 
 const now = new Date("2026-07-30T12:00:00.000Z");

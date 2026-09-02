@@ -5,6 +5,8 @@
  * quotes, dividers, **bold**, _italic_, links and full-width inline images.
  * Arbitrary HTML is escaped before it reaches the email.
  */
+import { escapeHtml } from "./html";
+
 export function editorialTextToHtml(value: string): string {
   return value
     .trim()
@@ -90,13 +92,4 @@ function inline(value: string): string {
     rendered = rendered.replace(`\u0000LINK${index}\u0000`, link);
   });
   return rendered;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }

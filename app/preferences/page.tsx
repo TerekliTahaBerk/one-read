@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OneReadPreferences } from "@/components/OneReadPreferences";
 
 export const metadata: Metadata = {
-  title: "Manage OneRead",
+  title: "My OneRead",
   description: "Check your OneRead subscription status and edit your OneArticle reading language.",
   robots: { index: false, follow: false },
 };

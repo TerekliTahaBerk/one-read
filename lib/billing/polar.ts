@@ -5,6 +5,22 @@ import {
   ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
 import { oneReadPolarProductId } from "@/lib/oneread/config";
+import {
+  billingIntervalFromProviderInterval,
+  isBillingIntervalKey,
+  isOfferKey,
+  type BillingIntervalKey,
+  type OfferKey,
+} from "@/lib/products/registry";
+import {
+  resolveCheckoutProductId,
+  resolveOfferFromProviderProductId,
+} from "@/lib/products/polar-config";
+import { improveClassification } from "@/lib/products/classification";
+import {
+  settleTransitionsForSubscription,
+  type ProviderPlanChange,
+} from "@/lib/billing/transitions";
 import { prisma } from "@/lib/prisma";
 import {
   findOneArticleSubscription,
@@ -127,8 +143,14 @@ function checkoutSuccessUrl(
   return `${base}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
 }
 
+/**
+ * Maps Polar's recurring interval onto the stored `plan` value. Delegates to
+ * the product registry so monthly and annual stay in one vocabulary; returning
+ * null (rather than defaulting) keeps the caller's existing plan when Polar
+ * sends an interval we do not model.
+ */
 function planFromInterval(interval: string | null): BillingInterval | null {
-  return interval === "month" || interval === "monthly" ? "monthly" : null;
+  return billingIntervalFromProviderInterval(interval);
 }
 
 export function mapPolarSubscriptionStatus(status: string): string {
@@ -186,6 +208,83 @@ export async function createPolarCheckoutForSubscription(
   });
 
   return checkout.url;
+}
+
+/**
+ * Creates a checkout for one of the six current (offer, interval) combinations.
+ *
+ * Distinct from `createPolarCheckoutForSubscription`, which still serves the
+ * live legacy $1 umbrella flow. Differences that matter commercially:
+ *
+ *   • The Polar product id comes from `resolveCheckoutProductId`, which is
+ *     fail-closed. An unconfigured offer throws naming its own environment
+ *     variable and never falls back to another offer, another interval, or a
+ *     legacy product — so a new customer cannot land on legacy pricing.
+ *   • No `allowTrial`. The $2/$3/$4 offers are sold without a free trial;
+ *     historical trial data on existing rows is untouched.
+ *   • Metadata carries the offer identity the webhook needs to reconcile the
+ *     purchase without guessing (see applyPolarWebhookPayload).
+ *
+ * The caller supplies `offer`/`interval` as validated registry values. A raw
+ * provider product id from a browser can never reach this function.
+ */
+export const CHECKOUT_METADATA_VERSION = "c2";
+
+export async function createPolarOfferCheckout(args: {
+  sub: { id: string; contactId: string };
+  email: string;
+  offer: OfferKey;
+  interval: BillingIntervalKey;
+}): Promise<{ url: string; providerProductId: string }> {
+  assertPolarConfigured("Polar checkout");
+  const { sub, email, offer, interval } = args;
+
+  // Throws MissingPolarOfferConfigError when unconfigured. Deliberately before
+  // any database write, so a misconfigured offer leaves no partial state.
+  const providerProductId = resolveCheckoutProductId(offer, interval);
+
+  const checkout = await getPolarClient().checkouts.create({
+    products: [providerProductId],
+    customerEmail: email,
+    externalCustomerId: sub.contactId,
+    successUrl: checkoutSuccessUrl(offerReturnProductKey(offer)),
+    returnUrl: checkoutReturnUrl(offerReturnProductKey(offer)),
+    metadata: {
+      // Internal ids only — no email. The contact id is enough to reconcile,
+      // and keeps PII out of the provider's metadata store.
+      contactId: sub.contactId,
+      productSubscriptionId: sub.id,
+      productKey: offer,
+      offerKey: offer,
+      billingInterval: interval,
+      metadataVersion: CHECKOUT_METADATA_VERSION,
+    },
+    customerMetadata: {
+      contactId: sub.contactId,
+      productKey: offer,
+    },
+  });
+
+  await prisma.productSubscription.update({
+    where: { id: sub.id },
+    data: {
+      paymentProvider: PROVIDER,
+      providerCheckoutSessionId: checkout.id,
+      // Record the intended purchase now so a webhook that arrives without
+      // usable metadata still has a local identity to reconcile against. It is
+      // overwritten by provider truth the moment the subscription is confirmed.
+      providerProductId,
+      offerKey: offer,
+      plan: interval,
+    },
+  });
+
+  return { url: checkout.url, providerProductId };
+}
+
+/** Which return/success URL family an offer should use. */
+function offerReturnProductKey(offer: OfferKey): string {
+  return offer === "one-article" ? ONE_ARTICLE_PRODUCT_KEY : ONE_READ_PRODUCT_KEY;
 }
 
 export async function createPolarCustomerPortalUrl(
@@ -280,89 +379,159 @@ export class PolarBillingProvider implements BillingProvider {
   }
 }
 
+/* ========================= inbound webhook handling ========================= */
+
 type PolarData = Record<string, any>;
+
+/**
+ * Why an event did or did not change local billing state. Persisted on
+ * BillingEvent for operator diagnosis; never an input to access decisions.
+ */
+export type PolarWebhookOutcome =
+  | "applied"
+  /** Not a billing lifecycle event. */
+  | "ignored_event_type"
+  /** Older than the state we already hold — see billingStateUpdatedAt. */
+  | "ignored_stale"
+  /** Carries a Polar product we do not recognise. Deliberately not applied. */
+  | "unrecognized_product"
+  /** Recognised, but no local subscription could be identified. */
+  | "no_subscription";
+
+export interface PolarWebhookResult {
+  outcome: PolarWebhookOutcome;
+  subscriptionId: string | null;
+  /** The Polar product id seen on the event, when present. */
+  providerProductId: string | null;
+}
 
 function metadataValue(data: PolarData, key: string): string | null {
   const value = data.metadata?.[key] ?? data.customer?.metadata?.[key];
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-const SUPPORTED_BILLING_PRODUCT_KEYS = new Set([
-  ONE_READ_PRODUCT_KEY,
-  ONE_ARTICLE_PRODUCT_KEY,
-]);
-
 function eventProductId(data: PolarData): string | null {
-  return typeof data.productId === "string"
-    ? data.productId
-    : typeof data.product?.id === "string"
-      ? data.product.id
-      : null;
+  const id =
+    typeof data.productId === "string"
+      ? data.productId
+      : typeof data.product?.id === "string"
+        ? data.product.id
+        : typeof data.subscription?.productId === "string"
+          ? data.subscription.productId
+          : null;
+  return id && id.trim().length > 0 ? id.trim() : null;
 }
 
-function supportedProductKeyForPolarData(data: PolarData): string | null {
-  const metadataProductKey = metadataValue(data, "productKey");
+/**
+ * What the event is for, resolved from provider truth wherever possible.
+ *
+ * Metadata is treated as untrusted: an `offerKey` we stamped at checkout is only
+ * honoured when the event carries no product id of its own, and is validated
+ * against the registry before use. Whenever Polar tells us the product, that
+ * wins — which is what stops a stale or forged metadata value from moving a
+ * subscription onto an offer it never bought.
+ */
+interface EventOffer {
+  /** The ProductSubscription.productKey this event belongs to. */
+  subscriptionProductKey: string;
+  /** Registry offer key, or a legacy plan key. */
+  offerKey: string;
+  interval: BillingIntervalKey | null;
+  legacy: boolean;
+}
+
+function resolveEventOffer(
+  data: PolarData,
+): { kind: "resolved"; offer: EventOffer } | { kind: "unknown_product" } | { kind: "no_product" } {
   const productId = eventProductId(data);
-  if (metadataProductKey && SUPPORTED_BILLING_PRODUCT_KEYS.has(metadataProductKey)) {
-    if (!productId) return metadataProductKey;
-    try {
-      return productId === getPolarProductId(metadataProductKey)
-        ? metadataProductKey
-        : null;
-    } catch {
-      return null;
-    }
+
+  if (productId) {
+    const resolved = resolveOfferFromProviderProductId(productId);
+    if (!resolved) return { kind: "unknown_product" };
+    return {
+      kind: "resolved",
+      offer: resolved.legacy
+        ? {
+            subscriptionProductKey: resolved.subscriptionProductKey,
+            offerKey: resolved.legacyKey,
+            interval: null,
+            legacy: true,
+          }
+        : {
+            subscriptionProductKey: resolved.subscriptionProductKey,
+            offerKey: resolved.offer,
+            interval: resolved.interval,
+            legacy: false,
+          },
+    };
   }
 
-  if (!productId) return null;
-  if (productId === oneReadPolarProductId()) return ONE_READ_PRODUCT_KEY;
-  if (productId === getPolarProductId(ONE_ARTICLE_PRODUCT_KEY)) {
-    return ONE_ARTICLE_PRODUCT_KEY;
+  // No product on the event (common for checkout.* and customer.state_changed).
+  // Fall back to the offer we stamped into our own checkout metadata.
+  const metadataOffer = metadataValue(data, "offerKey") ?? metadataValue(data, "productKey");
+  if (metadataOffer && isOfferKey(metadataOffer)) {
+    const interval = metadataValue(data, "billingInterval");
+    return {
+      kind: "resolved",
+      offer: {
+        subscriptionProductKey: metadataOffer,
+        offerKey: metadataOffer,
+        interval: isBillingIntervalKey(interval) ? interval : null,
+        legacy: false,
+      },
+    };
   }
-  return null;
+
+  return { kind: "no_product" };
 }
 
-function eventMatchesSubscription(data: PolarData, productKey: string): boolean {
-  if (!SUPPORTED_BILLING_PRODUCT_KEYS.has(productKey)) return false;
-  const productId = eventProductId(data);
-  if (!productId) return true;
-  try {
-    return productId === getPolarProductId(productKey);
-  } catch {
-    return false;
-  }
+/** Whether an event may act on a given local row. */
+function eventMatchesRow(
+  event: { kind: "resolved"; offer: EventOffer } | { kind: "no_product" },
+  row: { productKey: string },
+): boolean {
+  // Without any product signal we rely entirely on the strong id lookup that
+  // found the row, so there is nothing further to verify.
+  if (event.kind === "no_product") return true;
+  return event.offer.subscriptionProductKey === row.productKey;
 }
 
-async function findSubscriptionForPolarData(data: PolarData) {
+async function findSubscriptionForPolarData(
+  data: PolarData,
+  event: { kind: "resolved"; offer: EventOffer } | { kind: "no_product" },
+) {
+  // 1. The subscription id we stamped into checkout metadata. Strongest link,
+  //    still verified against the event's product so stale metadata pointing at
+  //    another row cannot hijack it.
   const metadataSubId = metadataValue(data, "productSubscriptionId");
   if (metadataSubId) {
     const sub = await prisma.productSubscription.findUnique({
       where: { id: metadataSubId },
       include: { preferences: true },
     });
-    if (sub && eventMatchesSubscription(data, sub.productKey)) return sub;
+    if (sub && eventMatchesRow(event, sub)) return sub;
   }
 
-  const providerSubscriptionId = data.subscriptionId ?? data.id;
-  if (typeof providerSubscriptionId === "string") {
+  // 2. A provider subscription id we have already recorded. Product-agnostic on
+  //    purpose: this is how an in-place plan change (Article → bundle) keeps
+  //    resolving to the same row after its product changed at Polar.
+  const providerSubscriptionId =
+    typeof data.subscriptionId === "string"
+      ? data.subscriptionId
+      : typeof data.id === "string"
+        ? data.id
+        : null;
+  if (providerSubscriptionId) {
     const sub = await prisma.productSubscription.findFirst({
-      where: {
-        providerSubscriptionId,
-        productKey: { in: [ONE_READ_PRODUCT_KEY, ONE_ARTICLE_PRODUCT_KEY] },
-      },
+      where: { providerSubscriptionId },
       include: { preferences: true },
     });
-    if (sub && eventMatchesSubscription(data, sub.productKey)) return sub;
+    if (sub) return sub;
   }
 
-  // The remaining fallbacks need to know which product this event is for.
-  // Trust the productKey we stamped into checkout metadata; default to
-  // OneArticle for legacy events that predate the field. The strong lookups
-  // above (productSubscriptionId / providerSubscriptionId) already disambiguate
-  // products, so an unknown or retired purchase can never resolve to an active
-  // OneArticle row here.
-  const productKey = supportedProductKeyForPolarData(data);
-  if (!productKey) return null;
+  // Remaining fallbacks need to know which row the event is for.
+  if (event.kind === "no_product") return null;
+  const productKey = event.offer.subscriptionProductKey;
 
   const contactId =
     metadataValue(data, "contactId") ??
@@ -389,34 +558,79 @@ async function findSubscriptionForPolarData(data: PolarData) {
   return contact?.subscriptions[0] ?? null;
 }
 
+function isBillingLifecycleType(type: string): boolean {
+  return (
+    type.startsWith("checkout.") ||
+    type.startsWith("order.") ||
+    type.startsWith("subscription.") ||
+    type === "customer.state_changed"
+  );
+}
+
+/**
+ * Applies a verified Polar webhook to local billing state.
+ *
+ * Safety properties, all covered by tests in polar.test.ts:
+ *
+ *   • Stale events are dropped. `billingStateUpdatedAt` holds the provider
+ *     timestamp of the last applied event, so an out-of-order delivery cannot
+ *     regress a subscription to an earlier state.
+ *   • Unknown products are never applied. A product id we cannot resolve
+ *     returns `unrecognized_product` and leaves existing entitlement intact —
+ *     it is never assumed to be the bundle.
+ *   • Offer identity only ever strengthens. `improveClassification` refuses to
+ *     replace provider-derived identity with a weaker inference, so a later
+ *     event carrying no product cannot erase what an earlier one established.
+ *   • One contact may own many subscriptions. Rows are located per
+ *     (contact, productKey) or by provider subscription id, never "the
+ *     contact's subscription", so buying a second product cannot overwrite the
+ *     first or duplicate the Contact.
+ */
 export async function applyPolarWebhookPayload(payload: {
   type: string;
   timestamp: Date;
   data: PolarData;
-}) {
+}): Promise<PolarWebhookResult> {
   const { type, data } = payload;
-  if (
-    !type.startsWith("checkout.") &&
-    !type.startsWith("order.") &&
-    !type.startsWith("subscription.") &&
-    type !== "customer.state_changed"
-  ) {
-    return;
+  const seenProductId = eventProductId(data);
+
+  if (!isBillingLifecycleType(type)) {
+    return { outcome: "ignored_event_type", subscriptionId: null, providerProductId: seenProductId };
   }
 
-  const sub = await findSubscriptionForPolarData(data);
-  if (!sub) return;
+  const resolved = resolveEventOffer(data);
+  if (resolved.kind === "unknown_product") {
+    // Recognisably a Polar product, but not one of ours. Applying it would mean
+    // guessing at grants; leaving it alone costs nothing and is reversible once
+    // the product id is configured.
+    return {
+      outcome: "unrecognized_product",
+      subscriptionId: null,
+      providerProductId: seenProductId,
+    };
+  }
+
+  const sub = await findSubscriptionForPolarData(data, resolved);
+  if (!sub) {
+    return { outcome: "no_subscription", subscriptionId: null, providerProductId: seenProductId };
+  }
+
   if (
     sub.billingStateUpdatedAt &&
     payload.timestamp.getTime() < sub.billingStateUpdatedAt.getTime()
   ) {
-    return;
+    return { outcome: "ignored_stale", subscriptionId: sub.id, providerProductId: seenProductId };
   }
 
   const update: Record<string, any> = {
     paymentProvider: PROVIDER,
     billingStateUpdatedAt: payload.timestamp,
   };
+
+  // Persist offer identity, but only when it is at least as strong as what the
+  // row already holds.
+  const improvement = improveClassification(sub, seenProductId);
+  if (improvement.improved) Object.assign(update, improvement.data);
 
   const customerId = data.customerId ?? data.customer?.id;
   if (typeof customerId === "string") update.providerCustomerId = customerId;
@@ -449,7 +663,13 @@ export async function applyPolarWebhookPayload(payload: {
         : type === "subscription.past_due"
           ? "PAST_DUE"
           : mapPolarSubscriptionStatus(String(data.status));
-    update.plan = planFromInterval(String(data.recurringInterval ?? "")) ?? sub.plan;
+    // Interval preference mirrors identity: the resolved provider product pins
+    // it exactly, the raw recurringInterval is the fallback, and the existing
+    // plan survives when Polar sends something we do not model.
+    update.plan =
+      (resolved.kind === "resolved" ? resolved.offer.interval : null) ??
+      planFromInterval(String(data.recurringInterval ?? "")) ??
+      sub.plan;
     update.currentPeriodStart = data.currentPeriodStart ?? null;
     update.currentPeriodEnd = data.currentPeriodEnd ?? data.endsAt ?? null;
     update.trialStartedAt = data.trialStart ?? null;
@@ -467,4 +687,49 @@ export async function applyPolarWebhookPayload(payload: {
     where: { id: sub.id },
     data: update,
   });
+
+  // A confirmed provider state is what completes a pending plan change. Kept
+  // after the subscription write so transition bookkeeping can never block or
+  // partially apply a billing update.
+  await settleTransitionsForSubscription({
+    subscriptionId: sub.id,
+    providerProductId: seenProductId,
+    status: typeof update.status === "string" ? update.status : sub.status,
+  });
+
+  return { outcome: "applied", subscriptionId: sub.id, providerProductId: seenProductId };
 }
+
+/* ============================ provider mutations ============================ */
+
+/**
+ * The real in-place plan change against Polar.
+ *
+ * Injected into `startTransition` as a `ProviderPlanChange` so the transition
+ * rules can be tested end to end without a network call. It returns the
+ * provider's own view of the subscription after the change — never an
+ * optimistic guess — because whether the change took effect now or was deferred
+ * to the next period is Polar's decision, not ours.
+ */
+export const polarPlanChange: ProviderPlanChange = async ({
+  providerSubscriptionId,
+  providerProductId,
+  prorationBehavior,
+}) => {
+  assertPolarConfigured("Polar plan change");
+
+  const updated = await getPolarClient().subscriptions.update({
+    id: providerSubscriptionId,
+    subscriptionUpdate: { productId: providerProductId, prorationBehavior },
+  });
+
+  return {
+    productId:
+      typeof updated.productId === "string"
+        ? updated.productId
+        : ((updated as { product?: { id?: string } }).product?.id ?? null),
+    status: updated.status ? String(updated.status) : null,
+    currentPeriodEnd: updated.currentPeriodEnd ?? null,
+    cancelAtPeriodEnd: Boolean(updated.cancelAtPeriodEnd),
+  };
+};

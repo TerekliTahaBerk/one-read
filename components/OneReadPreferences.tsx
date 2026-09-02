@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { isLikelyEmail } from "@/lib/options";
 import { productThemes } from "@/lib/product-themes";
+import { trackEvent } from "@/lib/analytics";
 
 type Step = "email" | "verify" | "status";
 type LookupResult = {
@@ -36,6 +37,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     const response = await fetch("/api/oneread/verification/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
     setBusy(false);
     if (!response.ok) return setError(t.errors.generic);
+    trackEvent("verification_requested", { product: "one-article" });
     setStep("verify");
   }
 
@@ -50,6 +52,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
       setBusy(false);
       return setError(data.error === "incorrect" ? signup.errors.codeIncorrect : data.error === "expired" ? signup.errors.codeExpired : t.errors.generic);
     }
+    trackEvent("email_verified", { product: "one-article" });
     await loadStatus();
   }
 
@@ -79,6 +82,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
       setBusy(false);
       return setError(t.errors.generic);
     }
+    trackEvent("email_resubscribed", { product: "one-article" });
     await loadStatus();
   }
 

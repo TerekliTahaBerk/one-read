@@ -108,3 +108,24 @@ export function todayUtc(): Date {
 export function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
+
+/**
+ * Partially masks a recipient address for admin lists. Operators need enough
+ * to recognise an account; screens do not need to display full PII.
+ */
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "hidden";
+  return `${local.slice(0, 2)}•••@${domain}`;
+}
+
+/** Wall-clock duration of an operational run; unfinished runs read "Running". */
+export function fmtDuration(start: Date, end: Date | null | undefined): string {
+  if (!end) return "Running…";
+  const ms = end.getTime() - start.getTime();
+  if (ms < 0) return "—";
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}

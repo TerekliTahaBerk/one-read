@@ -71,19 +71,7 @@ export function getAdminToken(req: Request, body?: unknown): string {
     "",
   );
   if (headerToken) return headerToken;
-
-  try {
-    const url = new URL(req.url);
-    const queryToken = url.searchParams.get("token");
-    if (queryToken) return queryToken;
-  } catch {
-    // req.url may be relative in some test contexts; ignore.
-  }
-
-  if (body && typeof body === "object" && "token" in body) {
-    const t = (body as { token?: unknown }).token;
-    if (typeof t === "string") return t;
-  }
+  void body;
   return "";
 }
 
@@ -100,6 +88,27 @@ export async function requireAdmin(
   body?: unknown,
 ): Promise<NextResponse | null> {
   if (await isAdminAuthorized(req, body)) return null;
+  return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+}
+
+/** Enforces same-origin requests for cookie-authenticated browser mutations.
+ * Machine callers authenticate exclusively with an Authorization bearer. */
+export async function requireAdminMutation(
+  req: Request,
+  body?: unknown,
+): Promise<NextResponse | null> {
+  const session = await readAdminSessionFromRequest(req);
+  if (session) {
+    const origin = req.headers.get("origin");
+    const fetchSite = req.headers.get("sec-fetch-site");
+    let expectedOrigin = "";
+    try { expectedOrigin = new URL(req.url).origin; } catch { /* relative test URL */ }
+    if (fetchSite === "cross-site" || (origin && expectedOrigin && origin !== expectedOrigin)) {
+      return NextResponse.json({ ok: false, error: "cross_origin_mutation_rejected" }, { status: 403 });
+    }
+    return null;
+  }
+  if (isAdminTokenAuthorized(req, body)) return null;
   return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 }
 

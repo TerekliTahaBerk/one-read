@@ -2,6 +2,7 @@ import type { ProductSubscription } from "@prisma/client";
 import { getPolarClient, getPolarProductId, mapPolarSubscriptionStatus } from "@/lib/billing/polar";
 import { ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
+import { billingIntervalFromProviderInterval } from "@/lib/products/registry";
 
 type PolarSubscriptionSnapshot = {
   id: string;
@@ -89,7 +90,7 @@ async function findPolarOneReadSubscription(
 }
 
 function planFromPolar(interval: string): string | null {
-  return interval === "month" || interval === "monthly" ? "monthly" : null;
+  return billingIntervalFromProviderInterval(interval);
 }
 
 /**

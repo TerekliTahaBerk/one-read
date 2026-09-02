@@ -7,6 +7,7 @@ import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
 import { OneReadFamilyMascots } from "@/components/OneReadFamilyMascots";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
+import { trackEvent } from "@/lib/analytics";
 
 export function HomePageContent() {
   const { dictionary } = useSiteLanguage();
@@ -71,6 +72,7 @@ export function HomePageContent() {
           >
             <Link
               href="/subscribe"
+              onClick={() => trackEvent("subscribe_cta_clicked", { product: "one-article" })}
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full bg-ink px-6 font-sans text-[14px] font-medium

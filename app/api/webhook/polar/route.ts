@@ -78,12 +78,17 @@ export async function POST(request: Request) {
     }
   }
 
-  await applyPolarWebhookPayload(payload as any);
+  const result = await applyPolarWebhookPayload(payload as any);
 
+  // The outcome is recorded whether or not state changed, so an operator can
+  // see that an event arrived carrying a product we do not recognise rather
+  // than finding a silently ignored delivery. Marking it processed is correct
+  // in every case: the event was fully handled, and the decision not to apply
+  // it is deterministic — a retry would reach the same conclusion.
   await prisma.billingEvent.update({
     where: { providerEventId },
-    data: { processedAt: new Date() },
+    data: { processedAt: new Date(), outcome: result.outcome },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, outcome: result.outcome });
 }

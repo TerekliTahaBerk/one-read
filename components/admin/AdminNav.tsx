@@ -22,14 +22,13 @@ type NavItem = {
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: "Main",
+    label: "Overview",
     items: [
       { href: "/admin", label: "Overview", icon: "grid" },
-      { href: "/admin/users", label: "Users", matchPrefix: "/admin/users", icon: "users" },
     ],
   },
   {
-    label: "Products",
+    label: "Editorial",
     items: [
       {
         href: "/admin/one-article",
@@ -37,20 +36,44 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         matchPrefix: "/admin/one-article",
         icon: "doc",
       },
+      {
+        href: "/admin/one-news",
+        label: "OneNews",
+        matchPrefix: "/admin/one-news",
+        icon: "doc",
+      },
     ],
   },
   {
-    label: "Customers",
+    label: "Audience",
     items: [
-      { href: "/admin/analytics", label: "Analytics", icon: "chart" },
+      { href: "/admin/users", label: "Subscribers", matchPrefix: "/admin/users", icon: "users" },
+    ],
+  },
+  {
+    label: "Delivery",
+    items: [
+      { href: "/admin/delivery/today", label: "Today", matchPrefix: "/admin/delivery/today", icon: "doc" },
+      { href: "/admin/delivery/upcoming", label: "Upcoming", matchPrefix: "/admin/delivery/upcoming", icon: "list" },
+      { href: "/admin/one-article/sends", label: "History", icon: "list" },
+      { href: "/admin/delivery/failures", label: "Failures", matchPrefix: "/admin/delivery/failures", icon: "list" },
+      { href: "/admin/delivery/suppressions", label: "Suppressions", matchPrefix: "/admin/delivery/suppressions", icon: "users" },
+    ],
+  },
+  {
+    label: "Revenue",
+    items: [
+      { href: "/admin/revenue", label: "Subscriptions", matchPrefix: "/admin/revenue", icon: "chart" },
     ],
   },
   {
     label: "System",
     items: [
-      { href: "/admin/settings", label: "Settings", icon: "gear" },
-      { href: "/admin/runs", label: "Run history", matchPrefix: "/admin/runs", icon: "list" },
+      { href: "/admin/system/health", label: "Health", matchPrefix: "/admin/system/health", icon: "gear" },
+      { href: "/admin/runs", label: "Runs", matchPrefix: "/admin/runs", icon: "list" },
+      { href: "/admin/system/webhooks", label: "Webhooks", matchPrefix: "/admin/system/webhooks", icon: "list" },
       { href: "/admin/audit", label: "Audit log", matchPrefix: "/admin/audit", icon: "list" },
+      { href: "/admin/settings", label: "Settings", icon: "gear" },
     ],
   },
 ];
@@ -59,11 +82,9 @@ const NAV = NAV_GROUPS.flatMap((group) => group.items);
 
 const SUB_NAV: Record<string, { href: string; label: string }[]> = {
   "/admin/one-article": [
-    { href: "/admin/one-article", label: "Overview" },
-    { href: "/admin/one-article/new", label: "New edition" },
-    { href: "/admin/one-article/subscribers", label: "Subscribers" },
+    { href: "/admin/one-article", label: "Today" },
     { href: "/admin/one-article/issues", label: "Editions" },
-    { href: "/admin/one-article/sends", label: "Deliveries" },
+    { href: "/admin/one-article/new", label: "New" },
   ],
 };
 
