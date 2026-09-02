@@ -257,3 +257,89 @@ export function describeOfferConfig(): {
     missing: missingOfferConfig(),
   };
 }
+
+/* --------------------------- environment safety --------------------------- */
+
+export type PolarEnvironment = "sandbox" | "production";
+
+/**
+ * The Polar API environment. Production requires the exact string
+ * `POLAR_SERVER=production`; anything else — including unset, empty or
+ * misspelled — resolves to sandbox.
+ *
+ * Failing towards sandbox is the safe direction: a production deployment that
+ * forgets the variable cannot charge anyone, whereas the reverse would let a
+ * preview deployment take real money.
+ */
+export function polarEnvironment(): PolarEnvironment {
+  return process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
+}
+
+export interface PolarConfigProblem {
+  severity: "error" | "warning";
+  message: string;
+}
+
+/**
+ * Configuration validation for a startup or admin health check.
+ *
+ * It deliberately does NOT try to detect whether a given product id belongs to
+ * the sandbox or production Polar organisation — that is not derivable from the
+ * id, and guessing would be worse than saying nothing. What it can prove is
+ * that the environment is internally consistent and that nothing is missing
+ * before a checkout is attempted.
+ */
+export function validatePolarConfiguration(): PolarConfigProblem[] {
+  const problems: PolarConfigProblem[] = [];
+  const environment = polarEnvironment();
+  const missing = missingOfferConfig();
+
+  if (missing.length > 0) {
+    problems.push({
+      severity: environment === "production" ? "error" : "warning",
+      message: `Offer configuration missing: ${missing.join(", ")}. Those offers cannot be purchased.`,
+    });
+  }
+
+  // A production deployment reusing a legacy id as a current offer id would
+  // quietly sell the closed plan at its old price under a new name.
+  const legacyIds = new Set(LEGACY_OFFERS.flatMap(legacyProductIds));
+  for (const offer of OFFER_KEYS) {
+    for (const interval of BILLING_INTERVAL_KEYS) {
+      const id = readEnv(checkoutEnvVar(offer, interval));
+      if (id && legacyIds.has(id)) {
+        problems.push({
+          severity: "error",
+          message: `${checkoutEnvVar(offer, interval)} is set to a legacy product id. Legacy products are inbound-only and must never be sold as a current offer.`,
+        });
+      }
+    }
+  }
+
+  // The same id configured for two different offers would bill one product and
+  // grant another.
+  const seen = new Map<string, string>();
+  for (const offer of OFFER_KEYS) {
+    for (const interval of BILLING_INTERVAL_KEYS) {
+      const envVar = checkoutEnvVar(offer, interval);
+      const id = readEnv(envVar);
+      if (!id) continue;
+      const previous = seen.get(id);
+      if (previous) {
+        problems.push({
+          severity: "error",
+          message: `${envVar} and ${previous} share the same Polar product id. Each offer/interval needs its own product.`,
+        });
+      } else {
+        seen.set(id, envVar);
+      }
+    }
+  }
+
+  return problems;
+}
+
+/** True when every current offer can be sold safely in this environment. */
+export function isPolarConfigurationSafe(): boolean {
+  return validatePolarConfiguration().every((problem) => problem.severity !== "error");
+}

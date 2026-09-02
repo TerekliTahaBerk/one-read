@@ -74,13 +74,14 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscriptions    ProductSubscription[]
-  lingoPreferences LingoPreferences[]
-  lingoSends       LingoDailySend[]
-  filmPreferences  FilmPreferences[]
-  filmSends        FilmDailySend[]
+  subscriptions        ProductSubscription[]
+  transitions          SubscriptionTransition[]
+  lingoPreferences     LingoPreferences[]
+  lingoSends           LingoDailySend[]
+  filmPreferences      FilmPreferences[]
+  filmSends            FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
-  oneFilmDeliveries OneFilmDelivery[]
+  oneFilmDeliveries    OneFilmDelivery[]
   mobileSessions       MobileSession[]
   pushDevices          PushDevice[]
   readingStates        ReadingState[]
@@ -117,6 +118,16 @@ model ProductSubscription {
   providerCustomerId        String?
   providerSubscriptionId    String?
   providerCheckoutSessionId String?
+  /// The provider-side product actually purchased (Polar product id).
+  /// Null on historical rows written before Milestone C2 — see `offerKey`.
+  providerProductId         String?
+  /// The commercial offer this subscription was bought under. Distinct from
+  /// `productKey`, which is only the row's slot. Current offers use registry
+  /// keys ("one-article" | "one-news" | "one-read"); closed historical plans
+  /// use their LEGACY_OFFERS key ("legacy-one-read-umbrella", ...). Null means
+  /// "not yet classified" and is deliberately never guessed — see
+  /// lib/products/classification.ts.
+  offerKey                  String?
   currentPeriodStart        DateTime?
   currentPeriodEnd          DateTime?
   cancelAtPeriodEnd         Boolean   @default(false)
@@ -141,15 +152,17 @@ model ProductSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  preferences      ArticlePreferences?
-  lingoPreferences LingoPreferences?
-  filmPreferences  FilmPreferences?
-  feedbacks        Feedback[]
-  sends            DailySend[]
-  lingoSends       LingoDailySend[]
-  filmSends        FilmDailySend[]
+  preferences          ArticlePreferences?
+  lingoPreferences     LingoPreferences?
+  filmPreferences      FilmPreferences?
+  feedbacks            Feedback[]
+  sends                DailySend[]
+  lingoSends           LingoDailySend[]
+  filmSends            FilmDailySend[]
   oneArticleDeliveries OneArticleDelivery[]
-  oneFilmDeliveries OneFilmDelivery[]
+  oneFilmDeliveries    OneFilmDelivery[]
+
+  transitions SubscriptionTransition[]
 
   @@unique([contactId, productKey])
   @@index([productKey, status])
@@ -197,6 +210,63 @@ model ArticlePreferences {
 
 /// Append-only log of billing-provider webhook events. The unique
 /// providerEventId gives us idempotency: a duplicate webhook is a no-op.
+/// A deliberate, user-initiated move between commercial offers.
+///
+/// Exists for two reasons that `ProductSubscription` alone cannot serve:
+///
+///  1. History. A transition is performed as an in-place Polar product change,
+///     which overwrites `providerProductId`/`offerKey` on the subscription row.
+///     The identity the subscriber came *from* — legacy $1 provider ids very
+///     much included — is preserved here and nowhere else.
+///  2. Visibility. A downgrade takes effect at the next billing period, so
+///     there is a window where the row still reads "bundle" but a change is
+///     pending. Admin and My OneRead read that window from here.
+///
+/// This is an audit/visibility record, never an access input. Entitlements are
+/// resolved exclusively from ProductSubscription rows.
+model SubscriptionTransition {
+  id             String              @id @default(cuid())
+  contactId      String
+  contact        Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   ProductSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  /// "upgrade" | "downgrade" | "interval_change"
+  kind  String
+  /// "PENDING_PROVIDER" (scheduled for period end) | "APPLIED" | "FAILED"
+  state String
+
+  // Where the subscriber came from. Captured before the provider call, so a
+  // failed transition still records what was at risk.
+  fromOfferKey               String?
+  fromInterval               String?
+  fromProviderProductId      String?
+  fromProviderSubscriptionId String?
+  /// True when `fromOfferKey` was a closed legacy plan whose price is forfeited.
+  fromGrandfathered          Boolean @default(false)
+
+  // Where they are going.
+  toOfferKey          String
+  toInterval          String
+  toProviderProductId String?
+
+  /// Set when the user explicitly acknowledged losing a grandfathered price.
+  /// Required before any transition off a legacy plan can be started.
+  grandfatherAcknowledgedAt DateTime?
+  /// Proration behaviour handed to Polar. We never compute proration locally.
+  prorationBehavior         String?
+  /// Operator-facing failure detail. Never contains provider secrets.
+  failureReason             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// settleTransitionsForSubscription / pendingTransitionFor.
+  @@index([subscriptionId, state])
+  /// Admin sweep for changes Polar has accepted but not yet applied.
+  @@index([state])
+}
+
 model BillingEvent {
   id              String    @id @default(cuid())
   provider        String
@@ -204,6 +274,10 @@ model BillingEvent {
   type            String
   payload         Json
   processedAt     DateTime?
+  /// Why the event did or did not change billing state, e.g. "applied",
+  /// "unrecognized_product", "no_subscription", "stale". Operator-facing only;
+  /// never used to drive access decisions.
+  outcome         String?
   createdAt       DateTime  @default(now())
 }
 
@@ -378,11 +452,11 @@ model AdminAuditLog {
 /// HMAC hashes of the submitted email and client IP; raw identifiers are never
 /// persisted.
 model AdminLoginThrottle {
-  key           String   @id
-  attempts      Int      @default(0)
-  windowStarted DateTime @default(now())
+  key           String    @id
+  attempts      Int       @default(0)
+  windowStarted DateTime  @default(now())
   blockedUntil  DateTime?
-  updatedAt     DateTime @default(now()) @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   @@index([blockedUntil])
   @@index([updatedAt])
@@ -445,7 +519,7 @@ model DailySend {
 
 /// A manually authored, language-specific OneArticle edition.
 model OneArticleIssue {
-  id              String   @id @default(cuid())
+  id              String @id @default(cuid())
   readingLanguage String
 
   /// "DRAFT" | "READY" | "SCHEDULED" | "SENDING" | "SENT"
@@ -455,27 +529,27 @@ model OneArticleIssue {
   scheduledFor DateTime?
   timezone     String    @default("Europe/Istanbul")
 
-  subject     String
-  previewText String?
-  headline    String
-  bodyText    String  @db.Text
-  bodyHtml    String? @db.Text
+  subject                    String
+  previewText                String?
+  headline                   String
+  bodyText                   String   @db.Text
+  bodyHtml                   String?  @db.Text
   /// Optional native block representation for mobile. Email rendering remains
   /// based on bodyText/bodyHtml and existing issues use a safe text fallback.
-  nativeContent Json?
+  nativeContent              Json?
   /// Panel-controlled native app publishing metadata. Defaults preserve the
   /// behaviour of editions created before mobile controls existed.
-  mobileEnabled        Boolean  @default(true)
-  mobileExploreEnabled Boolean  @default(true)
-  mobileListenEnabled  Boolean  @default(true)
-  mobileTopics         String[] @default([])
-  mobilePriority       Int      @default(0)
-  mobileDeck           String?
-  mobileAudioUrl       String?
+  mobileEnabled              Boolean  @default(true)
+  mobileExploreEnabled       Boolean  @default(true)
+  mobileListenEnabled        Boolean  @default(true)
+  mobileTopics               String[] @default([])
+  mobilePriority             Int      @default(0)
+  mobileDeck                 String?
+  mobileAudioUrl             String?
   mobileAudioDurationSeconds Int?
-  heroImageUrl    String?
-  heroImageAlt    String?
-  heroImageCredit String?
+  heroImageUrl               String?
+  heroImageAlt               String?
+  heroImageCredit            String?
 
   sourceTitle String?
   sourceName  String?
@@ -496,7 +570,7 @@ model OneArticleIssue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deliveries OneArticleDelivery[]
+  deliveries    OneArticleDelivery[]
   readingStates ReadingState[]
 
   @@index([status, scheduledFor])
@@ -507,7 +581,7 @@ model OneArticleIssue {
 
 /// Idempotent per-recipient delivery record for a OneArticle edition.
 model OneArticleDelivery {
-  id                    String   @id @default(cuid())
+  id                    String @id @default(cuid())
   issueId               String
   contactId             String
   productSubscriptionId String
@@ -516,22 +590,22 @@ model OneArticleDelivery {
   /// | "RECONCILIATION_REQUIRED"
   status String @default("QUEUED")
 
-  providerMessageId String?
+  providerMessageId        String?
   /// Provider delivery state is separate from OneRead's logical send state.
   /// "ACCEPTED" | "DELIVERED" | "DELAYED" | "FAILED" | "BOUNCED" | "COMPLAINED"
   providerStatus           String?
   providerStatusAt         DateTime?
-  attemptCount      Int       @default(0)
-  lastAttemptAt     DateTime?
+  attemptCount             Int       @default(0)
+  lastAttemptAt            DateTime?
   /// Written immediately after provider acceptance. It bounds automatic
   /// idempotent recovery when the remaining local success write fails.
-  providerAcceptedAt        DateTime?
+  providerAcceptedAt       DateTime?
   reconciliationRequiredAt DateTime?
-  manualRecoveryAt          DateTime?
-  manualRecoveryBy          String?
-  sentAt            DateTime?
-  failedReason      String?   @db.Text
-  skippedReason     String?   @db.Text
+  manualRecoveryAt         DateTime?
+  manualRecoveryBy         String?
+  sentAt                   DateTime?
+  failedReason             String?   @db.Text
+  skippedReason            String?   @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -551,14 +625,14 @@ model OneArticleDelivery {
 /// Revocable bearer session for native clients. The raw token is returned once
 /// and stored in Keychain; only an HMAC hash is persisted server-side.
 model MobileSession {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   contactId   String
-  selector    String   @unique
+  selector    String    @unique
   tokenHash   String
   deviceLabel String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   expiresAt   DateTime
-  lastUsedAt  DateTime @default(now())
+  lastUsedAt  DateTime  @default(now())
   revokedAt   DateTime?
 
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -570,15 +644,15 @@ model MobileSession {
 /// Optional push destination. Provider tokens are opaque operational
 /// identifiers; the hash is used for deduplication and safe diagnostics.
 model PushDevice {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   contactId     String
   platform      String
   providerToken String
-  tokenHash     String   @unique
-  enabled       Boolean  @default(true)
+  tokenHash     String    @unique
+  enabled       Boolean   @default(true)
   timezone      String
-  createdAt     DateTime @default(now())
-  lastSeenAt    DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
   revokedAt     DateTime?
 
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -589,13 +663,13 @@ model PushDevice {
 /// Sparse reading checkpoints. Clients write only meaningful thresholds, not
 /// every scroll event.
 model ReadingState {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   contactId   String
   issueId     String
-  progress    Int      @default(0)
-  openedAt    DateTime @default(now())
+  progress    Int       @default(0)
+  openedAt    DateTime  @default(now())
   completedAt DateTime?
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
 
   contact Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
   issue   OneArticleIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
@@ -927,12 +1001,12 @@ model OneFilmIssue {
   status        String @default("DRAFT")
 
   scheduledFor DateTime?
-  timezone     String @default("Europe/Istanbul")
+  timezone     String    @default("Europe/Istanbul")
 
   subject     String
   previewText String?
   filmTitle   String
-  bodyText    String @db.Text
+  bodyText    String  @db.Text
   bodyHtml    String? @db.Text
 
   heroImageUrl    String?
@@ -950,7 +1024,7 @@ model OneFilmIssue {
 
   createdBy String
   updatedBy String
-  version   Int @default(1)
+  version   Int    @default(1)
 
   readyAt     DateTime?
   scheduledAt DateTime?
@@ -975,13 +1049,13 @@ model OneFilmDelivery {
   contactId             String
   productSubscriptionId String
 
-  status          String @default("QUEUED")
+  status            String    @default("QUEUED")
   providerMessageId String?
-  attemptCount    Int @default(0)
-  lastAttemptAt   DateTime?
-  sentAt          DateTime?
-  failedReason    String? @db.Text
-  skippedReason   String? @db.Text
+  attemptCount      Int       @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  failedReason      String?   @db.Text
+  skippedReason     String?   @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

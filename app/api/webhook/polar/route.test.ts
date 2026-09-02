@@ -41,6 +41,11 @@ describe("POST /api/webhook/polar", () => {
   beforeEach(() => {
     mockReset(prisma);
     applyPolarWebhookPayload.mockReset();
+    applyPolarWebhookPayload.mockResolvedValue({
+      outcome: "applied",
+      subscriptionId: "sub_1",
+      providerProductId: null,
+    });
     validateEvent.mockReset();
     process.env.POLAR_WEBHOOK_SECRET = "whsec_test";
   });
@@ -110,9 +115,9 @@ describe("POST /api/webhook/polar", () => {
     expect(applyPolarWebhookPayload).toHaveBeenCalledWith(payload);
     expect(prisma.billingEvent.update).toHaveBeenCalledWith({
       where: { providerEventId: "evt_test_1" },
-      data: { processedAt: expect.any(Date) },
+      data: { processedAt: expect.any(Date), outcome: "applied" },
     });
-    expect(json).toEqual({ ok: true });
+    expect(json).toEqual({ ok: true, outcome: "applied" });
   });
 
   it("retries an event row that exists but was never processed", async () => {

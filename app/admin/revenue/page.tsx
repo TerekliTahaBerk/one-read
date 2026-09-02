@@ -7,6 +7,7 @@ import { guardAdminPage } from "@/lib/admin/auth";
 import { fmtDateTime } from "@/lib/admin/format";
 import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
+import { presentBilling } from "@/lib/billing/presentation";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function RevenuePage() {
   const guard = await guardAdminPage("/admin/revenue");
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [byStatus, rows, legacyCount] = await Promise.all([
+  const [byStatus, rows, legacyCount, pendingChanges] = await Promise.all([
     prisma.productSubscription.groupBy({
       by: ["status"],
       where: { productKey: ONE_READ_PRODUCT_KEY },
@@ -40,7 +41,24 @@ export default async function RevenuePage() {
         status: { in: ["ACTIVE_PAID", "TRIALING"] },
       },
     }),
+    // Plan changes Polar has accepted but not yet applied — a downgrade or an
+    // annual→monthly move waiting for the next billing period.
+    prisma.subscriptionTransition.findMany({
+      where: { state: "PENDING_PROVIDER" },
+      select: { subscriptionId: true },
+    }),
   ]);
+
+  const pendingChangeIds = new Set(pendingChanges.map((row) => row.subscriptionId));
+
+  // Offer identity is resolved per row rather than inferred from productKey, so
+  // a grandfathered $1 subscription is never displayed as the current $4 bundle.
+  const presented = rows.map((row) => ({
+    row,
+    billing: presentBilling(row, { hasPendingChange: pendingChangeIds.has(row.id) }),
+  }));
+  const grandfatheredCount = presented.filter((entry) => entry.billing.grandfathered).length;
+  const unidentifiedCount = presented.filter((entry) => entry.billing.unidentified).length;
 
   const counts = Object.fromEntries(byStatus.map((row) => [row.status, row._count._all]));
 
@@ -64,7 +82,18 @@ export default async function RevenuePage() {
           <MetricCard
             label="Legacy OneArticle"
             value={legacyCount}
-            hint="Grandfathered $1 subscribers — never repriced"
+            hint="Standalone OneArticle rows, billed outside the umbrella"
+          />
+          <MetricCard
+            label="Grandfathered"
+            value={grandfatheredCount}
+            hint="Closed legacy pricing — never repriced or migrated automatically"
+          />
+          <MetricCard
+            label="Unidentified offer"
+            value={unidentifiedCount}
+            tone={unidentifiedCount > 0 ? "warn" : "default"}
+            hint="Historical rows with no recorded offer. Access is the safe minimum."
           />
         </MetricGrid>
       </AdminCard>
@@ -73,20 +102,36 @@ export default async function RevenuePage() {
         <AdminTable
           head={[
             "State",
-            "Plan",
+            "Offer",
+            "Grants",
+            "Billing",
             "Period end",
             "Latest paid",
             "Cancels at period end",
+            "Polar product",
             "Polar customer",
             "Polar subscription",
           ]}
           empty="No billing subscriptions recorded."
-          rows={rows.map((row) => [
-            <StatusBadge key="state" value={row.status} />,
-            row.plan ?? "Legacy / unspecified",
+          rows={presented.map(({ row, billing }) => [
+            <span key="state">
+              <StatusBadge value={row.status} />
+              {billing.lifecycle === "Change pending" ? (
+                <span className="ml-1 text-[11px] text-admin-muted">· change pending</span>
+              ) : null}
+            </span>,
+            <span key="offer">
+              {billing.offerLabel}
+              {billing.grandfathered ? (
+                <span className="ml-1 text-[11px] text-admin-muted">· grandfathered</span>
+              ) : null}
+            </span>,
+            billing.grantsLabel,
+            billing.intervalLabel,
             fmtDateTime(row.currentPeriodEnd),
             fmtDateTime(row.paidAt),
             row.cancelAtPeriodEnd ? "Yes" : "No",
+            <MonoShort key="product" value={row.providerProductId} />,
             <MonoShort key="customer" value={row.providerCustomerId} />,
             <MonoShort key="subscription" value={row.providerSubscriptionId} />,
           ])}

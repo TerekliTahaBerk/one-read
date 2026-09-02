@@ -222,7 +222,7 @@ describe("applyPolarWebhookPayload", () => {
         timestamp: new Date(),
         data: { id: "provider_sub_unknown", status: "active" },
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toMatchObject({ outcome: "no_subscription", subscriptionId: null });
 
     expect(prisma.productSubscription.update).not.toHaveBeenCalled();
   });

@@ -12,25 +12,18 @@
  * grant which products, including bundles and closed legacy plans.
  *
  * ── Why a bundle row may grant only OneArticle ──────────────────────────────
- * `ProductSubscription` records a `productKey` but not the Polar product that
- * was actually purchased, and the historical $1 umbrella shares the "one-read"
- * key with today's $4 bundle. When the provider product id is unknown we
- * therefore fall back to LEGACY grants (OneArticle only) rather than bundle
- * grants. Under-granting is recoverable — a subscriber contacts support and an
- * operator confirms. Over-granting silently gives away a paid product and
- * misrepresents what a grandfathered subscriber bought. Callers that know the
- * provider product id should pass it, and resolution becomes exact.
+ * Which offer a row represents is decided by lib/products/classification.ts,
+ * not here. That module resolves provider product id → offer key → productKey
+ * in strength order, and an unidentified "one-read" row is treated as the
+ * legacy umbrella (OneArticle only) rather than today's bundle. Under-granting
+ * is recoverable through support; over-granting silently gives away a paid
+ * product. Rows written from C2 onward carry `providerProductId` and
+ * `offerKey`, so their resolution is exact.
  */
 
 import { hasValidAccess, type EligibilityReason } from "@/lib/billing/access";
-import {
-  OFFERS,
-  PRODUCT_KEYS,
-  PRODUCT_ONE_ARTICLE,
-  isOfferKey,
-  type ProductKey,
-} from "./registry";
-import { resolveOfferFromProviderProductId } from "./polar-config";
+import { PRODUCT_KEYS, type ProductKey } from "./registry";
+import { classifySubscription } from "./classification";
 
 /** How a product entitlement was obtained. */
 export type EntitlementSource =
@@ -58,6 +51,10 @@ export interface EntitlementSubscriptionInput {
    * distinguishes a legacy $1 umbrella from a current $4 bundle.
    */
   providerProductId?: string | null;
+  /** The commercial offer recorded when this subscription was written. */
+  offerKey?: string | null;
+  /** Stored billing interval, used only for display-side classification. */
+  plan?: string | null;
 }
 
 export interface ProductEntitlement {
@@ -77,16 +74,6 @@ export interface EntitlementSnapshot {
   grandfatheredPlans: readonly string[];
 }
 
-/**
- * Grants assumed for a subscription row whose provider product is unknown.
- * Deliberately conservative for "one-read" — see the module comment.
- */
-function fallbackGrantsForProductKey(productKey: string): readonly ProductKey[] {
-  if (productKey === "one-read") return [PRODUCT_ONE_ARTICLE];
-  if (isOfferKey(productKey)) return OFFERS[productKey].grants;
-  return [];
-}
-
 interface ResolvedRow {
   grants: readonly ProductKey[];
   grandfathered: boolean;
@@ -94,36 +81,32 @@ interface ResolvedRow {
   source: EntitlementSource;
 }
 
+/**
+ * Maps a classification onto the entitlement vocabulary. All of the hard
+ * reasoning — which offer, which grants, how confident — happens in
+ * classifySubscription; this only decides how to *describe* the grant.
+ */
 function resolveRow(sub: EntitlementSubscriptionInput): ResolvedRow {
-  const provider = resolveOfferFromProviderProductId(sub.providerProductId);
+  const classification = classifySubscription(sub);
 
-  if (provider?.legacy) {
-    return {
-      grants: provider.grants,
-      grandfathered: true,
-      legacyKey: provider.legacyKey,
-      source: "legacy",
-    };
-  }
-
-  const grants = provider ? provider.grants : fallbackGrantsForProductKey(sub.productKey);
-  const isBundle = grants.length > 1;
-
-  // An unidentified "one-read" row is treated as the legacy umbrella, so it is
-  // reported as grandfathered rather than as a current bundle purchase.
-  const unidentifiedUmbrella = !provider && sub.productKey === "one-read";
+  const source: EntitlementSource = sub.adminOverride
+    ? "admin_override"
+    : classification.grandfathered
+      ? "legacy"
+      : classification.grants.length > 1
+        ? "bundle"
+        : "standalone";
 
   return {
-    grants,
-    grandfathered: unidentifiedUmbrella,
-    legacyKey: unidentifiedUmbrella ? "legacy-one-read-umbrella" : null,
-    source: sub.adminOverride
-      ? "admin_override"
-      : unidentifiedUmbrella
-        ? "legacy"
-        : isBundle
-          ? "bundle"
-          : "standalone",
+    grants: classification.grants,
+    grandfathered: classification.grandfathered,
+    legacyKey:
+      classification.kind === "legacy"
+        ? classification.legacyKey
+        : classification.grandfathered
+          ? "legacy-one-read-umbrella"
+          : null,
+    source,
   };
 }
 
