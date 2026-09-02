@@ -25,13 +25,13 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
-  title: "OneRead — OneArticle and OneNews",
+  title: "OneRead — One useful email at a time.",
   description:
-    "OneArticle and OneNews are calm, human-reviewed editorial emails with clear sources. Choose one, or get both with OneRead.",
+    "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
   openGraph: {
-    title: "OneRead — OneArticle and OneNews",
+    title: "OneRead — One useful email at a time.",
     description:
-      "OneArticle and OneNews are calm, human-reviewed editorial emails with clear sources. Choose one, or get both with OneRead.",
+      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
     type: "website",
     siteName: "OneRead",
     url: "/",
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OneRead — OneArticle and OneNews",
+    title: "OneRead — One useful email at a time.",
     description:
-      "OneArticle and OneNews are calm, human-reviewed editorial emails with clear sources. Choose one, or get both with OneRead.",
+      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
     images: ["/opengraph-image"],
   },
 };

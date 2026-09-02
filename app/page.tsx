@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { HomePageContent } from "@/components/HomePageContent";
 
 export const metadata: Metadata = {
-  title: "OneRead — OneArticle and OneNews",
-  description: "OneArticle and OneNews are calm, human-reviewed editorial emails with clear sources. Choose one, or get both with OneRead.",
+  title: "OneRead — One thing worth your time",
+  description: "OneArticle and OneNews: calm, human-reviewed editorial email with clear sources.",
   alternates: { canonical: "/" },
 };
 
