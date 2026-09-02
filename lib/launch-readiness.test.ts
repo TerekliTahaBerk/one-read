@@ -4,6 +4,11 @@ import { getLaunchReadiness } from "./launch-readiness";
 const original = { ...process.env };
 afterEach(() => { process.env = { ...original }; });
 
+/** NODE_ENV is typed readonly; this test exercises production mode. */
+function setNodeEnv(value: string | undefined) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 describe("launch readiness", () => {
   it("recognizes Gemini as a production AI provider", () => {
     process.env.AI_PROVIDER = "gemini";
@@ -21,7 +26,7 @@ describe("launch readiness", () => {
   });
 
   it("treats subscriber verification and the OneRead product as launch blockers", () => {
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
     process.env.BILLING_PROVIDER = "polar";
     delete process.env.EMAIL_VERIFICATION_SECRET;
     delete process.env.POLAR_ONEREAD_PRODUCT_ID;

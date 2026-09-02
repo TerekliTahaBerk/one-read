@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   parseEmail,
-  parseInterests,
-  parseSourceLanguage,
   parseSummaryLanguage,
 } from "@/lib/options";
-import { interestLabelsToSlugs } from "@/lib/topics";
 import { upsertArticlePreferences } from "@/lib/subscriptions";
 import {
   ensureOneReadSubscription,
@@ -45,23 +42,16 @@ export async function POST(request: Request) {
   if (!summaryLanguage) {
     return NextResponse.json({ ok: false, error: "Please choose a summary language." }, { status: 400 });
   }
-  const interests = parseInterests(payload.interests);
-  if (!interests) {
-    return NextResponse.json({ ok: false, error: "Please choose at least one interest." }, { status: 400 });
-  }
-  const sourceLanguage = parseSourceLanguage(payload.sourceLanguage);
-  if (!sourceLanguage) {
-    return NextResponse.json({ ok: false, error: "Please choose a source language." }, { status: 400 });
-  }
-  const interestSlugs = interestLabelsToSlugs(interests);
   try {
     const oneRead = await ensureOneReadSubscription(email);
     const holder = await ensureArticlePreferencesHolder(oneRead.contactId);
     await upsertArticlePreferences(holder.id, {
-      interests,
-      primaryInterest: interestSlugs[0] ?? null,
-      secondaryInterests: interestSlugs.slice(1),
-      sourceLanguage,
+      // Historical personalization columns are intentionally preserved but
+      // are no longer collected by the OneArticle product.
+      interests: [],
+      primaryInterest: null,
+      secondaryInterests: [],
+      sourceLanguage: "Any",
       summaryLanguage,
     });
     await markOneReadReadyForCheckoutIfEligible(oneRead.contactId);

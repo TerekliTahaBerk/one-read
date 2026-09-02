@@ -74,10 +74,10 @@ beforeEach(() => {
   process.env.POLAR_ONEREAD_PRODUCT_ID = "one_read_product";
   prisma.contact.findUnique.mockResolvedValue({ id: "contact_1" } as any);
   prisma.productSubscription.findUnique.mockResolvedValue(localSubscription as any);
-  prisma.productSubscription.update.mockImplementation(async ({ data }) => ({
+  prisma.productSubscription.update.mockImplementation((async ({ data }: { data: unknown }) => ({
     ...localSubscription,
-    ...data,
-  }) as any);
+    ...(data as object),
+  })) as any);
 });
 
 afterEach(() => {

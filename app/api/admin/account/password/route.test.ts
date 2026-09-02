@@ -4,6 +4,9 @@ const auth = vi.hoisted(() => ({
   readAdminSessionFromRequest: vi.fn(),
   changeAdminPassword: vi.fn(),
   setAdminSessionCookie: vi.fn(),
+  // Stands in for the shared same-origin guard, which is unit-tested against
+  // the real implementation in lib/admin/auth.test.ts.
+  requireAdminMutation: vi.fn(),
 }));
 const recordAudit = vi.hoisted(() => vi.fn());
 
@@ -28,6 +31,12 @@ describe("POST /api/admin/account/password", () => {
       expiresAt: new Date(Date.now() + 60_000),
     });
     auth.changeAdminPassword.mockResolvedValue({ ok: true, sessionVersion: 2 });
+    auth.requireAdminMutation.mockImplementation(async (req: Request) => {
+      const origin = req.headers.get("origin");
+      return origin && origin !== new URL(req.url).origin
+        ? Response.json({ ok: false, error: "cross_origin_mutation_rejected" }, { status: 403 })
+        : null;
+    });
   });
 
   it("requires a browser admin session", async () => {

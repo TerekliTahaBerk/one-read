@@ -98,7 +98,7 @@ const en = {
   signup: {
     email: {
       title: "Where should we send OneRead?",
-      support: "Enter your email and we'll send a 6-digit code before setting up your OneRead family preferences.",
+      support: "Enter your email and we'll send a 6-digit code before you choose your OneArticle reading language.",
       placeholder: "you@example.com",
       cta: "Send verification code",
     },
@@ -121,8 +121,8 @@ const en = {
       continueReview: "Continue to review",
     },
     articlePrefs: {
-      title: "Choose your reading interests.",
-      support: "Choose the topics and reading style for your weekday article brief.",
+      title: "Choose your reading language.",
+      support: "Choose the language for your weekday OneArticle brief.",
       summaryLanguage: "Summary language",
       sourceLanguage: "Source language",
       cta: "Save article preferences",
@@ -157,8 +157,8 @@ const en = {
     },
   },
   preferences: {
-    title: "Manage your OneRead account.",
-    support: "Look up your subscription to check status or edit your OneArticle and OneFilm preferences.",
+    title: "My OneRead",
+    support: "Look up your subscription, manage billing, or change your OneArticle reading language.",
     placeholder: "you@example.com",
     lookupCta: "Look up account",
     lookingUp: "Looking up…",
@@ -247,8 +247,8 @@ const tr: SiteDictionary = {
     errors: { invalidEmail: "Lütfen geçerli bir e-posta gir.", generic: "Bir şeyler ters gitti. Lütfen tekrar dene.", invalidCode: "6 haneli kodu gir.", codeIncorrect: "Bu kod doğru değil. Tekrar dene.", codeExpired: "Bu kodun süresi doldu. Yeni bir tane iste.", chooseInterest: "En az bir ilgi alanı seç.", chooseGenre: "En az bir tür seç.", needsSetup: "Lütfen önce en az bir ürünün tercihlerini tamamla." },
   },
   preferences: {
-    title: "OneRead hesabını yönet.",
-    support: "Durumunu kontrol etmek veya OneArticle ve OneFilm tercihlerini düzenlemek için aboneliğini ara.",
+    title: "OneRead hesabım",
+    support: "Abonelik durumunu kontrol et, ödemeyi yönet veya OneArticle okuma dilini değiştir.",
     placeholder: "sen@ornek.com",
     lookupCta: "Hesabı ara",
     lookingUp: "Aranıyor…",
@@ -314,8 +314,8 @@ const de: SiteDictionary = {
     errors: { invalidEmail: "Bitte gib eine gültige E-Mail-Adresse ein.", generic: "Etwas ist schiefgelaufen. Bitte versuche es erneut.", invalidCode: "Gib den 6-stelligen Code ein.", codeIncorrect: "Dieser Code ist falsch. Versuch es erneut.", codeExpired: "Dieser Code ist abgelaufen. Fordere einen neuen an.", chooseInterest: "Wähle mindestens ein Interesse.", chooseGenre: "Wähle mindestens ein Genre.", needsSetup: "Bitte schließe zuerst die Präferenzen mindestens eines Produkts ab." },
   },
   preferences: {
-    title: "Verwalte dein OneRead-Konto.",
-    support: "Rufe deinen Abonnementstatus ab oder bearbeite deine OneArticle- und OneFilm-Präferenzen.",
+    title: "Mein OneRead",
+    support: "Prüfe dein Abonnement, verwalte die Abrechnung oder ändere deine OneArticle-Lesesprache.",
     placeholder: "du@beispiel.de",
     lookupCta: "Konto abrufen",
     lookingUp: "Wird abgerufen…",
@@ -381,8 +381,8 @@ const fr: SiteDictionary = {
     errors: { invalidEmail: "Veuillez saisir une adresse e-mail valide.", generic: "Une erreur est survenue. Veuillez réessayer.", invalidCode: "Saisissez le code à 6 chiffres.", codeIncorrect: "Ce code est incorrect. Réessayez.", codeExpired: "Ce code a expiré. Demandez-en un nouveau.", chooseInterest: "Choisissez au moins un centre d'intérêt.", chooseGenre: "Choisissez au moins un genre.", needsSetup: "Veuillez d'abord terminer les préférences d'au moins un produit." },
   },
   preferences: {
-    title: "Gérez votre compte OneRead.",
-    support: "Consultez votre abonnement pour vérifier son statut ou modifier vos préférences OneArticle et OneFilm.",
+    title: "Mon OneRead",
+    support: "Consultez votre abonnement, gérez la facturation ou changez la langue de lecture OneArticle.",
     placeholder: "vous@exemple.com",
     lookupCta: "Consulter le compte",
     lookingUp: "Recherche en cours…",

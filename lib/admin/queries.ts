@@ -1,7 +1,7 @@
 import type { ArticlePreferences, ProductSubscription } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
-import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
+import { resolveOneArticleEligibilityForContact, resolveOneArticleEligibilityForContacts } from "@/lib/oneread/access";
 import type { EligibilityReason } from "@/lib/billing/access";
 import { todayUtc } from "@/lib/admin/format";
 
@@ -141,10 +141,11 @@ export async function getOverviewMetrics(now = new Date()): Promise<OverviewMetr
 
   const access = countBy(billingSubs, (s) => s.status);
   const email = countBy(subs, (s) => s.emailDeliveryStatus);
-  const eligibility = await Promise.all(
-    subs.map((sub) => resolveOneArticleEligibilityForContact(sub.contactId, now)),
+  const eligibility = await resolveOneArticleEligibilityForContacts(
+    subs.map((sub) => sub.contactId),
+    now,
   );
-  const eligibleCount = eligibility.filter((result) => result.allowed).length;
+  const eligibleCount = [...eligibility.values()].filter((result) => result.allowed).length;
 
   // Contact "new" windows (umbrella-level — counts all contacts, not just
   // OneArticle subscribers).

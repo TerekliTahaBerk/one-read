@@ -151,6 +151,60 @@ export async function resolveOneArticleEligibilityForContact(
   );
 }
 
+/** Set-based counterpart used by dispatch/admin lists to avoid two queries per contact. */
+export async function resolveOneArticleEligibilityForContacts(
+  contactIds: readonly string[],
+  now: Date = new Date(),
+): Promise<Map<string, EligibilityResult>> {
+  const ids = [...new Set(contactIds)];
+  if (ids.length === 0) return new Map();
+  const rows = await prisma.productSubscription.findMany({
+    where: {
+      contactId: { in: ids },
+      productKey: { in: [ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY] },
+    },
+    include: { preferences: true },
+  });
+  const byContact = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const existing = byContact.get(row.contactId) ?? [];
+    existing.push(row);
+    byContact.set(row.contactId, existing);
+  }
+  const results = new Map<string, EligibilityResult>();
+  for (const contactId of ids) {
+    const subscriptions = byContact.get(contactId) ?? [];
+    const holder = subscriptions.find((row) => row.productKey === ONE_ARTICLE_PRODUCT_KEY) ?? null;
+    if (!preferencesComplete(holder?.preferences ?? null)) {
+      results.set(contactId, { allowed: false, reason: "missing_article_preferences" });
+      continue;
+    }
+    if (holder?.emailDeliveryStatus === "SUPPRESSED") {
+      results.set(contactId, { allowed: false, reason: "email_suppressed" });
+      continue;
+    }
+    if (holder?.emailDeliveryStatus !== "SUBSCRIBED") {
+      results.set(contactId, { allowed: false, reason: "email_unsubscribed" });
+      continue;
+    }
+    const legacy = holder ? hasValidAccess(holder, now) : null;
+    if (legacy?.allowed) {
+      results.set(contactId, { allowed: true, reason: "legacy_one_article_access" });
+      continue;
+    }
+    const umbrella = subscriptions.find((row) => row.productKey === ONE_READ_PRODUCT_KEY);
+    if (!umbrella) {
+      results.set(contactId, { allowed: false, reason: "checkout_required" });
+      continue;
+    }
+    const access = hasValidAccess(umbrella, now);
+    results.set(contactId, access.allowed
+      ? { allowed: true, reason: "included_in_oneread" }
+      : access);
+  }
+  return results;
+}
+
 /**
  * Once OneArticle preferences are complete, the `one-read` row can move from
  * PENDING_PREFERENCES to PENDING_CHECKOUT. Mirrors

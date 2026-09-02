@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   changeAdminPassword,
   readAdminSessionFromRequest,
+  requireAdminMutation,
   setAdminSessionCookie,
 } from "@/lib/admin/auth";
 import { recordAudit } from "@/lib/admin/audit";
@@ -15,10 +16,8 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const origin = req.headers.get("origin");
-  if (origin && origin !== new URL(req.url).origin) {
-    return NextResponse.json({ ok: false, error: "invalid_origin" }, { status: 403 });
-  }
+  const denied = await requireAdminMutation(req);
+  if (denied) return denied;
 
   let body: { currentPassword?: unknown; newPassword?: unknown };
   try {

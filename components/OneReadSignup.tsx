@@ -4,30 +4,20 @@ import { useState, type CSSProperties, type FormEvent } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
-import { InterestChip } from "@/components/InterestChip";
 import { LanguagePill } from "@/components/LanguagePill";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
-import { productThemes, type ProductThemeKey } from "@/lib/product-themes";
+import { productThemes } from "@/lib/product-themes";
 import { ONEREAD_BILLING_LABEL } from "@/lib/oneread/config";
 import {
-  INTERESTS,
   SUMMARY_LANGUAGES,
-  SOURCE_LANGUAGES,
   isLikelyEmail,
 } from "@/lib/options";
+import { trackEvent } from "@/lib/analytics";
 
-type Product = "article";
+/** Only product the public signup sells today. */
+const ONE_ARTICLE_PRODUCT = "one-article";
 
-type Step = "email" | "verify" | "choose" | `${Product}-prefs` | "review" | "done";
-
-const PRODUCT_LABEL: Record<Product, string> = {
-  article: "OneArticle",
-};
-
-/** Each product's own theme key — lets each step (and its ChoiceCard) "wear" that product's color. */
-const PRODUCT_THEME_KEY: Record<Product, ProductThemeKey> = {
-  article: "article",
-};
+type Step = "email" | "verify" | "article-prefs" | "review";
 
 /** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
 function themeForStep(step: Step) {
@@ -55,17 +45,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Products left to configure after the one currently on screen (drives the
-  // "set up all" flow — one product's form at a time, then on to the next).
-  const [queue, setQueue] = useState<Product[]>([]);
-
-  const [done, setDone] = useState<Record<Product, boolean>>({
-    article: false,
-  });
-
-  const [interests, setInterests] = useState<string[]>([]);
   const [summaryLanguage, setSummaryLanguage] = useState<string>("English");
-  const [sourceLanguage, setSourceLanguage] = useState<string>("Any");
 
 
   async function submitEmail(e: FormEvent) {
@@ -82,6 +62,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       setError(t.errors.generic);
       return;
     }
+    trackEvent("verification_requested", { product: ONE_ARTICLE_PRODUCT });
     setStep("verify");
   }
 
@@ -108,57 +89,36 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
       );
       return;
     }
-    setDone({
-      article: Boolean(data.articlePreferencesComplete),
-    });
-    setStep("choose");
-  }
-
-  /** Starts configuring one or more products, one form at a time. */
-  function startFlow(products: Product[]) {
-    if (products.length === 0) return;
-    setQueue(products.slice(1));
-    setStep(`${products[0]}-prefs`);
-  }
-
-  /** After a product's preferences save, move to the next queued one or review. */
-  function advance(justCompleted: Product) {
-    setDone((prev) => ({ ...prev, [justCompleted]: true }));
-    setQueue((prevQueue) => {
-      if (prevQueue.length > 0) {
-        setStep(`${prevQueue[0]}-prefs`);
-        return prevQueue.slice(1);
-      }
-      setStep("review");
-      return prevQueue;
-    });
+    trackEvent("email_verified", { product: ONE_ARTICLE_PRODUCT });
+    setStep(data.articlePreferencesComplete ? "review" : "article-prefs");
   }
 
   async function submitArticlePreferences(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (interests.length === 0) {
-      setError(t.errors.chooseInterest);
-      return;
-    }
     setBusy(true);
     const { ok } = await postJson("/api/oneread/article-preferences", {
       email,
-      interests,
-      secondaryInterests: interests,
       summaryLanguage,
-      sourceLanguage,
     });
     setBusy(false);
     if (!ok) {
       setError(t.errors.generic);
       return;
     }
-    advance("article");
+    trackEvent("preferences_completed", {
+      product: ONE_ARTICLE_PRODUCT,
+      readingLanguage: summaryLanguage,
+    });
+    setStep("review");
   }
 
   async function startCheckout() {
     setError(null);
+    trackEvent("checkout_started", {
+      product: ONE_ARTICLE_PRODUCT,
+      readingLanguage: summaryLanguage,
+    });
     setBusy(true);
     const { ok, data } = await postJson("/api/oneread/checkout", { email });
     setBusy(false);
@@ -180,11 +140,9 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
     }
     if (data.action === "needs_setup") {
       setError(t.errors.needsSetup);
-      setStep("choose");
+      setStep("article-prefs");
     }
   }
-
-  const anyDone = done.article;
 
   return (
     <main
@@ -214,6 +172,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
           >
             <form onSubmit={submitEmail} className="w-full flex flex-col items-center gap-3">
               <input
+                aria-label={t.email.placeholder}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -231,6 +190,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
           <StepShell title={t.verify.title} support={t.verify.support.replace("{email}", email)}>
             <form onSubmit={submitCode} className="w-full flex flex-col items-center gap-3">
               <input
+                aria-label={t.verify.title}
                 type="text"
                 inputMode="numeric"
                 value={code}
@@ -252,49 +212,9 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
           </StepShell>
         )}
 
-        {step === "choose" && (
-          <StepShell
-            title={t.choose.title}
-            support={t.choose.support}
-          >
-            <div className="mt-2 flex w-full flex-col gap-3">
-              <ChoiceCard
-                title="OneArticle"
-                description={t.choose.articleDescription}
-                cta={done.article ? t.choose.articleCtaEdit : t.choose.articleCta}
-                themeKey={PRODUCT_THEME_KEY.article}
-                onClick={() => startFlow(["article"])}
-              />
-            </div>
-            {anyDone && (
-              <button
-                type="button"
-                onClick={() => setStep("review")}
-                className="focus-ring mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95"
-              >
-                {t.choose.continueReview}
-              </button>
-            )}
-          </StepShell>
-        )}
-
         {step === "article-prefs" && (
           <StepShell title={t.articlePrefs.title} support={t.articlePrefs.support}>
             <form onSubmit={submitArticlePreferences} className="w-full flex flex-col items-center gap-5">
-              <div className="flex flex-wrap justify-center gap-2">
-                {INTERESTS.map((label) => (
-                  <InterestChip
-                    key={label}
-                    label={label}
-                    selected={interests.includes(label)}
-                    onClick={() =>
-                      setInterests((prev) =>
-                        prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label],
-                      )
-                    }
-                  />
-                ))}
-              </div>
               <div className="flex flex-col items-center gap-2">
                 <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.summaryLanguage}</p>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -304,19 +224,6 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
                       label={lang}
                       selected={summaryLanguage === lang}
                       onClick={() => setSummaryLanguage(lang)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">{t.articlePrefs.sourceLanguage}</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {SOURCE_LANGUAGES.map((lang) => (
-                    <LanguagePill
-                      key={lang}
-                      label={lang}
-                      selected={sourceLanguage === lang}
-                      onClick={() => setSourceLanguage(lang)}
                     />
                   ))}
                 </div>
@@ -333,15 +240,15 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
               <p className="text-fog text-[12.5px]">{t.review.emailLabel}</p>
               <p className="mb-3">{email}</p>
               <div>
-                <p className="text-fog text-[12.5px]">{PRODUCT_LABEL.article}</p>
-                <p className="mb-3">{done.article ? t.review.complete : t.review.notSetUp}</p>
+                <p className="text-fog text-[12.5px]">OneArticle reading language</p>
+                <p className="mb-3">{summaryLanguage}</p>
               </div>
               <p className="text-fog text-[12.5px]">{t.review.priceLabel}</p>
               <p>{ONEREAD_BILLING_LABEL} — {t.review.priceIncluded}</p>
             </div>
             <button
               type="button"
-              onClick={() => setStep("choose")}
+              onClick={() => setStep("article-prefs")}
               className="focus-ring mt-4 font-sans text-[13px] text-ash link-underline"
             >
               {t.review.editPreferences}
@@ -349,7 +256,7 @@ export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) 
             <button
               type="button"
               onClick={startCheckout}
-              disabled={busy || !anyDone}
+              disabled={busy}
               className="focus-ring mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--theme-accent)] px-6 font-sans text-[14px] font-medium text-paper hover:brightness-95 disabled:opacity-50"
             >
               {busy ? t.pleaseWait : t.review.cta.replace("{price}", ONEREAD_BILLING_LABEL.split(" / ")[0])}
@@ -408,42 +315,4 @@ function SubmitButton({
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return <p className="mt-1 font-sans text-[13px] text-red-600">{children}</p>;
-}
-
-function ChoiceCard({
-  title,
-  description,
-  cta,
-  themeKey,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  cta: string;
-  themeKey: ProductThemeKey;
-  onClick: () => void;
-}) {
-  const cardTheme = productThemes[themeKey];
-  return (
-    <div
-      className="flex-1 rounded-2xl border bg-white p-5 text-center"
-      style={
-        {
-          borderColor: cardTheme.border,
-          "--card-accent": cardTheme.accent,
-          "--card-surface": cardTheme.surface,
-        } as CSSProperties
-      }
-    >
-      <p className="font-serif text-[1.1rem] font-medium text-ink">{title}</p>
-      <p className="mt-2 font-sans text-[13px] leading-snug text-ash">{description}</p>
-      <button
-        type="button"
-        onClick={onClick}
-        className="focus-ring mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[var(--card-accent)] px-4 font-sans text-[13px] font-medium text-[var(--card-accent)] transition-colors duration-200 hover:bg-[var(--card-surface)]"
-      >
-        {cta}
-      </button>
-    </div>
-  );
 }

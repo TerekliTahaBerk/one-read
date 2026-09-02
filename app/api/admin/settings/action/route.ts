@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
+import { requireAdminMutation, adminActorLabel, adminFeatureFlags } from "@/lib/admin/auth";
 import { isSettingKey, setSetting } from "@/lib/admin/settings-store";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
 
-  const denied = await requireAdmin(req, body);
+  const denied = await requireAdminMutation(req, body);
   if (denied) return denied;
 
   if (!adminFeatureFlags().mutationsEnabled) {

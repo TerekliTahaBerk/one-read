@@ -517,6 +517,10 @@ model OneArticleDelivery {
   status String @default("QUEUED")
 
   providerMessageId String?
+  /// Provider delivery state is separate from OneRead's logical send state.
+  /// "ACCEPTED" | "DELIVERED" | "DELAYED" | "FAILED" | "BOUNCED" | "COMPLAINED"
+  providerStatus           String?
+  providerStatusAt         DateTime?
   attemptCount      Int       @default(0)
   lastAttemptAt     DateTime?
   /// Written immediately after provider acceptance. It bounds automatic
@@ -540,6 +544,8 @@ model OneArticleDelivery {
   @@index([issueId, status])
   @@index([productSubscriptionId, status])
   @@index([status, lastAttemptAt])
+  @@index([providerMessageId])
+  @@index([providerStatus, providerStatusAt])
 }
 
 /// Revocable bearer session for native clients. The raw token is returned once
@@ -650,6 +656,8 @@ model EmailVerificationCode {
   updatedAt DateTime @updatedAt
 
   @@index([email, purpose])
+  @@index([email, createdAt])
+  @@index([ipHash, createdAt])
   @@index([expiresAt])
 }
 

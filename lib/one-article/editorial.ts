@@ -1,7 +1,7 @@
 import { Prisma, type OneArticleIssue } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
-import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
+import { resolveOneArticleEligibilityForContacts } from "@/lib/oneread/access";
 import { renderEditorialEmail } from "./editorial-email";
 import { sendDailyEmail } from "@/lib/resend";
 import {
@@ -406,6 +406,8 @@ export async function dispatchIssue(
         data: {
           providerAcceptedAt: now,
           providerMessageId: response.messageId ?? null,
+          providerStatus: "ACCEPTED",
+          providerStatusAt: now,
         },
       });
       await prisma.$transaction([
@@ -457,6 +459,14 @@ export async function dispatchIssue(
   return { recipients: recipients.length, sent, failed, skipped };
 }
 
+/**
+ * Recipient estimate for admin screens. Deliberately delegates to the same
+ * resolver dispatch uses so the preview can never disagree with the send.
+ */
+export async function countEligibleRecipients(readingLanguage: string): Promise<number> {
+  return (await eligibleRecipients(readingLanguage)).length;
+}
+
 async function eligibleRecipients(readingLanguage: string) {
   const holders = await prisma.productSubscription.findMany({
     where: {
@@ -469,12 +479,10 @@ async function eligibleRecipients(readingLanguage: string) {
       preferences: true,
     },
   });
-  const eligible = [];
-  for (const holder of holders) {
-    const result = await resolveOneArticleEligibilityForContact(holder.contactId);
-    if (result.allowed) eligible.push(holder);
-  }
-  return eligible;
+  const eligibility = await resolveOneArticleEligibilityForContacts(
+    holders.map((holder) => holder.contactId),
+  );
+  return holders.filter((holder) => eligibility.get(holder.contactId)?.allowed);
 }
 
 function normalizedIssueData(

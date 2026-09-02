@@ -43,3 +43,7 @@ yarn-error.log*
 /mobile-app/.env
 next-env.d.ts
 .env*
+
+# playwright
+/test-results
+/playwright-report

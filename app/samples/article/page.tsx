@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SamplePageContent } from "@/components/SamplePageContent";
+import { TrackEventOnMount } from "@/components/TrackEventOnMount";
 
 export const metadata: Metadata = {
   title: "Full OneArticle sample — OneRead",
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function ArticleSamplePage() {
-  return <SamplePageContent />;
+  return (
+    <>
+      <TrackEventOnMount event="public_sample_viewed" properties={{ product: "one-article" }} />
+      <SamplePageContent />
+    </>
+  );
 }
