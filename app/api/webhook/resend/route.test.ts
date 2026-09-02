@@ -3,6 +3,7 @@ import { createHmac } from "crypto";
 
 const prisma = vi.hoisted(() => ({
   oneArticleDelivery: { findMany: vi.fn(), update: vi.fn() },
+  oneNewsDelivery: { findMany: vi.fn(), update: vi.fn() },
   productSubscription: { updateMany: vi.fn() },
   $transaction: vi.fn(),
 }));
@@ -48,6 +49,8 @@ beforeEach(() => {
   prisma.$transaction.mockResolvedValue([]);
   prisma.productSubscription.updateMany.mockResolvedValue({ count: 1 });
   prisma.oneArticleDelivery.update.mockImplementation((args: unknown) => args);
+  prisma.oneNewsDelivery.findMany.mockResolvedValue([]);
+  prisma.oneNewsDelivery.update.mockImplementation((args: unknown) => args);
 });
 
 describe("POST /api/webhook/resend", () => {

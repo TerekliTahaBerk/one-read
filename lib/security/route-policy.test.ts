@@ -57,7 +57,7 @@ describe("production route policy", () => {
     expect(findForbiddenRoutes([
       "/", "/article", "/pricing", "/subscribe", "/preferences",
       "/samples/article", "/api/oneread/lookup", "/api/oneread/checkout",
-      "/api/webhook/polar", "/api/webhook/resend", "/api/cron/daily",
+      "/api/webhook/polar", "/api/webhook/resend", "/api/cron/daily", "/api/cron/news",
       "/admin", "/admin/one-article",
     ])).toEqual([]);
   });

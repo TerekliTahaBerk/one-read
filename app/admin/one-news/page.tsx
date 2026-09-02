@@ -19,11 +19,26 @@ export default async function OneNewsIssuesPage(props: {
   const guard = await guardAdminPage("/admin/one-news", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const issues = await prisma.oneNewsIssue.findMany({
-    orderBy: [{ scheduledFor: "desc" }, { updatedAt: "desc" }],
-    take: 200,
-    include: { _count: { select: { sources: true, corrections: true } } },
-  });
+  const page = Math.max(1, Number(typeof searchParams.page === "string" ? searchParams.page : "1") || 1);
+  const pageSize = 50;
+
+  const [issues, total] = await Promise.all([
+    prisma.oneNewsIssue.findMany({
+      orderBy: [{ scheduledFor: "desc" }, { updatedAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.oneNewsIssue.count(),
+  ]);
+  const issueIds = issues.map((issue) => issue.id);
+  const [logicalCounts, providerCounts] = issueIds.length ? await Promise.all([
+    prisma.oneNewsDelivery.groupBy({
+      by: ["issueId", "status"], where: { issueId: { in: issueIds } }, _count: { _all: true },
+    }),
+    prisma.oneNewsDelivery.groupBy({
+      by: ["issueId", "providerStatus"], where: { issueId: { in: issueIds } }, _count: { _all: true },
+    }),
+  ]) : [[], []];
 
   return (
     <AdminShell
@@ -41,11 +56,18 @@ export default async function OneNewsIssuesPage(props: {
       <AdminTabs tabs={oneNewsTabs()} active="issues" />
       <AdminCard
         title="Editions"
-        subtitle="OneNews is not connected to delivery yet. Nothing here can be sent."
+        subtitle="Accepted and mailbox-delivered states are tracked separately."
       >
         <AdminTable
-          head={["Headline", "Language", "Status", "Sources", "Corrections", "Updated"]}
-          rows={issues.map((issue) => [
+          head={["Headline", "Language", "Status", "Accepted", "Delivered", "Failed", "Updated"]}
+          rows={issues.map((issue) => {
+            const logical = (value: string) => logicalCounts.find(
+              (row) => row.issueId === issue.id && row.status === value,
+            )?._count._all ?? 0;
+            const provider = (value: string) => providerCounts.find(
+              (row) => row.issueId === issue.id && row.providerStatus === value,
+            )?._count._all ?? 0;
+            return [
             <Link
               key={`${issue.id}-headline`}
               href={`/admin/one-news/issues/${issue.id}`}
@@ -55,12 +77,20 @@ export default async function OneNewsIssuesPage(props: {
             </Link>,
             issue.readingLanguage,
             <StatusBadge key={`${issue.id}-status`} value={issue.status} />,
-            String(issue._count.sources),
-            String(issue._count.corrections),
+            String(logical("SENT")),
+            String(provider("DELIVERED")),
+            String(logical("FAILED") + logical("RECONCILIATION_REQUIRED")),
             fmtDateTime(issue.updatedAt),
-          ])}
+          ];})}
           empty="No OneNews editions yet."
         />
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span>Page {page} · {total} editions</span>
+          <div className="flex gap-3">
+            {page > 1 ? <Link href={`/admin/one-news?page=${page - 1}`}>Previous</Link> : null}
+            {page * pageSize < total ? <Link href={`/admin/one-news?page=${page + 1}`}>Next</Link> : null}
+          </div>
+        </div>
       </AdminCard>
     </AdminShell>
   );
