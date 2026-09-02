@@ -25,42 +25,6 @@ export function HomePageContent() {
         <header className="relative w-full flex justify-center reveal-item">
           <Logo href="/" />
 
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
-            <Link
-              href="/blog"
-              aria-label={dictionary.common.blog}
-              title={dictionary.common.blog}
-              className="
-                focus-ring inline-flex h-9 w-9 items-center justify-center
-                rounded-full text-ash
-                transition-colors duration-200 hover:text-ink hover:bg-cream
-              "
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 20 20"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="3.25"
-                  y="4.25"
-                  width="13.5"
-                  height="11.5"
-                  rx="1.75"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                />
-                <path
-                  d="M6.25 8h7.5M6.25 10.75h7.5M6.25 13.5h4.5"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </Link>
-          </div>
         </header>
 
         <section

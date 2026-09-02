@@ -26,6 +26,18 @@ export type EditorialIssueStatus = (typeof EDITORIAL_ISSUE_STATUSES)[number];
 
 export type EditorialIssueInput = EditorialContentInput;
 
+/** Resend retains idempotency keys for 24 hours. Keep this boundary in one
+ * place so recovery code and tests cannot silently disagree. */
+export const PROVIDER_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+export const MAX_AUTOMATIC_DELIVERY_ATTEMPTS = 3;
+
+export interface EditorialDispatchOptions {
+  now?: Date;
+  send?: typeof sendDailyEmail;
+  /** Integration-test fault injection at the provider/database boundary. */
+  afterProviderAccepted?: () => Promise<void> | void;
+}
+
 export async function createEditorialIssue(
   input: EditorialIssueInput,
   actor: string,
@@ -120,16 +132,65 @@ export async function retryEditorialIssue(id: string, actor: string): Promise<On
   if (!["FAILED", "PARTIALLY_FAILED"].includes(issue.status)) {
     throw new Error("invalid_status_transition");
   }
-  return prisma.oneArticleIssue.update({
-    where: { id },
-    data: {
-      status: "SCHEDULED",
-      scheduledFor: new Date(),
-      scheduledAt: new Date(),
-      claimedAt: null,
-      updatedBy: actor,
-      version: { increment: 1 },
-    },
+  const now = new Date();
+  return prisma.$transaction(async (tx) => {
+    // This admin action is the explicit recovery path after the automatic cap.
+    // Ambiguous sends are deliberately excluded and require the separate,
+    // higher-risk reconciliation action below.
+    await tx.oneArticleDelivery.updateMany({
+      where: { issueId: id, status: "FAILED" },
+      data: {
+        status: "QUEUED",
+        attemptCount: 0,
+        manualRecoveryAt: now,
+        manualRecoveryBy: actor,
+        failedReason: null,
+      },
+    });
+    return tx.oneArticleIssue.update({
+      where: { id },
+      data: {
+        status: "SCHEDULED",
+        scheduledFor: now,
+        scheduledAt: now,
+        claimedAt: null,
+        updatedBy: actor,
+        version: { increment: 1 },
+      },
+    });
+  });
+}
+
+/** Explicit operator authorization for a potentially duplicate resend. */
+export async function recoverAmbiguousEditorialDeliveries(
+  id: string,
+  actor: string,
+): Promise<OneArticleIssue> {
+  const now = new Date();
+  return prisma.$transaction(async (tx) => {
+    const reset = await tx.oneArticleDelivery.updateMany({
+      where: { issueId: id, status: "RECONCILIATION_REQUIRED" },
+      data: {
+        status: "QUEUED",
+        attemptCount: 0,
+        reconciliationRequiredAt: null,
+        manualRecoveryAt: now,
+        manualRecoveryBy: actor,
+        failedReason: null,
+      },
+    });
+    if (reset.count === 0) throw new Error("no_ambiguous_deliveries");
+    return tx.oneArticleIssue.update({
+      where: { id },
+      data: {
+        status: "SCHEDULED",
+        scheduledFor: now,
+        scheduledAt: now,
+        claimedAt: null,
+        updatedBy: actor,
+        version: { increment: 1 },
+      },
+    });
   });
 }
 
@@ -196,6 +257,7 @@ export function resolveEditorialIssueDeliveryStatus(
 
 export async function dispatchDueEditorialIssues(
   now: Date = new Date(),
+  options: EditorialDispatchOptions = {},
 ): Promise<DispatchEditorialResult> {
   // Recover a worker that died after claiming an edition. Per-recipient
   // idempotency keeps already-sent deliveries safe on the retry.
@@ -225,7 +287,7 @@ export async function dispatchDueEditorialIssues(
     });
     if (claimed.count !== 1) continue;
     total.issues++;
-    const result = await dispatchIssue(issue.id);
+    const result = await dispatchIssue(issue.id, { ...options, now });
     total.recipients += result.recipients;
     total.sent += result.sent;
     total.failed += result.failed;
@@ -234,9 +296,12 @@ export async function dispatchDueEditorialIssues(
   return total;
 }
 
-async function dispatchIssue(
+export async function dispatchIssue(
   issueId: string,
+  options: EditorialDispatchOptions = {},
 ): Promise<Omit<DispatchEditorialResult, "issues">> {
+  const now = options.now ?? new Date();
+  const send = options.send ?? sendDailyEmail;
   const issue = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issueId } });
   const recipients = await eligibleRecipients(issue.readingLanguage);
   const eligibleContactIds = recipients.map((recipient) => recipient.contact.id);
@@ -278,7 +343,29 @@ async function dispatchIssue(
       skipped++;
       continue;
     }
-    if (delivery.attemptCount >= 3) {
+    if (delivery.status === "RECONCILIATION_REQUIRED") {
+      failed++;
+      continue;
+    }
+    // SENDING means the process may have died after provider acceptance. The
+    // stable key is safe only inside the provider's retention window.
+    if (
+      delivery.status === "SENDING" &&
+      delivery.lastAttemptAt &&
+      now.getTime() - delivery.lastAttemptAt.getTime() >= PROVIDER_IDEMPOTENCY_TTL_MS
+    ) {
+      await prisma.oneArticleDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: "RECONCILIATION_REQUIRED",
+          reconciliationRequiredAt: now,
+          failedReason: "provider_outcome_ambiguous_outside_idempotency_window",
+        },
+      });
+      failed++;
+      continue;
+    }
+    if (delivery.attemptCount >= MAX_AUTOMATIC_DELIVERY_ATTEMPTS) {
       failed++;
       continue;
     }
@@ -288,17 +375,18 @@ async function dispatchIssue(
       data: {
         status: "SENDING",
         attemptCount: { increment: 1 },
-        lastAttemptAt: new Date(),
+        lastAttemptAt: now,
         failedReason: null,
       },
     });
+    let providerAccepted = false;
     try {
       const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
       const rendered = renderEditorialEmail(issue, {
         unsubscribe: `${base}/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`,
       });
       const oneClickUnsubscribe = `${base}/api/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`;
-      const response = await sendDailyEmail({
+      const response = await send({
         to: recipient.contact.email,
         subject: rendered.subject,
         text: rendered.text,
@@ -309,18 +397,28 @@ async function dispatchIssue(
         ),
         unsubscribeUrl: oneClickUnsubscribe,
       });
+      providerAccepted = true;
+      await options.afterProviderAccepted?.();
+      // Persist acceptance separately. If the following bookkeeping fails, a
+      // later run has a durable timestamp for safe reconciliation.
+      await prisma.oneArticleDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          providerAcceptedAt: now,
+          providerMessageId: response.messageId ?? null,
+        },
+      });
       await prisma.$transaction([
         prisma.oneArticleDelivery.update({
           where: { id: delivery.id },
           data: {
             status: "SENT",
-            sentAt: new Date(),
-            providerMessageId: response.messageId ?? null,
+            sentAt: now,
           },
         }),
         prisma.productSubscription.update({
           where: { id: recipient.id },
-          data: { lastSentAt: new Date() },
+          data: { lastSentAt: now },
         }),
       ]);
       sent++;
@@ -328,8 +426,12 @@ async function dispatchIssue(
       await prisma.oneArticleDelivery.update({
         where: { id: delivery.id },
         data: {
-          status: "FAILED",
-          failedReason: errorMessage(error).slice(0, 1000),
+          status: providerAccepted ? "SENDING" : "FAILED",
+          reconciliationRequiredAt: null,
+          providerAcceptedAt: providerAccepted ? now : undefined,
+          failedReason: providerAccepted
+            ? "provider_accepted_local_persistence_failed"
+            : errorMessage(error).slice(0, 1000),
         },
       });
       failed++;
@@ -339,14 +441,17 @@ async function dispatchIssue(
   const [sentTotal, unresolvedTotal] = await Promise.all([
     prisma.oneArticleDelivery.count({ where: { issueId, status: "SENT" } }),
     prisma.oneArticleDelivery.count({
-      where: { issueId, status: { in: ["QUEUED", "SENDING", "FAILED"] } },
+      where: {
+        issueId,
+        status: { in: ["QUEUED", "SENDING", "FAILED", "RECONCILIATION_REQUIRED"] },
+      },
     }),
   ]);
   await prisma.oneArticleIssue.update({
     where: { id: issueId },
     data: {
       status: resolveEditorialIssueDeliveryStatus(sentTotal, unresolvedTotal),
-      sentAt: unresolvedTotal === 0 ? new Date() : null,
+      sentAt: unresolvedTotal === 0 ? now : null,
     },
   });
   return { recipients: recipients.length, sent, failed, skipped };

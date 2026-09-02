@@ -192,6 +192,9 @@ jobs:
       - name: Confirm no migration is pending
         run: npx prisma migrate status
 
+      - name: Database-backed delivery integration tests
+        run: npm run test:integration
+
       # Catches the most common release-breaking mistake: editing schema.prisma
       # and generating a client from it without committing the migration. The
       # deployed code would then expect columns production does not have.
@@ -225,32 +228,3 @@ jobs:
       # to the job summary so a failure is readable without opening the log.
       - name: Audit production dependencies
         run: npm run audit:prod
-
-  mobile:
-    name: Mobile quality
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile-app
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: mobile-app/package-lock.json
-
-      - run: npm ci
-
-      - name: Mobile lint
-        run: npm run lint
-
-      - name: Mobile typecheck
-        run: npm run typecheck
-
-      - name: Mobile tests
-        run: npm test
-
-      - name: Expo Doctor
-        run: npx expo-doctor

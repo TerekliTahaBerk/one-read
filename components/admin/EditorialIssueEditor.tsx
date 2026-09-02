@@ -54,6 +54,7 @@ type EditorIssue = {
   mobileDeck: string | null;
   mobileAudioUrl: string | null;
   mobileAudioDurationSeconds: number | null;
+  hasAmbiguousDeliveries?: boolean;
 };
 
 type EditorialForm = MobileEditorialValue & {
@@ -309,6 +310,10 @@ export function EditorialIssueEditor({
     if (
       name === "retry" &&
       !window.confirm("Retry unresolved deliveries for this edition now?")
+    ) return;
+    if (
+      name === "recover-ambiguous" &&
+      !window.confirm("Authorize a resend whose earlier provider outcome is ambiguous? This may produce a duplicate email.")
     ) return;
 
     if (issue && editable && ["ready", "schedule", "test", "duplicate"].includes(name)) {
@@ -604,6 +609,11 @@ export function EditorialIssueEditor({
           {issue && ["FAILED", "PARTIALLY_FAILED"].includes(issue.status) && (
             <button type="button" disabled={busy} onClick={() => action("retry")} className={primary}>
               Retry failed deliveries
+            </button>
+          )}
+          {issue?.hasAmbiguousDeliveries && (
+            <button type="button" disabled={busy} onClick={() => action("recover-ambiguous")} className={danger}>
+              Authorize ambiguous resend
             </button>
           )}
           {issue && !["SENT", "CANCELED"].includes(issue.status) && (

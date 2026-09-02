@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: false,
+    exclude: ["test/integration/**", "**/node_modules/**", "mobile-app/**", ".next/**"],
     coverage: {
       provider: "v8",
       // `text` for the CI log, `html` for the downloadable artifact, `lcov` and

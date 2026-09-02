@@ -96,6 +96,8 @@ describe("runEditorialCron", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       ok: true,
+      attentionRequired: false,
+      outcome: "healthy",
       issues: 1,
       recipients: 3,
       sent: 3,
@@ -110,6 +112,23 @@ describe("runEditorialCron", () => {
       }),
     );
     expect(reportCronFailure).not.toHaveBeenCalled();
+  });
+
+  it("records partial delivery as attention-required without returning an unsafe 500", async () => {
+    const cfg = config({
+      dispatch: vi.fn(async () => ({ issues: 1, recipients: 2, sent: 1, failed: 1, skipped: 0 })),
+    });
+    const response = await runEditorialCron(cfg);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      attentionRequired: true,
+      outcome: "partial_failure",
+      failed: 1,
+    });
+    expect(prisma.operationalRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: "FAILED", failedCount: 1, error: "partial_delivery_failure" }),
+    }));
   });
 
   describe("when the database is unreachable", () => {

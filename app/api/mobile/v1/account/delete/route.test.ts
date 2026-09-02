@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/mobile/authenticated", () => ({ requireMobileSession: vi.fn().mockResolvedValue({ id: "session-1", contactId: "contact-1" }), isMobileError: () => false }));
 vi.mock("@/lib/prisma", () => ({ prisma: { $transaction: mocks.transaction } }));
-import { POST } from "@/app/api/mobile/v1/account/delete/route";
+import { POST } from "./route.mobile";
 
 describe("mobile account deletion", () => {
   beforeEach(() => {

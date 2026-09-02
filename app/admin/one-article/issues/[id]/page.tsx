@@ -54,6 +54,7 @@ export default async function EditorialIssueDetailPage(
     deliveryCounts.find((row) => row.status === status)?._count._all ?? 0;
   const sent = deliveryCount("SENT");
   const failed = deliveryCount("FAILED");
+  const ambiguous = deliveryCount("RECONCILIATION_REQUIRED");
   const skipped = deliveryCount("SKIPPED");
   return (
     <AdminShell
@@ -65,8 +66,9 @@ export default async function EditorialIssueDetailPage(
         <MetricGrid>
           <MetricCard label="Status" value={issue.status} />
           <MetricCard label="Eligible now" value={eligible} tone={eligible > 0 ? "good" : "warn"} />
-          <MetricCard label="Delivered" value={sent} tone="good" />
+          <MetricCard label="Accepted" value={sent} tone="good" />
           <MetricCard label="Failed" value={failed} tone={failed > 0 ? "warn" : "default"} />
+          <MetricCard label="Needs reconciliation" value={ambiguous} tone={ambiguous > 0 ? "warn" : "default"} />
           <MetricCard label="Skipped" value={skipped} />
           <MetricCard label="Scheduled" value={fmtDateTime(issue.scheduledFor)} />
         </MetricGrid>
@@ -90,6 +92,7 @@ export default async function EditorialIssueDetailPage(
           mobileDeck: issue.mobileDeck,
           mobileAudioUrl: issue.mobileAudioUrl,
           mobileAudioDurationSeconds: issue.mobileAudioDurationSeconds,
+          hasAmbiguousDeliveries: ambiguous > 0,
           heroImageUrl: issue.heroImageUrl,
           heroImageAlt: issue.heroImageAlt,
           heroImageCredit: issue.heroImageCredit,
@@ -103,7 +106,7 @@ export default async function EditorialIssueDetailPage(
       </AdminCard>
       <AdminCard title="Deliveries" subtitle="Latest 200 recipient records">
         <AdminTable
-          head={["Email", "Status", "Attempts", "Last attempt", "Sent", "Message ID", "Reason"]}
+          head={["Email", "Status", "Attempts", "Last attempt", "Accepted", "Message ID", "Reason"]}
           empty="No delivery records yet. They are created when cron dispatches this edition."
           rows={issue.deliveries.map((delivery) => [
             delivery.contact.email,

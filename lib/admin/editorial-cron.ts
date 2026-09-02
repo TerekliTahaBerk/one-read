@@ -35,6 +35,7 @@ import {
 import type { ProductControls } from "@/lib/admin/settings-store";
 import { reportCronFailure } from "@/lib/observability";
 import { getResendStatus } from "@/lib/resend";
+import { emitCronHeartbeat } from "@/lib/cron-heartbeat";
 
 export interface EditorialDispatchSummary {
   issues: number;
@@ -119,14 +120,16 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
 
     const result = await config.dispatch();
 
+    const attentionRequired = result.failed > 0;
     const runRecorded = await safeFinishRun({
       id: runId,
-      status: "SUCCESS",
+      status: attentionRequired ? "FAILED" : "SUCCESS",
       generatedCount: 0,
       sentCount: result.sent,
       skippedCount: result.skipped,
       failedCount: result.failed,
-      metadata: { ...result },
+      error: attentionRequired ? "partial_delivery_failure" : null,
+      metadata: { ...result, attentionRequired },
     });
 
     // Past this point the emails are already out. Nothing here may throw into
@@ -134,7 +137,14 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
     // an operator could re-run it by hand.
     await afterDispatch(config, result, runId, runRecorded);
 
-    return NextResponse.json({ ok: true, ...result });
+    if (!attentionRequired && runRecorded) await emitCronHeartbeat();
+
+    return NextResponse.json({
+      ok: !attentionRequired,
+      attentionRequired,
+      outcome: attentionRequired ? "partial_failure" : "healthy",
+      ...result,
+    });
   } catch (error) {
     return failureResponse(config, error, runId, attempts);
   }
@@ -168,6 +178,19 @@ async function afterDispatch(
       issuesDispatched: result.issues,
       sendDays: config.sendDays,
     });
+    if (result.failed > 0) {
+      await reportCronFailure({
+        productKey: config.productKey,
+        productName: config.productName,
+        route: config.route,
+        stage: "finish",
+        code: "partial_delivery_failure",
+        transient: false,
+        message: `${result.failed} recipient delivery record(s) require attention`,
+        runId,
+        error: new Error("partial_delivery_failure"),
+      });
+    }
   } catch (error) {
     await reportCronFailure({
       productKey: config.productKey,

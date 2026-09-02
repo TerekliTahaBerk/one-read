@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   FORBIDDEN_PRODUCTION_ROUTES,
+  MOBILE_PAGE_EXTENSIONS,
   MOCK_PAGE_EXTENSIONS,
   findForbiddenRoutes,
   mockBillingSurfaceEnabled,
@@ -14,6 +15,15 @@ describe("mock billing build gate", () => {
       NODE_ENV: "development",
       MOCK_BILLING_PREVIEW: "true",
     })).toBe(false);
+  });
+
+  it("keeps postponed mobile routes out of production builds", () => {
+    expect(pageExtensionsFor({ NODE_ENV: "development" })).toEqual(
+      expect.arrayContaining(MOBILE_PAGE_EXTENSIONS),
+    );
+    expect(pageExtensionsFor({ VERCEL_ENV: "production", NODE_ENV: "production", MOBILE_PREVIEW: "true" }))
+      .not.toEqual(expect.arrayContaining(MOBILE_PAGE_EXTENSIONS));
+    expect(findForbiddenRoutes(["/api/mobile/v1/home"])).toHaveLength(1);
   });
 
   it("is available locally but excluded from a normal production build", () => {

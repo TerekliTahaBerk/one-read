@@ -15,7 +15,7 @@ export interface ProductHealthSummary {
 }
 
 export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
-  const [nextIssue, lastSent, controls, subscriptions] = await Promise.all([
+  const [nextIssue, lastSent, controls, subscriptions, attentionRun] = await Promise.all([
     prisma.oneArticleIssue.findFirst({
       where: { status: "SCHEDULED", scheduledFor: { gte: new Date() } },
       orderBy: { scheduledFor: "asc" },
@@ -31,6 +31,11 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
     prisma.productSubscription.findMany({
       where: { productKey: "one-article" },
       select: { contactId: true },
+    }),
+    prisma.operationalRun.findFirst({
+      where: { productKey: "one-article", failedCount: { gt: 0 } },
+      orderBy: { startedAt: "desc" },
+      select: { startedAt: true, failedCount: true },
     }),
   ]);
   const eligibility = await Promise.all(
@@ -55,6 +60,9 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
     headline = "Delivery is in preview mode";
   } else if (!nextIssue) {
     health = "attention";
+  } else if (attentionRun) {
+    health = "attention";
+    headline = `${attentionRun.failedCount} delivery record(s) require attention`;
   }
 
   return {
@@ -76,6 +84,7 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
       ["Content mode", "Written by the editorial team"],
       ["Subscribers", `${eligibleCount} ready to receive`],
       ["Last delivered", fmtAgo(lastSent)],
+      ["Last partial failure", attentionRun ? fmtAgo(attentionRun.startedAt) : "None"],
     ],
   };
 }

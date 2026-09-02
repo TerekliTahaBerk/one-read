@@ -13,30 +13,25 @@ import {
   INTERESTS,
   SUMMARY_LANGUAGES,
   SOURCE_LANGUAGES,
-  FILM_GENRES,
-  FILM_EMAIL_LANGUAGES,
   isLikelyEmail,
 } from "@/lib/options";
 
-type Product = "article" | "film";
+type Product = "article";
 
 type Step = "email" | "verify" | "choose" | `${Product}-prefs` | "review" | "done";
 
 const PRODUCT_LABEL: Record<Product, string> = {
   article: "OneArticle",
-  film: "OneFilm",
 };
 
 /** Each product's own theme key — lets each step (and its ChoiceCard) "wear" that product's color. */
 const PRODUCT_THEME_KEY: Record<Product, ProductThemeKey> = {
   article: "article",
-  film: "film",
 };
 
 /** Steps take on the theme of the product they're currently configuring; everything else stays neutral. */
 function themeForStep(step: Step) {
   if (step === "article-prefs") return productThemes.article;
-  if (step === "film-prefs") return productThemes.film;
   return productThemes.read;
 }
 
@@ -50,12 +45,12 @@ async function postJson(url: string, body: unknown) {
   return { ok: res.ok, status: res.status, data };
 }
 
-export function OneReadSignup() {
+export function OneReadSignup({ initialEmail = "" }: { initialEmail?: string }) {
   const { dictionary } = useSiteLanguage();
   const t = dictionary.signup;
   const [step, setStep] = useState<Step>("email");
   const theme = themeForStep(step);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,15 +61,12 @@ export function OneReadSignup() {
 
   const [done, setDone] = useState<Record<Product, boolean>>({
     article: false,
-    film: false,
   });
 
   const [interests, setInterests] = useState<string[]>([]);
   const [summaryLanguage, setSummaryLanguage] = useState<string>("English");
   const [sourceLanguage, setSourceLanguage] = useState<string>("Any");
 
-  const [filmEmailLanguage, setFilmEmailLanguage] = useState<string>("English");
-  const [filmGenres, setFilmGenres] = useState<string[]>([]);
 
   async function submitEmail(e: FormEvent) {
     e.preventDefault();
@@ -118,7 +110,6 @@ export function OneReadSignup() {
     }
     setDone({
       article: Boolean(data.articlePreferencesComplete),
-      film: Boolean(data.filmPreferencesComplete),
     });
     setStep("choose");
   }
@@ -166,34 +157,6 @@ export function OneReadSignup() {
     advance("article");
   }
 
-  async function submitFilmPreferences(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (filmGenres.length === 0) {
-      setError(t.errors.chooseGenre);
-      return;
-    }
-    setBusy(true);
-    const { ok } = await postJson("/api/oneread/film-preferences", {
-      email,
-      emailLanguage: filmEmailLanguage,
-      preferredGenres: filmGenres,
-      moods: [],
-      decades: [],
-      languages: [],
-      platforms: [],
-      spoilerPreference: "Spoiler-light",
-      familiarity: "Mixed",
-      runtimePreference: "Any",
-    });
-    setBusy(false);
-    if (!ok) {
-      setError(t.errors.generic);
-      return;
-    }
-    advance("film");
-  }
-
   async function startCheckout() {
     setError(null);
     setBusy(true);
@@ -221,7 +184,7 @@ export function OneReadSignup() {
     }
   }
 
-  const anyDone = done.article || done.film;
+  const anyDone = done.article;
 
   return (
     <main
@@ -294,7 +257,7 @@ export function OneReadSignup() {
             title={t.choose.title}
             support={t.choose.support}
           >
-            <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
+            <div className="mt-2 flex w-full flex-col gap-3">
               <ChoiceCard
                 title="OneArticle"
                 description={t.choose.articleDescription}
@@ -302,21 +265,7 @@ export function OneReadSignup() {
                 themeKey={PRODUCT_THEME_KEY.article}
                 onClick={() => startFlow(["article"])}
               />
-              <ChoiceCard
-                title="OneFilm"
-                description={t.choose.filmDescription}
-                cta={done.film ? t.choose.filmCtaEdit : t.choose.filmCta}
-                themeKey={PRODUCT_THEME_KEY.film}
-                onClick={() => startFlow(["film"])}
-              />
             </div>
-            <button
-              type="button"
-              onClick={() => startFlow(["article", "film"])}
-              className="focus-ring mt-4 font-sans text-[13.5px] text-ink link-underline"
-            >
-              {t.choose.setupAll}
-            </button>
             {anyDone && (
               <button
                 type="button"
@@ -378,53 +327,15 @@ export function OneReadSignup() {
           </StepShell>
         )}
 
-        {step === "film-prefs" && (
-          <StepShell title={t.filmPrefs.title} support={t.filmPrefs.support}>
-            <form onSubmit={submitFilmPreferences} className="w-full flex flex-col items-center gap-5">
-              <div className="flex flex-wrap justify-center gap-2">
-                {FILM_GENRES.map((genre) => (
-                  <InterestChip
-                    key={genre}
-                    label={genre}
-                    selected={filmGenres.includes(genre)}
-                    onClick={() =>
-                      setFilmGenres((prev) =>
-                        prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
-                      )
-                    }
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <p className="font-sans text-[12.5px] text-fog">{t.filmPrefs.emailLanguage}</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {FILM_EMAIL_LANGUAGES.map((lang) => (
-                    <LanguagePill
-                      key={lang}
-                      label={lang}
-                      selected={filmEmailLanguage === lang}
-                      onClick={() => setFilmEmailLanguage(lang)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <SubmitButton busy={busy} waitLabel={t.pleaseWait}>{t.filmPrefs.cta}</SubmitButton>
-              {error && <ErrorText>{error}</ErrorText>}
-            </form>
-          </StepShell>
-        )}
-
         {step === "review" && (
           <StepShell title={t.review.title} support={t.review.support}>
             <div className="w-full max-w-[22rem] rounded-2xl border border-[var(--theme-border)] bg-white p-5 font-sans text-[14px] text-ink">
               <p className="text-fog text-[12.5px]">{t.review.emailLabel}</p>
               <p className="mb-3">{email}</p>
-              {(["article", "film"] as Product[]).map((p) => (
-                <div key={p}>
-                  <p className="text-fog text-[12.5px]">{PRODUCT_LABEL[p]}</p>
-                  <p className="mb-3">{done[p] ? t.review.complete : t.review.notSetUp}</p>
-                </div>
-              ))}
+              <div>
+                <p className="text-fog text-[12.5px]">{PRODUCT_LABEL.article}</p>
+                <p className="mb-3">{done.article ? t.review.complete : t.review.notSetUp}</p>
+              </div>
               <p className="text-fog text-[12.5px]">{t.review.priceLabel}</p>
               <p>{ONEREAD_BILLING_LABEL} — {t.review.priceIncluded}</p>
             </div>

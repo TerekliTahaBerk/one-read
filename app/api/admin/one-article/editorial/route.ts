@@ -6,6 +6,7 @@ import {
   cancelEditorialIssue,
   createEditorialIssue,
   duplicateEditorialIssue,
+  recoverAmbiguousEditorialDeliveries,
   scheduleEditorialIssue,
   retryEditorialIssue,
   setEditorialIssueReady,
@@ -62,6 +63,9 @@ export async function POST(request: Request): Promise<Response> {
         break;
       case "retry":
         issue = await retryEditorialIssue(issueId, actor);
+        break;
+      case "recover-ambiguous":
+        issue = await recoverAmbiguousEditorialDeliveries(issueId, actor);
         break;
       case "duplicate":
         issue = await duplicateEditorialIssue(issueId, actor);

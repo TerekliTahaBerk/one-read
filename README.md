@@ -1,5 +1,8 @@
 # OneRead
 
+Production delivery and monitoring behavior is documented in
+[`docs/PRODUCTION_SAFETY.md`](docs/PRODUCTION_SAFETY.md).
+
 OneRead is the subscription and account layer for **OneArticle**: one human-reviewed article briefing delivered every weekday. The launch offer is **$1/month** through Polar.
 
 OneArticle is the only production product. Older Film and Lingo database models remain solely to preserve historical data; they have no public pages, checkout APIs, cron jobs, admin operations, or production dispatch path.

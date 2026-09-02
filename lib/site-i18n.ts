@@ -170,6 +170,7 @@ const en = {
     editPreferences: "Edit preferences",
     manageBilling: "Manage billing",
     startCheckout: "Start checkout",
+    resumeEmails: "Resume emails",
     errors: {
       invalidEmail: "Please enter a valid email.",
       generic: "Something went wrong. Please try again.",
@@ -259,6 +260,7 @@ const tr: SiteDictionary = {
     editPreferences: "Tercihleri düzenle",
     manageBilling: "Faturalandırmayı yönet",
     startCheckout: "Ödemeyi başlat",
+    resumeEmails: "E-postaları yeniden başlat",
     errors: { invalidEmail: "Lütfen geçerli bir e-posta gir.", generic: "Bir şeyler ters gitti. Lütfen tekrar dene." },
     states: {
       new: "Henüz OneRead hesabı yok",
@@ -325,6 +327,7 @@ const de: SiteDictionary = {
     editPreferences: "Präferenzen bearbeiten",
     manageBilling: "Abrechnung verwalten",
     startCheckout: "Zur Kasse gehen",
+    resumeEmails: "E-Mails wieder aktivieren",
     errors: { invalidEmail: "Bitte gib eine gültige E-Mail-Adresse ein.", generic: "Etwas ist schiefgelaufen. Bitte versuche es erneut." },
     states: {
       new: "Noch kein OneRead-Konto",
@@ -391,6 +394,7 @@ const fr: SiteDictionary = {
     editPreferences: "Modifier les préférences",
     manageBilling: "Gérer la facturation",
     startCheckout: "Démarrer le paiement",
+    resumeEmails: "Réactiver les e-mails",
     errors: { invalidEmail: "Veuillez saisir une adresse e-mail valide.", generic: "Une erreur est survenue. Veuillez réessayer." },
     states: {
       new: "Pas encore de compte OneRead",

@@ -513,11 +513,18 @@ model OneArticleDelivery {
   productSubscriptionId String
 
   /// "QUEUED" | "SENDING" | "SENT" | "FAILED" | "SKIPPED"
+  /// | "RECONCILIATION_REQUIRED"
   status String @default("QUEUED")
 
   providerMessageId String?
   attemptCount      Int       @default(0)
   lastAttemptAt     DateTime?
+  /// Written immediately after provider acceptance. It bounds automatic
+  /// idempotent recovery when the remaining local success write fails.
+  providerAcceptedAt        DateTime?
+  reconciliationRequiredAt DateTime?
+  manualRecoveryAt          DateTime?
+  manualRecoveryBy          String?
   sentAt            DateTime?
   failedReason      String?   @db.Text
   skippedReason     String?   @db.Text
@@ -532,6 +539,7 @@ model OneArticleDelivery {
   @@unique([issueId, contactId])
   @@index([issueId, status])
   @@index([productSubscriptionId, status])
+  @@index([status, lastAttemptAt])
 }
 
 /// Revocable bearer session for native clients. The raw token is returned once

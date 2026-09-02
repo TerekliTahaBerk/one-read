@@ -45,7 +45,7 @@ export default async function EditorialSendsPage(
       <AdminTabs tabs={oneArticleTabs()} active="sends" />
       <AdminFilterBar method="get">
         <AdminFilterField label="Status">
-          <select name="status" defaultValue={searchParams.status ?? ""} className={adminControlClass}><option value="">All statuses</option>{["QUEUED", "SENDING", "SENT", "FAILED", "SKIPPED"].map((status) => <option key={status}>{status}</option>)}</select>
+          <select name="status" defaultValue={searchParams.status ?? ""} className={adminControlClass}><option value="">All statuses</option>{["QUEUED", "SENDING", "SENT", "FAILED", "SKIPPED", "RECONCILIATION_REQUIRED"].map((status) => <option key={status}>{status}</option>)}</select>
         </AdminFilterField>
         <AdminFilterField label="Email">
           <input name="email" defaultValue={searchParams.email ?? ""} className={`${adminControlClass} w-60`} placeholder="reader@example.com" />
@@ -55,7 +55,7 @@ export default async function EditorialSendsPage(
       </AdminFilterBar>
       <AdminCard>
         <AdminTable
-          head={["Updated", "Email", "Edition", "Language", "Status", "Attempts", "Sent", "Message ID", "Reason"]}
+          head={["Updated", "Email", "Edition", "Language", "Status", "Attempts", "Accepted", "Message ID", "Reason"]}
           empty="No editorial delivery records match."
           rows={deliveries.map((delivery) => [
             fmtDateTime(delivery.updatedAt),
