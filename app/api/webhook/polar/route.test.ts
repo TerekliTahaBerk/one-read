@@ -7,9 +7,13 @@ import { WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 vi.mock("@/lib/prisma", () => ({ prisma: mockDeep<PrismaClient>() }));
 
 const applyPolarWebhookPayload = vi.fn();
-vi.mock("@/lib/billing/polar", () => ({
-  applyPolarWebhookPayload: (...args: unknown[]) => applyPolarWebhookPayload(...args),
-}));
+vi.mock("@/lib/billing/polar", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/billing/polar")>();
+  return {
+    ...actual,
+    applyPolarWebhookPayload: (...args: unknown[]) => applyPolarWebhookPayload(...args),
+  };
+});
 
 const validateEvent = vi.fn();
 vi.mock("@polar-sh/sdk/webhooks", async () => {
@@ -87,13 +91,17 @@ describe("POST /api/webhook/polar", () => {
         clientVersion: "5.18.0",
       }),
     );
-    prisma.billingEvent.findUnique.mockResolvedValue({ processedAt: new Date() } as any);
+    prisma.billingEvent.findUnique.mockResolvedValue({
+      processedAt: new Date(),
+      createdAt: new Date(),
+      outcome: "applied",
+    } as any);
 
     const response = await POST(makeRequest({ type: "order.paid" }));
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(json).toEqual({ ok: true, duplicate: true });
+    expect(json).toEqual({ ok: true, duplicate: true, outcome: "applied" });
     expect(applyPolarWebhookPayload).not.toHaveBeenCalled();
   });
 
@@ -120,6 +128,60 @@ describe("POST /api/webhook/polar", () => {
     expect(json).toEqual({ ok: true, outcome: "applied" });
   });
 
+  it("records an unsupported event type as a processed NOOP without touching billing state", async () => {
+    validateEvent.mockReturnValue({
+      type: "benefit_grant.created",
+      timestamp: new Date(),
+      data: { id: "grant_1" },
+    });
+    prisma.billingEvent.create.mockResolvedValue({} as any);
+
+    const response = await POST(makeRequest({ type: "benefit_grant.created" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toMatchObject({ ok: true, outcome: "ignored_event_type" });
+    // Audited, so an operator sees it arrived — but never applied.
+    expect(prisma.billingEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "benefit_grant.created",
+          outcome: "ignored_event_type",
+          processedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(applyPolarWebhookPayload).not.toHaveBeenCalled();
+  });
+
+  it("does not re-apply an event another delivery is still processing", async () => {
+    validateEvent.mockReturnValue({
+      type: "subscription.active",
+      timestamp: new Date(),
+      data: { id: "provider_sub_1", status: "active" },
+    });
+    prisma.billingEvent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("duplicate", {
+        code: "P2002",
+        clientVersion: "5.18.0",
+      }),
+    );
+    // Recorded seconds ago and still unprocessed: an in-flight twin, not a
+    // crashed delivery. Applying it again would double-settle transitions.
+    prisma.billingEvent.findUnique.mockResolvedValue({
+      processedAt: null,
+      createdAt: new Date(Date.now() - 1_000),
+      outcome: null,
+    } as any);
+
+    const response = await POST(makeRequest({ type: "subscription.active" }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ ok: true, duplicate: true, inFlight: true });
+    expect(applyPolarWebhookPayload).not.toHaveBeenCalled();
+  });
+
   it("retries an event row that exists but was never processed", async () => {
     const payload = {
       type: "subscription.active",
@@ -133,7 +195,11 @@ describe("POST /api/webhook/polar", () => {
         clientVersion: "5.18.0",
       }),
     );
-    prisma.billingEvent.findUnique.mockResolvedValue({ processedAt: null } as any);
+    prisma.billingEvent.findUnique.mockResolvedValue({
+      processedAt: null,
+      createdAt: new Date(Date.now() - 5 * 60_000),
+      outcome: null,
+    } as any);
 
     const response = await POST(makeRequest({ type: payload.type }));
 

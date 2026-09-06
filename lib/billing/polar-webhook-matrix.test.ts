@@ -30,6 +30,7 @@ const T1 = new Date("2026-06-02T00:00:00Z");
 beforeEach(() => {
   mockReset(prisma);
   configureAllOffers();
+  prisma.productSubscription.updateMany.mockResolvedValue({ count: 1 } as never);
   prisma.subscriptionTransition.findMany.mockResolvedValue([]);
 });
 
@@ -62,7 +63,7 @@ function withRow(row: Record<string, unknown>) {
 }
 
 function lastUpdateData(): Record<string, any> {
-  const calls = prisma.productSubscription.update.mock.calls;
+  const calls = prisma.productSubscription.updateMany.mock.calls;
   return (calls[calls.length - 1]![0] as any).data;
 }
 
@@ -185,7 +186,7 @@ describe("webhook safety", () => {
     );
 
     expect(result.outcome).toBe("ignored_stale");
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("events arriving out of order settle on the newest, whichever lands last", async () => {
@@ -226,7 +227,7 @@ describe("webhook safety", () => {
 
     expect(result.outcome).toBe("unrecognized_product");
     expect(result.providerProductId).toBe("prod_not_ours_at_all");
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("missing metadata still reconciles via the recorded provider subscription id", async () => {
@@ -262,7 +263,7 @@ describe("webhook safety", () => {
     });
 
     expect(result.outcome).toBe("no_subscription");
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("a legacy $1 webhook keeps the subscription legacy — it never becomes the bundle", async () => {
@@ -348,10 +349,78 @@ describe("webhook safety", () => {
       },
     });
 
-    const call = prisma.productSubscription.update.mock.calls.at(-1)![0] as any;
-    expect(call.where).toEqual({ id: "sub_news" });
+    const call = prisma.productSubscription.updateMany.mock.calls.at(-1)![0] as any;
+    expect(call.where).toMatchObject({ id: "sub_news" });
     expect(call.data.offerKey).toBe("one-news");
     expect(prisma.contact.create).not.toHaveBeenCalled();
+  });
+
+  it("an unlisted subscription.* event is a NOOP, not a guessed lifecycle change", async () => {
+    // The classifier used to be a `startsWith("subscription.")` prefix test,
+    // so any event Polar added later was run through the subscription branch
+    // and written as a state change we never designed.
+    withRow(existingRow({ status: "ACTIVE_PAID" }));
+
+    const result = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId: testProductId("one-read", "monthly"),
+        type: "subscription.some_future_polar_event",
+      }),
+    );
+
+    expect(result.outcome).toBe("ignored_event_type");
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("a provider status we do not model never revokes paid access", async () => {
+    withRow(existingRow({ status: "ACTIVE_PAID", billingStateUpdatedAt: T0 }));
+
+    await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId: testProductId("one-read", "monthly"),
+        type: "subscription.updated",
+        status: "some_status_polar_added_later",
+        timestamp: T1,
+      }),
+    );
+
+    // Keeps what we already held rather than defaulting to "not paying".
+    expect(lastUpdateData()).toMatchObject({ status: "ACTIVE_PAID" });
+  });
+
+  it("ordering follows the object version, so a late retry cannot out-rank newer state", async () => {
+    // Delivered now, but describing a subscription version from before the one
+    // we already applied. The envelope time is newer; the object is not.
+    withRow(existingRow({ status: "ACTIVE_PAID", billingStateUpdatedAt: T1 }));
+
+    const result = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId: testProductId("one-read", "monthly"),
+        type: "subscription.revoked",
+        timestamp: T0,
+        extra: { modifiedAt: T0 },
+      }),
+    );
+
+    expect(result.outcome).toBe("ignored_stale");
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("a concurrent newer write wins: the conditional update refuses the loser", async () => {
+    // Both deliveries passed the in-memory pre-check against the row they each
+    // read. The database is what breaks the tie.
+    withRow(existingRow({ status: "PENDING_CHECKOUT", billingStateUpdatedAt: null }));
+    prisma.productSubscription.updateMany.mockResolvedValue({ count: 0 } as never);
+
+    const result = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId: testProductId("one-read", "monthly"),
+        type: "subscription.revoked",
+        timestamp: T0,
+      }),
+    );
+
+    expect(result.outcome).toBe("ignored_stale");
   });
 
   it("ignores non-billing event types outright", async () => {
@@ -361,6 +430,6 @@ describe("webhook safety", () => {
       data: { id: "benefit_1" },
     });
     expect(result.outcome).toBe("ignored_event_type");
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 });
