@@ -23,6 +23,7 @@
     "db:seed-sources": "node --env-file=.env scripts/seed-sources.mjs",
     "inspect:eligibility": "node --import tsx --env-file=.env scripts/inspect-eligibility.ts",
     "inspect:billing": "node --import tsx --env-file=.env scripts/inspect-billing.ts",
+    "smoke:critical-path": "node --import tsx --env-file=.env scripts/verify-production-critical-path.ts",
     "seed:launch-editorial": "node --import tsx --env-file=.env scripts/seed-launch-editorial.ts",
     "fix:local-trials": "node --import tsx --env-file=.env scripts/fix-local-trials-to-pending-checkout.ts",
     "sync:legacy-subscribers": "node --import tsx --env-file=.env scripts/sync-legacy-subscriber-status.ts",

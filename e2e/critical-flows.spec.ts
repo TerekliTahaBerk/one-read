@@ -7,13 +7,14 @@ test("public product surfaces render", async ({ page }) => {
   }
 });
 
-test("bundle signup is annual-first and sends a semantic checkout request", async ({ page }) => {
+for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${offer} signup is annual-first and sends a semantic checkout request`, async ({ page }) => {
+  const annualPrice = { "one-article": 18, "one-news": 27, "one-read": 36 }[offer];
   await page.route("**/api/oneread/verification/request", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   await page.route("**/api/oneread/verification/confirm", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"articlePreferencesComplete":false}' }));
   await page.route("**/api/oneread/article-preferences", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   let checkoutBody: Record<string, unknown> | null = null;
   await page.route("**/api/billing/checkout", async (route) => { checkoutBody = route.request().postDataJSON(); await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"action":"already_active"}' }); });
-  await page.goto("/subscribe?offer=one-read");
+  await page.goto(`/subscribe?offer=${offer}`);
   await page.waitForLoadState("networkidle");
   await page.locator('input[type="email"]').fill("reader@example.com");
   await page.getByRole("button", { name: "Email me a code", exact: true }).click();
@@ -23,9 +24,9 @@ test("bundle signup is annual-first and sends a semantic checkout request", asyn
   await expect(page.getByText(/interest/i)).toHaveCount(0);
   await expect(page.getByText(/source language/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByText("$36 USD / year")).toBeVisible();
+  await expect(page.getByText(`$${annualPrice} USD / year`)).toBeVisible();
   await page.getByRole("button", { name: "Continue to secure checkout" }).click();
-  await expect.poll(() => checkoutBody).toEqual({ email: "reader@example.com", offer: "one-read", interval: "annual" });
+  await expect.poll(() => checkoutBody).toEqual({ email: "reader@example.com", offer, interval: "annual" });
 });
 
 test("pricing accurately offers Article and News annual plans", async ({ page }) => {

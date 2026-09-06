@@ -4,12 +4,9 @@ import {
   parseSummaryLanguage,
 } from "@/lib/options";
 import { upsertArticlePreferences } from "@/lib/subscriptions";
-import {
-  ensureArticlePreferencesHolder,
-} from "@/lib/oneread/access";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { prisma } from "@/lib/prisma";
-import { isOfferKey, PRODUCT_ONE_NEWS } from "@/lib/products/registry";
+import { isOfferKey, OFFER_ONE_READ_BUNDLE, PRODUCT_ONE_ARTICLE } from "@/lib/products/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +44,20 @@ export async function POST(request: Request) {
   }
   try {
     const contact = await prisma.contact.upsert({ where: { email }, update: {}, create: { email } });
-    const holder = await ensureArticlePreferencesHolder(contact.id);
+    const billingRow = await prisma.productSubscription.upsert({
+      where: { contactId_productKey: { contactId: contact.id, productKey: payload.offer } },
+      update: {},
+      create: { contactId: contact.id, productKey: payload.offer, status: "PENDING_PREFERENCES" },
+    });
+    // OneArticle dispatch requires its own preference holder. Standalone
+    // OneNews stores the shared language preference on its billing row.
+    const holder = payload.offer === OFFER_ONE_READ_BUNDLE
+      ? await prisma.productSubscription.upsert({
+          where: { contactId_productKey: { contactId: contact.id, productKey: PRODUCT_ONE_ARTICLE } },
+          update: {},
+          create: { contactId: contact.id, productKey: PRODUCT_ONE_ARTICLE, status: "PENDING_PREFERENCES" },
+        })
+      : billingRow;
     await upsertArticlePreferences(holder.id, {
       // Historical personalization columns are intentionally preserved but
       // are no longer collected by the OneArticle product.
@@ -57,13 +67,10 @@ export async function POST(request: Request) {
       sourceLanguage: "Any",
       summaryLanguage,
     });
-    if (payload.offer === PRODUCT_ONE_NEWS || payload.offer === "one-read") {
-      await prisma.productSubscription.upsert({
-        where: { contactId_productKey: { contactId: contact.id, productKey: PRODUCT_ONE_NEWS } },
-        update: {},
-        create: { contactId: contact.id, productKey: PRODUCT_ONE_NEWS, status: "PENDING_PREFERENCES" },
-      });
-    }
+    await prisma.productSubscription.update({
+      where: { id: billingRow.id },
+      data: { status: "PENDING_CHECKOUT" },
+    });
   } catch (err) {
     console.error("[/api/oneread/article-preferences] db error:", err);
     return NextResponse.json(
