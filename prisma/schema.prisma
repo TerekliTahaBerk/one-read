@@ -119,6 +119,13 @@ model ProductSubscription {
   providerCustomerId        String?
   providerSubscriptionId    String?
   providerCheckoutSessionId String?
+  /// Hosted URL of `providerCheckoutSessionId`, kept so a repeated checkout
+  /// request for the same offer resumes the session already open instead of
+  /// opening a second one. Cleared whenever the intended purchase changes.
+  providerCheckoutUrl       String?
+  /// When the stored checkout session stops being resumable. Past this point a
+  /// repeat request must create a new session.
+  providerCheckoutExpiresAt DateTime?
   /// The provider-side product actually purchased (Polar product id).
   /// Null on historical rows written before Milestone C2 — see `offerKey`.
   providerProductId         String?

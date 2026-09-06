@@ -49,7 +49,10 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     event.preventDefault(); setError(null);
     if (!/^\d{6}$/.test(code.trim())) return setError("Enter the six-digit code.");
     setBusy(true);
-    const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim() });
+    // The plan on screen is verified together with the email: the session the
+    // server issues is bound to exactly this offer and interval, and checkout
+    // refuses anything else.
+    const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim(), offer, interval });
     setBusy(false);
     if (!response.ok) return setError(data.error === "incorrect" ? "That code is not correct." : "The code could not be verified.");
     setStep("language");
@@ -68,7 +71,14 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     trackEvent("checkout_started", { offer, interval, language });
     const { response, data } = await postJson("/api/billing/checkout", { email, offer, interval });
     setBusy(false);
-    if (!response.ok) { trackEvent("checkout_failed", { offer, interval }); return setError(String(data.error ?? "Checkout is unavailable.")); }
+    if (!response.ok) {
+      trackEvent("checkout_failed", { offer, interval });
+      if (data.error === "verification_intent_mismatch" || data.error === "email_not_verified") {
+        setStep("verify"); setCode("");
+        return setError("Your plan changed since you verified. Please confirm a new code for this plan.");
+      }
+      return setError(String(data.error ?? "Checkout is unavailable."));
+    }
     if (data.action === "redirect" && typeof data.url === "string") return window.location.assign(data.url);
     if (data.action === "already_active") return window.location.assign("/preferences");
     if (data.action === "transition_required") await previewTransition();

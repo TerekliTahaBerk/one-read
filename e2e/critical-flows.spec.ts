@@ -10,7 +10,8 @@ test("public product surfaces render", async ({ page }) => {
 for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${offer} signup is annual-first and sends a semantic checkout request`, async ({ page }) => {
   const annualPrice = { "one-article": 18, "one-news": 27, "one-read": 36 }[offer];
   await page.route("**/api/oneread/verification/request", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
-  await page.route("**/api/oneread/verification/confirm", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"articlePreferencesComplete":false}' }));
+  let confirmBody: Record<string, unknown> | null = null;
+  await page.route("**/api/oneread/verification/confirm", (route) => { confirmBody = route.request().postDataJSON(); return route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"articlePreferencesComplete":false}' }); });
   await page.route("**/api/oneread/article-preferences", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   let checkoutBody: Record<string, unknown> | null = null;
   await page.route("**/api/billing/checkout", async (route) => { checkoutBody = route.request().postDataJSON(); await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"action":"already_active"}' }); });
@@ -20,6 +21,9 @@ for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${of
   await page.getByRole("button", { name: "Email me a code", exact: true }).click();
   await page.locator('input[inputmode="numeric"]').fill("123456");
   await page.getByRole("button", { name: "Verify email", exact: true }).click();
+  // The plan travels with the code, so the session the server issues is bound
+  // to the plan the customer was actually looking at.
+  await expect.poll(() => confirmBody).toEqual({ email: "reader@example.com", code: "123456", offer, interval: "annual" });
   await expect(page.getByText(/reading language/i)).toBeVisible();
   await expect(page.getByText(/interest/i)).toHaveCount(0);
   await expect(page.getByText(/source language/i)).toHaveCount(0);

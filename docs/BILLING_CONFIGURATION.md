@@ -164,6 +164,47 @@ checkout path is precisely how offer identity, pricing and Polar product
 mapping drift apart. Legacy *reconciliation* is unaffected, because recognising
 an existing subscription and selling a new one are separate directions.
 
+### The verification boundary
+
+Checkout requires a verified-email session that was issued **for that exact
+offer and interval**. When the customer confirms their code, the plan on screen
+is frozen into the signed session cookie as an opaque intent string
+(`lib/billing/checkout-intent.ts`); `/api/billing/checkout` recomputes the
+intent from the request body and refuses a mismatch with `409
+verification_intent_mismatch`.
+
+Proving control of an address is not the same as agreeing to a price, so a
+session verified while looking at one plan cannot be spent on another. Changing
+plan mid-flow is still allowed — it just costs another verification, which the
+signup UI does by returning to the code step.
+
+The session is short-lived, single-use at the code level, and never contains
+the code itself. A confirmed code is consumed by a conditional write
+(`consumedAt: null` in the WHERE clause), so replaying it produces no second
+state transition.
+
+### Duplicate submits and abandonment
+
+A repeated checkout request for the same offer resumes the Polar session
+already open (`providerCheckoutUrl` / `providerCheckoutExpiresAt` on
+`ProductSubscription`) rather than minting a second one. The stored session is
+reused only for the same provider product, only before a real subscription
+exists, and only until it expires — so switching plan or coming back later
+still opens a fresh session.
+
+Abandoning a checkout grants nothing. The row is written as `PENDING_CHECKOUT`
+and no code path moves it out of that state except a provider confirmation, so
+an abandoned checkout can never produce an `ACTIVE_PAID` entitlement.
+
+### Return and success URLs
+
+In production both URLs must resolve to a canonical HTTPS origin. `checkout` in
+`lib/billing/polar.ts` builds them from `PUBLIC_BASE_URL` and rejects a missing,
+plaintext, or malformed origin — as well as a plaintext operator-supplied
+`POLAR_*_SUCCESS_URL` / `POLAR_*_RETURN_URL`. There is no localhost fallback in
+production: failing to create the checkout is safer than paying a customer out
+to an unreachable redirect.
+
 ## Subscription transitions
 
 Implemented in `lib/billing/transitions.ts`. Every supported change is an
