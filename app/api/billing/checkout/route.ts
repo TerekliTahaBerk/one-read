@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { parseOfferSelection } from "@/lib/products/registry";
+import { checkoutIntent } from "@/lib/billing/checkout-intent";
 import { startOfferCheckout } from "@/lib/billing/offer-checkout";
 import { validatePublicLaunchConfiguration } from "@/lib/launch-config";
 
@@ -17,6 +18,11 @@ export const dynamic = "force-dynamic";
  * `interval` are validated against the product registry and rejected with 400
  * if they are not exact registry values, so a caller cannot smuggle a Polar
  * product id through this endpoint and have the server bill against it.
+ *
+ * The verified-email session must also have been issued *for this offer and
+ * interval*. Proof of email ownership alone is not authorisation to buy a
+ * particular plan, so a session bound to a different pair — or to none — is
+ * refused with 409 and the caller is sent back to re-verify.
  */
 export async function POST(request: Request) {
   if (process.env.NODE_ENV === "production" && process.env.PUBLIC_CHECKOUT_ENABLED !== "true") {
@@ -40,11 +46,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "email_not_verified" }, { status: 401 });
   }
 
+  // Validate the selection before the intent check: an unknown offer is a
+  // malformed request (400), not a mismatched intent (409).
   const selection = parseOfferSelection(payload.offer, payload.interval);
   if (!selection) {
     return NextResponse.json(
       { ok: false, error: "Unknown plan selection." },
       { status: 400 },
+    );
+  }
+
+  if (!hasVerifiedEmail(email, checkoutIntent(selection.offer, selection.interval))) {
+    return NextResponse.json(
+      { ok: false, error: "verification_intent_mismatch" },
+      { status: 409 },
     );
   }
 

@@ -135,3 +135,37 @@ describe("guarded outcomes", () => {
     });
   });
 });
+
+describe("the verified-email intent", () => {
+  it("checks the session against the exact offer and interval requested", async () => {
+    await POST(post({ email: "a@b.test", offer: "one-read", interval: "annual" }));
+
+    expect(hasVerifiedEmail).toHaveBeenCalledWith("a@b.test", "checkout:one-read:annual");
+  });
+
+  it("refuses a session verified for a different plan without reaching the resolver", async () => {
+    // Ownership of the address is proven; this particular purchase is not.
+    hasVerifiedEmail.mockImplementation((_email: unknown, intent?: unknown) => intent === undefined);
+
+    const response = await POST(
+      post({ email: "a@b.test", offer: "one-read", interval: "annual" }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "verification_intent_mismatch",
+    });
+    expect(startOfferCheckout).not.toHaveBeenCalled();
+  });
+
+  it("reports an unknown offer as a bad request, not an intent mismatch", async () => {
+    hasVerifiedEmail.mockImplementation((_email: unknown, intent?: unknown) => intent === undefined);
+
+    const response = await POST(
+      post({ email: "a@b.test", offer: "one-everything", interval: "annual" }),
+    );
+
+    expect(response.status).toBe(400);
+  });
+});

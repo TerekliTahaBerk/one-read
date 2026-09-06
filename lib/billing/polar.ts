@@ -108,24 +108,74 @@ export function getPolarClient(): Polar {
   return new Polar({ accessToken, server: getPolarServer() });
 }
 
+/**
+ * The origin every checkout return/success URL is built from.
+ *
+ * In production this must be a configured HTTPS origin. There is deliberately
+ * no localhost fallback there: a checkout that returns the customer to
+ * `http://localhost:3000` after paying strands them outside the product and
+ * hands the provider a non-canonical, non-TLS redirect target. Failing to
+ * create the checkout at all is the safer outcome, and the message names the
+ * variable an operator has to set.
+ */
+function checkoutOrigin(): string {
+  const configured = process.env.PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
+  if (process.env.NODE_ENV !== "production") {
+    return configured || "http://localhost:3000";
+  }
+  if (!configured) {
+    throw new Error(
+      "Polar checkout URLs are not configured. Missing: PUBLIC_BASE_URL.",
+    );
+  }
+  return assertCanonicalCheckoutUrl(configured, "PUBLIC_BASE_URL");
+}
+
+/**
+ * Guards an operator-supplied checkout URL. Production return/success URLs are
+ * shown to a paying customer and handed to the payment provider, so a
+ * malformed or plaintext one is a configuration error, not something to
+ * silently pass through.
+ */
+function assertCanonicalCheckoutUrl(value: string, envVar: string): string {
+  if (process.env.NODE_ENV !== "production") return value;
+  let parsed: URL;
+  try {
+    // The `{CHECKOUT_ID}` placeholder Polar substitutes is not URL-legal in
+    // every position, so it is removed before parsing and the original string
+    // is what we return.
+    parsed = new URL(value.replace(/\{CHECKOUT_ID\}/g, "checkout-id"));
+  } catch {
+    throw new Error(`${envVar} is not a valid URL.`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${envVar} must use HTTPS.`);
+  }
+  return value;
+}
+
 function checkoutReturnUrl(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
-): string | undefined {
+): string {
   if (productKey === ONE_READ_PRODUCT_KEY) {
     if (has(process.env.POLAR_ONEREAD_RETURN_URL)) {
-      return process.env.POLAR_ONEREAD_RETURN_URL;
+      return assertCanonicalCheckoutUrl(
+        process.env.POLAR_ONEREAD_RETURN_URL,
+        "POLAR_ONEREAD_RETURN_URL",
+      );
     }
-    const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-    return base ? `${base}/subscribe` : undefined;
+    return `${checkoutOrigin()}/subscribe`;
   }
   if (
     productKey === ONE_ARTICLE_PRODUCT_KEY &&
     has(process.env.POLAR_ONE_ARTICLE_RETURN_URL)
   ) {
-    return process.env.POLAR_ONE_ARTICLE_RETURN_URL;
+    return assertCanonicalCheckoutUrl(
+      process.env.POLAR_ONE_ARTICLE_RETURN_URL,
+      "POLAR_ONE_ARTICLE_RETURN_URL",
+    );
   }
-  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-  return base ? `${base}/article/subscribe` : undefined;
+  return `${checkoutOrigin()}/article/subscribe`;
 }
 
 function checkoutSuccessUrl(
@@ -133,23 +183,27 @@ function checkoutSuccessUrl(
 ): string {
   if (productKey === ONE_READ_PRODUCT_KEY) {
     if (has(process.env.POLAR_ONEREAD_SUCCESS_URL)) {
-      return process.env.POLAR_ONEREAD_SUCCESS_URL as string;
+      return assertCanonicalCheckoutUrl(
+        process.env.POLAR_ONEREAD_SUCCESS_URL,
+        "POLAR_ONEREAD_SUCCESS_URL",
+      );
     }
-    const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-    return `${base}/subscribe/success?checkout_id={CHECKOUT_ID}`;
+    return `${checkoutOrigin()}/subscribe/success?checkout_id={CHECKOUT_ID}`;
   }
   // OneArticle honors the explicit POLAR_SUCCESS_URL env for back-compat.
   if (productKey === ONE_ARTICLE_PRODUCT_KEY && has(process.env.POLAR_SUCCESS_URL)) {
-    return process.env.POLAR_SUCCESS_URL as string;
+    return assertCanonicalCheckoutUrl(process.env.POLAR_SUCCESS_URL, "POLAR_SUCCESS_URL");
   }
   if (
     productKey === ONE_ARTICLE_PRODUCT_KEY &&
     has(process.env.POLAR_ONE_ARTICLE_SUCCESS_URL)
   ) {
-    return process.env.POLAR_ONE_ARTICLE_SUCCESS_URL;
+    return assertCanonicalCheckoutUrl(
+      process.env.POLAR_ONE_ARTICLE_SUCCESS_URL,
+      "POLAR_ONE_ARTICLE_SUCCESS_URL",
+    );
   }
-  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-  return `${base}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
+  return `${checkoutOrigin()}/article/subscribe/success?checkout_id={CHECKOUT_ID}`;
 }
 
 /**
@@ -239,8 +293,46 @@ export async function createPolarCheckoutForSubscription(
  */
 export const CHECKOUT_METADATA_VERSION = "c2";
 
+/**
+ * How long a freshly created checkout session is assumed resumable when the
+ * provider does not state an expiry. Comfortably shorter than Polar's own
+ * session lifetime, so a stale URL is re-created rather than handed out.
+ */
+const CHECKOUT_SESSION_FALLBACK_TTL_MS = 30 * 60 * 1000;
+
+/** The stored checkout-session fields a resume decision needs. */
+type ResumableCheckout = {
+  status: string;
+  providerCheckoutUrl: string | null;
+  providerCheckoutExpiresAt: Date | null;
+  providerProductId: string | null;
+  providerSubscriptionId: string | null;
+};
+
+/**
+ * Whether the session already stored on this row can simply be handed back.
+ *
+ * Duplicate-safe rather than merely idempotent: double-submitting the review
+ * button, or reloading after abandoning a checkout, resumes the one open
+ * session instead of leaving a trail of orphaned ones at the provider. The
+ * session is only reused for the *same* provider product, so changing plan
+ * still creates a new one, and never once the row has a real subscription.
+ */
+function resumableCheckoutUrl(
+  sub: Partial<ResumableCheckout>,
+  providerProductId: string,
+  now: Date,
+): string | null {
+  if (!sub.providerCheckoutUrl) return null;
+  if (sub.providerProductId !== providerProductId) return null;
+  if (sub.providerSubscriptionId) return null;
+  if (sub.status !== undefined && sub.status !== "PENDING_CHECKOUT") return null;
+  if (!sub.providerCheckoutExpiresAt || sub.providerCheckoutExpiresAt <= now) return null;
+  return sub.providerCheckoutUrl;
+}
+
 export async function createPolarOfferCheckout(args: {
-  sub: { id: string; contactId: string };
+  sub: { id: string; contactId: string } & Partial<ResumableCheckout>;
   email: string;
   offer: OfferKey;
   interval: BillingIntervalKey;
@@ -251,6 +343,9 @@ export async function createPolarOfferCheckout(args: {
   // Throws MissingPolarOfferConfigError when unconfigured. Deliberately before
   // any database write, so a misconfigured offer leaves no partial state.
   const providerProductId = resolveCheckoutProductId(offer, interval);
+
+  const resumable = resumableCheckoutUrl(sub, providerProductId, new Date());
+  if (resumable) return { url: resumable, providerProductId };
 
   const checkout = await getPolarClient().checkouts.create({
     products: [providerProductId],
@@ -274,11 +369,18 @@ export async function createPolarOfferCheckout(args: {
     },
   });
 
+  const expiresAt =
+    checkout.expiresAt instanceof Date
+      ? checkout.expiresAt
+      : new Date(Date.now() + CHECKOUT_SESSION_FALLBACK_TTL_MS);
+
   await prisma.productSubscription.update({
     where: { id: sub.id },
     data: {
       paymentProvider: PROVIDER,
       providerCheckoutSessionId: checkout.id,
+      providerCheckoutUrl: checkout.url,
+      providerCheckoutExpiresAt: expiresAt,
       // Record the intended purchase now so a webhook that arrives without
       // usable metadata still has a local identity to reconcile against. It is
       // overwritten by provider truth the moment the subscription is confirmed.

@@ -20,6 +20,7 @@ vi.mock("@polar-sh/sdk", () => ({
 }));
 
 import { startOfferCheckout } from "@/lib/billing/offer-checkout";
+import { hasValidAccess } from "@/lib/billing/access";
 import { parseOfferSelection } from "@/lib/products/registry";
 import { checkoutEnvVar } from "@/lib/products/polar-config";
 import { prisma as prismaImport } from "@/lib/prisma";
@@ -247,5 +248,136 @@ describe("double-billing guards", () => {
 
     expect(result).toEqual({ kind: "transition_required", currentOfferKey: "one-article" });
     expect(checkoutsCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("duplicate and abandoned checkouts", () => {
+  /** A row already holding an open Polar checkout for `offer`/`interval`. */
+  function rowWithOpenCheckout(overrides: Record<string, unknown> = {}) {
+    return {
+      id: "sub_1",
+      contactId: "contact_1",
+      productKey: "one-read",
+      status: "PENDING_CHECKOUT",
+      paymentProvider: "polar",
+      providerSubscriptionId: null,
+      providerCheckoutSessionId: "checkout_1",
+      providerCheckoutUrl: "https://polar.test/checkout_1",
+      providerCheckoutExpiresAt: new Date(Date.now() + 20 * 60 * 1000),
+      providerProductId: testProductId("one-read", "annual"),
+      offerKey: "one-read",
+      plan: "annual",
+      adminOverride: false,
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+      pastDueAt: null,
+      ...overrides,
+    };
+  }
+
+  it("resumes the open session instead of opening a second one", async () => {
+    prisma.productSubscription.findMany.mockResolvedValue([rowWithOpenCheckout()] as never);
+
+    const result = await startOfferCheckout({
+      email: "a@b.test", offer: "one-read", interval: "annual",
+    });
+
+    expect(result).toEqual({ kind: "redirect", url: "https://polar.test/checkout_1" });
+    expect(checkoutsCreate).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+  });
+
+  it("opens a new session once the stored one has expired", async () => {
+    prisma.productSubscription.findMany.mockResolvedValue([
+      rowWithOpenCheckout({ providerCheckoutExpiresAt: new Date(Date.now() - 1000) }),
+    ] as never);
+
+    const result = await startOfferCheckout({
+      email: "a@b.test", offer: "one-read", interval: "annual",
+    });
+
+    expect(result).toEqual({ kind: "redirect", url: "https://polar.test/checkout_1" });
+    expect(checkoutsCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a new session when the customer switched interval", async () => {
+    prisma.productSubscription.findMany.mockResolvedValue([rowWithOpenCheckout()] as never);
+
+    await startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "monthly" });
+
+    expect(checkoutsCreate).toHaveBeenCalledTimes(1);
+    expect(checkoutsCreate.mock.calls[0]![0].products).toEqual([
+      testProductId("one-read", "monthly"),
+    ]);
+  });
+
+  it("records the session URL and expiry so the next request can resume it", async () => {
+    checkoutsCreate.mockResolvedValue({
+      id: "checkout_2",
+      url: "https://polar.test/checkout_2",
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+
+    await startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "annual" });
+
+    expect(prisma.productSubscription.update.mock.calls[0]![0].data).toMatchObject({
+      providerCheckoutSessionId: "checkout_2",
+      providerCheckoutUrl: "https://polar.test/checkout_2",
+      providerCheckoutExpiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+  });
+
+  it("leaves an abandoned checkout without access", async () => {
+    // Nothing about starting a checkout grants entitlement; only a provider
+    // confirmation does. The row is written as PENDING_CHECKOUT and stays there.
+    await startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "annual" });
+
+    const created = prisma.productSubscription.create.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(created.status).toBe("PENDING_CHECKOUT");
+    expect(prisma.productSubscription.update.mock.calls[0]![0].data).not.toHaveProperty("status");
+    expect(hasValidAccess(rowWithOpenCheckout() as never).allowed).toBe(false);
+  });
+});
+
+describe("production return and success URLs", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  function inProduction(baseUrl: string | undefined) {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PUBLIC_BASE_URL", baseUrl);
+  }
+
+  it("builds both URLs from the canonical HTTPS origin", async () => {
+    inProduction("https://www.oneread.email");
+
+    await startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "annual" });
+
+    const call = checkoutsCreate.mock.calls[0]![0];
+    expect(call.returnUrl).toBe("https://www.oneread.email/subscribe");
+    expect(call.successUrl).toBe(
+      "https://www.oneread.email/subscribe/success?checkout_id={CHECKOUT_ID}",
+    );
+  });
+
+  it.each([
+    ["no origin is configured", undefined],
+    ["the origin is plaintext HTTP", "http://www.oneread.email"],
+    ["the origin is not a URL", "www.oneread.email"],
+  ])("refuses to create a checkout when %s", async (_label, baseUrl) => {
+    inProduction(baseUrl);
+
+    await expect(
+      startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "annual" }),
+    ).rejects.toThrow(/PUBLIC_BASE_URL/);
+    expect(checkoutsCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a plaintext operator-supplied success URL", async () => {
+    inProduction("https://www.oneread.email");
+    vi.stubEnv("POLAR_ONEREAD_SUCCESS_URL", "http://www.oneread.email/subscribe/success");
+
+    await expect(
+      startOfferCheckout({ email: "a@b.test", offer: "one-read", interval: "annual" }),
+    ).rejects.toThrow(/POLAR_ONEREAD_SUCCESS_URL must use HTTPS/);
   });
 });

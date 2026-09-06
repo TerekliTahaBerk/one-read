@@ -135,6 +135,14 @@ export type ConfirmCodeResult =
 export type VerifiedEmailSession = {
   email: string;
   purpose: string;
+  /**
+   * What the user was verifying *for*, captured at confirm time and frozen
+   * into the signed cookie. The billing boundary compares this against the
+   * intent named by the checkout request, so a session verified for one offer
+   * cannot silently be spent on another. `null` on sessions issued for flows
+   * that carry no purchase intent (preferences, portal, lookup).
+   */
+  intent: string | null;
   verifiedAt: Date;
   expiresAt: Date;
 };
@@ -142,6 +150,7 @@ export type VerifiedEmailSession = {
 type VerifiedSessionPayload = {
   email: string;
   purpose: string;
+  intent?: string | null;
   verifiedAt: number;
   exp: number;
 };
@@ -271,27 +280,45 @@ export function createVerification(product: VerificationDescriptor) {
 
     const matches = timingSafeStringEqual(row.codeHash, hashCode(code, email, purpose));
     if (!matches) {
-      const attempts = row.attempts + 1;
-      await prisma.emailVerificationCode.update({
+      // Increment in the database rather than writing `row.attempts + 1`, so
+      // parallel guesses each cost an attempt instead of overwriting one
+      // another and effectively resetting the budget.
+      const updated = await prisma.emailVerificationCode.update({
         where: { id: row.id },
-        data: { attempts },
+        data: { attempts: { increment: 1 } },
+        select: { attempts: true, maxAttempts: true },
       });
-      return { ok: false, reason: attempts >= row.maxAttempts ? "too_many" : "incorrect" };
+      return {
+        ok: false,
+        reason: updated.attempts >= updated.maxAttempts ? "too_many" : "incorrect",
+      };
     }
 
-    await prisma.emailVerificationCode.update({
-      where: { id: row.id },
+    // Single-use, enforced by the write itself: `consumedAt: null` is part of
+    // the WHERE clause, so exactly one of any number of concurrent confirms
+    // (or replays of the same code) can transition the row. The losers see
+    // zero affected rows and are answered as if the code no longer exists,
+    // which is what a replay is.
+    const consumed = await prisma.emailVerificationCode.updateMany({
+      where: { id: row.id, consumedAt: null },
       data: { consumedAt: now },
     });
+    if (consumed.count === 0) return { ok: false, reason: "invalid" };
+
     return { ok: true };
   }
 
-  function createVerifiedSessionToken(email: string, purpose: Purpose): string {
+  function createVerifiedSessionToken(
+    email: string,
+    purpose: Purpose,
+    intent: string | null = null,
+  ): string {
     const cfg = verificationConfig();
     const nowSec = Math.floor(Date.now() / 1000);
     const payload: VerifiedSessionPayload = {
       email,
       purpose,
+      intent,
       verifiedAt: nowSec,
       exp: nowSec + cfg.sessionMinutes * 60,
     };
@@ -313,6 +340,7 @@ export function createVerification(product: VerificationDescriptor) {
       return {
         email: payload.email,
         purpose: payload.purpose,
+        intent: typeof payload.intent === "string" ? payload.intent : null,
         verifiedAt: new Date(payload.verifiedAt * 1000),
         expiresAt: new Date(payload.exp * 1000),
       };
@@ -325,11 +353,12 @@ export function createVerification(product: VerificationDescriptor) {
     res: NextResponse,
     email: string,
     purpose: Purpose,
+    intent: string | null = null,
   ): void {
     const cfg = verificationConfig();
     res.cookies.set({
       name: product.cookieName,
-      value: createVerifiedSessionToken(email, purpose),
+      value: createVerifiedSessionToken(email, purpose, intent),
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
@@ -355,9 +384,21 @@ export function createVerification(product: VerificationDescriptor) {
     return verifyVerifiedSessionToken(token);
   }
 
-  function hasVerifiedEmail(email: string): boolean {
+  /**
+   * Whether the current cookie proves control of `email`.
+   *
+   * When `intent` is given the session must have been verified for exactly
+   * that intent. This is fail-closed on purpose: a session carrying no intent,
+   * or a different one, does not satisfy an intent-scoped caller, so a user who
+   * changes their mind after verifying has to re-verify rather than have the
+   * server quietly bill the newly chosen thing against the old proof.
+   */
+  function hasVerifiedEmail(email: string, intent?: string): boolean {
     const session = getVerifiedEmailSession();
-    return Boolean(session && session.email.toLowerCase() === email.trim().toLowerCase());
+    if (!session) return false;
+    if (session.email.toLowerCase() !== email.trim().toLowerCase()) return false;
+    if (intent !== undefined && session.intent !== intent) return false;
+    return true;
   }
 
   return {
