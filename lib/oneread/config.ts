@@ -1,39 +1,34 @@
 /**
- * OneRead umbrella product configuration — single source of truth for pricing
- * and included products. The umbrella subscription (`productKey = "one-read"`)
- * unlocks OneArticle through one Polar checkout.
+ * Legacy OneRead umbrella configuration.
+ *
+ * The umbrella ($1, `productKey = "one-read"`) is closed to new customers; the
+ * current commercial catalogue lives in lib/products/registry.ts and its Polar
+ * mapping in lib/products/polar-config.ts. Nothing here describes anything for
+ * sale, so nothing here defines a price — a second price definition beside the
+ * registry is exactly the drift these modules were consolidated to remove.
+ *
+ * What survives is the one fact this module owns: which products a live
+ * umbrella subscription grants — and even that is read from the registry's
+ * legacy entry rather than restated, so the delivery pipeline and the
+ * entitlement resolver can never disagree about it.
  */
 
-import {
-  ONE_ARTICLE_PRODUCT_KEY,
-} from "@/lib/options";
+import { LEGACY_OFFERS } from "@/lib/products/polar-config";
+import { legacyProductIdFor } from "@/lib/products/polar-config";
+
+const UMBRELLA_KEY = "legacy-one-read-umbrella";
 
 /** Product keys included in every OneRead umbrella subscription. */
-export const ONE_READ_INCLUDED_PRODUCT_KEYS = [
-  ONE_ARTICLE_PRODUCT_KEY,
-] as const;
-
-/** Config-driven pricing — never hardcode this elsewhere. */
-export const ONEREAD_PRICE_MONTHLY = Number(process.env.ONEREAD_PRICE_MONTHLY ?? 1);
-export const ONEREAD_BILLING_LABEL =
-  process.env.ONEREAD_BILLING_LABEL?.trim() || "$1 / month";
-
-export const ONEREAD_TRUST_NOTES = [
-  ONEREAD_BILLING_LABEL,
-  "OneArticle included",
-  "No app",
-  "Cancel anytime",
-  "Billing handled securely by Polar",
-] as const;
+export const ONE_READ_INCLUDED_PRODUCT_KEYS: readonly string[] =
+  LEGACY_OFFERS.find((offer) => offer.key === UMBRELLA_KEY)?.grants ?? [];
 
 /**
- * The OneRead Polar product id. Never falls back to another product's id.
- * Returns null when unconfigured so callers render a safe "billing not
- * configured" state instead of crashing.
+ * The umbrella's Polar product id, or null when unconfigured, so callers can
+ * render a "billing not configured" state instead of crashing. Inbound-only:
+ * it identifies existing subscriptions and must never open a new checkout.
  */
 export function oneReadPolarProductId(): string | null {
-  const id = process.env.POLAR_ONEREAD_PRODUCT_ID?.trim();
-  return id ? id : null;
+  return legacyProductIdFor(UMBRELLA_KEY);
 }
 
 export function oneReadBillingConfigured(): boolean {

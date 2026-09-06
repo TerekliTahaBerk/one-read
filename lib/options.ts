@@ -1,4 +1,5 @@
 import { UI_INTEREST_LABELS, type UIInterestLabel } from "./topics";
+import { OFFERS, OFFER_ONE_ARTICLE } from "./products/registry";
 
 /**
  * Interests shown in the signup form. Single source of truth is the topic
@@ -56,11 +57,13 @@ export const TRIAL_DAYS = Number(process.env.TRIAL_DAYS ?? 7);
 export const PAST_DUE_GRACE_DAYS = Number(process.env.PAST_DUE_GRACE_DAYS ?? 3);
 
 /**
- * Single source of truth for pricing, shared by the pricing page and the
- * (simulated) payment step.
+ * Pricing for the dev/test mock checkout screen. Read from the offer registry
+ * (lib/products/registry.ts), which is the single source of truth for what
+ * anything costs — a second literal here drifted from the catalogue once
+ * already and must not be reintroduced.
  */
 export const PRICING = {
-  monthly: 2,
+  monthly: OFFERS[OFFER_ONE_ARTICLE].prices.monthly.amountUsd,
 } as const;
 
 /**

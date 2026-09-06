@@ -79,6 +79,12 @@ export interface OfferDefinition {
   key: OfferKey;
   displayName: string;
   tagline: string;
+  /**
+   * How often a buyer hears from this offer. Public-facing copy, kept beside
+   * the price so the pricing page cannot describe a cadence the product does
+   * not deliver.
+   */
+  cadence: string;
   /** Products this offer grants access to. The bundle grants both. */
   grants: readonly ProductKey[];
   prices: Readonly<Record<BillingIntervalKey, OfferPrice>>;
@@ -89,6 +95,7 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_ARTICLE,
     displayName: "OneArticle",
     tagline: PRODUCTS[PRODUCT_ONE_ARTICLE].tagline,
+    cadence: "Weekday mornings",
     grants: [PRODUCT_ONE_ARTICLE],
     prices: {
       monthly: { amountUsd: 2, providerInterval: "month" },
@@ -99,6 +106,7 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_NEWS,
     displayName: "OneNews",
     tagline: PRODUCTS[PRODUCT_ONE_NEWS].tagline,
+    cadence: "Mon / Wed / Fri during beta",
     grants: [PRODUCT_ONE_NEWS],
     prices: {
       monthly: { amountUsd: 3, providerInterval: "month" },
@@ -109,6 +117,7 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_READ_BUNDLE,
     displayName: "OneRead",
     tagline: "Both, in one subscription.",
+    cadence: "Both editorial products",
     grants: [PRODUCT_ONE_ARTICLE, PRODUCT_ONE_NEWS],
     prices: {
       monthly: { amountUsd: 4, providerInterval: "month" },
@@ -168,6 +177,26 @@ export function offerPrice(offer: OfferKey, interval: BillingIntervalKey): Offer
 export function annualSavingUsd(offer: OfferKey): number {
   const { monthly, annual } = OFFERS[offer].prices;
   return monthly.amountUsd * 12 - annual.amountUsd;
+}
+
+/**
+ * Annual saving as a whole percentage of twelve months at the monthly price.
+ * The pricing page renders this rather than a hand-written "save 25%", so a
+ * price change here can never leave the marketing claim behind.
+ */
+export function annualDiscountPercent(offer: OfferKey): number {
+  const twelveMonths = OFFERS[offer].prices.monthly.amountUsd * 12;
+  if (twelveMonths <= 0) return 0;
+  return Math.round((annualSavingUsd(offer) / twelveMonths) * 100);
+}
+
+/**
+ * The discount shared by every offer, or null when they disagree. A single
+ * headline percentage may only be shown when it is true of all of them.
+ */
+export function uniformAnnualDiscountPercent(): number | null {
+  const percentages = new Set(OFFER_KEYS.map(annualDiscountPercent));
+  return percentages.size === 1 ? [...percentages][0] : null;
 }
 
 /** Maps Polar's recurring-interval vocabulary onto our interval keys. */
