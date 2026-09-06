@@ -11,6 +11,8 @@ const prisma = prismaImport as unknown as DeepMockProxy<PrismaClient>;
 
 beforeEach(() => {
   mockReset(prisma);
+  // The conditional write reports how many rows it actually changed.
+  prisma.productSubscription.updateMany.mockResolvedValue({ count: 1 } as never);
 });
 
 afterEach(() => {
@@ -60,8 +62,8 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith({
-      where: { id: "sub_1" },
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({ id: "sub_1" }),
       data: expect.objectContaining({
         status: "ACTIVE_PAID",
         paidAt: timestamp,
@@ -83,7 +85,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: "EXPIRED" }),
       }),
@@ -104,7 +106,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           status: "PAST_DUE",
@@ -127,7 +129,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: "TRIALING" }),
       }),
@@ -151,7 +153,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ plan: "annual" }),
       }),
@@ -172,7 +174,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ plan: "monthly" }),
       }),
@@ -193,7 +195,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ plan: "monthly" }),
       }),
@@ -208,7 +210,7 @@ describe("applyPolarWebhookPayload", () => {
     });
 
     expect(prisma.productSubscription.findUnique).not.toHaveBeenCalled();
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("no matching subscription found: update is never called, no throw", async () => {
@@ -224,7 +226,7 @@ describe("applyPolarWebhookPayload", () => {
       }),
     ).resolves.toMatchObject({ outcome: "no_subscription", subscriptionId: null });
 
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("metadata productSubscriptionId lookup short-circuits providerSubscriptionId/contact/email fallbacks", async () => {
@@ -265,8 +267,8 @@ describe("applyPolarWebhookPayload", () => {
       where: { id: "sub_1" },
       include: { preferences: true },
     });
-    expect(prisma.productSubscription.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "sub_1" } }),
+    expect(prisma.productSubscription.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: "sub_1" }) }),
     );
   });
 
@@ -283,7 +285,7 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 
   it("does not let an older webhook overwrite newer billing state", async () => {
@@ -302,6 +304,6 @@ describe("applyPolarWebhookPayload", () => {
       },
     });
 
-    expect(prisma.productSubscription.update).not.toHaveBeenCalled();
+    expect(prisma.productSubscription.updateMany).not.toHaveBeenCalled();
   });
 });

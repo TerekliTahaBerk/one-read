@@ -262,11 +262,56 @@ subscriber cannot be moved by accident.
 | `ignored_stale` | Older than `billingStateUpdatedAt`; refused. |
 | `unrecognized_product` | Carries a Polar product we do not recognise. **Never** assumed to be the bundle; existing entitlement untouched. |
 | `no_subscription` | No local row could be identified. |
-| `ignored_event_type` | Not a billing lifecycle event. |
+| `ignored_event_type` | Not an event type this state machine models. Recorded, never applied. |
+
+### Supported event types
+
+`SUPPORTED_POLAR_EVENT_TYPES` in `lib/billing/polar.ts` is an explicit
+allowlist, not a prefix match. Anything outside it — including a
+`subscription.*` event Polar adds in future — is classified as an explicit NOOP
+and audited, rather than being run through the subscription branch and written
+as a lifecycle change we never designed. Adding support for a new event is a
+deliberate edit to that list.
+
+For the same reason a provider *status* we do not model resolves to `null` and
+leaves the current local status in place. Defaulting an unknown status is how a
+provider vocabulary change silently revokes paid access.
+
+### Ordering and concurrency
+
+The ordering key is the newest of the delivery timestamp and the object's own
+`modifiedAt`, so ranking follows provider object version rather than delivery
+order: a retry delivered an hour late cannot out-rank a newer event that already
+landed, and two deliveries of the same object version compare equal and are
+therefore idempotent.
+
+The staleness guard is a **conditional write** — `updateMany` with a
+`billingStateUpdatedAt` predicate — not a read followed by an unconditional
+update. Under concurrent deliveries the loser is rejected by its own `WHERE`
+clause and reported as `ignored_stale`.
+
+### Reconciliation
+
+`no_subscription` and `unrecognized_product` are listed in
+`RECONCILIATION_OUTCOMES`. They are not retryable failures — a retry reaches the
+same conclusion — but they are not "handled" either: money may have moved with
+no local owner, or a product id may be missing from configuration. They are
+counted and highlighted on `/admin/system/webhooks` rather than being silently
+marked done. No mapping is ever guessed to make one go away.
+
+### Duplicates
 
 Duplicate deliveries are absorbed at the route by the unique
-`BillingEvent.providerEventId`; an event inserted but never processed is retried
-rather than acknowledged and lost. Subscriptions are located per
+`BillingEvent.providerEventId`. An event row that exists but was never processed
+is ambiguous: a crashed delivery, or an identical delivery running right now in
+another instance. Age separates them — inside a one-minute window the delivery
+is acknowledged without acting (the in-flight one owns the state change), and
+beyond it the event is retried rather than acknowledged and lost.
+
+Nothing is written for a payload that fails signature verification, not even an
+audit row: an unauthenticated caller must not be able to grow a table.
+
+Subscriptions are located per
 `(contact, productKey)` or by provider subscription id — never "the contact's
 subscription" — so one Contact may own several subscriptions and buying a second
 product cannot overwrite the first or duplicate the Contact.

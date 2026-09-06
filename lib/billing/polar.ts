@@ -216,7 +216,17 @@ function planFromInterval(interval: string | null): BillingInterval | null {
   return billingIntervalFromProviderInterval(interval);
 }
 
-export function mapPolarSubscriptionStatus(status: string): string {
+/**
+ * Polar's subscription status vocabulary, mapped onto ours.
+ *
+ * Returns null — deliberately, not a default — for a status we do not model.
+ * Defaulting an unrecognised status is how a provider adding a new status
+ * value silently revokes access for everyone: the old code mapped anything
+ * unknown to PENDING_CHECKOUT, which reads as "not paying". A null tells the
+ * caller to keep whatever local state it already holds, which is the only
+ * fail-safe answer when the provider says something we cannot interpret.
+ */
+export function polarStatusToLocal(status: string): string | null {
   switch (status) {
     case "trialing":
       return "TRIALING";
@@ -230,9 +240,21 @@ export function mapPolarSubscriptionStatus(status: string): string {
     case "incomplete_expired":
       return "EXPIRED";
     case "incomplete":
-    default:
       return "PENDING_CHECKOUT";
+    default:
+      return null;
   }
+}
+
+/**
+ * Status mapping for the *outbound* paths (cancel, reconciliation sync), where
+ * we have just called Polar ourselves and a status object is guaranteed. There
+ * the pre-existing PENDING_CHECKOUT default is retained.
+ *
+ * The inbound webhook must not use this — see `polarStatusToLocal`.
+ */
+export function mapPolarSubscriptionStatus(status: string): string {
+  return polarStatusToLocal(status) ?? "PENDING_CHECKOUT";
 }
 
 export async function createPolarCheckoutForSubscription(
@@ -500,7 +522,9 @@ type PolarData = Record<string, any>;
  */
 export type PolarWebhookOutcome =
   | "applied"
-  /** Not a billing lifecycle event. */
+  /** A supported type that carried no lifecycle change to write. */
+  | "noop"
+  /** Not a type this state machine models. Explicitly safe: nothing is written. */
   | "ignored_event_type"
   /** Older than the state we already hold — see billingStateUpdatedAt. */
   | "ignored_stale"
@@ -508,6 +532,26 @@ export type PolarWebhookOutcome =
   | "unrecognized_product"
   /** Recognised, but no local subscription could be identified. */
   | "no_subscription";
+
+/**
+ * Outcomes that describe a real provider event we could not fully act on.
+ *
+ * These are not failures to retry — a retry reaches the same conclusion — but
+ * they are also not "handled". They are the reconciliation queue: an operator
+ * (or a future reconciliation job) has to decide whether a customer paid for
+ * something we never granted. `no_subscription` means money may have moved
+ * with no local owner; `unrecognized_product` means a product id is missing
+ * from configuration. Both are deliberately visible rather than silent.
+ */
+export const RECONCILIATION_OUTCOMES: readonly PolarWebhookOutcome[] = [
+  "no_subscription",
+  "unrecognized_product",
+];
+
+/** Whether an outcome should surface for manual reconciliation. */
+export function needsReconciliation(outcome: string | null | undefined): boolean {
+  return RECONCILIATION_OUTCOMES.includes(outcome as PolarWebhookOutcome);
+}
 
 export interface PolarWebhookResult {
   outcome: PolarWebhookOutcome;
@@ -596,6 +640,40 @@ function resolveEventOffer(
   return { kind: "no_product" };
 }
 
+function asDate(value: unknown): Date | null {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+/**
+ * The ordering key for an event: the newest of the delivery timestamp and the
+ * object's own `modifiedAt` / `createdAt`.
+ *
+ * This is what makes ordering monotonic in *provider* time rather than in
+ * delivery order. Two deliveries describing the same object version compare
+ * equal and are therefore idempotent; an older object version can never
+ * overwrite a newer one no matter which arrives first.
+ */
+function eventStateTime(payload: { timestamp: unknown; data: PolarData }): Date {
+  const candidates = [
+    asDate(payload.timestamp),
+    asDate(payload.data?.modifiedAt),
+    asDate(payload.data?.subscription?.modifiedAt),
+  ].filter((value): value is Date => value !== null);
+  if (candidates.length === 0) {
+    // A payload with no usable time at all. Treating it as "now" would let it
+    // out-rank real state; treating it as the epoch would make it permanently
+    // stale. Now is correct: the event was genuinely just delivered, and the
+    // signature already proved it came from Polar.
+    return new Date();
+  }
+  return candidates.reduce((newest, value) => (value > newest ? value : newest));
+}
+
 /** Whether an event may act on a given local row. */
 function eventMatchesRow(
   event: { kind: "resolved"; offer: EventOffer } | { kind: "no_product" },
@@ -669,13 +747,44 @@ async function findSubscriptionForPolarData(
   return contact?.subscriptions[0] ?? null;
 }
 
-function isBillingLifecycleType(type: string): boolean {
-  return (
-    type.startsWith("checkout.") ||
-    type.startsWith("order.") ||
-    type.startsWith("subscription.") ||
-    type === "customer.state_changed"
-  );
+/**
+ * The Polar event types this state machine knows how to apply.
+ *
+ * An explicit allowlist, not a `startsWith("subscription.")` prefix test. The
+ * prefix form quietly opted us in to every event Polar might add later: a
+ * future `subscription.<something-new>` would have been run through the
+ * subscription branch, mapped through an unknown `data.status`, and written as
+ * a lifecycle change we never designed. An unlisted type is now classified
+ * NOOP and recorded, so adding support for one is a deliberate edit here
+ * rather than an accident at the provider's release cadence.
+ *
+ * Sourced from Polar's webhook event list for the flows we actually sell:
+ * checkout, one-off and recurring orders, and subscription lifecycle.
+ */
+export const SUPPORTED_POLAR_EVENT_TYPES = [
+  "checkout.created",
+  "checkout.updated",
+  "order.created",
+  "order.paid",
+  "order.updated",
+  "order.refunded",
+  "subscription.created",
+  "subscription.updated",
+  "subscription.active",
+  "subscription.canceled",
+  "subscription.uncanceled",
+  "subscription.revoked",
+  "subscription.past_due",
+  "customer.state_changed",
+] as const;
+
+export type SupportedPolarEventType = (typeof SUPPORTED_POLAR_EVENT_TYPES)[number];
+
+const SUPPORTED_TYPE_SET: ReadonlySet<string> = new Set(SUPPORTED_POLAR_EVENT_TYPES);
+
+/** True when this event type has a defined transition in the state machine. */
+export function isSupportedPolarEventType(type: string): type is SupportedPolarEventType {
+  return SUPPORTED_TYPE_SET.has(type);
 }
 
 /**
@@ -683,9 +792,16 @@ function isBillingLifecycleType(type: string): boolean {
  *
  * Safety properties, all covered by tests in polar.test.ts:
  *
+ *   • Only modelled event types are applied. Anything outside
+ *     SUPPORTED_POLAR_EVENT_TYPES is an explicit NOOP, so a provider adding a
+ *     new event cannot be interpreted by a prefix match into a state change.
  *   • Stale events are dropped. `billingStateUpdatedAt` holds the provider
  *     timestamp of the last applied event, so an out-of-order delivery cannot
- *     regress a subscription to an earlier state.
+ *     regress a subscription to an earlier state. The guard is a conditional
+ *     write, so it holds under concurrent deliveries and not merely in the
+ *     single-threaded case.
+ *   • An unmodelled provider status never revokes access. It leaves the
+ *     current local status in place rather than defaulting to "not paying".
  *   • Unknown products are never applied. A product id we cannot resolve
  *     returns `unrecognized_product` and leaves existing entitlement intact —
  *     it is never assumed to be the bundle.
@@ -705,9 +821,15 @@ export async function applyPolarWebhookPayload(payload: {
   const { type, data } = payload;
   const seenProductId = eventProductId(data);
 
-  if (!isBillingLifecycleType(type)) {
+  if (!isSupportedPolarEventType(type)) {
     return { outcome: "ignored_event_type", subscriptionId: null, providerProductId: seenProductId };
   }
+
+  // The point in the provider's timeline this event describes. Polar stamps
+  // the delivery time on the envelope, but the object itself carries when it
+  // last changed; a delivery retried an hour later must not out-rank a newer
+  // event that already landed, so the object's own version wins when present.
+  const stateTime = eventStateTime(payload);
 
   const resolved = resolveEventOffer(data);
   if (resolved.kind === "unknown_product") {
@@ -726,16 +848,18 @@ export async function applyPolarWebhookPayload(payload: {
     return { outcome: "no_subscription", subscriptionId: null, providerProductId: seenProductId };
   }
 
+  // Cheap pre-check. The authoritative one is the conditional write below —
+  // this only avoids assembling an update that is already known to be stale.
   if (
     sub.billingStateUpdatedAt &&
-    payload.timestamp.getTime() < sub.billingStateUpdatedAt.getTime()
+    stateTime.getTime() < sub.billingStateUpdatedAt.getTime()
   ) {
     return { outcome: "ignored_stale", subscriptionId: sub.id, providerProductId: seenProductId };
   }
 
   const update: Record<string, any> = {
     paymentProvider: PROVIDER,
-    billingStateUpdatedAt: payload.timestamp,
+    billingStateUpdatedAt: stateTime,
   };
 
   // Persist offer identity, but only when it is at least as strong as what the
@@ -758,7 +882,7 @@ export async function applyPolarWebhookPayload(payload: {
       update.providerSubscriptionId = data.subscriptionId;
     }
     if (type === "order.paid" || data.paid === true || data.status === "paid") {
-      update.paidAt = payload.timestamp;
+      update.paidAt = stateTime;
       if (data.subscriptionId) update.status = "ACTIVE_PAID";
     }
   }
@@ -768,12 +892,15 @@ export async function applyPolarWebhookPayload(payload: {
     if (typeof data.checkoutId === "string") {
       update.providerCheckoutSessionId = data.checkoutId;
     }
+    // Event type first (it is unambiguous), then the object's own status, then
+    // — when Polar sends a status we do not model — the state we already hold.
+    // Never a default: an uninterpretable status must not revoke paid access.
     update.status =
       type === "subscription.revoked"
         ? "EXPIRED"
         : type === "subscription.past_due"
           ? "PAST_DUE"
-          : mapPolarSubscriptionStatus(String(data.status));
+          : (polarStatusToLocal(String(data.status)) ?? sub.status);
     // Interval preference mirrors identity: the resolved provider product pins
     // it exactly, the raw recurringInterval is the fallback, and the existing
     // plan survives when Polar sends something we do not model.
@@ -788,16 +915,33 @@ export async function applyPolarWebhookPayload(payload: {
     update.trialUsedAt = data.trialStart ? data.trialStart : sub.trialUsedAt;
     update.cancelAtPeriodEnd = Boolean(data.cancelAtPeriodEnd);
     update.canceledAt = data.canceledAt ?? null;
-    update.pastDueAt = type === "subscription.past_due" ? payload.timestamp : null;
+    update.pastDueAt = type === "subscription.past_due" ? stateTime : null;
     if (data.status === "active" || type === "subscription.active") {
-      update.paidAt = sub.paidAt ?? payload.timestamp;
+      update.paidAt = sub.paidAt ?? stateTime;
     }
   }
 
-  await prisma.productSubscription.update({
-    where: { id: sub.id },
+  // Compare-and-set on the provider clock, not a plain update.
+  //
+  // The read above and this write are separate round trips, so two deliveries
+  // processed concurrently — Polar retrying while the original is still in
+  // flight, or two events for the same subscription arriving together — can
+  // both pass the pre-check. Making the write itself conditional on
+  // billingStateUpdatedAt closes that window in the database: whichever
+  // transaction commits second is rejected by its own WHERE clause if it is
+  // carrying older provider state. Zero rows affected therefore means "a newer
+  // state won", which is exactly `ignored_stale`, not an error.
+  const written = await prisma.productSubscription.updateMany({
+    where: {
+      id: sub.id,
+      OR: [{ billingStateUpdatedAt: null }, { billingStateUpdatedAt: { lte: stateTime } }],
+    },
     data: update,
   });
+
+  if (written.count === 0) {
+    return { outcome: "ignored_stale", subscriptionId: sub.id, providerProductId: seenProductId };
+  }
 
   // A confirmed provider state is what completes a pending plan change. Kept
   // after the subscription write so transition bookkeeping can never block or
