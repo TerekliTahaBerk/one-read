@@ -299,6 +299,11 @@ no local owner, or a product id may be missing from configuration. They are
 counted and highlighted on `/admin/system/webhooks` rather than being silently
 marked done. No mapping is ever guessed to make one go away.
 
+Diagnosing and repairing what those outcomes point at is
+`docs/BILLING_RECONCILIATION.md`: `npm run reconcile:billing` names the
+divergence, and `npm run repair:billing` is the only sanctioned way to correct
+local state by hand.
+
 ### Duplicates
 
 Duplicate deliveries are absorbed at the route by the unique

@@ -17,6 +17,7 @@ import {
   resolveOfferFromProviderProductId,
 } from "@/lib/products/polar-config";
 import { improveClassification } from "@/lib/products/classification";
+import type { ProviderSnapshot } from "@/lib/billing/reconciliation";
 import {
   settleTransitionsForSubscription,
   type ProviderPlanChange,
@@ -413,6 +414,35 @@ export async function createPolarOfferCheckout(args: {
   });
 
   return { url: checkout.url, providerProductId };
+}
+
+/**
+ * Reads one subscription straight from Polar, for reconciliation.
+ *
+ * The only outbound read in this file that exists purely for operators. It
+ * returns the provider's own view verbatim — status string unmapped, period
+ * end as given — because the caller (lib/billing/repair.ts) must be able to
+ * refuse a status we do not model rather than receive it pre-defaulted. The
+ * `observedAt` stamp becomes the provider clock a repair is gated on, so it is
+ * taken at the moment of the read, never assumed.
+ */
+export async function fetchPolarSubscriptionSnapshot(
+  providerSubscriptionId: string,
+): Promise<ProviderSnapshot> {
+  assertPolarConfigured("Polar reconciliation read");
+  const observedAt = new Date();
+  const subscription = await getPolarClient().subscriptions.get({ id: providerSubscriptionId });
+
+  return {
+    status: subscription.status ? String(subscription.status) : null,
+    productId:
+      typeof subscription.productId === "string"
+        ? subscription.productId
+        : ((subscription as { product?: { id?: string } }).product?.id ?? null),
+    currentPeriodEnd: subscription.currentPeriodEnd ?? null,
+    cancelAtPeriodEnd: Boolean(subscription.cancelAtPeriodEnd),
+    observedAt,
+  };
 }
 
 /** Which return/success URL family an offer should use. */

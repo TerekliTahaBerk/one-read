@@ -29,6 +29,27 @@ function describeOutcome(outcome: string | null): string {
   }
 }
 
+/**
+ * Event types, in plain English. Operator repairs (lib/billing/repair.ts) are
+ * recorded in this same table so a manual correction reads in the timeline
+ * beside the provider events it was reacting to.
+ */
+function describeEvent(provider: string, type: string): string {
+  if (provider !== "operator") return type;
+  switch (type) {
+    case "repair.apply_provider_snapshot":
+      return "Repair — matched local state to the provider";
+    case "repair.link_provider_subscription":
+      return "Repair — linked the provider subscription";
+    case "repair.classify_offer":
+      return "Repair — recorded which offer was bought";
+    case "repair.clear_stale_checkout":
+      return "Repair — cleared an expired checkout";
+    default:
+      return "Repair by an operator";
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -79,8 +100,8 @@ export default async function SystemWebhooksPage() {
           empty="No billing events recorded."
           rows={events.map((event) => [
             fmtDateTime(event.createdAt),
-            event.provider,
-            event.type,
+            event.provider === "operator" ? "Operator" : event.provider,
+            describeEvent(event.provider, event.type),
             event.processedAt ? (
               fmtDateTime(event.processedAt)
             ) : (
