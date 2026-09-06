@@ -16,6 +16,7 @@ systems of record.
 | Are people paying? | `/admin/revenue` |
 | Did the cron run? | `/admin/system/health`, `/admin/runs` |
 | Did billing webhooks process? | `/admin/system/webhooks` |
+| Does Polar disagree with our records? | `npm run reconcile:billing` — see `docs/BILLING_RECONCILIATION.md` |
 
 ## Delivery terminology
 
