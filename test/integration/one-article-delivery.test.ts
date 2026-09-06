@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   dispatchDueEditorialIssues,
   dispatchIssue,
+  DELIVERY_CLAIM_STALE_MS,
   PROVIDER_IDEMPOTENCY_TTL_MS,
   retryEditorialIssue,
   type EditorialDispatchOptions,
@@ -10,6 +11,7 @@ import {
 
 const prefix = `milestone-a-${process.pid}-`;
 const contacts: string[] = [];
+const TEST_NOW = new Date("2030-01-07T07:00:00.000Z"); // Monday in Istanbul
 
 async function fixture(emailSuffix: string, scheduled = true) {
   const contact = await prisma.contact.create({ data: { email: `${prefix}${emailSuffix}@example.test` } });
@@ -35,7 +37,7 @@ async function fixture(emailSuffix: string, scheduled = true) {
     data: {
       readingLanguage: "English",
       status: scheduled ? "SCHEDULED" : "DRAFT",
-      scheduledFor: scheduled ? new Date(Date.now() - 1_000) : null,
+      scheduledFor: scheduled ? new Date(TEST_NOW.getTime() - 1_000) : null,
       subject: "A safe edition",
       headline: "One useful idea",
       bodyText: "A sufficiently complete editorial body for database-backed dispatch testing.",
@@ -67,15 +69,32 @@ describe("database-backed OneArticle delivery", () => {
       return { messageId: "provider-1" };
     };
     await Promise.all([
-      dispatchDueEditorialIssues(new Date(), { send }),
-      dispatchDueEditorialIssues(new Date(), { send }),
+      dispatchDueEditorialIssues(TEST_NOW, { send }),
+      dispatchDueEditorialIssues(TEST_NOW, { send }),
     ]);
-    await dispatchDueEditorialIssues(new Date(), { send });
+    await dispatchDueEditorialIssues(TEST_NOW, { send });
     const rows = await prisma.oneArticleDelivery.findMany({ where: { issueId: issue.id } });
     expect(rows).toHaveLength(1);
     expect(rows[0].status).toBe("SENT");
     expect(calls).toHaveLength(1);
     expect(calls[0]).toContain(issue.id);
+  });
+
+  it("atomically claims a recipient across concurrent direct dispatch attempts", async () => {
+    const { issue } = await fixture("recipient-race", false);
+    const calls: string[] = [];
+    const send = async ({ idempotencyKey }: { idempotencyKey?: string }) => {
+      calls.push(idempotencyKey ?? "");
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      return { messageId: "provider-race" };
+    };
+    await Promise.all([
+      dispatchIssue(issue.id, { send }),
+      dispatchIssue(issue.id, { send }),
+    ]);
+    const deliveryCount = await prisma.oneArticleDelivery.count({ where: { issueId: issue.id } });
+    expect(calls).toHaveLength(deliveryCount);
+    expect(new Set(calls).size).toBe(deliveryCount);
   });
 
   it("records partial failure and retries only the failed recipient", async () => {
@@ -92,32 +111,71 @@ describe("database-backed OneArticle delivery", () => {
     }});
     expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: first.issue.id } })).status).toBe("PARTIALLY_FAILED");
     await retryEditorialIssue(first.issue.id, "operator@example.test");
-    await dispatchDueEditorialIssues(new Date(), { send: async ({ to }) => { sent.push(to); return { messageId: "retry" }; } });
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async ({ to }) => { sent.push(to); return { messageId: "retry" }; } });
     expect(sent.filter((email) => email.includes("partial-a"))).toHaveLength(1);
+  });
+
+  it("automatically retries a known-safe failure on the next poll", async () => {
+    const { issue } = await fixture("automatic-retry");
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async () => { throw new Error("provider refused request"); } });
+    expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issue.id } })).status).toBe("FAILED");
+    const sends: string[] = [];
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async ({ to }) => { sends.push(to); return { messageId: "retry-ok" }; } });
+    expect(sends.filter((email) => email.includes("automatic-retry"))).toHaveLength(1);
+    expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issue.id } })).status).toBe("SENT");
+  });
+
+  it("does not claim a due issue on a weekend in its configured timezone", async () => {
+    const { issue } = await fixture("weekend");
+    const sends: string[] = [];
+    await dispatchDueEditorialIssues(new Date("2030-01-05T07:00:00.000Z"), {
+      send: async ({ to }) => { sends.push(to); return { messageId: "unexpected" }; },
+    });
+    expect(sends.filter((email) => email.includes("weekend"))).toHaveLength(0);
+    expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issue.id } })).status).toBe("SCHEDULED");
+  });
+
+  it("does not send draft or canceled issues even when their timestamp is due", async () => {
+    const draft = await fixture("draft", false);
+    const canceled = await fixture("canceled", false);
+    await prisma.oneArticleIssue.update({
+      where: { id: canceled.issue.id },
+      data: { status: "CANCELED", scheduledFor: new Date(TEST_NOW.getTime() - 1_000) },
+    });
+    const sends: string[] = [];
+    await dispatchDueEditorialIssues(TEST_NOW, {
+      send: async ({ to }) => { sends.push(to); return { messageId: "unexpected" }; },
+    });
+    expect(await prisma.oneArticleDelivery.count({
+      where: { issueId: { in: [draft.issue.id, canceled.issue.id] } },
+    })).toBe(0);
+    expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: draft.issue.id } })).status).toBe("DRAFT");
+    expect((await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: canceled.issue.id } })).status).toBe("CANCELED");
   });
 
   it("re-checks suppression before a failed delivery retry", async () => {
     const { issue, subscription } = await fixture("suppressed");
-    await dispatchDueEditorialIssues(new Date(), { send: async () => { throw new Error("temporary"); } });
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async () => { throw new Error("temporary"); } });
     await retryEditorialIssue(issue.id, "operator@example.test");
     await prisma.productSubscription.update({ where: { id: subscription.id }, data: { emailDeliveryStatus: "SUPPRESSED" } });
     const sends: string[] = [];
-    await dispatchDueEditorialIssues(new Date(), { send: async ({ to }) => { sends.push(to); return {}; } });
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async ({ to }) => { sends.push(to); return {}; } });
     expect(sends.filter((email) => email.includes("suppressed"))).toHaveLength(0);
     expect((await prisma.oneArticleDelivery.findFirstOrThrow({ where: { issueId: issue.id, productSubscriptionId: subscription.id } })).status).toBe("SKIPPED");
   });
 
   it("re-checks unsubscribe before retry and provides operator recovery after exhaustion", async () => {
     const { issue, subscription } = await fixture("unsubscribed");
-    await dispatchDueEditorialIssues(new Date(), { send: async ({ to }) => {
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async ({ to }) => {
       if (to.includes("unsubscribed")) throw new Error("temporary");
       return { messageId: "other" };
     }});
     await retryEditorialIssue(issue.id, "operator@example.test");
     await prisma.productSubscription.update({ where: { id: subscription.id }, data: { emailDeliveryStatus: "UNSUBSCRIBED" } });
     const sent: string[] = [];
-    await dispatchDueEditorialIssues(new Date(), { send: async ({ to }) => { sent.push(to); return {}; } });
+    await dispatchDueEditorialIssues(TEST_NOW, { send: async ({ to }) => { sent.push(to); return {}; } });
     expect(sent.filter((email) => email.includes("unsubscribed"))).toHaveLength(0);
+    expect((await prisma.productSubscription.findUniqueOrThrow({ where: { id: subscription.id } })).status).toBe("ADMIN_OVERRIDE");
 
     const exhausted = await fixture("exhausted", false);
     await prisma.oneArticleDelivery.create({ data: {
@@ -139,11 +197,14 @@ describe("database-backed OneArticle delivery", () => {
     const { issue } = await fixture("ambiguous-safe");
     const calls: string[] = [];
     const send: NonNullable<EditorialDispatchOptions["send"]> = async ({ to }) => { calls.push(to); return { messageId: "same-provider-id" }; };
-    await dispatchDueEditorialIssues(new Date(), { send, afterProviderAccepted: () => { throw new Error("injected db boundary failure"); } });
+    await dispatchDueEditorialIssues(TEST_NOW, { send, afterProviderAccepted: () => { throw new Error("injected db boundary failure"); } });
     const ambiguous = await prisma.oneArticleDelivery.findFirstOrThrow({ where: { issueId: issue.id } });
     expect(ambiguous.status).toBe("SENDING");
     await prisma.oneArticleIssue.update({ where: { id: issue.id }, data: { status: "SENDING" } });
-    await dispatchIssue(issue.id, { send, now: new Date(ambiguous.lastAttemptAt!.getTime() + 1_000) });
+    await dispatchIssue(issue.id, {
+      send,
+      now: new Date(ambiguous.lastAttemptAt!.getTime() + DELIVERY_CLAIM_STALE_MS + 1_000),
+    });
     expect(calls.filter((email) => email.includes("ambiguous-safe"))).toHaveLength(2);
     expect((await prisma.oneArticleDelivery.findUniqueOrThrow({ where: { id: ambiguous.id } })).status).toBe("SENT");
   });

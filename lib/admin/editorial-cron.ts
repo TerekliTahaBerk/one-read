@@ -43,6 +43,8 @@ export interface EditorialDispatchSummary {
   sent: number;
   failed: number;
   skipped: number;
+  attempted?: number;
+  reconciliationRequired?: number;
 }
 
 export interface EditorialCronConfig {
@@ -124,7 +126,9 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
     const runRecorded = await safeFinishRun({
       id: runId,
       status: attentionRequired ? "FAILED" : "SUCCESS",
-      generatedCount: 0,
+      // OperationalRun predates editorial dispatch; its generic generatedCount
+      // column is the durable attempted-send counter for this route.
+      generatedCount: result.attempted ?? 0,
       sentCount: result.sent,
       skippedCount: result.skipped,
       failedCount: result.failed,

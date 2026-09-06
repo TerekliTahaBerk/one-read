@@ -12,12 +12,23 @@ and idempotent.
 
 ## Dispatch and recovery
 
-An edition is claimed with an atomic `SCHEDULED` → `SENDING` update. A unique
+`/api/cron/daily` intentionally polls every 10 minutes. Editors choose the
+delivery instant; polling keeps arbitrary scheduled times within a 10-minute
+latency bound instead of coupling sends to one fixed cron hour. Vercel evaluates
+cron expressions in UTC, while `scheduledFor` is stored as an absolute instant.
+The dispatcher permits sends only Monday-Friday in the issue's IANA timezone
+(`Europe/Istanbul` by default, UTC+3 year-round), so DST or host timezone cannot
+change the weekday decision. A weekend-due issue remains scheduled for Monday.
+
+An edition is claimed with an atomic dispatchable-state → `SENDING` update. A
+second compare-and-set claim guards each recipient before provider I/O. A unique
 `(issueId, contactId)` delivery row and stable Resend idempotency key prevent
 normal duplicate sends when cron repeats or overlaps. Known-success rows are
-never retried, and eligibility/suppression is checked again before each retry.
+never retried, a live `SENDING` claim is left alone for 15 minutes, and
+eligibility/suppression is checked again before each retry.
 
-Automatic delivery attempts stop after three. The admin **Retry failed
+Known failures are retried by the next 10-minute poll; automatic delivery
+attempts stop after three. The admin **Retry failed
 deliveries** action explicitly resets failed rows after review. If Resend may
 have accepted a request but local persistence failed, the stable key may be
 retried only within Resend's 24-hour idempotency window. After that the row is
@@ -37,6 +48,9 @@ unsafe whole-batch platform retry while preserving a machine-detectable result.
 
 - Sentry: exceptions and PII-free cron/delivery failure context.
 - `OperationalRun`: durable run outcome and recipient counts in the admin UI.
+  For editorial runs, the legacy `generatedCount` field is displayed as
+  **Attempted**; metadata also records eligible, attempted, accepted, failed,
+  skipped, and reconciliation-required counts.
 - Better Stack uptime monitor: `https://www.oneread.email/`, check every 3
   minutes, alert after 2 failures.
 - Better Stack heartbeat: configure `BETTER_STACK_CRON_HEARTBEAT_URL` in Vercel.

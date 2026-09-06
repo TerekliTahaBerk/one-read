@@ -8,7 +8,10 @@ Status last checked: **2026-09-06**. A checked item has direct evidence; an unch
 
 - [x] Vercel domains: `oneread.email` and `www.oneread.email` are assigned to the `one-read` project; HTTPS serves successfully and the apex returns a permanent `308` redirect to `https://www.oneread.email/`.
 - [x] Vercel production configuration contains the required Sentry variable names: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`.
-- [x] Vercel production configuration contains `CRON_SECRET`, and `vercel.json` declares `/api/cron/daily` on the intended schedule.
+- [x] Vercel production configuration contains `CRON_SECRET`, and `vercel.json`
+  intentionally polls `/api/cron/daily` every 10 minutes. The dispatcher treats
+  `scheduledFor` as an absolute instant and enforces weekdays in
+  `Europe/Istanbul` (UTC+3, no DST).
 - [x] Database: all 26 committed migrations are applied in production and
   `prisma migrate status` reports the schema is up to date. The generated
   Prisma client successfully queried `BillingEvent.outcome`,
@@ -45,7 +48,11 @@ Status last checked: **2026-09-06**. A checked item has direct evidence; an unch
   `docs/LAUNCH_RUNBOOK.md`; mailbox-only checks remain manual gates even when
   the automated verifier passes.
 - [ ] Sentry runtime: deploy with source maps and confirm a controlled production event is readable. Configuration names are present, but no event evidence has been recorded.
-- [ ] Vercel runtime: exercise cron authentication, inspect runtime logs, and verify rollback permissions with the launch operator. Domain, HTTPS, redirect, schedule, and secret-name presence are already verified above.
+- [ ] Vercel runtime: complete the controlled exactly-once cron acceptance in
+  `docs/LAUNCH_RUNBOOK.md`, inspect Vercel/Sentry for new P2022 or
+  `cron_failure`, verify the healthy-only Better Stack heartbeat, and verify
+  rollback permissions with the launch operator. Domain, HTTPS, redirect,
+  schedule, and secret-name presence are already verified above.
 - [ ] DNS operations: if Cloudflare is introduced, use DNS-only records until proxying has been deliberately tested with Vercel domains, webhooks, and redirects. The domain currently uses third-party nameservers rather than Cloudflare nameservers.
 - [ ] Editorial: prepare, test-send, approve, and schedule at least five launch editions; verify source licenses and image rights.
 - [ ] Operations: assign an on-call owner, support owner, billing-refund policy owner, incident channel, and 72-hour KPI review cadence.

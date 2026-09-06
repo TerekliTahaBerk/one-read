@@ -103,7 +103,7 @@ export default async function RunsPage(props: {
             "Result",
             "Mode",
             "Duration",
-            "Created",
+            "Attempted",
             "Sent",
             "Skipped",
             "Failed",
