@@ -36,7 +36,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "gate:money-flow": "node scripts/verify-money-flow-gate.mjs"
     ,"test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
