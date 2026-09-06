@@ -7,6 +7,8 @@ import {
 } from "@/lib/options";
 import { ONE_READ_INCLUDED_PRODUCT_KEYS } from "@/lib/oneread/config";
 import { hasValidAccess, type EligibilityResult } from "@/lib/billing/access";
+import { resolveProductEntitlement } from "@/lib/products/entitlements";
+import { PRODUCT_ONE_ARTICLE } from "@/lib/products/registry";
 import { preferencesComplete } from "@/lib/subscriptions";
 import type { SubscribeLookupResult } from "@/lib/subscriptions";
 
@@ -99,6 +101,40 @@ export async function hasOneReadUmbrellaAccess(contactId: string): Promise<boole
 }
 
 /**
+ * Decides OneArticle access for one contact's subscription rows.
+ *
+ * The grant itself is never derived here — it is delegated to the central
+ * entitlement resolver, which is the only module that knows which offers grant
+ * which products and how a legacy umbrella row differs from today's bundle.
+ * What this adds is the delivery vocabulary: whether the reader is served by
+ * their own OneArticle subscription or by a plan that includes it, which is
+ * what the pipeline and admin surfaces report.
+ *
+ * Rows are handed to the resolver umbrella-first so that when nothing grants
+ * access, the reported refusal is the umbrella's specific reason
+ * ("past_due_grace_ended") rather than the holder row's generic one.
+ */
+function decideOneArticleAccess(
+  holder: ProductSubscription | null,
+  umbrella: ProductSubscription | null,
+  now: Date,
+): EligibilityResult {
+  if (holder && resolveProductEntitlement([holder], PRODUCT_ONE_ARTICLE, now).granted) {
+    return { allowed: true, reason: "legacy_one_article_access" };
+  }
+  if (!umbrella) return { allowed: false, reason: "checkout_required" };
+
+  const entitlement = resolveProductEntitlement(
+    [umbrella, ...(holder ? [holder] : [])],
+    PRODUCT_ONE_ARTICLE,
+    now,
+  );
+  return entitlement.granted
+    ? { allowed: true, reason: "included_in_oneread" }
+    : { allowed: false, reason: entitlement.reason };
+}
+
+/**
  * Composes legacy per-product access and umbrella OneRead access into a single
  * eligibility result. `missingPreferencesReason` and `legacyReason` let the two
  * per-product wrappers below reuse this without duplicating the access logic.
@@ -121,15 +157,16 @@ async function resolveProductEligibility(
     if (holder.emailDeliveryStatus !== "SUBSCRIBED") {
       return { allowed: false, reason: "email_unsubscribed" };
     }
-    const legacy = hasValidAccess(holder as ProductSubscription, now);
-    if (legacy.allowed) return { allowed: true, reason: legacyReason };
   }
 
-  const oneRead = await findOneReadRow(contactId);
-  if (!oneRead) return { allowed: false, reason: "checkout_required" };
-  const umbrella = hasValidAccess(oneRead, now);
-  if (umbrella.allowed) return { allowed: true, reason: "included_in_oneread" };
-  return { allowed: false, reason: umbrella.reason };
+  const decision = decideOneArticleAccess(
+    holder as ProductSubscription | null,
+    await findOneReadRow(contactId),
+    now,
+  );
+  return decision.allowed && decision.reason === "legacy_one_article_access"
+    ? { allowed: true, reason: legacyReason }
+    : decision;
 }
 
 export async function resolveOneArticleEligibilityForContact(
@@ -187,20 +224,8 @@ export async function resolveOneArticleEligibilityForContacts(
       results.set(contactId, { allowed: false, reason: "email_unsubscribed" });
       continue;
     }
-    const legacy = holder ? hasValidAccess(holder, now) : null;
-    if (legacy?.allowed) {
-      results.set(contactId, { allowed: true, reason: "legacy_one_article_access" });
-      continue;
-    }
-    const umbrella = subscriptions.find((row) => row.productKey === ONE_READ_PRODUCT_KEY);
-    if (!umbrella) {
-      results.set(contactId, { allowed: false, reason: "checkout_required" });
-      continue;
-    }
-    const access = hasValidAccess(umbrella, now);
-    results.set(contactId, access.allowed
-      ? { allowed: true, reason: "included_in_oneread" }
-      : access);
+    const umbrella = subscriptions.find((row) => row.productKey === ONE_READ_PRODUCT_KEY) ?? null;
+    results.set(contactId, decideOneArticleAccess(holder, umbrella, now));
   }
   return results;
 }

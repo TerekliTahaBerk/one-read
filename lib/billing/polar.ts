@@ -4,7 +4,6 @@ import {
   ONE_ARTICLE_PRODUCT_KEY,
   ONE_READ_PRODUCT_KEY,
 } from "@/lib/options";
-import { oneReadPolarProductId } from "@/lib/oneread/config";
 import {
   billingIntervalFromProviderInterval,
   isBillingIntervalKey,
@@ -13,6 +12,7 @@ import {
   type OfferKey,
 } from "@/lib/products/registry";
 import {
+  legacyProductIdFor,
   resolveCheckoutProductId,
   resolveOfferFromProviderProductId,
 } from "@/lib/products/polar-config";
@@ -36,8 +36,6 @@ import type {
 } from "./types";
 
 const PROVIDER = "polar" as const;
-const DEFAULT_ONE_ARTICLE_PRODUCT_ID =
-  "44ef8bae-87eb-40eb-9a07-8b4a97e1434e";
 
 type PolarServer = "sandbox" | "production";
 
@@ -50,25 +48,36 @@ export function getPolarServer(): PolarServer {
 }
 
 /**
- * Resolves the Polar product id for the current umbrella checkout or the
- * retained standalone OneArticle billing path.
+ * Resolves the Polar product id for one of the two closed legacy billing
+ * paths, which are retained for reconciling subscriptions that already exist.
+ *
+ * The ids come from lib/products/polar-config.ts — the same LEGACY_OFFERS
+ * entries the webhook resolves inbound events against — rather than being
+ * restated here, so a legacy plan cannot be described one way on the way in
+ * and another way on the way out.
+ *
+ * Fail-closed: an unconfigured legacy plan throws naming its variable. It must
+ * never silently substitute the other legacy product, because the umbrella and
+ * the standalone plan are billed at different prices.
  */
 export function getPolarProductId(
   productKey: string = ONE_ARTICLE_PRODUCT_KEY,
 ): string {
-  if (productKey === ONE_READ_PRODUCT_KEY) {
-    const id = oneReadPolarProductId();
-    if (!id) {
-      throw new Error(
-        "OneRead billing is not configured. Missing: POLAR_ONEREAD_PRODUCT_ID.",
-      );
-    }
-    return id;
+  const legacyKey =
+    productKey === ONE_READ_PRODUCT_KEY
+      ? "legacy-one-read-umbrella"
+      : "legacy-one-article-standalone";
+  const id = legacyProductIdFor(legacyKey);
+  if (!id) {
+    const envVar =
+      productKey === ONE_READ_PRODUCT_KEY
+        ? "POLAR_ONEREAD_PRODUCT_ID"
+        : "POLAR_ONE_ARTICLE_PRODUCT_ID";
+    throw new Error(
+      `Legacy ${productKey} billing is not configured. Missing: ${envVar}.`,
+    );
   }
-  return (
-    process.env.POLAR_ONE_ARTICLE_PRODUCT_ID?.trim() ||
-    DEFAULT_ONE_ARTICLE_PRODUCT_ID
-  );
+  return id;
 }
 
 function getMissingPolarConfig(): string[] {

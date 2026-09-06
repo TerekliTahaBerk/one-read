@@ -55,6 +55,14 @@ Two historical Polar products remain live for existing subscribers:
 | `POLAR_ONEREAD_PRODUCT_ID` | Legacy $1 OneRead umbrella | OneArticle **only** |
 | `POLAR_ONE_ARTICLE_PRODUCT_ID` | Legacy standalone OneArticle | OneArticle |
 
+Both are resolved through `legacyProductIdFor(legacyKey)` in
+`lib/products/polar-config.ts`. `lib/billing/polar.ts` no longer reads either
+variable itself, so the inbound reconciliation path and the registry can no
+longer disagree about which product a legacy plan is billed against. Resolution
+is fail-closed: an unconfigured legacy plan throws naming its variable rather
+than substituting the other legacy product, which is billed at a different
+price.
+
 Legacy products are **recognised inbound** (webhooks, reconciliation) so existing
 subscriptions keep resolving, and are **never selectable outbound** for a new
 checkout. That asymmetry is what protects grandfathered pricing, and it is
@@ -149,11 +157,12 @@ against it.
 New offers are sold **without a free trial**. `allowTrial` is not set on this
 path. Historical trial fields on existing rows are untouched.
 
-The legacy `$1` flow (`POST /api/oneread/checkout`) is a separate, unchanged
-code path that still serves the live signup page. Pointing it at the new
-registry would reprice new signups the moment the six product ids were
-configured, so it is left alone until the C5 multi-product signup UX replaces
-it.
+`POST /api/oneread/checkout` — the legacy `$1` entry point — is retired and
+answers `410 legacy_checkout_retired` pointing at `/api/billing/checkout`. Its
+server-side helper has been deleted rather than left dormant: a second live
+checkout path is precisely how offer identity, pricing and Polar product
+mapping drift apart. Legacy *reconciliation* is unaffected, because recognising
+an existing subscription and selling a new one are separate directions.
 
 ## Subscription transitions
 
@@ -244,6 +253,41 @@ tests:
 * The old $1 price generally **cannot** be restored afterwards. The legacy
   product is closed to new checkouts, and an in-place change cannot be reversed
   onto it. This is why the warning is mandatory rather than advisory.
+
+## Where the contract lives
+
+One fact, one file. Every other surface reads from these:
+
+| Fact | Owner |
+| --- | --- |
+| What is sold, its price, cadence, tagline and grants | `lib/products/registry.ts` |
+| Which Polar product/env var each offer maps to, and every closed legacy product | `lib/products/polar-config.ts` |
+| What a subscription row represents | `lib/products/classification.ts` |
+| Whether a contact may access a product | `lib/products/entitlements.ts` |
+| How a subscription is described to a human | `lib/billing/presentation.ts` |
+
+Consequences worth stating, because each replaced a second copy:
+
+* The pricing page derives the annual discount with `annualDiscountPercent`
+  rather than stating a percentage in copy, and takes each offer's cadence line
+  from the registry.
+* `lib/launch-config.ts` asks `checkoutEnvVarNames()` and
+  `validatePolarConfiguration(env)` for the variables and the legacy-reuse
+  check instead of listing them again.
+* `lib/oneread/config.ts` defines no price at all. The umbrella is closed, so
+  it has nothing for sale to price; the products it grants come from its
+  `LEGACY_OFFERS` entry.
+* `PRICING` in `lib/options.ts` is read from the registry, for the dev-only
+  mock checkout screen.
+* OneArticle delivery eligibility (`lib/oneread/access.ts`) resolves the grant
+  through `resolveProductEntitlement`, the same resolver OneNews delivery uses.
+  It adds only the delivery vocabulary — whether access comes from the reader's
+  own subscription or from a plan that includes it.
+
+`lib/products/contract.test.ts` pins this. It scans `app`, `components`, `lib`
+and `scripts` and fails if a Polar checkout environment variable name or a
+product-id-shaped literal appears outside the registry, so the second copy is
+caught at test time rather than in production billing.
 
 ## Environment isolation
 

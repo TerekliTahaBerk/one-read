@@ -36,6 +36,13 @@ import {
 
 /* ---------------------------- env var mapping ---------------------------- */
 
+/**
+ * The environment source configuration is read from. Defaults to the process
+ * environment; validation entry points accept an explicit map so a deployment
+ * checklist can be run against a candidate environment.
+ */
+export type ConfigEnv = Record<string, string | undefined>;
+
 /** Environment variable holding the Polar product id for each (offer, interval). */
 const CHECKOUT_ENV_VARS: Readonly<
   Record<OfferKey, Record<BillingIntervalKey, string>>
@@ -61,9 +68,20 @@ export function checkoutEnvVar(
   return CHECKOUT_ENV_VARS[offer][interval];
 }
 
-function readEnv(name: string): string | null {
-  const value = process.env[name];
+function readEnv(name: string, env: ConfigEnv = process.env): string | null {
+  const value = env[name];
   return value && value.trim().length > 0 ? value.trim() : null;
+}
+
+/**
+ * Every environment variable that must hold a product id for the full
+ * commercial matrix, in a stable order. Exported so deployment checks describe
+ * the same set this module resolves against instead of restating it.
+ */
+export function checkoutEnvVarNames(): string[] {
+  return OFFER_KEYS.flatMap((offer) =>
+    BILLING_INTERVAL_KEYS.map((interval) => checkoutEnvVar(offer, interval)),
+  );
 }
 
 /* ------------------------------- legacy ---------------------------------- */
@@ -112,9 +130,35 @@ export const LEGACY_OFFERS: readonly LegacyOfferDefinition[] = [
   },
 ];
 
-function legacyProductIds(legacy: LegacyOfferDefinition): string[] {
-  const fromEnv = legacy.envVar ? readEnv(legacy.envVar) : null;
+function legacyProductIds(
+  legacy: LegacyOfferDefinition,
+  env: ConfigEnv = process.env,
+): string[] {
+  const fromEnv = legacy.envVar ? readEnv(legacy.envVar, env) : null;
   return [...(fromEnv ? [fromEnv] : []), ...legacy.fallbackProductIds];
+}
+
+/**
+ * Every Polar product id that belongs to a closed plan — configured ids and
+ * retained fallbacks alike. Selling any of them as a current offer would put a
+ * new customer on legacy pricing, so callers use this to refuse that.
+ */
+export function allLegacyProductIds(env: ConfigEnv = process.env): string[] {
+  return LEGACY_OFFERS.flatMap((legacy) => legacyProductIds(legacy, env));
+}
+
+/**
+ * The Polar product id a legacy plan is billed against, or null when it is not
+ * configured. Inbound-only: this is for recognising and reconciling existing
+ * subscriptions, never for creating a checkout.
+ */
+export function legacyProductIdFor(
+  legacyKey: string,
+  env: ConfigEnv = process.env,
+): string | null {
+  const legacy = LEGACY_OFFERS.find((entry) => entry.key === legacyKey);
+  if (!legacy) return null;
+  return legacyProductIds(legacy, env)[0] ?? null;
 }
 
 /* --------------------------- outbound checkout --------------------------- */
@@ -153,16 +197,17 @@ export function resolveCheckoutProductId(
 export function isOfferConfigured(
   offer: OfferKey,
   interval: BillingIntervalKey,
+  env: ConfigEnv = process.env,
 ): boolean {
-  return readEnv(checkoutEnvVar(offer, interval)) !== null;
+  return readEnv(checkoutEnvVar(offer, interval), env) !== null;
 }
 
 /** Environment variables required for the full commercial matrix but unset. */
-export function missingOfferConfig(): string[] {
+export function missingOfferConfig(env: ConfigEnv = process.env): string[] {
   const missing: string[] = [];
   for (const offer of OFFER_KEYS) {
     for (const interval of BILLING_INTERVAL_KEYS) {
-      if (!isOfferConfigured(offer, interval)) missing.push(checkoutEnvVar(offer, interval));
+      if (!isOfferConfigured(offer, interval, env)) missing.push(checkoutEnvVar(offer, interval));
     }
   }
   return missing;
@@ -271,12 +316,20 @@ export type PolarEnvironment = "sandbox" | "production";
  * forgets the variable cannot charge anyone, whereas the reverse would let a
  * preview deployment take real money.
  */
-export function polarEnvironment(): PolarEnvironment {
-  return process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
+export function polarEnvironment(env: ConfigEnv = process.env): PolarEnvironment {
+  return env.POLAR_SERVER === "production" ? "production" : "sandbox";
 }
+
+/** Stable identifier for a class of misconfiguration, for callers that
+ * render their own wording for one of them. */
+export type PolarConfigProblemCode =
+  | "offer_config_missing"
+  | "legacy_id_sold_as_current"
+  | "duplicate_product_id";
 
 export interface PolarConfigProblem {
   severity: "error" | "warning";
+  code: PolarConfigProblemCode;
   message: string;
 }
 
@@ -289,27 +342,31 @@ export interface PolarConfigProblem {
  * that the environment is internally consistent and that nothing is missing
  * before a checkout is attempted.
  */
-export function validatePolarConfiguration(): PolarConfigProblem[] {
+export function validatePolarConfiguration(
+  env: ConfigEnv = process.env,
+): PolarConfigProblem[] {
   const problems: PolarConfigProblem[] = [];
-  const environment = polarEnvironment();
-  const missing = missingOfferConfig();
+  const environment = polarEnvironment(env);
+  const missing = missingOfferConfig(env);
 
   if (missing.length > 0) {
     problems.push({
       severity: environment === "production" ? "error" : "warning",
+      code: "offer_config_missing",
       message: `Offer configuration missing: ${missing.join(", ")}. Those offers cannot be purchased.`,
     });
   }
 
   // A production deployment reusing a legacy id as a current offer id would
   // quietly sell the closed plan at its old price under a new name.
-  const legacyIds = new Set(LEGACY_OFFERS.flatMap(legacyProductIds));
+  const legacyIds = new Set(allLegacyProductIds(env));
   for (const offer of OFFER_KEYS) {
     for (const interval of BILLING_INTERVAL_KEYS) {
-      const id = readEnv(checkoutEnvVar(offer, interval));
+      const id = readEnv(checkoutEnvVar(offer, interval), env);
       if (id && legacyIds.has(id)) {
         problems.push({
           severity: "error",
+          code: "legacy_id_sold_as_current",
           message: `${checkoutEnvVar(offer, interval)} is set to a legacy product id. Legacy products are inbound-only and must never be sold as a current offer.`,
         });
       }
@@ -322,12 +379,13 @@ export function validatePolarConfiguration(): PolarConfigProblem[] {
   for (const offer of OFFER_KEYS) {
     for (const interval of BILLING_INTERVAL_KEYS) {
       const envVar = checkoutEnvVar(offer, interval);
-      const id = readEnv(envVar);
+      const id = readEnv(envVar, env);
       if (!id) continue;
       const previous = seen.get(id);
       if (previous) {
         problems.push({
           severity: "error",
+          code: "duplicate_product_id",
           message: `${envVar} and ${previous} share the same Polar product id. Each offer/interval needs its own product.`,
         });
       } else {
@@ -340,6 +398,6 @@ export function validatePolarConfiguration(): PolarConfigProblem[] {
 }
 
 /** True when every current offer can be sold safely in this environment. */
-export function isPolarConfigurationSafe(): boolean {
-  return validatePolarConfiguration().every((problem) => problem.severity !== "error");
+export function isPolarConfigurationSafe(env: ConfigEnv = process.env): boolean {
+  return validatePolarConfiguration(env).every((problem) => problem.severity !== "error");
 }
