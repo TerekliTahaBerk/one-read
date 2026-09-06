@@ -171,6 +171,154 @@ describe.each(OFFER_CASES)("%s %s lifecycle", (offer, interval, providerInterval
   });
 });
 
+/* --------------------- the rest of the lifecycle ------------------------- */
+
+/**
+ * The states that are not "someone paid": cancellation and its reversal, the
+ * dunning window, and refunds. These are the deliveries that decide whether a
+ * lapse is graceful or abrupt, so each one is pinned to the exact fields the
+ * entitlement policy reads.
+ */
+describe("cancellation, dunning and refunds", () => {
+  const productId = testProductId("one-read", "monthly");
+
+  it("cancel-at-period-end leaves the subscription active until the period ends", async () => {
+    // Polar announces the intent while the subscription is still `active`.
+    // Writing CANCELED here would be wrong: the subscriber has paid through the
+    // period and the flag alone carries the ending.
+    withRow(existingRow({ status: "ACTIVE_PAID", paidAt: T0 }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId,
+        type: "subscription.updated",
+        status: "active",
+        timestamp: T1,
+        extra: { cancelAtPeriodEnd: true, canceledAt: T1 },
+      }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "ACTIVE_PAID", cancelAtPeriodEnd: true });
+  });
+
+  it("uncancelling clears the pending end and restores a plain active subscription", async () => {
+    withRow(existingRow({ status: "ACTIVE_PAID", cancelAtPeriodEnd: true, paidAt: T0 }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId,
+        type: "subscription.uncanceled",
+        status: "active",
+        timestamp: T1,
+        extra: { cancelAtPeriodEnd: false, canceledAt: null },
+      }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({
+      status: "ACTIVE_PAID",
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+      pastDueAt: null,
+    });
+  });
+
+  it("a dunning update keeps the original past-due moment, so grace does not slide", async () => {
+    // Polar sends `subscription.updated` repeatedly while retrying the charge.
+    // Re-stamping `pastDueAt` on each one would extend the grace window
+    // indefinitely; clearing it would end the window immediately.
+    withRow(existingRow({ status: "PAST_DUE", pastDueAt: T0 }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId,
+        type: "subscription.updated",
+        status: "past_due",
+        timestamp: T1,
+      }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "PAST_DUE", pastDueAt: T0 });
+  });
+
+  it("recovering from past due clears the grace anchor", async () => {
+    withRow(existingRow({ status: "PAST_DUE", pastDueAt: T0 }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({ productId, status: "active", timestamp: T1 }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "ACTIVE_PAID", pastDueAt: null });
+  });
+
+  it("revocation expires access outright", async () => {
+    withRow(existingRow({ status: "ACTIVE_PAID", paidAt: T0 }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({
+        productId,
+        type: "subscription.revoked",
+        status: "canceled",
+        timestamp: T1,
+      }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "EXPIRED" });
+  });
+
+  it("a refunded order never reads as a payment", async () => {
+    // The order object still describes how it was settled, so `paid` can be
+    // true on the very event that is handing the money back.
+    withRow(existingRow({ status: "PAST_DUE", pastDueAt: T0 }));
+
+    const data = await applyPolarWebhookPayload({
+      type: "order.refunded",
+      timestamp: T1,
+      data: {
+        id: "polar_order_1",
+        productId,
+        paid: true,
+        status: "refunded",
+        subscriptionId: "polar_sub_1",
+        customerId: "polar_cus_1",
+        metadata: { productSubscriptionId: "sub_1", contactId: "contact_1" },
+      },
+    }).then(lastUpdateData);
+
+    expect(data.status).toBeUndefined();
+    expect(data.paidAt).toBeUndefined();
+  });
+
+  it("a genuine paid order still activates the subscription", async () => {
+    withRow(existingRow({ status: "PENDING_CHECKOUT" }));
+
+    const data = await applyPolarWebhookPayload({
+      type: "order.paid",
+      timestamp: T1,
+      data: {
+        id: "polar_order_2",
+        productId,
+        paid: true,
+        status: "paid",
+        subscriptionId: "polar_sub_1",
+        customerId: "polar_cus_1",
+        metadata: { productSubscriptionId: "sub_1", contactId: "contact_1" },
+      },
+    }).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "ACTIVE_PAID", paidAt: T1 });
+  });
+
+  it("resubscribing after expiry activates the row again", async () => {
+    withRow(existingRow({ status: "EXPIRED", offerKey: "one-read", providerProductId: productId }));
+
+    const data = await applyPolarWebhookPayload(
+      subscriptionEvent({ productId, type: "subscription.created", timestamp: T1 }),
+    ).then(lastUpdateData);
+
+    expect(data).toMatchObject({ status: "ACTIVE_PAID", cancelAtPeriodEnd: false });
+  });
+});
+
 /* ------------------------------- safety ---------------------------------- */
 
 describe("webhook safety", () => {

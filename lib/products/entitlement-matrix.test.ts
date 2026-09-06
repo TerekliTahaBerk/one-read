@@ -83,6 +83,38 @@ describe("legacy $1 OneRead", () => {
   });
 });
 
+describe("cancel-at-period-end on a bundle", () => {
+  const bundle = (overrides: Partial<EntitlementSubscriptionInput> = {}) =>
+    row({
+      productKey: "one-read",
+      providerProductId: testProductId("one-read", "monthly"),
+      offerKey: "one-read",
+      plan: "monthly",
+      ...overrides,
+    });
+
+  it("keeps both products until the announced end", () => {
+    expect(granted([bundle({ cancelAtPeriodEnd: true, currentPeriodEnd: FUTURE })])).toEqual([
+      "one-article",
+      "one-news",
+    ]);
+  });
+
+  it("grants nothing once that end has passed, even before the revoke webhook", () => {
+    // The row is still ACTIVE_PAID: Polar has announced the ending but not yet
+    // delivered `subscription.revoked`. The announced date is a commitment, so
+    // access must not outlive it.
+    expect(granted([bundle({ cancelAtPeriodEnd: true, currentPeriodEnd: PAST })])).toEqual([]);
+  });
+
+  it("a plain active row with a stale period end keeps access — a renewal may just be late", () => {
+    expect(granted([bundle({ cancelAtPeriodEnd: false, currentPeriodEnd: PAST })])).toEqual([
+      "one-article",
+      "one-news",
+    ]);
+  });
+});
+
 describe("current standalone offers", () => {
   it.each(["monthly", "annual"] as const)(
     "OneArticle %s grants OneArticle only",

@@ -1,11 +1,33 @@
-import { PAST_DUE_GRACE_DAYS } from "@/lib/options";
+/**
+ * Access and delivery eligibility — the thin, caller-facing projection of the
+ * billing lifecycle contract in lib/billing/lifecycle.ts.
+ *
+ * This module deliberately contains no lifecycle reasoning of its own. Trial
+ * windows, past-due grace, cancel-at-period-end and provider confirmation all
+ * live in `resolveLifecycle`, so there is exactly one place where "is this
+ * subscriber entitled right now?" is decided. What stays here is the *second*
+ * axis: email consent and preference completeness, which gate delivery without
+ * ever touching entitlement.
+ *
+ * Access status and email-delivery status must stay independent. Unsubscribing
+ * from emails never removes paid access, and cancelling billing never silently
+ * flips an email preference mid-period.
+ */
+
+import {
+  resolveLifecycle,
+  type EligibilityReason,
+  type LifecycleInput,
+  type LifecycleResolution,
+} from "@/lib/billing/lifecycle";
+
+export type { EligibilityReason };
+export type { LifecycleState, LifecycleResolution } from "@/lib/billing/lifecycle";
 
 /**
- * Access lifecycle states for a ProductSubscription. These describe whether a
- * subscriber currently has *access* to the product — a separate axis from
- * email-delivery status (see EmailDeliveryStatus). Unsubscribing from emails
- * must never change access, and canceling billing must never silently stop
- * email mid-period.
+ * Access lifecycle states as stored in `ProductSubscription.status`. These
+ * describe whether a subscriber currently has *access* to the product — a
+ * separate axis from email-delivery status (see EmailDeliveryStatus).
  */
 export type AccessStatus =
   | "PENDING_PREFERENCES"
@@ -21,55 +43,19 @@ export type AccessStatus =
 export type EmailDeliveryStatus = "SUBSCRIBED" | "UNSUBSCRIBED" | "SUPPRESSED";
 
 /**
- * The minimal shape `canReceiveOneArticleEmail` needs. Kept structural (rather
+ * The minimal shape `canReceiveProductEmail` needs. Kept structural (rather
  * than importing the Prisma type) so the pipeline can pass a hand-built object
  * in tests and dry-runs, and so this module has no Prisma dependency.
  */
-export interface EligibilityInput {
-  status: string;
+export interface EligibilityInput extends LifecycleInput {
   emailDeliveryStatus: string;
-  paymentProvider: string | null;
-  adminOverride: boolean;
-  trialEndsAt: Date | null;
-  currentPeriodEnd: Date | null;
-  pastDueAt: Date | null;
   /** Whether One-Article preferences are complete enough to render an email. */
   hasCompletePreferences: boolean;
 }
 
-export type EligibilityReason =
-  | "ok"
-  | "incomplete_preferences"
-  | "missing_language_preferences"
-  | "missing_article_preferences"
-  | "email_unsubscribed"
-  | "email_suppressed"
-  | "pending_preferences"
-  | "checkout_required"
-  | "subscription_not_confirmed"
-  | "trial_expired"
-  | "past_due_grace_ended"
-  | "canceled_expired"
-  | "access_expired"
-  | "unknown_status"
-  /** OneRead umbrella access grants this product (see lib/oneread/access.ts). */
-  | "included_in_oneread"
-  /** A pre-existing standalone OneArticle subscription grants access directly. */
-  | "legacy_one_article_access";
-
 export interface EligibilityResult {
   allowed: boolean;
   reason: EligibilityReason;
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function providerConfirmsAccess(
-  sub: Pick<EligibilityInput, "paymentProvider" | "adminOverride">,
-): boolean {
-  if (sub.adminOverride) return true;
-  if (sub.paymentProvider === "polar") return true;
-  return sub.paymentProvider === "mock" && process.env.NODE_ENV !== "production";
 }
 
 /**
@@ -78,74 +64,37 @@ function providerConfirmsAccess(
  * "does this person have access?" independently of "will they get an email?".
  */
 export function hasValidAccess(
-  sub: Pick<
-    EligibilityInput,
-    | "status"
-    | "paymentProvider"
-    | "adminOverride"
-    | "trialEndsAt"
-    | "currentPeriodEnd"
-    | "pastDueAt"
-  >,
+  sub: LifecycleInput,
   now: Date = new Date(),
 ): EligibilityResult {
-  switch (sub.status as AccessStatus) {
-    case "ADMIN_OVERRIDE":
-      return { allowed: true, reason: "ok" };
-    case "ACTIVE_PAID":
-      if (!providerConfirmsAccess(sub)) {
-        return { allowed: false, reason: "subscription_not_confirmed" };
-      }
-      return { allowed: true, reason: "ok" };
-    case "TRIALING":
-      if (!providerConfirmsAccess(sub)) {
-        return { allowed: false, reason: "subscription_not_confirmed" };
-      }
-      return sub.trialEndsAt && now < sub.trialEndsAt
-        ? { allowed: true, reason: "ok" }
-        : { allowed: false, reason: "trial_expired" };
-    case "CANCELED":
-      if (!providerConfirmsAccess(sub)) {
-        return { allowed: false, reason: "subscription_not_confirmed" };
-      }
-      // Canceled but still inside the paid period keeps access until it ends.
-      return sub.currentPeriodEnd && now < sub.currentPeriodEnd
-        ? { allowed: true, reason: "ok" }
-        : { allowed: false, reason: "canceled_expired" };
-    case "PAST_DUE": {
-      if (!providerConfirmsAccess(sub)) {
-        return { allowed: false, reason: "subscription_not_confirmed" };
-      }
-      // Grace window measured from when the payment first failed.
-      const graceEnd = sub.pastDueAt
-        ? new Date(sub.pastDueAt.getTime() + PAST_DUE_GRACE_DAYS * DAY_MS)
-        : null;
-      return graceEnd && now < graceEnd
-        ? { allowed: true, reason: "ok" }
-        : { allowed: false, reason: "past_due_grace_ended" };
-    }
-    case "PENDING_PREFERENCES":
-      return { allowed: false, reason: "pending_preferences" };
-    case "PENDING_CHECKOUT":
-      return { allowed: false, reason: "checkout_required" };
-    case "TRIAL_EXPIRED":
-      return { allowed: false, reason: "trial_expired" };
-    case "EXPIRED":
-      return { allowed: false, reason: "access_expired" };
-    default:
-      return { allowed: false, reason: "unknown_status" };
-  }
+  const lifecycle = resolveLifecycle(sub, now);
+  return { allowed: lifecycle.entitled, reason: lifecycle.reason };
+}
+
+/**
+ * The full lifecycle position, for callers that need more than a yes/no —
+ * admin surfaces showing "cancelling on the 14th", or anything that must
+ * distinguish past-due-in-grace from past-due-lapsed.
+ */
+export function accessLifecycle(
+  sub: LifecycleInput,
+  now: Date = new Date(),
+): LifecycleResolution {
+  return resolveLifecycle(sub, now);
 }
 
 /**
  * The single source of truth for "should this subscriber receive a daily email
- * for this product right now?". All OneArticle send logic must use this — never re-implement
- * these checks inline.
+ * for this product right now?". All send logic must use this — never
+ * re-implement these checks inline.
  *
  * A subscriber is eligible only if ALL hold:
  *   1. preferences are complete,
  *   2. email delivery is enabled (SUBSCRIBED), and
- *   3. their access status grants a valid window (see hasValidAccess).
+ *   3. their lifecycle state grants entitlement (see resolveLifecycle).
+ *
+ * Consent is checked before entitlement on purpose: someone who has asked not
+ * to be emailed should be reported as unsubscribed, not as a billing problem.
  */
 export function canReceiveProductEmail(
   sub: EligibilityInput,
