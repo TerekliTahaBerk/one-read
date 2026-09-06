@@ -4,6 +4,10 @@
 
 - Confirm CI, unit, integration, Playwright, migration replay, and drift checks are green.
 - Review additive migrations; never roll back by deleting subscriber or billing data.
+- Keep `PRISMA_DATABASE_URL` configured for both Vercel Production and the GitHub
+  Production release workflow. The Vercel build applies migrations and prints
+  `prisma migrate status` before compiling the new artifact; either missing
+  access or a failed migration blocks the release.
 - Configure six unique Polar product IDs: Article, News, and Bundle, monthly and annual.
 - Set `POLAR_SERVER=production`, then run `npm run verify:launch` in the protected production environment.
 - Verify Polar and Resend webhook secrets, sender configuration, Sentry, and the Better Stack heartbeat.

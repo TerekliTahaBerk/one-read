@@ -13,6 +13,7 @@
     "db:deploy": "prisma migrate deploy",
     "release:verify": "node scripts/verify-release-provenance.mjs",
     "release:guard": "node scripts/verify-build-provenance.mjs",
+    "release:database": "node scripts/guard-production-database.mjs",
     "verify:routes": "node scripts/verify-route-manifest.mjs",
     "audit:prod": "node scripts/audit-production-deps.mjs",
     "verify:launch": "node --import tsx scripts/verify-launch-config.ts",

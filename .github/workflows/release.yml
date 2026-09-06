@@ -1,21 +1,19 @@
 name: Production release
 
-# Binds the two halves of a release to one another. A production deployment is
-# only treated as released once its provenance is verified, and the database
-# migrations for that release run in the *same* job, checked out at the *same*
-# commit the deployment was built from. There is no other path that applies
-# migrations to production, so "which artifact is this migration for?" always
-# has an answer.
+# Audits the two halves of a release after Vercel promotion. The production
+# build itself runs scripts/guard-production-database.mjs before `next build`,
+# so committed migrations are applied before a new Prisma client can go live.
+# This workflow independently verifies both artifact provenance and migration
+# state at the exact commit Vercel reports as deployed.
 #
-# Ordering note: Vercel builds as soon as `main` moves, so this runs *after* the
-# new code is live. Migrations must therefore stay forward-compatible — expand
-# first, contract in a later release — exactly as the rollback section of
-# docs/LAUNCH_RUNBOOK.md requires.
+# Migrations must remain forward-compatible — expand first, contract in a later
+# release — because the previous production artifact keeps serving traffic
+# while the new artifact is built.
 #
 # Required repository secrets:
 #   VERCEL_TOKEN          — read access for the provenance audit
-#   PRISMA_DATABASE_URL   — production database; without it migrations are
-#                           skipped loudly rather than applied blindly
+#   PRISMA_DATABASE_URL   — production database used for the independent state
+#                           check; absence fails the release audit
 # Required repository variable:
 #   VERCEL_SCOPE          — the Vercel team slug (tereklitahaberks-projects)
 
@@ -81,19 +79,18 @@ jobs:
             npm run release:verify
           fi
 
-      - name: Apply database migrations
+      - name: Verify production migration state
         env:
           PRISMA_DATABASE_URL: ${{ secrets.PRISMA_DATABASE_URL }}
           RELEASE_SHA: ${{ github.event.deployment.sha || github.sha }}
         run: |
           if [ -z "$PRISMA_DATABASE_URL" ]; then
-            echo "::warning::PRISMA_DATABASE_URL is not configured — migrations were NOT applied for $RELEASE_SHA."
-            echo "- ⚠️ Migrations skipped: no \`PRISMA_DATABASE_URL\` secret" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "::error::PRISMA_DATABASE_URL is not configured — production migration state cannot be verified for $RELEASE_SHA."
+            echo "- ❌ Migration state unavailable: no \`PRISMA_DATABASE_URL\` secret" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
 
-          echo "Applying migrations for $RELEASE_SHA"
-          npx prisma migrate deploy
+          echo "Verifying migrations for $RELEASE_SHA"
           npx prisma migrate status
 
-          echo "- ✅ Migrations applied for \`$RELEASE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ✅ Migration state clean for \`$RELEASE_SHA\`" >> "$GITHUB_STEP_SUMMARY"
