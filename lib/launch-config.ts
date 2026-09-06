@@ -1,3 +1,5 @@
+import { validateResendProductionConfiguration } from "@/lib/resend-config";
+
 export interface LaunchConfigResult { ready: boolean; problems: string[] }
 
 export function validatePublicLaunchConfiguration(env: Record<string, string | undefined> = process.env): LaunchConfigResult {
@@ -18,8 +20,9 @@ export function validatePublicLaunchConfiguration(env: Record<string, string | u
   }
   const legacyIds = [env.POLAR_ONEREAD_PRODUCT_ID, env.POLAR_ONE_ARTICLE_PRODUCT_ID, "44ef8bae-87eb-40eb-9a07-8b4a97e1434e"].filter(Boolean);
   for (const [name, value] of offerIds) if (value && legacyIds.includes(value)) problems.push(`${name} reuses a legacy product ID.`);
-  const required = ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "RESEND_API_KEY", "RESEND_WEBHOOK_SECRET", "EMAIL_VERIFICATION_SECRET"];
+  const required = ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "EMAIL_VERIFICATION_SECRET"];
   for (const name of required) if (!env[name]?.trim()) problems.push(`${name} is not configured.`);
+  problems.push(...validateResendProductionConfiguration(env));
   if (env.POLAR_SERVER !== "production") problems.push("POLAR_SERVER must be explicitly set to production.");
   if (env.PUBLIC_CHECKOUT_ENABLED !== "true") problems.push("PUBLIC_CHECKOUT_ENABLED is not enabled.");
   const base = env.PUBLIC_BASE_URL?.trim();

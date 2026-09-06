@@ -8,7 +8,7 @@ vi.mock("resend", () => ({
 }));
 
 describe("lib/resend", () => {
-  const ENV_KEYS = ["RESEND_API_KEY", "FROM_EMAIL", "RESEND_FROM"] as const;
+  const ENV_KEYS = ["RESEND_API_KEY", "FROM_EMAIL", "RESEND_FROM", "RESEND_REPLY_TO", "RESEND_WEBHOOK_SECRET"] as const;
   const originalEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -18,6 +18,7 @@ describe("lib/resend", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     for (const key of ENV_KEYS) {
       if (originalEnv[key] === undefined) delete process.env[key];
       else process.env[key] = originalEnv[key];
@@ -35,11 +36,14 @@ describe("lib/resend", () => {
     expect(status.hasApiKey).toBe(false);
     expect(status.usingFallbackSender).toBe(true);
     expect(status.from).toBe("OneRead <onboarding@resend.dev>");
+    expect(status.productionReady).toBe(false);
   });
 
   it("getResendStatus reports the configured api key and FROM_EMAIL", async () => {
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.FROM_EMAIL = "OneRead <hello@oneread.email>";
+    process.env.RESEND_REPLY_TO = "hello@oneread.email";
+    process.env.RESEND_WEBHOOK_SECRET = "whsec_test";
     delete process.env.RESEND_FROM;
 
     const { getResendStatus } = await import("@/lib/resend");
@@ -48,6 +52,7 @@ describe("lib/resend", () => {
     expect(status.hasApiKey).toBe(true);
     expect(status.usingFallbackSender).toBe(false);
     expect(status.from).toBe("OneRead <hello@oneread.email>");
+    expect(status.productionReady).toBe(true);
   });
 
   it("getResendStatus falls back to legacy RESEND_FROM when FROM_EMAIL is unset", async () => {
@@ -73,6 +78,23 @@ describe("lib/resend", () => {
     });
 
     expect(result).toEqual({});
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed before calling Resend when production configuration is unsafe", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.FROM_EMAIL = "OneRead <onboarding@resend.dev>";
+    delete process.env.RESEND_REPLY_TO;
+    delete process.env.RESEND_WEBHOOK_SECRET;
+
+    const { sendDailyEmail } = await import("@/lib/resend");
+    await expect(sendDailyEmail({
+      to: "reader@example.com",
+      subject: "Subject",
+      text: "text",
+      html: "<p>html</p>",
+    })).rejects.toThrow("Production email configuration is unsafe");
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -108,5 +130,29 @@ describe("lib/resend", () => {
     });
 
     expect(result).toEqual({ messageId: "msg_123" });
+  });
+
+  it("adds reply-to and RFC 8058 headers only for editorial mail", async () => {
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.FROM_EMAIL = "OneRead <hello@oneread.email>";
+    process.env.RESEND_REPLY_TO = "hello@oneread.email";
+    sendMock.mockResolvedValue({ data: { id: "msg_123" }, error: null });
+
+    const { sendDailyEmail } = await import("@/lib/resend");
+    await sendDailyEmail({
+      to: "reader@example.com",
+      subject: "Editorial",
+      text: "text",
+      html: "<p>html</p>",
+      unsubscribeUrl: "https://www.oneread.email/api/unsubscribe?token=signed",
+    });
+
+    expect(sendMock).toHaveBeenCalledWith(expect.objectContaining({
+      replyTo: "hello@oneread.email",
+      headers: {
+        "List-Unsubscribe": "<https://www.oneread.email/api/unsubscribe?token=signed>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    }), undefined);
   });
 });

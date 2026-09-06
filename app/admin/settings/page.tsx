@@ -29,7 +29,7 @@ export default async function SettingsPage(props: { searchParams: Promise<Record
   const paymentsReady = oneReadBillingConfigured() && Boolean(process.env.POLAR_ACCESS_TOKEN);
   const sentryReady = Boolean(process.env.SENTRY_DSN && process.env.NEXT_PUBLIC_SENTRY_DSN);
   const checks: [string, boolean, string][] = [
-    ["Email delivery", resend.hasApiKey, resend.hasApiKey ? resend.from : "RESEND_API_KEY missing"],
+    ["Email delivery", resend.sendReady, resend.sendReady ? resend.from : resend.productionProblems.join(" ")],
     ["Verified sender", !resend.usingFallbackSender, resend.usingFallbackSender ? "Development fallback sender" : resend.from],
     ["Bounce/complaint webhook", Boolean(process.env.RESEND_WEBHOOK_SECRET), process.env.RESEND_WEBHOOK_SECRET ? "Signature verification configured" : "RESEND_WEBHOOK_SECRET missing"],
     ["OneArticle payments", paymentsReady, paymentsReady ? "Polar checkout configured" : "Polar token or OneRead product missing"],

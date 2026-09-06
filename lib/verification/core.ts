@@ -75,7 +75,7 @@ export function emailVerificationSecretConfigured(): boolean {
 
 /** True when verification emails can actually be delivered (Resend configured). */
 export function verificationEmailConfigured(): boolean {
-  return getResendStatus().hasApiKey;
+  return getResendStatus().sendReady;
 }
 
 function secret(): string {

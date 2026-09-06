@@ -114,8 +114,8 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
       await safeFinishRun({ id: runId, status: "SKIPPED", error: "dry_run_enabled" });
       return NextResponse.json({ ok: true, skipped: true, reason: "dry_run_enabled" });
     }
-    if (!getResendStatus().hasApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
+    if (!getResendStatus().sendReady) {
+      throw new Error("Production email delivery is not safely configured");
     }
 
     const result = await config.dispatch();
