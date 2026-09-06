@@ -6,11 +6,6 @@ import {
   emailVerificationSecretConfigured,
   setVerifiedEmailCookie,
 } from "@/lib/oneread/verification";
-import {
-  ensureOneReadSubscription,
-  ensureArticlePreferencesHolder,
-} from "@/lib/oneread/access";
-import { preferencesComplete } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,10 +22,9 @@ const ERROR_STATUS: Record<string, number> = {
  * Body: { email: string, code: string }
  *
  * Verifies the 6-digit code. On success, sets a short-lived verified-email
- * session cookie, materializes the OneRead subscription + OneArticle
- * preference holder (no billing/trial started here — Polar remains the
- * source of truth), and reports current preference-completion state so the
- * UI can route to the right onboarding step.
+ * session cookie. Verification proves identity only: offer/subscription rows
+ * are created after the user saves the offer-scoped preferences. This keeps an
+ * abandoned verification from creating phantom billing rows.
  */
 export async function POST(req: Request) {
   if (!emailVerificationSecretConfigured()) {
@@ -70,21 +64,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const oneRead = await ensureOneReadSubscription(email);
-  const articleHolder = await ensureArticlePreferencesHolder(oneRead.contactId);
-
   const res = NextResponse.json({
     ok: true,
     verified: true,
     email,
-    articlePreferencesComplete: preferencesComplete(articleHolder.preferences),
-    articlePreferences: articleHolder.preferences
-      ? {
-          interests: articleHolder.preferences.interests,
-          sourceLanguage: articleHolder.preferences.sourceLanguage,
-          summaryLanguage: articleHolder.preferences.summaryLanguage,
-        }
-      : null,
+    articlePreferencesComplete: false,
+    articlePreferences: null,
   });
   setVerifiedEmailCookie(res, email, VERIFICATION_PURPOSES.signup);
   return res;
