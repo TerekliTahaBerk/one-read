@@ -40,6 +40,9 @@ export function toEligibilityInput(sub: SubscriptionWithPrefs): EligibilityInput
     trialEndsAt: sub.trialEndsAt,
     currentPeriodEnd: sub.currentPeriodEnd,
     pastDueAt: sub.pastDueAt,
+    // Carried through so an announced cancellation date is honoured even if
+    // the revoking webhook never lands — see lib/billing/lifecycle.ts.
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     hasCompletePreferences: preferencesComplete(sub.preferences),
   };
 }

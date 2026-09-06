@@ -47,6 +47,12 @@ export interface EntitlementSubscriptionInput {
   currentPeriodEnd: Date | null;
   pastDueAt: Date | null;
   /**
+   * Provider flag: cancellation announced, access runs to `currentPeriodEnd`.
+   * Passed through so the access policy can honour an announced end date even
+   * if the revoking webhook never lands.
+   */
+  cancelAtPeriodEnd?: boolean | null;
+  /**
    * The Polar product actually purchased, when known. Supplying it is what
    * distinguishes a legacy $1 umbrella from a current $4 bundle.
    */

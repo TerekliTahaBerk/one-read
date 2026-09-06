@@ -881,7 +881,20 @@ export async function applyPolarWebhookPayload(payload: {
     if (typeof data.subscriptionId === "string") {
       update.providerSubscriptionId = data.subscriptionId;
     }
-    if (type === "order.paid" || data.paid === true || data.status === "paid") {
+    // A refunded order is money going back to the customer; it is never
+    // evidence of payment. Polar leaves `paid`/`status` on the order object
+    // describing how it was *settled*, so a refund event still carries
+    // paid-looking fields — reading them without this guard would re-activate
+    // the very subscription the refund is unwinding. Revocation itself stays
+    // with `subscription.revoked`: a refund can be partial, or a goodwill
+    // gesture on one invoice of a subscription that legitimately continues, so
+    // Polar decides whether access ends and tells us.
+    const refunded =
+      type === "order.refunded" ||
+      data.status === "refunded" ||
+      data.status === "partially_refunded";
+
+    if (!refunded && (type === "order.paid" || data.paid === true || data.status === "paid")) {
       update.paidAt = stateTime;
       if (data.subscriptionId) update.status = "ACTIVE_PAID";
     }
@@ -915,7 +928,18 @@ export async function applyPolarWebhookPayload(payload: {
     update.trialUsedAt = data.trialStart ? data.trialStart : sub.trialUsedAt;
     update.cancelAtPeriodEnd = Boolean(data.cancelAtPeriodEnd);
     update.canceledAt = data.canceledAt ?? null;
-    update.pastDueAt = type === "subscription.past_due" ? stateTime : null;
+    // `pastDueAt` anchors the grace window, so it must be stamped once when the
+    // subscription first goes past due and then left alone. Polar keeps sending
+    // `subscription.updated` while dunning retries run; re-stamping on each one
+    // would slide the deadline forward forever, and clearing it — the old
+    // behaviour for any event that was not literally `subscription.past_due` —
+    // collapsed the window to zero the moment such an update arrived, cutting
+    // off a subscriber mid-grace. Cleared only on the way out of past due.
+    const nowPastDue =
+      type === "subscription.past_due" || update.status === "PAST_DUE";
+    update.pastDueAt = nowPastDue
+      ? (sub.pastDueAt ?? stateTime)
+      : null;
     if (data.status === "active" || type === "subscription.active") {
       update.paidAt = sub.paidAt ?? stateTime;
     }
