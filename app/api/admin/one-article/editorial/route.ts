@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<Response> {
       case "test": {
         const to = str(body.to).toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("invalid_email");
-        if (!getResendStatus().hasApiKey) throw new Error("email_delivery_not_configured");
+        if (!getResendStatus().sendReady) throw new Error("email_delivery_not_configured");
         issue = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issueId } });
         const validation = validateEditorialTest(issue);
         if (!validation.ok) throw new Error(validation.error);

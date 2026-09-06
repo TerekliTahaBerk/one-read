@@ -38,7 +38,7 @@ export default async function OneArticleEditorialOverview(
   const healthy =
     controls.oneArticle.cronEnabled &&
     !controls.oneArticle.dryRun &&
-    resend.hasApiKey;
+    resend.sendReady;
   return (
     <AdminShell title="OneArticle" subtitle="Manual editorial publishing in five reading languages">
       <AdminTabs tabs={oneArticleTabs()} active="overview" />
@@ -82,7 +82,7 @@ export default async function OneArticleEditorialOverview(
         <span>·</span>
         <span>Delivery mode: {controls.oneArticle.dryRun ? "preview only" : "live"}</span>
         <span>·</span>
-        <span>Email delivery: {resend.hasApiKey ? "connected" : "not configured"}</span>
+        <span>Email delivery: {resend.sendReady ? "connected" : "not configured"}</span>
         <span>·</span>
         <span>Mode: manual editorial, no RSS/AI generation</span>
       </div>

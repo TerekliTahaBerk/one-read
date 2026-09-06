@@ -84,7 +84,7 @@ describe("runEditorialCron", () => {
     mockReset(prisma);
     vi.clearAllMocks();
     process.env.ADMIN_EMAIL = "ops@example.com";
-    getResendStatus.mockReturnValue({ hasApiKey: true });
+    getResendStatus.mockReturnValue({ hasApiKey: true, sendReady: true });
     sendDailyEmail.mockResolvedValue({ messageId: "msg_1" });
     healthyDatabase();
   });

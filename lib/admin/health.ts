@@ -43,7 +43,7 @@ export async function getOneArticleHealth(): Promise<ProductHealthSummary> {
   );
   const eligibleCount = [...eligibility.values()].filter((result) => result.allowed).length;
   const cronOn = controls.oneArticle.cronEnabled;
-  const emailReady = getResendStatus().hasApiKey;
+  const emailReady = getResendStatus().sendReady;
 
   let health: Health = "ok";
   let headline = nextIssue ? "Next edition is scheduled" : "No edition scheduled";

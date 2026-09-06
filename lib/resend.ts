@@ -1,10 +1,16 @@
 import { Resend } from "resend";
+import {
+  DEVELOPMENT_SENDER,
+  resolveResendConfiguration,
+  validateResendProductionConfiguration,
+} from "@/lib/resend-config";
 
 /**
  * Lazy Resend client. Only constructed if RESEND_API_KEY is present so the
  * app can still build & run in environments where the key isn't configured.
  */
-const apiKey = process.env.RESEND_API_KEY;
+const config = resolveResendConfiguration();
+const apiKey = config.apiKey;
 const resend = apiKey ? new Resend(apiKey) : null;
 
 /**
@@ -18,12 +24,8 @@ const resend = apiKey ? new Resend(apiKey) : null;
  * but only delivers to the Resend account owner's email — never use it in
  * production.
  */
-const FROM_FALLBACK = "OneRead <onboarding@resend.dev>";
-const FROM =
-  process.env.FROM_EMAIL?.trim() ||
-  process.env.RESEND_FROM?.trim() ||
-  FROM_FALLBACK;
-const REPLY_TO = process.env.RESEND_REPLY_TO?.trim() || undefined;
+const FROM = config.from;
+const REPLY_TO = config.replyTo;
 
 /**
  * One-shot production warnings. We log on the first call rather than at
@@ -59,9 +61,17 @@ function warnIfMisconfigured(): void {
       );
     } else {
       console.warn(
-        `[resend] Using fallback sender "${FROM_FALLBACK}" — set FROM_EMAIL for production.`,
+        `[resend] Using fallback sender "${DEVELOPMENT_SENDER}" — set FROM_EMAIL for production.`,
       );
     }
+  }
+}
+
+function assertProductionConfiguration(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  const problems = validateResendProductionConfiguration();
+  if (problems.length > 0) {
+    throw new Error(`[resend] Production email configuration is unsafe: ${problems.join(" ")}`);
   }
 }
 
@@ -82,6 +92,7 @@ export async function sendDailyEmail(args: {
   /** Editorial-only one-click unsubscribe endpoint. Omit for transactional mail. */
   unsubscribeUrl?: string;
 }): Promise<{ messageId?: string }> {
+  assertProductionConfiguration();
   warnIfMisconfigured();
   if (!resend) {
     console.warn(
@@ -124,10 +135,19 @@ export function getResendStatus(): {
   hasApiKey: boolean;
   from: string;
   usingFallbackSender: boolean;
+  productionReady: boolean;
+  productionProblems: string[];
+  sendReady: boolean;
 } {
+  const productionProblems = validateResendProductionConfiguration();
   return {
     hasApiKey: !!apiKey,
     from: FROM,
-    usingFallbackSender: FROM === FROM_FALLBACK,
+    usingFallbackSender: config.usingFallbackSender,
+    productionReady: productionProblems.length === 0,
+    productionProblems,
+    sendReady: process.env.NODE_ENV === "production"
+      ? productionProblems.length === 0
+      : Boolean(apiKey),
   };
 }
