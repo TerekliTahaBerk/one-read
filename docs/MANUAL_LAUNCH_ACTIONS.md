@@ -2,19 +2,23 @@
 
 These actions require provider accounts, DNS control, production credentials, or a real mailbox/payment. Code and local tests cannot truthfully complete them.
 
-Status last checked: **2026-08-20**. A checked item has direct evidence; an unchecked item still needs a provider-dashboard, production event, mailbox, payment, or database check.
+Status last checked: **2026-09-06**. A checked item has direct evidence; an unchecked item still needs a provider-dashboard, production event, mailbox, payment, or database check.
 
 ## Verified
 
 - [x] Vercel domains: `oneread.email` and `www.oneread.email` are assigned to the `one-read` project; HTTPS serves successfully and the apex returns a permanent `308` redirect to `https://www.oneread.email/`.
 - [x] Vercel production configuration contains the required Sentry variable names: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`.
 - [x] Vercel production configuration contains `CRON_SECRET`, and `vercel.json` declares `/api/cron/daily` on the intended schedule.
+- [x] Database: all 26 committed migrations are applied in production and
+  `prisma migrate status` reports the schema is up to date. The generated
+  Prisma client successfully queried `BillingEvent.outcome`,
+  `ProductSubscription.billingStateUpdatedAt`, and
+  `OneArticleIssue.nativeContent` on 2026-09-06.
 - [x] Positioning decision: retain “How to choose a film without endless scrolling” as standalone Journal editorial content. It does not promote a retired product and remains eligible for the blog index and sitemap.
 
 ## Still required
 
 - [ ] Vercel environment values: validate every required production value from `.env.example`, remove obsolete product variables, and confirm preview/production separation. Name presence alone does not prove value correctness.
-- [ ] Database: back up production, apply migrations, and confirm `npx prisma migrate status` reports no pending migration. This remains tracked separately from the application fixes.
 - [ ] Polar account: confirm production mode, merchant identity/payout readiness, the exact $1/month product, trial disclosure, tax/receipt behavior, and customer portal.
 - [ ] Polar redirects: confirm success and return URLs use the production `www` origin and exercise the complete checkout return flow.
 - [ ] Polar webhook: register `https://www.oneread.email/api/webhook/polar`, confirm its signing secret in Vercel, and exercise paid, active, past-due, canceled, and revoked events.

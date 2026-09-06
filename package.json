@@ -13,6 +13,7 @@
     "db:deploy": "prisma migrate deploy",
     "release:verify": "node scripts/verify-release-provenance.mjs",
     "release:guard": "node scripts/verify-build-provenance.mjs",
+    "release:database": "node scripts/guard-production-database.mjs",
     "verify:routes": "node scripts/verify-route-manifest.mjs",
     "audit:prod": "node scripts/audit-production-deps.mjs",
     "verify:launch": "node --import tsx scripts/verify-launch-config.ts",
@@ -72,7 +73,7 @@
   "overrides": {
     "brace-expansion": "5.0.9",
     "browserslist": "4.28.8",
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.6",
     "js-yaml": "4.3.1",
     "nanoid": "3.3.18",
     "postcss": "$postcss",

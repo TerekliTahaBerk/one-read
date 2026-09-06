@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "node scripts/verify-build-provenance.mjs && next build",
+  "buildCommand": "node scripts/verify-build-provenance.mjs && node scripts/guard-production-database.mjs && prisma generate && next build",
   "installCommand": "npm ci",
   "outputDirectory": ".next",
   "crons": [
