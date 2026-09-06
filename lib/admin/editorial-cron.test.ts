@@ -17,6 +17,8 @@ const resend = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/resend", () => resend);
 const { sendDailyEmail, getResendStatus } = resend;
+const heartbeat = vi.hoisted(() => ({ emitCronHeartbeat: vi.fn() }));
+vi.mock("@/lib/cron-heartbeat", () => heartbeat);
 
 import { prisma as prismaImport } from "@/lib/prisma";
 import { runEditorialCron, type EditorialCronConfig } from "./editorial-cron";
@@ -112,6 +114,7 @@ describe("runEditorialCron", () => {
       }),
     );
     expect(reportCronFailure).not.toHaveBeenCalled();
+    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledTimes(1);
   });
 
   it("records partial delivery as attention-required without returning an unsafe 500", async () => {
@@ -128,6 +131,35 @@ describe("runEditorialCron", () => {
     });
     expect(prisma.operationalRun.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: "FAILED", failedCount: 1, error: "partial_delivery_failure" }),
+    }));
+    expect(heartbeat.emitCronHeartbeat).not.toHaveBeenCalled();
+  });
+
+  it("records a healthy empty poll and emits the success heartbeat", async () => {
+    const response = await runEditorialCron(config({ dispatch: vi.fn(async () => emptyResult) }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ ok: true, outcome: "healthy", issues: 0, sent: 0 });
+    expect(prisma.operationalRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: "SUCCESS", sentCount: 0, failedCount: 0 }),
+    }));
+    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledTimes(1);
+  });
+
+  it("persists attempted and reconciliation counts in the run", async () => {
+    await runEditorialCron(config({
+      dispatch: vi.fn(async () => ({
+        issues: 1, recipients: 3, attempted: 2, sent: 1, failed: 1, skipped: 1,
+        reconciliationRequired: 1,
+      })),
+    }));
+    expect(prisma.operationalRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: "FAILED",
+        generatedCount: 2,
+        sentCount: 1,
+        failedCount: 1,
+        metadata: expect.objectContaining({ attempted: 2, reconciliationRequired: 1 }),
+      }),
     }));
   });
 

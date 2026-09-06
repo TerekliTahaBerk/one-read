@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   editorialDeliveryIdempotencyKey,
+  isWeekdayInTimezone,
   resolveEditorialIssueDeliveryStatus,
 } from "./editorial";
 import {
@@ -120,5 +121,11 @@ describe("validateEditorialIssue", () => {
     expect(editorialDeliveryIdempotencyKey("issue-1", "contact-1")).toBe(
       "onearticle-issue-1-contact-1",
     );
+  });
+
+  it("applies the weekday policy in the edition timezone", () => {
+    expect(isWeekdayInTimezone(new Date("2026-09-04T21:30:00.000Z"), "Europe/Istanbul")).toBe(false);
+    expect(isWeekdayInTimezone(new Date("2026-09-06T21:30:00.000Z"), "Europe/Istanbul")).toBe(true);
+    expect(isWeekdayInTimezone(new Date("2026-09-06T21:30:00.000Z"), "invalid/timezone")).toBe(false);
   });
 });

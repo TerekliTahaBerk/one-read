@@ -42,6 +42,12 @@ failed, bounced, complained) is never downgraded by a later delay.
 
 ## Safe recovery
 
+The OneArticle cron polls every 10 minutes and sends only on weekdays evaluated
+in the edition timezone. `scheduledFor` is an absolute instant; the default
+`Europe/Istanbul` timezone has no DST and is UTC+3 throughout the year. A safe
+provider failure below the cap needs no action: leave the issue in place and
+the next poll retries only unresolved recipients.
+
 The rule behind every action on the failures screen: **a resend is only safe
 when OneRead knows the message did not arrive.**
 

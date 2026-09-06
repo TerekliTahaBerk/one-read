@@ -47,6 +47,26 @@ the launch record:
 An API response with a message id proves only provider acceptance. Inbox
 receipt proves delivery for that mailbox. Neither is evidence for the other.
 
+## Production cron acceptance
+
+Keep OneArticle automatic dispatch paused while preparing this check. Use a
+clearly labelled operator-owned test contact, an active test subscription, and
+a dedicated test issue; never widen eligibility to real subscribers.
+
+1. Schedule the test issue due on a weekday in `Europe/Istanbul`, then enable
+   automatic dispatch for the controlled window.
+2. Call `GET /api/cron/daily` with Vercel's `Authorization: Bearer` header.
+   Confirm an invalid token returns 401 and creates no `OperationalRun`.
+3. Confirm one accepted delivery row, one provider message ID, one mailbox
+   message, and a successful run whose eligible/attempted/sent counts agree.
+4. Invoke the authorized route again. Confirm no second provider message or
+   mailbox message and no second delivery row for the same issue/contact.
+5. Inspect Vercel and Sentry for P2022 or `cron_failure`, and confirm the Better
+   Stack heartbeat timestamp advanced only for the healthy run.
+6. Pause automatic dispatch again if launch editions are not ready. Cancel the
+   dedicated issue and suppress/archive the test subscription using normal
+   operator controls; do not delete historical delivery or run rows.
+
 ## OneNews beta activation
 
 Public checkout does not enable delivery. Review an approved issue, exact test rendering, recipient count, sources, schedule, and operator dashboard. Then explicitly set `ONENEWS_DELIVERY_ENABLED=true`. Monitor the first OperationalRun, accepted/delivered distinction, failures, suppressions, Sentry, and heartbeat.

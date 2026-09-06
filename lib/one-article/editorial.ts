@@ -29,7 +29,13 @@ export type EditorialIssueInput = EditorialContentInput;
 /** Resend retains idempotency keys for 24 hours. Keep this boundary in one
  * place so recovery code and tests cannot silently disagree. */
 export const PROVIDER_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+export const DELIVERY_CLAIM_STALE_MS = 15 * 60 * 1000;
 export const MAX_AUTOMATIC_DELIVERY_ATTEMPTS = 3;
+const AUTOMATICALLY_DISPATCHABLE_STATUSES = [
+  "SCHEDULED",
+  "FAILED",
+  "PARTIALLY_FAILED",
+] as const;
 
 export interface EditorialDispatchOptions {
   now?: Date;
@@ -238,6 +244,8 @@ export interface DispatchEditorialResult {
   sent: number;
   failed: number;
   skipped: number;
+  attempted: number;
+  reconciliationRequired: number;
 }
 
 export function editorialDeliveryIdempotencyKey(
@@ -269,7 +277,10 @@ export async function dispatchDueEditorialIssues(
     data: { status: "SCHEDULED", claimedAt: null },
   });
   const due = await prisma.oneArticleIssue.findMany({
-    where: { status: "SCHEDULED", scheduledFor: { lte: now } },
+    where: {
+      status: { in: [...AUTOMATICALLY_DISPATCHABLE_STATUSES] },
+      scheduledFor: { lte: now },
+    },
     orderBy: { scheduledFor: "asc" },
     take: 10,
   });
@@ -279,10 +290,19 @@ export async function dispatchDueEditorialIssues(
     sent: 0,
     failed: 0,
     skipped: 0,
+    attempted: 0,
+    reconciliationRequired: 0,
   };
   for (const issue of due) {
+    // `scheduledFor` is an absolute UTC instant. The weekday policy is applied
+    // in the edition's IANA timezone so polling never sends a Friday edition
+    // on Saturday after an outage. Europe/Istanbul is UTC+3 year-round.
+    if (!isWeekdayInTimezone(now, issue.timezone)) continue;
     const claimed = await prisma.oneArticleIssue.updateMany({
-      where: { id: issue.id, status: "SCHEDULED" },
+      where: {
+        id: issue.id,
+        status: { in: [...AUTOMATICALLY_DISPATCHABLE_STATUSES] },
+      },
       data: { status: "SENDING", claimedAt: now },
     });
     if (claimed.count !== 1) continue;
@@ -292,6 +312,8 @@ export async function dispatchDueEditorialIssues(
     total.sent += result.sent;
     total.failed += result.failed;
     total.skipped += result.skipped;
+    total.attempted += result.attempted;
+    total.reconciliationRequired += result.reconciliationRequired;
   }
   return total;
 }
@@ -308,6 +330,8 @@ export async function dispatchIssue(
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let attempted = 0;
+  let reconciliationRequired = 0;
 
   // A previously failed recipient may have unsubscribed or lost access before
   // an admin retry. Resolve those rows explicitly instead of leaving the
@@ -329,31 +353,26 @@ export async function dispatchIssue(
   skipped += noLongerEligible.count;
 
   for (const recipient of recipients) {
-    const delivery = await prisma.oneArticleDelivery.upsert({
-      where: { issueId_contactId: { issueId, contactId: recipient.contact.id } },
-      create: {
-        issueId,
-        contactId: recipient.contact.id,
-        productSubscriptionId: recipient.id,
-        status: "QUEUED",
-      },
-      update: {},
-    });
+    const delivery = await findOrCreateDelivery(
+      issueId,
+      recipient.contact.id,
+      recipient.id,
+    );
     if (delivery.status === "SENT") {
       skipped++;
       continue;
     }
     if (delivery.status === "RECONCILIATION_REQUIRED") {
       failed++;
+      reconciliationRequired++;
       continue;
     }
     // SENDING means the process may have died after provider acceptance. The
     // stable key is safe only inside the provider's retention window.
-    if (
-      delivery.status === "SENDING" &&
-      delivery.lastAttemptAt &&
-      now.getTime() - delivery.lastAttemptAt.getTime() >= PROVIDER_IDEMPOTENCY_TTL_MS
-    ) {
+    const sendingAgeMs = delivery.lastAttemptAt
+      ? now.getTime() - delivery.lastAttemptAt.getTime()
+      : 0;
+    if (delivery.status === "SENDING" && sendingAgeMs >= PROVIDER_IDEMPOTENCY_TTL_MS) {
       await prisma.oneArticleDelivery.update({
         where: { id: delivery.id },
         data: {
@@ -363,6 +382,14 @@ export async function dispatchIssue(
         },
       });
       failed++;
+      reconciliationRequired++;
+      continue;
+    }
+    // A current SENDING row belongs to another live worker. Only reclaim it
+    // after the same 15-minute stale boundary used by the edition claim; until
+    // then even an idempotent duplicate provider request is unnecessary.
+    if (delivery.status === "SENDING" && sendingAgeMs < DELIVERY_CLAIM_STALE_MS) {
+      skipped++;
       continue;
     }
     if (delivery.attemptCount >= MAX_AUTOMATIC_DELIVERY_ATTEMPTS) {
@@ -370,8 +397,15 @@ export async function dispatchIssue(
       continue;
     }
 
-    await prisma.oneArticleDelivery.update({
-      where: { id: delivery.id },
+    // Claim the recipient with compare-and-set. The edition claim serializes
+    // normal cron overlap; this second boundary also protects direct recovery
+    // calls and stale-worker overlap from issuing two provider requests.
+    const claimed = await prisma.oneArticleDelivery.updateMany({
+      where: {
+        id: delivery.id,
+        status: delivery.status,
+        attemptCount: delivery.attemptCount,
+      },
       data: {
         status: "SENDING",
         attemptCount: { increment: 1 },
@@ -379,6 +413,11 @@ export async function dispatchIssue(
         failedReason: null,
       },
     });
+    if (claimed.count !== 1) {
+      skipped++;
+      continue;
+    }
+    attempted++;
     let providerAccepted = false;
     try {
       const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
@@ -456,7 +495,47 @@ export async function dispatchIssue(
       sentAt: unresolvedTotal === 0 ? now : null,
     },
   });
-  return { recipients: recipients.length, sent, failed, skipped };
+  reconciliationRequired = await prisma.oneArticleDelivery.count({
+    where: { issueId, status: "RECONCILIATION_REQUIRED" },
+  });
+  return {
+    recipients: recipients.length,
+    sent,
+    failed,
+    skipped,
+    attempted,
+    reconciliationRequired,
+  };
+}
+
+async function findOrCreateDelivery(
+  issueId: string,
+  contactId: string,
+  productSubscriptionId: string,
+) {
+  // Prisma upsert can surface P2002 when two first inserts race. Postgres
+  // ON CONFLICT via skipDuplicates makes that expected loser silent; both
+  // workers then join the unique row and the compare-and-set chooses one.
+  await prisma.oneArticleDelivery.createMany({
+    data: [{ issueId, contactId, productSubscriptionId, status: "QUEUED" }],
+    skipDuplicates: true,
+  });
+  return prisma.oneArticleDelivery.findUniqueOrThrow({
+    where: { issueId_contactId: { issueId, contactId } },
+  });
+}
+
+export function isWeekdayInTimezone(now: Date, timezone: string): boolean {
+  try {
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      weekday: "short",
+    }).format(now);
+    return weekday !== "Sat" && weekday !== "Sun";
+  } catch {
+    // Invalid persisted timezone data must fail closed, never trigger a send.
+    return false;
+  }
 }
 
 /**
