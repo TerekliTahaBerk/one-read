@@ -1,6 +1,8 @@
 # Production critical-path smoke runbook
 
-This is the final launch gate. Automated tests prove the deterministic boundaries; they do not replace a real Polar payment, signed webhook, Resend acceptance, or mailbox delivery.
+This is the final launch gate. The automated layers beneath it are one command —
+`npm run gate:money-flow`, described in `docs/MONEY_FLOW_REGRESSION_GATE.md` —
+and this runbook is the layer that command cannot perform. Automated tests prove the deterministic boundaries; they do not replace a real Polar payment, signed webhook, Resend acceptance, or mailbox delivery.
 
 ## Flow and state transitions
 
@@ -32,6 +34,6 @@ Create a clearly labeled controlled editorial issue, schedule it due, invoke the
 
 ## Required evidence and pass rule
 
-Run `npm ci`, `npx prisma validate`, `npm run verify:launch`, `npm run lint`, `npm test`, `npm run test:integration`, `npm run test:e2e`, and `npm run build`. Capture command result counts, deployment-filtered Sentry/Vercel logs, Polar event IDs (redacted), Resend message status, and mailbox screenshots. Re-check logs after the test timestamp.
+Run `npm ci`, `npx prisma validate`, `npm run verify:launch`, `npm run lint`, `npm run build`, and `npm run gate:money-flow` (which runs `npm test`, `npm run test:integration` and `npm run test:e2e` as one contract). Capture command result counts, deployment-filtered Sentry/Vercel logs, Polar event IDs (redacted), Resend message status, and mailbox screenshots. Re-check logs after the test timestamp.
 
 PASS requires all three offers, no manual DB edits, no new P2022/config/critical runtime error, idempotent webhook and cron behavior, matching payment/entitlement state, and exactly one expected email. Without provider and mailbox evidence, report the gate as blocked—not passed.
