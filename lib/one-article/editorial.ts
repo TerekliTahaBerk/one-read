@@ -473,12 +473,11 @@ export async function dispatchIssue(
       sent++;
     } catch (error) {
       const ambiguousProviderOutcome = error instanceof ResendDeliveryError && error.kind === "ambiguous_outcome";
-      const reconciliation = providerAccepted || ambiguousProviderOutcome;
       await prisma.oneArticleDelivery.update({
         where: { id: delivery.id },
         data: {
-          status: reconciliation ? "RECONCILIATION_REQUIRED" : "FAILED",
-          reconciliationRequiredAt: reconciliation ? now : null,
+          status: providerAccepted ? "SENDING" : ambiguousProviderOutcome ? "RECONCILIATION_REQUIRED" : "FAILED",
+          reconciliationRequiredAt: ambiguousProviderOutcome ? now : null,
           providerAcceptedAt: providerAccepted ? now : undefined,
           failedReason: providerAccepted
             ? "provider_accepted_local_persistence_failed"
@@ -488,8 +487,8 @@ export async function dispatchIssue(
         },
       });
       if (providerAccepted) {
-        await reportProviderEvent("resend_delivery_reconciliation_required", {
-          productKey: "one-article", outcome: "reconciliation_required",
+        await reportProviderEvent("resend_accepted_persistence_failed", {
+          productKey: "one-article", outcome: "persistence_failed",
           state: "provider_accepted_persistence_failed", correlationId: delivery.id,
           errorCode: "local_persistence_failed", error,
         });

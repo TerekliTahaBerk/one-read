@@ -53,7 +53,8 @@ must filter on `alertable:true`; `severity:CRITICAL` is the launch pager class.
 | Resend API/domain/sender/webhook config invalid | CRITICAL | yes | Repair configuration before resuming sends |
 | Resend hard send rejection | ERROR | yes | Correct and retry only the failed delivery |
 | Resend ambiguous outcome | ERROR | yes | Reconcile provider acceptance; never auto-resend |
-| Resend accepted but local persistence failed / idempotency expired | ERROR | yes | Resolve via delivery reconciliation workflow |
+| Resend accepted but local persistence failed | ERROR | yes | Retry the same key inside the provider idempotency window |
+| Resend idempotency window expired | ERROR | yes | Resolve via delivery reconciliation workflow |
 | Resend invalid webhook signature | WARNING | no | Investigate only sustained volume or legitimate failures |
 | Resend webhook processing failure | ERROR | yes | Fix processing and redeliver the correlated event |
 | Bounce, complaint, or user unsubscribe | INFO | no | Preserve suppression; no incident |

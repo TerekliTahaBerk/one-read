@@ -20,6 +20,7 @@ describe("provider failure policy", () => {
     ["resend_config_invalid", "CRITICAL", true, "not_retryable"],
     ["resend_hard_send_failure", "ERROR", true, "retryable"],
     ["resend_ambiguous_outcome", "ERROR", true, "reconciliation_required"],
+    ["resend_accepted_persistence_failed", "ERROR", true, "retryable"],
     ["resend_delivery_reconciliation_required", "ERROR", true, "reconciliation_required"],
     ["resend_webhook_config_invalid", "CRITICAL", true, "not_retryable"],
     ["resend_webhook_signature_invalid", "WARNING", false, "not_retryable"],

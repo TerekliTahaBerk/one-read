@@ -48,6 +48,10 @@ export const PROVIDER_FAILURE_POLICY = {
     provider: "resend", subsystem: "delivery", operation: "send_email", severity: "ERROR", alertable: true,
     retryClassification: "reconciliation_required", action: "Check Resend by correlation id; do not automatically resend an outcome that may have been accepted.",
   },
+  resend_accepted_persistence_failed: {
+    provider: "resend", subsystem: "delivery", operation: "persist_provider_acceptance", severity: "ERROR", alertable: true,
+    retryClassification: "retryable", action: "Retry with the same idempotency key inside Resend's retention window; reconcile after the window expires.",
+  },
   resend_delivery_reconciliation_required: {
     provider: "resend", subsystem: "reconciliation", operation: "reconcile_delivery", severity: "ERROR", alertable: true,
     retryClassification: "reconciliation_required", action: "Resolve provider acceptance before using the explicit recovery action.",
