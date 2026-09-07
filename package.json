@@ -26,6 +26,7 @@
     "reconcile:billing": "node --import tsx --env-file=.env scripts/reconcile-billing.ts",
     "repair:billing": "node --import tsx --env-file=.env scripts/repair-billing.ts",
     "smoke:critical-path": "node --import tsx --env-file=.env scripts/verify-production-critical-path.ts",
+    "drill:incidents": "vitest run lib/cron-heartbeat.test.ts lib/cron-monitor-config.test.ts lib/resend.test.ts lib/resend-webhook.test.ts lib/admin/delivery-recovery.test.ts lib/admin/operator-queue.test.ts lib/one-news/delivery.test.ts lib/billing/polar-webhook-matrix.test.ts lib/billing/reconciliation.test.ts lib/billing/repair.test.ts lib/admin/launch-health.test.ts scripts/release/database-guard.test.mjs",
     "seed:launch-editorial": "node --import tsx --env-file=.env scripts/seed-launch-editorial.ts",
     "fix:local-trials": "node --import tsx --env-file=.env scripts/fix-local-trials-to-pending-checkout.ts",
     "sync:legacy-subscribers": "node --import tsx --env-file=.env scripts/sync-legacy-subscriber-status.ts",
