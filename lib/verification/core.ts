@@ -184,10 +184,12 @@ export function createVerification(product: VerificationDescriptor) {
         subject: product.email.subject,
         text,
         html,
+        operation: "send_verification",
+        productKey: product.key,
       });
       return Boolean(messageId);
     } catch (err) {
-      console.error(`[${product.key}-verification] send failed:`, err);
+      // sendDailyEmail emits the classified, PII-safe provider signal.
       return false;
     }
   }

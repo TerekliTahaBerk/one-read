@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import { parseResendDeliveryEvent, shouldApplyProviderEvent, verifyResendWebhook } from "@/lib/resend-webhook";
-import { reportOperationalEvent } from "@/lib/observability";
+import { reportProviderEvent } from "@/lib/provider-observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,20 +11,29 @@ export async function POST(request: Request) {
   try {
     return await handleResendWebhook(request);
   } catch (error) {
-    await reportOperationalEvent("resend_webhook_failed", {
-      subsystem: "resend_webhook", operation: "apply_delivery_status", outcome: "failed", state: "unprocessed",
-      retryClassification: "provider_retry", errorCode: "webhook_processing_failed",
-    }, { error, level: "error", flush: true });
+    await reportProviderEvent("resend_webhook_processing_failed", {
+      outcome: "failed", state: "unprocessed", errorCode: "webhook_processing_failed",
+      error, flush: true,
+    });
     throw error;
   }
 }
 
 async function handleResendWebhook(request: Request) {
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
-  if (!secret) return NextResponse.json({ ok: false }, { status: 503 });
+  if (!secret) {
+    await reportProviderEvent("resend_webhook_config_invalid", {
+      outcome: "not_configured", errorCode: "missing_webhook_secret", flush: true,
+    });
+    return NextResponse.json({ ok: false }, { status: 503 });
+  }
 
   const body = await request.text();
   if (!verifyResendWebhook({ body, headers: request.headers, secret })) {
+    await reportProviderEvent("resend_webhook_signature_invalid", {
+      outcome: "rejected", errorCode: "invalid_signature",
+      correlationId: request.headers.get("webhook-id"),
+    });
     return NextResponse.json({ ok: false }, { status: 403 });
   }
 
@@ -79,6 +88,16 @@ async function handleResendWebhook(request: Request) {
         contact: { email: { in: event.recipients } },
       },
       data: { emailDeliveryStatus: "SUPPRESSED" },
+    });
+    await reportProviderEvent("resend_business_suppression", {
+      outcome: event.status.toLowerCase(), state: "recipient_suppressed",
+      correlationId: event.messageId, errorCode: event.type,
+      metadata: { affected_recipient_count: event.recipients.length },
+    });
+  } else if (event.status === "FAILED") {
+    await reportProviderEvent("resend_hard_send_failure", {
+      operation: "apply_delivery_status", outcome: "failed", state: "provider_failed",
+      correlationId: event.messageId, errorCode: event.type,
     });
   }
   return NextResponse.json({ ok: true });

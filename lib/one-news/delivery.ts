@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { sendDailyEmail } from "@/lib/resend";
-import { reportOperationalEvent } from "@/lib/observability";
+import { ResendDeliveryError, sendDailyEmail } from "@/lib/resend";
+import { reportProviderEvent } from "@/lib/provider-observability";
 import { resolveProductEntitlement } from "@/lib/products/entitlements";
 import { PRODUCT_ONE_NEWS } from "@/lib/products/registry";
 import {
@@ -123,6 +123,11 @@ export async function dispatchOneNewsIssue(
           failedReason: "provider_outcome_ambiguous_outside_idempotency_window",
         },
       });
+      await reportProviderEvent("resend_delivery_reconciliation_required", {
+        productKey: "one-news", outcome: "reconciliation_required",
+        state: "idempotency_window_expired", correlationId: delivery.id,
+        errorCode: "provider_outcome_ambiguous_outside_idempotency_window",
+      });
       failed++;
       continue;
     }
@@ -151,6 +156,8 @@ export async function dispatchOneNewsIssue(
         html: rendered.html,
         idempotencyKey: oneNewsDeliveryIdempotencyKey(issue.id, recipient.contact.id),
         unsubscribeUrl: `${base}/api/unsubscribe?subscription=${encodeURIComponent(recipient.preference.unsubscribeToken)}`,
+        operation: "send_editorial",
+        productKey: "one-news",
       });
       providerAccepted = true;
       await options.afterProviderAccepted?.();
@@ -169,23 +176,33 @@ export async function dispatchOneNewsIssue(
       ]);
       sent++;
     } catch (error) {
+      const ambiguousProviderOutcome = error instanceof ResendDeliveryError && error.kind === "ambiguous_outcome";
       await prisma.oneNewsDelivery.update({
         where: { id: delivery.id },
         data: {
-          status: providerAccepted ? "SENDING" : "FAILED",
+          status: providerAccepted ? "SENDING" : ambiguousProviderOutcome ? "RECONCILIATION_REQUIRED" : "FAILED",
+          reconciliationRequiredAt: ambiguousProviderOutcome ? now : null,
           providerAcceptedAt: providerAccepted ? now : undefined,
           failedReason: providerAccepted
             ? "provider_accepted_local_persistence_failed"
+            : ambiguousProviderOutcome
+              ? "provider_outcome_ambiguous"
             : safeError(error),
         },
       });
-      await reportOperationalEvent("editorial_delivery_failed", {
-        subsystem: "delivery", productKey: "one-news", operation: "send_editorial", outcome: "failed",
-        state: providerAccepted ? "provider_accepted_persistence_failed" : "provider_rejected",
-        correlationId: delivery.id,
-        retryClassification: providerAccepted ? "reconciliation_required" : "retryable",
-        errorCode: providerAccepted ? "local_persistence_failed" : "provider_send_failed",
-      }, { error, level: "error" });
+      if (providerAccepted) {
+        await reportProviderEvent("resend_accepted_persistence_failed", {
+          productKey: "one-news", outcome: "persistence_failed",
+          state: "provider_accepted_persistence_failed", correlationId: delivery.id,
+          errorCode: "local_persistence_failed", error,
+        });
+      } else if (!(error instanceof ResendDeliveryError)) {
+        await reportProviderEvent("resend_hard_send_failure", {
+          productKey: "one-news", operation: "send_editorial", outcome: "rejected",
+          state: "provider_rejected", correlationId: delivery.id,
+          errorCode: "provider_send_failed", error,
+        });
+      }
       failed++;
     }
   }

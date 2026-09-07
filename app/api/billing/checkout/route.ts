@@ -5,7 +5,7 @@ import { parseOfferSelection } from "@/lib/products/registry";
 import { checkoutIntent } from "@/lib/billing/checkout-intent";
 import { startOfferCheckout } from "@/lib/billing/offer-checkout";
 import { validatePublicLaunchConfiguration } from "@/lib/launch-config";
-import { reportOperationalEvent } from "@/lib/observability";
+import { reportProviderEvent } from "@/lib/provider-observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,8 +29,15 @@ export async function POST(request: Request) {
   if (process.env.NODE_ENV === "production" && process.env.PUBLIC_CHECKOUT_ENABLED !== "true") {
     return NextResponse.json({ ok: false, error: "New checkout is not available yet." }, { status: 503 });
   }
-  if (process.env.NODE_ENV === "production" && !validatePublicLaunchConfiguration().ready) {
-    return NextResponse.json({ ok: false, error: "Checkout configuration is incomplete." }, { status: 503 });
+  if (process.env.NODE_ENV === "production") {
+    const launch = validatePublicLaunchConfiguration();
+    if (!launch.ready) {
+      await reportProviderEvent("polar_checkout_config_invalid", {
+        outcome: "not_configured", errorCode: "launch_config_invalid",
+        metadata: { configuration_problem_count: launch.problems.length }, flush: true,
+      });
+      return NextResponse.json({ ok: false, error: "Checkout configuration is incomplete." }, { status: 503 });
+    }
   }
   let payload: Record<string, unknown>;
   try {
@@ -88,20 +95,20 @@ export async function POST(request: Request) {
         });
       case "not_configured":
         // The missing variable name is operator context, not customer context.
-        await reportOperationalEvent("billing_checkout_unavailable", {
-          subsystem: "billing", productKey: selection.offer, operation: "create_checkout", outcome: "not_configured",
-          state: selection.interval, errorCode: "missing_offer_config", metadata: { config_key: result.envVar },
-        }, { level: "error", flush: true });
+        await reportProviderEvent("polar_checkout_config_invalid", {
+          productKey: selection.offer, outcome: "not_configured", state: selection.interval,
+          errorCode: "missing_offer_config", metadata: { config_key: result.envVar }, flush: true,
+        });
         return NextResponse.json(
           { ok: false, error: "That plan is not available right now." },
           { status: 503 },
         );
     }
   } catch (err) {
-    await reportOperationalEvent("billing_checkout_failed", {
-      subsystem: "billing", productKey: selection.offer, operation: "create_checkout", outcome: "failed",
-      state: selection.interval, retryClassification: "retryable", errorCode: "checkout_failed",
-    }, { error: err, level: "error", flush: true });
+    await reportProviderEvent("polar_checkout_provider_failed", {
+      productKey: selection.offer, outcome: "failed", state: selection.interval,
+      errorCode: "checkout_failed", error: err, flush: true,
+    });
     return NextResponse.json(
       { ok: false, error: "Something went wrong. Please try again." },
       { status: 500 },

@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { resolveOneArticleEligibilityForContacts } from "@/lib/oneread/access";
 import { renderEditorialEmail } from "./editorial-email";
-import { sendDailyEmail } from "@/lib/resend";
-import { reportOperationalEvent } from "@/lib/observability";
+import { ResendDeliveryError, sendDailyEmail } from "@/lib/resend";
+import { reportProviderEvent } from "@/lib/provider-observability";
 import {
   validateEditorialDraft,
   validateEditorialIssue,
@@ -382,6 +382,11 @@ export async function dispatchIssue(
           failedReason: "provider_outcome_ambiguous_outside_idempotency_window",
         },
       });
+      await reportProviderEvent("resend_delivery_reconciliation_required", {
+        productKey: "one-article", outcome: "reconciliation_required",
+        state: "idempotency_window_expired", correlationId: delivery.id,
+        errorCode: "provider_outcome_ambiguous_outside_idempotency_window",
+      });
       failed++;
       reconciliationRequired++;
       continue;
@@ -436,6 +441,8 @@ export async function dispatchIssue(
           recipient.contact.id,
         ),
         unsubscribeUrl: oneClickUnsubscribe,
+        operation: "send_editorial",
+        productKey: "one-article",
       });
       providerAccepted = true;
       await options.afterProviderAccepted?.();
@@ -465,24 +472,33 @@ export async function dispatchIssue(
       ]);
       sent++;
     } catch (error) {
+      const ambiguousProviderOutcome = error instanceof ResendDeliveryError && error.kind === "ambiguous_outcome";
       await prisma.oneArticleDelivery.update({
         where: { id: delivery.id },
         data: {
-          status: providerAccepted ? "SENDING" : "FAILED",
-          reconciliationRequiredAt: null,
+          status: providerAccepted ? "SENDING" : ambiguousProviderOutcome ? "RECONCILIATION_REQUIRED" : "FAILED",
+          reconciliationRequiredAt: ambiguousProviderOutcome ? now : null,
           providerAcceptedAt: providerAccepted ? now : undefined,
           failedReason: providerAccepted
             ? "provider_accepted_local_persistence_failed"
+            : ambiguousProviderOutcome
+              ? "provider_outcome_ambiguous"
             : errorMessage(error).slice(0, 1000),
         },
       });
-      await reportOperationalEvent("editorial_delivery_failed", {
-        subsystem: "delivery", productKey: "one-article", operation: "send_editorial", outcome: "failed",
-        state: providerAccepted ? "provider_accepted_persistence_failed" : "provider_rejected",
-        correlationId: delivery.id,
-        retryClassification: providerAccepted ? "reconciliation_required" : "retryable",
-        errorCode: providerAccepted ? "local_persistence_failed" : "provider_send_failed",
-      }, { error, level: "error" });
+      if (providerAccepted) {
+        await reportProviderEvent("resend_accepted_persistence_failed", {
+          productKey: "one-article", outcome: "persistence_failed",
+          state: "provider_accepted_persistence_failed", correlationId: delivery.id,
+          errorCode: "local_persistence_failed", error,
+        });
+      } else if (!(error instanceof ResendDeliveryError)) {
+        await reportProviderEvent("resend_hard_send_failure", {
+          productKey: "one-article", operation: "send_editorial", outcome: "rejected",
+          state: "provider_rejected", correlationId: delivery.id,
+          errorCode: "provider_send_failed", error,
+        });
+      }
       failed++;
     }
   }

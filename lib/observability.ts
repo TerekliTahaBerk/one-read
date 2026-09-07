@@ -6,6 +6,7 @@ import { scrubTelemetry } from "@/lib/sentry-privacy";
 export const OBSERVABILITY_SUBSYSTEMS = ["billing", "verification", "polar_webhook", "resend_webhook", "cron", "delivery", "reconciliation"] as const;
 export type ObservabilitySubsystem = (typeof OBSERVABILITY_SUBSYSTEMS)[number];
 export type RetryClassification = "not_retryable" | "retryable" | "provider_retry" | "reconciliation_required";
+export type OperationalSeverity = "CRITICAL" | "ERROR" | "WARNING" | "INFO";
 
 export interface OperationalContext {
   subsystem: ObservabilitySubsystem;
@@ -18,6 +19,10 @@ export interface OperationalContext {
   errorCode?: string | null;
   runId?: string | null;
   attempts?: number;
+  severity?: OperationalSeverity;
+  alertable?: boolean;
+  action?: string | null;
+  fingerprint?: string[];
   metadata?: Record<string, unknown>;
 }
 
@@ -42,6 +47,9 @@ export async function reportOperationalEvent(event: string, context: Operational
     error_code: context.errorCode ?? null,
     run_id: telemetryId(context.runId),
     attempts: context.attempts,
+    severity: context.severity ?? (level === "error" ? "ERROR" : level === "warning" ? "WARNING" : "INFO"),
+    alertable: context.alertable ?? level === "error",
+    action: context.action ?? null,
     ...context.metadata,
   }) as Record<string, unknown>;
 
@@ -51,7 +59,14 @@ export async function reportOperationalEvent(event: string, context: Operational
     const tags = Object.fromEntries(Object.entries(canonical)
       .filter(([, value]) => typeof value === "string" || typeof value === "number" || typeof value === "boolean")
       .map(([key, value]) => [key, String(value)]));
-    const captureContext = { level, tags, extra: canonical };
+    // A stable provider/operation/failure fingerprint groups repeated outage
+    // occurrences into one incident without dropping any occurrence.
+    const captureContext = {
+      level,
+      tags,
+      extra: canonical,
+      ...(context.fingerprint ? { fingerprint: context.fingerprint } : {}),
+    };
     if (options.error !== undefined) Sentry.captureException(options.error instanceof Error ? options.error : new Error(safeErrorText(options.error)), captureContext);
     else Sentry.captureMessage(event, captureContext);
     if (options.flush) await Sentry.flush(2000);
