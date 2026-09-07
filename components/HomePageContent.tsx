@@ -5,9 +5,22 @@ import { Footer } from "@/components/Footer";
 import { EditorialTrust } from "@/components/EditorialTrust";
 import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
-import { OneReadFamilyMascots } from "@/components/OneReadFamilyMascots";
+import { OneReadLineUp } from "@/components/OneReadLineUp";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
+import { OFFERS, OFFER_KEYS, type OfferKey } from "@/lib/products/registry";
+import { entryPriceLine, offerCadenceLabel, offerContentsLine } from "@/lib/products/pricing-copy";
 import { trackEvent } from "@/lib/analytics";
+
+/**
+ * Where each offer's card sends a reader who is not ready to buy. A standalone
+ * offer shows its own product; the bundle has nothing to show that its two
+ * products do not already, so it goes to the page that compares them.
+ */
+const OFFER_EXPLORE_HREF: Record<OfferKey, string> = {
+  "one-article": "/samples/article",
+  "one-news": "/samples/news",
+  "one-read": "/pricing",
+};
 
 export function HomePageContent() {
   const { dictionary } = useSiteLanguage();
@@ -72,7 +85,7 @@ export function HomePageContent() {
           >
             <Link
               href="/subscribe"
-              onClick={() => trackEvent("subscribe_cta_clicked", { product: "one-read" })}
+              onClick={() => trackEvent("subscribe_cta_clicked")}
               className="
                 focus-ring inline-flex h-12 w-full items-center justify-center
                 rounded-full bg-ink px-6 font-sans text-[14px] font-medium
@@ -80,7 +93,7 @@ export function HomePageContent() {
                 sm:w-auto
               "
             >
-              Choose your OneRead
+              Choose your plan
             </Link>
           </div>
 
@@ -90,15 +103,21 @@ export function HomePageContent() {
               text-center reveal-item reveal-item-4
             "
           >
-            OneArticle from $18/year · OneNews from $27/year · Both for $36/year
+            {entryPriceLine()}
           </p>
 
           <div className="w-full reveal-item reveal-item-4">
-            <OneReadFamilyMascots />
+            <OneReadLineUp />
             <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
-              <ProductLink href="/samples/article" title="OneArticle" body="One carefully edited article worth your time. Weekday mornings." />
-              <ProductLink href="/samples/news" title="OneNews" body="One important story worth understanding. Mon / Wed / Fri." />
-              <ProductLink href="/pricing" title="OneRead" body="Get both editorial products with one subscription." />
+              {OFFER_KEYS.map((offer) => (
+                <OfferLink
+                  key={offer}
+                  href={OFFER_EXPLORE_HREF[offer]}
+                  title={OFFERS[offer].displayName}
+                  body={OFFERS[offer].tagline}
+                  detail={offerContentsLine(offer) ?? offerCadenceLabel(offer)}
+                />
+              ))}
             </div>
             <EditorialTrust />
           </div>
@@ -114,6 +133,12 @@ export function HomePageContent() {
   );
 }
 
-function ProductLink({ href, title, body }: { href: string; title: string; body: string }) {
-  return <Link href={href} className="focus-ring rounded-2xl border border-black/10 bg-white/70 p-5"><strong className="font-serif text-xl">{title}</strong><span className="mt-2 block font-sans text-sm leading-6 text-ash">{body}</span></Link>;
+/**
+ * One offer, named and described entirely from the registry. The third line is
+ * a cadence for a product and a contents list for the bundle: a bundle spanning
+ * two schedules has no single cadence to state, and saying what it contains is
+ * the thing a reader actually needs before opening the pricing page.
+ */
+function OfferLink({ href, title, body, detail }: { href: string; title: string; body: string; detail: string }) {
+  return <Link href={href} className="focus-ring rounded-2xl border border-black/10 bg-white/70 p-5"><strong className="font-serif text-xl">{title}</strong><span className="mt-2 block font-sans text-sm leading-6 text-ash">{body}</span><span className="mt-2 block font-sans text-xs leading-5 text-fog">{detail}</span></Link>;
 }

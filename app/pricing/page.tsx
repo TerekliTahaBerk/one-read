@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { PricingPageContent } from "@/components/PricingPageContent";
+import { pricingSummarySentence } from "@/lib/products/pricing-copy";
 
+// A search result is a commercial surface too: it states a price to somebody
+// deciding whether to click. Deriving it means a price change updates the
+// listing rather than leaving last quarter's number in the index.
 export const metadata: Metadata = {
   title: "Pricing — OneRead",
-  description: "OneArticle is $2 monthly or $18 annually. OneNews is $3 monthly or $27 annually. Get both with OneRead for $4 monthly or $36 annually.",
+  description: pricingSummarySentence(),
   alternates: { canonical: "/pricing" },
   robots: { index: true, follow: true },
 };

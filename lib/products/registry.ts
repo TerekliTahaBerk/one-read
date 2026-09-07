@@ -33,6 +33,13 @@ export interface ProductDefinition {
   displayName: string;
   /** One-line public positioning. Kept here so copy cannot drift per surface. */
   tagline: string;
+  /**
+   * How often a subscriber receives this product. A cadence belongs to the
+   * product that is delivered, not to the offer that sells it: the bundle has
+   * no cadence of its own, and every surface that describes one — pricing,
+   * signup, My OneRead — must read the same answer from here.
+   */
+  cadence: string;
 }
 
 export const PRODUCTS: Readonly<Record<ProductKey, ProductDefinition>> = {
@@ -40,11 +47,13 @@ export const PRODUCTS: Readonly<Record<ProductKey, ProductDefinition>> = {
     key: PRODUCT_ONE_ARTICLE,
     displayName: "OneArticle",
     tagline: "One carefully edited article worth your time.",
+    cadence: "Weekday mornings",
   },
   [PRODUCT_ONE_NEWS]: {
     key: PRODUCT_ONE_NEWS,
     displayName: "OneNews",
     tagline: "One story worth understanding.",
+    cadence: "Mon / Wed / Fri during beta",
   },
 };
 
@@ -79,12 +88,6 @@ export interface OfferDefinition {
   key: OfferKey;
   displayName: string;
   tagline: string;
-  /**
-   * How often a buyer hears from this offer. Public-facing copy, kept beside
-   * the price so the pricing page cannot describe a cadence the product does
-   * not deliver.
-   */
-  cadence: string;
   /** Products this offer grants access to. The bundle grants both. */
   grants: readonly ProductKey[];
   prices: Readonly<Record<BillingIntervalKey, OfferPrice>>;
@@ -95,7 +98,6 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_ARTICLE,
     displayName: "OneArticle",
     tagline: PRODUCTS[PRODUCT_ONE_ARTICLE].tagline,
-    cadence: "Weekday mornings",
     grants: [PRODUCT_ONE_ARTICLE],
     prices: {
       monthly: { amountUsd: 2, providerInterval: "month" },
@@ -106,7 +108,6 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_NEWS,
     displayName: "OneNews",
     tagline: PRODUCTS[PRODUCT_ONE_NEWS].tagline,
-    cadence: "Mon / Wed / Fri during beta",
     grants: [PRODUCT_ONE_NEWS],
     prices: {
       monthly: { amountUsd: 3, providerInterval: "month" },
@@ -117,7 +118,6 @@ export const OFFERS: Readonly<Record<OfferKey, OfferDefinition>> = {
     key: OFFER_ONE_READ_BUNDLE,
     displayName: "OneRead",
     tagline: "Both, in one subscription.",
-    cadence: "Both editorial products",
     grants: [PRODUCT_ONE_ARTICLE, PRODUCT_ONE_NEWS],
     prices: {
       monthly: { amountUsd: 4, providerInterval: "month" },

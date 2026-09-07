@@ -4,6 +4,8 @@ The canonical names for OneRead's brand, products, offers, and plans.
 
 **Source of truth:** [`lib/products/terminology.ts`](../lib/products/terminology.ts),
 enforced by [`lib/products/terminology.test.ts`](../lib/products/terminology.test.ts).
+The *pricing and cadence language* those names appear in lives beside it in
+[`lib/products/pricing-copy.ts`](../lib/products/pricing-copy.ts).
 
 This document explains the model and records the inventory that produced it. It
 does not restate the names — the module does, and a second copy here would be
@@ -33,12 +35,26 @@ which one it means has a copy bug, not a lookup failure.
 | --- | --- |
 | Which products exist, which offers grant them, prices, cadence | [`lib/products/registry.ts`](../lib/products/registry.ts) |
 | What those things are called; retired vocabulary; the alias inventory | [`lib/products/terminology.ts`](../lib/products/terminology.ts) |
+| How a price, discount, cadence, or "what's included" is *phrased* to a buyer | [`lib/products/pricing-copy.ts`](../lib/products/pricing-copy.ts) |
 | Which Polar product id an (offer, interval) is sold at | [`lib/products/polar-config.ts`](../lib/products/polar-config.ts) |
 | Which offer created an existing subscription row | [`lib/products/classification.ts`](../lib/products/classification.ts) |
 | What a live subscription grants today | [`lib/products/entitlements.ts`](../lib/products/entitlements.ts) |
 
 Nothing else may define any of these. `contract.test.ts` enforces the registry
-half; `terminology.test.ts` enforces the naming half.
+half; `terminology.test.ts` enforces the naming half and scans the acquisition
+surfaces for price, percentage, and cadence literals; `pricing-copy.test.ts`
+checks that each rendered claim agrees with its own arithmetic.
+
+A **cadence belongs to a product**, not to the offer that sells it. The bundle
+has two cadences and no single one of them is true of it, so `offerCadences()`
+returns a list and `offerCadenceLabel()` names each product beside its own
+schedule. An offer-level cadence field would be a place to write a fourth
+answer down.
+
+Annual pricing is stated as a charge before it is stated as an equivalence —
+"$36 billed once a year — $3 a month" — and a per-month figure that does not
+divide exactly into cents is labelled "about", because twelve of a rounded
+figure is not the price charged.
 
 ## Retired vocabulary
 
@@ -68,7 +84,10 @@ machine-readable form is `ALIASES` in the module.
 | Concept | Names it had | Now |
 | --- | --- | --- |
 | What the bundle includes | `"OneArticle + OneNews"` hardcoded in the signup flow; `OFFERS["one-read"].grants` in the registry | `offerIncludesLabel()`, derived from `grants` |
-| An offer's cadence line | a `CADENCE` map in the signup flow; `OFFERS[key].cadence` in the registry | `OFFERS[key].cadence`; the bundle names its products instead |
+| An offer's cadence line | a `CADENCE` map in the signup flow; `OFFERS[key].cadence`; `"Both editorial products"` as the bundle's "cadence"; `"Weekdays · Morning"` and `"Mon / Wed / Fri"` in the account lookup | `PRODUCTS[key].cadence`, via `offerCadenceLabel()` |
+| Prices on a sales surface | `"OneArticle from $18/year …"` (homepage); all six prices in prose (pricing metadata) | `entryPriceLine()`, `pricingSummarySentence()` |
+| The annual discount | `"Annual · save 25%"` hardcoded in the signup flow, derived on the pricing page | `annualDiscountLabel()`, which degrades to "up to" if the offers ever disagree |
+| The subscribe flow, localised | a `signup` / `preferences` block in all four site locales describing a flow with interests, per-product setup, and "both OneRead products included" | deleted — the shipped flow renders none of it |
 | What a subscription covers | "OneArticle and OneFilm" (site copy, 4 locales); "includes OneArticle" (terms, 4 locales); "OneArticle and OneNews" (pricing metadata) | OneArticle and OneNews, everywhere |
 | The product line | "the OneRead family" (site copy, 4 locales) | OneRead, or the two product names |
 | The launch offer | "$1/month" (README); "One subscription. One dollar." (site copy, 4 locales) | the registry's prices |
@@ -79,7 +98,7 @@ machine-readable form is `ALIASES` in the module.
 1. Add it to `lib/products/registry.ts` — key, display name, tagline, cadence,
    grants, prices.
 2. Map its Polar products in `lib/products/polar-config.ts`.
-3. Nothing else. Terminology, the pricing page, the signup flow, and the
-   checkout copy derive from those two files. If a surface needs a name it
+3. Nothing else. Terminology, pricing language, the homepage, the pricing page,
+   the signup flow, and the checkout copy derive from those two files. If a surface needs a name it
    cannot derive, that surface has found a gap in this contract — widen the
    contract rather than hardcode the name.

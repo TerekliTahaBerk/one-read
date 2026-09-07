@@ -4,15 +4,17 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
-import { OneArticleMascotArt } from "@/components/OneReadFamilyMascots";
+import { OneArticleMascotArt } from "@/components/OneReadLineUp";
 import { SampleEmailPreview } from "@/components/SampleEmailPreview";
 import { productThemes } from "@/lib/product-themes";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
 /**
  * OneArticle marketing/description page. Purely explanatory — signup itself
- * happens through the OneRead umbrella flow at /subscribe, which already
- * collects email once for the whole product family.
+ * happens through the OneRead flow at /subscribe, which collects email once for
+ * whichever offer the reader picked. The CTA below names the OneArticle offer
+ * explicitly so the plan the reader chose here is the plan that reaches
+ * checkout.
  */
 export function ArticleLanding() {
   const theme = productThemes.article;

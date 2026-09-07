@@ -35,10 +35,23 @@ for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${of
 
 test("pricing accurately offers Article and News annual plans", async ({ page }) => {
   await page.goto("/pricing");
-  await expect(page.getByText("$18")).toBeVisible();
-  await expect(page.getByText("$27")).toBeVisible();
-  await expect(page.getByText("Mon / Wed / Fri during beta")).toBeVisible();
+  const news = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "OneNews", exact: true }) });
+  await expect(page.getByRole("article").filter({ has: page.getByRole("heading", { name: "OneArticle", exact: true }) })).toContainText("$18");
+  await expect(news).toContainText("$27");
+  // The bundle names both cadences, so this is scoped to the card that owns it.
+  await expect(news).toContainText("Mon / Wed / Fri during beta");
   await expect(page.getByRole("button", { name: /Annual · save 25%/ })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the bundle card says what it bundles and how annual billing is charged", async ({ page }) => {
+  await page.goto("/pricing");
+  const bundle = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "OneRead", exact: true }) });
+  await expect(bundle).toContainText("Includes OneArticle and OneNews.");
+  await expect(bundle).toContainText("$36 billed once a year — $3 a month.");
+  await expect(bundle.getByRole("link", { name: "Choose OneRead" })).toHaveAttribute(
+    "href",
+    "/subscribe?offer=one-read&interval=annual",
+  );
 });
 
 test("unsubscribe GET is scanner-safe", async ({ request }) => {
@@ -49,7 +62,7 @@ test("unsubscribe GET is scanner-safe", async ({ request }) => {
 test("My OneRead verification reaches account status", async ({ page }) => {
   await page.route("**/api/oneread/verification/request", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   await page.route("**/api/oneread/verification/confirm", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
-  await page.route("**/api/oneread/lookup", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"state":"active_paid","billingManageable":true,"products":{"one-article":{"active":true,"cadence":"Weekdays · Morning","language":"English","emailStatus":"SUBSCRIBED"},"one-news":{"active":true,"cadence":"Mon / Wed / Fri","language":"English","emailStatus":"UNSUBSCRIBED"}},"billing":{"plans":[{"plan":"OneRead","includes":"OneArticle + OneNews","billing":"Annual","state":"active","grandfathered":false}],"grandfathered":false,"grandfatherWarning":null}}' }));
+  await page.route("**/api/oneread/lookup", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"state":"active_paid","billingManageable":true,"products":{"one-article":{"active":true,"cadence":"Weekday mornings","language":"English","emailStatus":"SUBSCRIBED"},"one-news":{"active":true,"cadence":"Mon / Wed / Fri during beta","language":"English","emailStatus":"UNSUBSCRIBED"}},"billing":{"plans":[{"plan":"OneRead","includes":"OneArticle + OneNews","billing":"Annual","state":"active","grandfathered":false}],"grandfathered":false,"grandfatherWarning":null}}' }));
   await page.goto("/preferences");
   await page.waitForLoadState("networkidle");
   await page.locator('input[type="email"]').fill("reader@example.com");
