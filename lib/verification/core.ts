@@ -197,6 +197,7 @@ export function createVerification(product: VerificationDescriptor) {
   async function requestVerificationCode(args: {
     email: string;
     purpose: Purpose;
+    intent?: string | null;
     ipHash?: string | null;
     userAgentHash?: string | null;
   }): Promise<RequestCodeResult> {
@@ -246,6 +247,7 @@ export function createVerification(product: VerificationDescriptor) {
         maxAttempts: cfg.maxAttempts,
         ipHash: args.ipHash ?? null,
         userAgentHash: args.userAgentHash ?? null,
+        intent: args.intent ?? null,
       },
     });
 

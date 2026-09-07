@@ -1,40 +1,48 @@
 import Link from "next/link";
-import { guardAdminPage } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
-import { AdminCard, MetricCard, MetricGrid } from "@/components/admin/AdminCard";
-import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminCard, DefList, MetricCard, MetricGrid } from "@/components/admin/AdminCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { prisma } from "@/lib/prisma";
+import { guardAdminPage } from "@/lib/admin/auth";
 import { fmtDateTime } from "@/lib/admin/format";
-import { SUMMARY_LANGUAGES } from "@/lib/options";
+import { getLaunchHealth, LAUNCH_HEALTH_OFFERS, type LaunchHealthOffer } from "@/lib/admin/launch-health";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AnalyticsPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+const LABELS: Record<LaunchHealthOffer, string> = { all: "All offers", "one-article": "OneArticle", "one-news": "OneNews", "one-read": "Bundle" };
+
+export default async function LaunchHealthPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
   const guard = await guardAdminPage("/admin/analytics", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
+  const requested = typeof searchParams.offer === "string" ? searchParams.offer : "all";
+  const offer: LaunchHealthOffer = (LAUNCH_HEALTH_OFFERS as readonly string[]).includes(requested) ? requested as LaunchHealthOffer : "all";
+  const snapshot = await getLaunchHealth(offer);
+  const hasFailure = Object.values(snapshot.failures).some((count) => count > 0);
 
-  const [deliveryGroups, sentByLanguageRows, editionGroups, recentProblems, subscriptionGroups, contactCount, preferencesCount, billingEventCount] = await Promise.all([
-    prisma.oneArticleDelivery.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.oneArticleDelivery.findMany({ where: { status: "SENT" }, select: { issue: { select: { readingLanguage: true } } } }),
-    prisma.oneArticleIssue.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.oneArticleDelivery.findMany({ where: { status: { in: ["FAILED", "SKIPPED"] } }, include: { contact: { select: { email: true } }, issue: { select: { id: true, headline: true, readingLanguage: true } } }, orderBy: { updatedAt: "desc" }, take: 50 }),
-    prisma.productSubscription.groupBy({ by: ["status"], where: { productKey: "one-read" }, _count: { _all: true } }),
-    prisma.contact.count(),
-    prisma.articlePreferences.count(),
-    prisma.billingEvent.count({ where: { processedAt: { not: null } } }),
-  ]);
-  const deliveries = Object.fromEntries(deliveryGroups.map((row) => [row.status, row._count._all]));
-  const editions = Object.fromEntries(editionGroups.map((row) => [row.status, row._count._all]));
-  const subscriptions = Object.fromEntries(subscriptionGroups.map((row) => [row.status, row._count._all]));
-  const sentByLanguage = Object.fromEntries(SUMMARY_LANGUAGES.map((language) => [language, sentByLanguageRows.filter((row) => row.issue.readingLanguage === language).length]));
-
-  return <AdminShell title="Analytics" subtitle="OneArticle activation and delivery outcomes">
-    <AdminCard title="Acquisition and activation" bodyClassName="p-4"><MetricGrid><MetricCard label="Contacts" value={contactCount} /><MetricCard label="Preferences complete" value={preferencesCount} /><MetricCard label="Awaiting checkout" value={subscriptions.PENDING_CHECKOUT ?? 0} /><MetricCard label="Paid or trialing" value={(subscriptions.ACTIVE_PAID ?? 0) + (subscriptions.TRIALING ?? 0)} tone="good" /><MetricCard label="Past due" value={subscriptions.PAST_DUE ?? 0} tone={subscriptions.PAST_DUE ? "warn" : "default"} /><MetricCard label="Canceled" value={subscriptions.CANCELED ?? 0} /><MetricCard label="Processed billing events" value={billingEventCount} /></MetricGrid></AdminCard>
-    <AdminCard title="Delivery outcomes" bodyClassName="p-4"><MetricGrid><MetricCard label="Delivered" value={deliveries.SENT ?? 0} tone="good" /><MetricCard label="Failed" value={deliveries.FAILED ?? 0} tone={deliveries.FAILED ? "warn" : "default"} /><MetricCard label="Skipped" value={deliveries.SKIPPED ?? 0} /><MetricCard label="Queued" value={deliveries.QUEUED ?? 0} /><MetricCard label="Sending" value={deliveries.SENDING ?? 0} /></MetricGrid></AdminCard>
-    <AdminCard title="Editorial flow" bodyClassName="p-4"><MetricGrid><MetricCard label="Drafts" value={editions.DRAFT ?? 0} /><MetricCard label="Ready" value={editions.READY ?? 0} /><MetricCard label="Scheduled" value={editions.SCHEDULED ?? 0} tone="good" /><MetricCard label="Sent editions" value={editions.SENT ?? 0} tone="good" /><MetricCard label="With failures" value={(editions.FAILED ?? 0) + (editions.PARTIALLY_FAILED ?? 0)} tone={editions.FAILED || editions.PARTIALLY_FAILED ? "warn" : "default"} /></MetricGrid></AdminCard>
-    <AdminCard title="Delivered by reading language" bodyClassName="p-4"><MetricGrid>{SUMMARY_LANGUAGES.map((language) => <MetricCard key={language} label={language} value={sentByLanguage[language] ?? 0} />)}</MetricGrid></AdminCard>
-    <AdminCard title="Recent delivery exceptions" subtitle="Latest 50 failed or skipped recipients"><AdminTable head={["Updated", "Reader", "Edition", "Language", "Status", "Reason"]} empty="No failed or skipped deliveries." rows={recentProblems.map((delivery) => [fmtDateTime(delivery.updatedAt), delivery.contact.email, <Link key="edition" href={`/admin/one-article/issues/${delivery.issue.id}`} className="text-admin-ink underline underline-offset-2">{delivery.issue.headline || "Untitled edition"}</Link>, delivery.issue.readingLanguage, <StatusBadge key="status" value={delivery.status} />, delivery.failedReason ?? delivery.skippedReason ?? "—"])} /></AdminCard>
+  return <AdminShell title="Launch health" subtitle="Signup → paid → first-delivery operational evidence">
+    <div className="mb-6 flex flex-wrap gap-2" aria-label="Filter by offer">
+      {LAUNCH_HEALTH_OFFERS.map((key) => <Link key={key} href={key === "all" ? "/admin/analytics" : `/admin/analytics?offer=${key}`} aria-current={offer === key ? "page" : undefined} className={`rounded-full border px-4 py-2 text-[12px] ${offer === key ? "border-admin-ink bg-admin-ink text-white" : "border-admin-line bg-white text-admin-body"}`}>{LABELS[key]}</Link>)}
+    </div>
+    <AdminCard title={`${LABELS[offer]} canonical funnel`} subtitle="Durable server evidence; counts are current all-time launch totals, not browser sessions." bodyClassName="p-4">
+      <MetricGrid>{snapshot.stages.map((stage, index) => <MetricCard key={stage.key} label={`${index + 1}. ${stage.label}`} value={stage.count} hint={stage.evidence} tone={stage.key === "entitlement" || stage.key === "first_delivery" ? "good" : "default"} />)}</MetricGrid>
+    </AdminCard>
+    <AdminCard title="Failure and reconciliation counters" subtitle="Any non-zero value is an operator decision signal." bodyClassName="p-4">
+      <MetricGrid>
+        <MetricCard label="7. Delivery failed" value={snapshot.failures.deliveryFailed} tone={snapshot.failures.deliveryFailed ? "warn" : "good"} />
+        <MetricCard label="Reconciliation required" value={snapshot.failures.reconciliationRequired} tone={snapshot.failures.reconciliationRequired ? "warn" : "good"} />
+        <MetricCard label="Unprocessed billing events" value={snapshot.failures.unprocessedBillingEvents} tone={snapshot.failures.unprocessedBillingEvents ? "warn" : "good"} />
+        <MetricCard label="Failed / partial runs" value={snapshot.failures.failedOperationalRuns} tone={snapshot.failures.failedOperationalRuns ? "warn" : "good"} />
+      </MetricGrid>
+      <p className={`mt-4 text-[13px] ${hasFailure ? "text-dawn" : "text-emerald-700"}`}>{hasFailure ? "Launch chain needs operator attention." : "No recorded failure signal in the selected scope."}</p>
+    </AdminCard>
+    <AdminCard title="Freshness and interpretation"><DefList rows={[
+      ["Snapshot generated", fmtDateTime(snapshot.generatedAt)],
+      ["Latest operational run", snapshot.latestRun ? <span key="run"><StatusBadge value={snapshot.latestRun.status} /> · {snapshot.latestRun.productKey} · {fmtDateTime(snapshot.latestRun.finishedAt ?? snapshot.latestRun.startedAt)}</span> : "No run recorded"],
+      ["Stages 1–3", "Verification and setup records in Postgres; historical verification rows without an offer remain visible only in All offers."],
+      ["Stages 4–6", "Polar-confirmed subscription state and canonical OneArticle / OneNews delivery records."],
+      ["Browser analytics", "Vercel Analytics is for CTA and UI drop-off only; it is not used as payment, entitlement, or delivery truth."],
+      ["Infrastructure", "Vercel Observability / Speed Insights and Sentry remain the infrastructure and exception drill-down surfaces."],
+    ]} /></AdminCard>
   </AdminShell>;
 }

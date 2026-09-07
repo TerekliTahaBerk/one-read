@@ -7,6 +7,7 @@ import {
   requestVerificationCode,
 } from "@/lib/oneread/verification";
 import { reportOperationalEvent } from "@/lib/observability";
+import { parseCheckoutIntent } from "@/lib/billing/checkout-intent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { email?: unknown };
+  let body: { email?: unknown; offer?: unknown; interval?: unknown };
   try {
-    body = (await req.json()) as { email?: unknown };
+    body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
   }
@@ -43,6 +44,8 @@ export async function POST(req: Request) {
     return NextResponse.json(GENERIC);
   }
 
+  const intent = parseCheckoutIntent(body.offer, body.interval);
+
   const ipRaw = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || null;
   const uaRaw = req.headers.get("user-agent");
 
@@ -51,6 +54,7 @@ export async function POST(req: Request) {
     purpose: VERIFICATION_PURPOSES.signup,
     ipHash: hashMeta(ipRaw),
     userAgentHash: hashMeta(uaRaw),
+    intent,
   });
 
   if (!result.ok) {
