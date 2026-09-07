@@ -32,13 +32,13 @@ const en: LegalDictionary = {
     title: "Terms of Service",
     lastUpdated: "July 25, 2026",
     intro: [
-      "These terms govern your use of OneRead — a monthly subscription that includes OneArticle. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
+      "These terms govern your use of OneRead — a subscription that includes OneArticle, OneNews, or both. By signing up for or using OneRead, you agree to them. If you don't agree, please don't use OneRead. Please read them alongside our [Privacy Policy](/privacy).",
     ],
     sections: [
       {
         heading: "The service",
         paragraphs: [
-          "OneRead currently includes **OneArticle**, a weekday article brief delivered in your chosen reading language. We aim to deliver each email reliably around its scheduled time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
+          "OneRead currently includes **OneArticle**, a weekday article brief, and **OneNews**, a Monday/Wednesday/Friday news brief — each delivered in your chosen reading language. Which of them you receive depends on the offer you subscribed to. We aim to deliver each email reliably around its scheduled time, but timing, frequency, and availability are provided on a best-effort basis and may change. We don't guarantee uninterrupted or error-free delivery.",
         ],
       },
       {
@@ -56,7 +56,7 @@ const en: LegalDictionary = {
       {
         heading: "Subscription, billing, and cancellation",
         paragraphs: [
-          "OneRead is offered as a paid monthly subscription, at the price shown on our [pricing page](/pricing) at the time you subscribe. Prices may change for future billing periods, and we'll make any change clear before it applies to you.",
+          "OneRead is offered as a paid subscription, billed monthly or annually, at the price shown on our [pricing page](/pricing) at the time you subscribe. Prices may change for future billing periods, and we'll make any change clear before it applies to you.",
           "Current OneArticle, OneNews, and OneRead offers begin as paid subscriptions without a default free trial. The exact amount and billing interval are shown before purchase.",
           "Prices are charged in **US dollars (USD)**. If your account uses another currency, your bank or payment provider may convert the charge and apply its own exchange rate or fees. OneRead does not currently offer localized currency pricing.",
           "**Polar acts as merchant of record and authorized reseller** for the transaction. Polar collects the payment, calculates and remits applicable sales taxes, and makes the order invoice or receipt available in the customer portal. Your checkout is also subject to [Polar's Buyer Terms](https://polar.sh/legal/checkout-buyer-terms), including its cancellation, refund and dispute process.",
@@ -254,13 +254,13 @@ const tr: LegalDictionary = {
     title: "Kullanım Koşulları",
     lastUpdated: "25 Temmuz 2026",
     intro: [
-      "Bu koşullar, OneArticle'ı kapsayan aylık OneRead aboneliğini kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
+      "Bu koşullar, OneArticle'ı, OneNews'i veya ikisini birden kapsayan OneRead aboneliğini kullanımınızı düzenler. OneRead'e kaydolarak veya onu kullanarak bu koşulları kabul etmiş olursunuz. Kabul etmiyorsanız lütfen OneRead'i kullanmayın. Bu koşulları [Gizlilik Politikamız](/privacy) ile birlikte okumanızı öneririz.",
     ],
     sections: [
       {
         heading: "Hizmet",
         paragraphs: [
-          "OneRead şu anda seçtiğiniz okuma dilinde hafta içi gönderilen **OneArticle** makale özetini içerir. Her e-postayı planlanan zamanda güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
+          "OneRead şu anda seçtiğiniz okuma dilinde hafta içi gönderilen **OneArticle** makale özetini ve pazartesi, çarşamba ve cuma günleri gönderilen **OneNews** haber özetini içerir. Bunlardan hangisini aldığınız, abone olduğunuz pakete bağlıdır. Her e-postayı planlanan zamanda güvenilir biçimde ulaştırmayı hedefliyoruz; ancak zamanlama, sıklık ve kullanılabilirlik en iyi çaba ilkesiyle sunulur ve değişebilir. Kesintisiz veya hatasız teslimat garanti etmiyoruz.",
         ],
       },
       {
@@ -278,7 +278,7 @@ const tr: LegalDictionary = {
       {
         heading: "Abonelik, faturalandırma ve iptal",
         paragraphs: [
-          "OneRead, kaydolduğunuz sırada [fiyatlandırma sayfamızda](/pricing) belirtilen ücret üzerinden aylık ücretli bir abonelik olarak sunulur. Fiyatlar gelecekteki faturalandırma dönemleri için değişebilir; herhangi bir değişikliği sizi etkilemeden önce açıkça bildiririz.",
+          "OneRead, kaydolduğunuz sırada [fiyatlandırma sayfamızda](/pricing) belirtilen ücret üzerinden aylık veya yıllık faturalandırılan ücretli bir abonelik olarak sunulur. Fiyatlar gelecekteki faturalandırma dönemleri için değişebilir; herhangi bir değişikliği sizi etkilemeden önce açıkça bildiririz.",
           "Ödeme ekranında ücretsiz deneme sunuluyorsa deneme süresi ve ilk tahsilat tarihi satın almadan önce gösterilir. Belirtilen son tarihten önce müşteri portalından iptal etmediğiniz sürece deneme bittiğinde ücretli abonelik otomatik olarak başlar.",
           "Ücretler **ABD doları (USD)** olarak tahsil edilir. Hesabınız başka bir para birimi kullanıyorsa bankanız veya ödeme sağlayıcınız kendi döviz kuru ve ücretleriyle dönüşüm yapabilir. OneRead şu anda yerel para biriminde fiyatlandırma sunmamaktadır.",
           "İşlemde **kayıtlı satıcı ve yetkili yeniden satıcı Polar'dır**. Polar ödemeyi tahsil eder, geçerli satış vergilerini hesaplayıp aktarır ve sipariş faturasını veya makbuzunu müşteri portalında sunar. Ödeme işleminiz Polar'ın iptal, iade ve itiraz süreçlerini de içeren [Alıcı Koşulları'na](https://polar.sh/legal/checkout-buyer-terms) tabidir.",
@@ -476,13 +476,13 @@ const de: LegalDictionary = {
     title: "Nutzungsbedingungen",
     lastUpdated: "25. Juli 2026",
     intro: [
-      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Monatsabonnement, das OneArticle umfasst. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
+      "Diese Bedingungen regeln Ihre Nutzung von OneRead — einem Abonnement, das OneArticle, OneNews oder beides umfasst. Mit der Anmeldung bei oder der Nutzung von OneRead stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie OneRead bitte nicht. Bitte lesen Sie diese Bedingungen zusammen mit unserer [Datenschutzerklärung](/privacy).",
     ],
     sections: [
       {
         heading: "Der Dienst",
         paragraphs: [
-          "OneRead umfasst derzeit **OneArticle**, ein werktägliches Artikelbriefing in Ihrer gewählten Lesesprache. Wir sind bestrebt, jede E-Mail zuverlässig zum geplanten Zeitpunkt zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern.",
+          "OneRead umfasst derzeit **OneArticle**, ein werktägliches Artikelbriefing, und **OneNews**, ein Nachrichtenbriefing montags, mittwochs und freitags — jeweils in Ihrer gewählten Lesesprache. Welches davon Sie erhalten, hängt vom abonnierten Angebot ab. Wir sind bestrebt, jede E-Mail zuverlässig zum geplanten Zeitpunkt zuzustellen; Zeitpunkt, Häufigkeit und Verfügbarkeit erfolgen jedoch nach bestem Bemühen und können sich ändern.",
         ],
       },
       {
@@ -500,7 +500,7 @@ const de: LegalDictionary = {
       {
         heading: "Abonnement, Abrechnung und Kündigung",
         paragraphs: [
-          "OneRead wird als kostenpflichtiges Monatsabonnement zu dem Preis angeboten, der zum Zeitpunkt Ihrer Anmeldung auf unserer [Preisseite](/pricing) angegeben ist. Preise können sich für künftige Abrechnungszeiträume ändern; wir weisen auf jede Änderung deutlich hin, bevor sie für Sie wirksam wird.",
+          "OneRead wird als kostenpflichtiges Abonnement mit monatlicher oder jährlicher Abrechnung zu dem Preis angeboten, der zum Zeitpunkt Ihrer Anmeldung auf unserer [Preisseite](/pricing) angegeben ist. Preise können sich für künftige Abrechnungszeiträume ändern; wir weisen auf jede Änderung deutlich hin, bevor sie für Sie wirksam wird.",
           "Wenn der Checkout eine kostenlose Testphase anbietet, werden deren Dauer und das Datum der ersten Abbuchung vor dem Kauf angezeigt. Das kostenpflichtige Abo beginnt nach Ablauf der Testphase automatisch, sofern Sie nicht vor der angegebenen Frist im Kundenportal kündigen.",
           "Die Abrechnung erfolgt in **US-Dollar (USD)**. Bei Konten in einer anderen Währung kann Ihre Bank oder Ihr Zahlungsanbieter den Betrag zum eigenen Kurs umrechnen und Gebühren erheben. OneRead bietet derzeit keine lokalisierte Währungspreisgestaltung an.",
           "**Polar ist Merchant of Record und autorisierter Wiederverkäufer** der Transaktion. Polar zieht die Zahlung ein, berechnet und führt anwendbare Verkaufssteuern ab und stellt Rechnung oder Beleg im Kundenportal bereit. Der Checkout unterliegt außerdem den [Polar-Käuferbedingungen](https://polar.sh/legal/checkout-buyer-terms) einschließlich Kündigungs-, Erstattungs- und Streitbeilegungsverfahren.",
@@ -698,13 +698,13 @@ const fr: LegalDictionary = {
     title: "Conditions d'utilisation",
     lastUpdated: "25 juillet 2026",
     intro: [
-      "Ces conditions régissent votre utilisation d'OneRead — un abonnement mensuel qui inclut OneArticle. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
+      "Ces conditions régissent votre utilisation d'OneRead — un abonnement qui inclut OneArticle, OneNews, ou les deux. En vous inscrivant à OneRead ou en l'utilisant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser OneRead. Merci de les lire avec notre [politique de confidentialité](/privacy).",
     ],
     sections: [
       {
         heading: "Le service",
         paragraphs: [
-          "OneRead inclut actuellement **OneArticle**, une note article envoyée en semaine dans la langue de lecture choisie. Nous nous efforçons de livrer chaque e-mail à l'heure prévue, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer.",
+          "OneRead inclut actuellement **OneArticle**, une note article envoyée en semaine, et **OneNews**, une note d'actualité envoyée les lundi, mercredi et vendredi — chacune dans la langue de lecture choisie. Ce que vous recevez dépend de l'offre à laquelle vous avez souscrit. Nous nous efforçons de livrer chaque e-mail à l'heure prévue, mais l'horaire, la fréquence et la disponibilité sont fournis au mieux et peuvent évoluer.",
         ],
       },
       {
@@ -722,7 +722,7 @@ const fr: LegalDictionary = {
       {
         heading: "Abonnement, facturation et résiliation",
         paragraphs: [
-          "OneRead est proposé sous la forme d'un abonnement mensuel payant, au tarif indiqué sur notre [page tarifs](/pricing) au moment de votre inscription. Les tarifs peuvent évoluer pour les futures périodes de facturation ; nous vous préviendrons clairement de tout changement avant qu'il ne s'applique.",
+          "OneRead est proposé sous la forme d'un abonnement payant, facturé au mois ou à l'année, au tarif indiqué sur notre [page tarifs](/pricing) au moment de votre inscription. Les tarifs peuvent évoluer pour les futures périodes de facturation ; nous vous préviendrons clairement de tout changement avant qu'il ne s'applique.",
           "Lorsqu'un essai gratuit est proposé au paiement, sa durée et la date du premier prélèvement sont affichées avant l'achat. L'offre payante commence automatiquement à la fin de l'essai sauf résiliation depuis le portail avant l'échéance indiquée.",
           "Les paiements sont facturés en **dollars américains (USD)**. Si votre compte utilise une autre devise, votre banque ou prestataire peut convertir le montant à son propre taux et appliquer des frais. OneRead ne propose pas actuellement de tarification localisée.",
           "**Polar agit comme marchand officiel et revendeur autorisé** de la transaction. Polar encaisse le paiement, calcule et reverse les taxes de vente applicables et met la facture ou le reçu à disposition dans le portail client. Le paiement est également soumis aux [Conditions acheteur de Polar](https://polar.sh/legal/checkout-buyer-terms), notamment à ses procédures de résiliation, remboursement et contestation.",

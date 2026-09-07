@@ -2,7 +2,7 @@
   "name": "one-read",
   "version": "0.1.0",
   "private": true,
-  "description": "OneRead delivers one calm, human-edited OneArticle email every weekday.",
+  "description": "OneRead delivers OneArticle on weekday mornings and OneNews on Monday, Wednesday, and Friday.",
   "scripts": {
     "dev": "NODE_OPTIONS=--disable-warning=DEP0169 next dev",
     "build": "prisma generate && next build",

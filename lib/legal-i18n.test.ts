@@ -14,12 +14,17 @@ describe("public legal copy", () => {
     expect(copy).toContain("hello@oneread.email");
   });
 
-  it("keeps product scope, monthly billing, USD, and governing law aligned in every locale", () => {
+  it("keeps product scope, both billing intervals, USD, and governing law aligned in every locale", () => {
     for (const legal of Object.values(LEGAL_DICTIONARIES)) {
       const terms = flatten(legal.terms);
+      // Both launch products are in scope; the retired one never is.
       expect(terms).toContain("OneArticle");
+      expect(terms).toContain("OneNews");
       expect(terms).not.toContain("OneFilm");
-      expect(terms).toMatch(/monthly|aylık|monat|mensuel/i);
+      // Offers are sold monthly *and* annually, so the terms may not describe
+      // OneRead as a monthly-only subscription.
+      expect(terms).toMatch(/monthly|aylık|monat|au mois/i);
+      expect(terms).toMatch(/annually|yıllık|jährlich|à l'année/i);
       expect(terms).toContain("USD");
       expect(terms).toMatch(/Türkiye/);
     }
