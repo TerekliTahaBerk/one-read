@@ -3,6 +3,7 @@ import {
   checkoutEnvVarNames,
   validatePolarConfiguration,
 } from "@/lib/products/polar-config";
+import { validateCronHeartbeatUrl } from "@/lib/cron-heartbeat";
 
 export interface LaunchConfigResult { ready: boolean; problems: string[] }
 
@@ -23,6 +24,14 @@ export function validatePublicLaunchConfiguration(env: Record<string, string | u
   const required = ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "EMAIL_VERIFICATION_SECRET"];
   for (const name of required) if (!env[name]?.trim()) problems.push(`${name} is not configured.`);
   problems.push(...validateResendProductionConfiguration(env));
+  const dailyHeartbeat = validateCronHeartbeatUrl(env.BETTER_STACK_DAILY_CRON_HEARTBEAT_URL);
+  if (dailyHeartbeat === "missing") problems.push("BETTER_STACK_DAILY_CRON_HEARTBEAT_URL is not configured.");
+  if (dailyHeartbeat === "invalid_url") problems.push("BETTER_STACK_DAILY_CRON_HEARTBEAT_URL must be a valid credential-free HTTPS URL.");
+  if (env.ONENEWS_DELIVERY_ENABLED === "true") {
+    const newsHeartbeat = validateCronHeartbeatUrl(env.BETTER_STACK_NEWS_CRON_HEARTBEAT_URL);
+    if (newsHeartbeat === "missing") problems.push("BETTER_STACK_NEWS_CRON_HEARTBEAT_URL is required while OneNews delivery is enabled.");
+    if (newsHeartbeat === "invalid_url") problems.push("BETTER_STACK_NEWS_CRON_HEARTBEAT_URL must be a valid credential-free HTTPS URL.");
+  }
   if (env.POLAR_SERVER !== "production") problems.push("POLAR_SERVER must be explicitly set to production.");
   if (env.PUBLIC_CHECKOUT_ENABLED !== "true") problems.push("PUBLIC_CHECKOUT_ENABLED is not enabled.");
   const base = env.PUBLIC_BASE_URL?.trim();

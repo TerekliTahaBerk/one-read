@@ -53,10 +53,13 @@ unsafe whole-batch platform retry while preserving a machine-detectable result.
   skipped, and reconciliation-required counts.
 - Better Stack uptime monitor: `https://www.oneread.email/`, check every 3
   minutes, alert after 2 failures.
-- Better Stack heartbeat: configure `BETTER_STACK_CRON_HEARTBEAT_URL` in Vercel.
-  Use a 10-minute expected interval and a 10-minute grace period. OneRead pings
-  only after a recorded healthy cron completion; partial or failed runs do not
-  report healthy. Missing configuration is a safe no-op.
+- Better Stack heartbeats use separate
+  `BETTER_STACK_DAILY_CRON_HEARTBEAT_URL` and
+  `BETTER_STACK_NEWS_CRON_HEARTBEAT_URL` monitors. OneRead pings only after a
+  durably recorded healthy completion; partial or failed runs do not report
+  healthy. Missing/invalid configuration emits a secret-free operational error.
+  Exact cadence, alert thresholds, evidence, and no-due-work semantics are in
+  [CRON_MONITORING.md](./CRON_MONITORING.md).
 
 Send alerts to the primary operator's email plus the established incident
 destination. Never paste the heartbeat URL into logs, tickets, or screenshots.

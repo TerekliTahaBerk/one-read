@@ -35,7 +35,7 @@ import {
 import type { ProductControls } from "@/lib/admin/settings-store";
 import { reportCronFailure } from "@/lib/observability";
 import { getResendStatus } from "@/lib/resend";
-import { emitCronHeartbeat } from "@/lib/cron-heartbeat";
+import { emitCronHeartbeat, type CronHeartbeatJob } from "@/lib/cron-heartbeat";
 
 export interface EditorialDispatchSummary {
   issues: number;
@@ -51,6 +51,7 @@ export interface EditorialCronConfig {
   productKey: string;
   productName: string;
   route: string;
+  heartbeatJob: CronHeartbeatJob;
   /** Audit action recorded on a successful dispatch. */
   auditAction: string;
   /** Weekday numbers (0 = Sunday) the product is expected to publish on. */
@@ -133,7 +134,7 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
       skippedCount: result.skipped,
       failedCount: result.failed,
       error: attentionRequired ? "partial_delivery_failure" : null,
-      metadata: { ...result, attentionRequired },
+      metadata: { ...result, attentionRequired, heartbeat: { monitor: config.heartbeatJob, eligible: !attentionRequired } },
     });
 
     // Past this point the emails are already out. Nothing here may throw into
@@ -141,7 +142,22 @@ export async function runEditorialCron(config: EditorialCronConfig): Promise<Res
     // an operator could re-run it by hand.
     await afterDispatch(config, result, runId, runRecorded);
 
-    if (!attentionRequired && runRecorded) await emitCronHeartbeat();
+    if (!attentionRequired && runRecorded) {
+      const heartbeat = await emitCronHeartbeat(config.heartbeatJob);
+      if (!heartbeat.delivered) {
+        await reportCronFailure({
+          productKey: config.productKey,
+          productName: config.productName,
+          route: config.route,
+          stage: "finish",
+          code: `heartbeat_${heartbeat.reason ?? "unknown"}`,
+          transient: heartbeat.reason === "provider_unavailable" || heartbeat.reason === "provider_rejected",
+          message: `Healthy run ${runId} could not deliver its ${config.heartbeatJob} monitor heartbeat`,
+          runId,
+          error: new Error(`heartbeat_${heartbeat.reason ?? "unknown"}`),
+        });
+      }
+    }
 
     return NextResponse.json({
       ok: !attentionRequired,
