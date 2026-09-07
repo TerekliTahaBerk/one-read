@@ -25,6 +25,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Overview",
     items: [
       { href: "/admin", label: "Overview", icon: "grid" },
+      { href: "/admin/analytics", label: "Launch health", matchPrefix: "/admin/analytics", icon: "chart" },
     ],
   },
   {

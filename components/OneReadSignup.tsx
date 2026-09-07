@@ -39,7 +39,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     event.preventDefault(); setError(null);
     if (!isLikelyEmail(email)) return setError("Enter a valid email address.");
     setBusy(true);
-    const { response } = await postJson("/api/oneread/verification/request", { email });
+    const { response } = await postJson("/api/oneread/verification/request", { email, offer, interval });
     setBusy(false);
     if (!response.ok) return setError("We could not send a code. Please try again.");
     setStep("verify");

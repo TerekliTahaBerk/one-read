@@ -723,6 +723,9 @@ model EmailVerificationCode {
   /// | "one-lingo-signup" | "one-lingo-preferences"
   /// | "one-film-signup" | "one-film-preferences"
   purpose  String
+  /// PII-free commercial intent used for launch funnel attribution, e.g.
+  /// "checkout:one-article:annual". Null on historical/unbound flows.
+  intent   String?
 
   expiresAt   DateTime
   consumedAt  DateTime?
