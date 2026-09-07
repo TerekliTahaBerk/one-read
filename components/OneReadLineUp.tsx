@@ -30,11 +30,8 @@ export function OneArticleMascotArt() {
 }
 
 /**
- * OneNews, drawn from the same parts as OneArticle — black blob body, white
- * eyes, thin stick limbs — but deliberately not the same character. Its body
- * is a taller, smoother pebble rather than a lumpy blob, and it holds a folded
- * news sheet on its right rather than a page on its left, so the two read as
- * siblings across a row instead of one drawing printed twice.
+ * OneNews shares OneArticle's scalloped body, eye proportions and thin limbs.
+ * Its gaze and folded newspaper on the right distinguish the news reader.
  */
 export function OneNewsMascotArt() {
   return (
@@ -42,12 +39,12 @@ export function OneNewsMascotArt() {
       <g fill="none" stroke="#1A1A1A" strokeLinecap="round" strokeLinejoin="round">
         <path d="M66 102c-5 12-7 23-6 34M60 137l-9 1" strokeWidth="3" />
         <path d="M92 102c3 11 4 21 3 31M95 133l8 4" strokeWidth="3" />
-        <path d="M79 37c21 0 37 14 37 33 0 9-2 16-7 22-5 7-14 11-30 11s-25-4-30-11c-5-6-7-13-7-22 0-19 16-33 37-33Z" fill="#1A1A1A" strokeWidth="2.5" />
+        <path d="M48 93C34 88 32 72 41 63c-5-12 5-23 18-21 5-13 20-16 29-7 12-7 25 1 24 15 12 4 16 18 8 27 7 11 0 25-13 27-7 12-23 13-32 4-11 7-25 0-27-15Z" fill="#1A1A1A" strokeWidth="2.5" />
         <g className="mascot-eyes">
-          <ellipse cx="68" cy="72" rx="10" ry="12.5" fill="#FFFFFF" strokeWidth="1.5" />
-          <ellipse cx="92" cy="72" rx="10" ry="12.5" fill="#FFFFFF" strokeWidth="1.5" />
-          <circle className="mascot-pupil" cx="69" cy="76" r="3.6" fill="#1A1A1A" stroke="none" />
-          <circle className="mascot-pupil" cx="90" cy="76" r="3.6" fill="#1A1A1A" stroke="none" />
+          <ellipse cx="66" cy="75" rx="11" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
+          <ellipse cx="91" cy="75" rx="11" ry="14" fill="#FFFFFF" strokeWidth="1.5" />
+          <circle className="mascot-pupil" cx="69.5" cy="80" r="3.8" fill="#1A1A1A" stroke="none" />
+          <circle className="mascot-pupil" cx="94.5" cy="80" r="3.8" fill="#1A1A1A" stroke="none" />
         </g>
         <path className="news-arm-left" d="M45 90c-10 3-16 9-19 17" strokeWidth="3" />
         <path className="news-arm-right" d="M113 90c4 4 5 8 2 13" strokeWidth="3" />
