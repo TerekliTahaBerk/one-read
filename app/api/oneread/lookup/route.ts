@@ -18,7 +18,7 @@ import {
 } from "@/lib/billing/presentation";
 import { GRANDFATHER_FORFEIT_WARNING } from "@/lib/billing/transitions";
 import { resolveEntitlements } from "@/lib/products/entitlements";
-import { PRODUCT_ONE_ARTICLE, PRODUCT_ONE_NEWS } from "@/lib/products/registry";
+import { PRODUCTS, PRODUCT_ONE_ARTICLE, PRODUCT_ONE_NEWS } from "@/lib/products/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,13 +90,13 @@ export async function POST(request: Request) {
     products: {
       [PRODUCT_ONE_ARTICLE]: {
         active: entitlements.byProduct[PRODUCT_ONE_ARTICLE].granted,
-        cadence: "Weekdays · Morning",
+        cadence: PRODUCTS[PRODUCT_ONE_ARTICLE].cadence,
         language,
         emailStatus: articleHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
       },
       [PRODUCT_ONE_NEWS]: {
         active: entitlements.byProduct[PRODUCT_ONE_NEWS].granted,
-        cadence: "Mon / Wed / Fri",
+        cadence: PRODUCTS[PRODUCT_ONE_NEWS].cadence,
         language,
         emailStatus: newsHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
       },

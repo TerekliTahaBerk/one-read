@@ -290,7 +290,7 @@ export const PUBLIC_COMMERCIAL_SURFACES: readonly string[] = [
   "components/EditorialStandardsContent.tsx",
   "components/Footer.tsx",
   "components/HomePageContent.tsx",
-  "components/OneReadFamilyMascots.tsx",
+  "components/OneReadLineUp.tsx",
   "components/OneReadPreferences.tsx",
   "components/OneReadSignup.tsx",
   "components/PricingPageContent.tsx",

@@ -28,19 +28,26 @@ export function OneArticleMascotArt() {
   );
 }
 
-export function OneReadFamilyMascots() {
+/**
+ * The heading for the line-up on the homepage, and the OneArticle mascot that
+ * introduces it. The offer cards that follow are rendered by the homepage
+ * itself from the registry; this section only frames them, so its copy names
+ * the two products and the bundle rather than gesturing at a product family
+ * that P3.1 retired.
+ */
+export function OneReadLineUp() {
   const { dictionary } = useSiteLanguage();
 
   return (
-    <section id="onearticle" aria-labelledby="onearticle-heading" className="mt-12 w-full scroll-mt-8 border-t border-line/80 pt-9 text-center sm:mt-14 sm:pt-10">
-      <h2 id="onearticle-heading" className="font-serif text-[1.8rem] font-medium leading-tight tracking-[-0.02em] text-ink sm:text-[2.15rem]">
-        {dictionary.family.title}
+    <section id="products" aria-labelledby="products-heading" className="mt-12 w-full scroll-mt-8 border-t border-line/80 pt-9 text-center sm:mt-14 sm:pt-10">
+      <h2 id="products-heading" className="font-serif text-[1.8rem] font-medium leading-tight tracking-[-0.02em] text-ink sm:text-[2.15rem]">
+        {dictionary.lineUp.title}
       </h2>
-      <p className="mx-auto mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash sm:text-[15px]">{dictionary.family.intro}</p>
-      <Link href="/article" aria-label={`OneArticle — ${dictionary.family.article}`} className="family-mascot focus-ring group mx-auto mt-8 block max-w-[18rem] rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75 sm:mt-10">
+      <p className="mx-auto mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash sm:text-[15px]">{dictionary.lineUp.intro}</p>
+      <Link href="/article" aria-label={`OneArticle — ${dictionary.lineUp.article}`} className="family-mascot focus-ring group mx-auto mt-8 block max-w-[18rem] rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75 sm:mt-10">
         <div className="family-mascot-figure mx-auto h-[9.25rem] w-[9.25rem]"><OneArticleMascotArt /></div>
         <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">OneArticle</h3>
-        <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{dictionary.family.article}</p>
+        <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{dictionary.lineUp.article}</p>
       </Link>
     </section>
   );

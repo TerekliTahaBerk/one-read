@@ -15,7 +15,14 @@ import {
   isBundleOffer,
   offerIncludesLabel,
 } from "./terminology";
-import { OFFERS, OFFER_KEYS, PRODUCTS, PRODUCT_KEYS } from "./registry";
+import {
+  OFFERS,
+  OFFER_KEYS,
+  PRODUCTS,
+  PRODUCT_KEYS,
+  isBillingIntervalKey,
+  isOfferKey,
+} from "./registry";
 
 /**
  * The terminology contract. Like `contract.test.ts`, these are not unit tests
@@ -151,5 +158,102 @@ describe("no second source of truth for what an offer includes", () => {
       /["'`]\s*OneArticle\s*\+\s*OneNews\s*["'`]/.test(surface(path)),
     );
     expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * P3.2 — the acquisition and purchase surfaces.
+ *
+ * The terminology contract above stops a retired *name* reaching a buyer. These
+ * freeze the other two ways the same surfaces drifted: a price or cadence typed
+ * as a literal beside the registry that owns it, and a call to action offering
+ * one plan while sending the buyer to another.
+ */
+
+/** Everything a buyer reads between the homepage and the checkout redirect. */
+const ACQUISITION_SURFACES: readonly string[] = [
+  "app/page.tsx",
+  "app/pricing/page.tsx",
+  "app/subscribe/page.tsx",
+  "components/HomePageContent.tsx",
+  "components/OneReadLineUp.tsx",
+  "components/PricingPageContent.tsx",
+  "components/OneReadSignup.tsx",
+];
+
+/**
+ * A grandfathering disclosure has to name the closed $1 price to the people on
+ * it. Everything else that states money on these screens is a sales claim, and
+ * a sales claim must be derived.
+ */
+function withoutGrandfatherDisclosures(contents: string): string {
+  return contents
+    .split("\n")
+    .filter((line) => !/grandfather/i.test(line))
+    .join("\n");
+}
+
+describe("acquisition surfaces price from the registry", () => {
+  it("writes no price literal into a sales surface", () => {
+    const offenders: string[] = [];
+    for (const path of ACQUISITION_SURFACES) {
+      const matches = withoutGrandfatherDisclosures(surface(path)).match(/\$\s?\d[\d.,]*/g);
+      if (matches) offenders.push(`${path} -> ${[...new Set(matches)].join(", ")}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("writes no discount percentage into a sales surface", () => {
+    const offenders = ACQUISITION_SURFACES.filter((path) => /\d+\s?%/.test(surface(path)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("writes no cadence into a sales surface that the product registry owns", () => {
+    const offenders: string[] = [];
+    for (const path of ACQUISITION_SURFACES) {
+      const contents = surface(path);
+      for (const key of PRODUCT_KEYS) {
+        if (contents.includes(PRODUCTS[key].cadence)) {
+          offenders.push(`${path} -> ${PRODUCTS[key].cadence}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("every offer CTA reaches the offer it names", () => {
+  /** Every `/subscribe?offer=…` link written anywhere a reader can click one. */
+  const LINKING_SURFACES: readonly string[] = [
+    ...ACQUISITION_SURFACES,
+    "app/article/subscribe/page.tsx",
+    "app/samples/news/page.tsx",
+    "components/ArticleLanding.tsx",
+  ];
+
+  it("names a registry offer and a registry interval in every hardcoded link", () => {
+    const offenders: string[] = [];
+    let found = 0;
+    for (const path of LINKING_SURFACES) {
+      for (const match of surface(path).matchAll(/\/subscribe\?offer=([\w-]+)(?:&interval=([\w-]+))?/g)) {
+        const [, offer, interval] = match;
+        // A template literal reads back as the interpolation marker, which is
+        // the derived case and exactly what we want these pages to do.
+        if (offer.startsWith("$")) continue;
+        found += 1;
+        if (!isOfferKey(offer)) offenders.push(`${path} -> unknown offer "${offer}"`);
+        if (interval && !isBillingIntervalKey(interval)) {
+          offenders.push(`${path} -> unknown interval "${interval}"`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+    // Guards the guard: a regex that silently stopped matching would pass.
+    expect(found).toBeGreaterThan(0);
+  });
+
+  it("carries the displayed interval into the pricing page's checkout link", () => {
+    const contents = surface("components/PricingPageContent.tsx");
+    expect(contents).toContain("/subscribe?offer=${offer}&interval=${interval}");
   });
 });

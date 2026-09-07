@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { OneReadSignup } from "@/components/OneReadSignup";
 
 export const metadata: Metadata = {
-  title: "Start OneRead",
+  title: "Choose your plan — OneRead",
   description:
-    "Choose your OneArticle reading preferences and continue to secure checkout.",
+    "Choose OneArticle, OneNews, or both, set your reading language, and continue to secure checkout.",
   robots: { index: false, follow: false },
 };
 
