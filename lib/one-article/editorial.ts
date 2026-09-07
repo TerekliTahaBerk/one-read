@@ -4,6 +4,7 @@ import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { resolveOneArticleEligibilityForContacts } from "@/lib/oneread/access";
 import { renderEditorialEmail } from "./editorial-email";
 import { sendDailyEmail } from "@/lib/resend";
+import { reportOperationalEvent } from "@/lib/observability";
 import {
   validateEditorialDraft,
   validateEditorialIssue,
@@ -475,6 +476,13 @@ export async function dispatchIssue(
             : errorMessage(error).slice(0, 1000),
         },
       });
+      await reportOperationalEvent("editorial_delivery_failed", {
+        subsystem: "delivery", productKey: "one-article", operation: "send_editorial", outcome: "failed",
+        state: providerAccepted ? "provider_accepted_persistence_failed" : "provider_rejected",
+        correlationId: delivery.id,
+        retryClassification: providerAccepted ? "reconciliation_required" : "retryable",
+        errorCode: providerAccepted ? "local_persistence_failed" : "provider_send_failed",
+      }, { error, level: "error" });
       failed++;
     }
   }

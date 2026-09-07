@@ -17,6 +17,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendDailyEmail } from "@/lib/resend";
+import { reportOperationalEvent } from "@/lib/observability";
 
 export interface StartRunInput {
   productKey: string;
@@ -76,11 +77,12 @@ export async function safeFinishRun(input: FinishRunInput): Promise<boolean> {
     await finishRun(input);
     return true;
   } catch (error) {
-    console.error(
-      "[operational-runs] could not close run",
-      input.id,
-      classifyRunFailure(error).message,
-    );
+    const failure = classifyRunFailure(error);
+    await reportOperationalEvent("operational_run_close_failed", {
+      subsystem: "cron", operation: "close_operational_run", outcome: "failed", state: input.status,
+      correlationId: input.id, runId: input.id, retryClassification: failure.transient ? "retryable" : "not_retryable",
+      errorCode: failure.code, metadata: { message: failure.message },
+    }, { error, level: "error", flush: true });
     return false;
   }
 }

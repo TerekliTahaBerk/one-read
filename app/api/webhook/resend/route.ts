@@ -2,11 +2,24 @@ import { NextResponse } from "next/server";
 import { ONE_ARTICLE_PRODUCT_KEY, ONE_READ_PRODUCT_KEY } from "@/lib/options";
 import { prisma } from "@/lib/prisma";
 import { parseResendDeliveryEvent, shouldApplyProviderEvent, verifyResendWebhook } from "@/lib/resend-webhook";
+import { reportOperationalEvent } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  try {
+    return await handleResendWebhook(request);
+  } catch (error) {
+    await reportOperationalEvent("resend_webhook_failed", {
+      subsystem: "resend_webhook", operation: "apply_delivery_status", outcome: "failed", state: "unprocessed",
+      retryClassification: "provider_retry", errorCode: "webhook_processing_failed",
+    }, { error, level: "error", flush: true });
+    throw error;
+  }
+}
+
+async function handleResendWebhook(request: Request) {
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
   if (!secret) return NextResponse.json({ ok: false }, { status: 503 });
 

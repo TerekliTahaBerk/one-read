@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beforeSendPrivacy } from "./sentry-privacy";
+import { beforeSendPrivacy, scrubTelemetry } from "./sentry-privacy";
 
 describe("Sentry privacy", () => {
   it("removes request bodies, credentials, emails, and URL tokens", () => {
@@ -14,5 +14,15 @@ describe("Sentry privacy", () => {
     expect(event.request?.data).toBeUndefined();
     expect(event.request?.headers).toEqual({});
     expect(event.extra).toEqual({ signature: "[Filtered]", product: "one-article" });
+  });
+
+  it("scrubs nested payloads, database URLs, bearer tokens, and checkout secrets", () => {
+    expect(scrubTelemetry({
+      rawPayload: { email: "reader@example.com" },
+      error: "postgresql://user:pass@db.example.com/app Bearer abc123 https://polar.test/x?checkout_id=secret",
+    })).toEqual({
+      rawPayload: "[Filtered]",
+      error: "[database-url] Bearer [Filtered] https://polar.test/x?checkout_id=[Filtered]",
+    });
   });
 });

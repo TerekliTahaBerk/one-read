@@ -6,6 +6,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: mockDeep<PrismaClient>() }));
 
 const observability = vi.hoisted(() => ({
   reportCronFailure: vi.fn(),
+  reportOperationalEvent: vi.fn(),
   reportSettingsFallback: vi.fn(),
 }));
 vi.mock("@/lib/observability", () => observability);

@@ -3,6 +3,7 @@ import { parseEmail } from "@/lib/options";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { parseOfferSelection } from "@/lib/products/registry";
 import { changeOffer, previewOfferChange } from "@/lib/billing/offer-checkout";
+import { reportOperationalEvent } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,7 +77,11 @@ export async function POST(request: Request) {
       effective: result.plan.effective,
     });
   } catch (err) {
-    console.error("[/api/billing/plan-change] error:", err);
+    await reportOperationalEvent("billing_plan_change_failed", {
+      subsystem: "billing", productKey: selection.offer,
+      operation: payload.confirm === true ? "apply_plan_change" : "preview_plan_change",
+      outcome: "failed", state: selection.interval, retryClassification: "reconciliation_required", errorCode: "plan_change_failed",
+    }, { error: err, level: "error", flush: true });
     return NextResponse.json(
       { ok: false, error: "Something went wrong. Please try again." },
       { status: 500 },

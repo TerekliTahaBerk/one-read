@@ -3,6 +3,7 @@ import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks"
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { applyPolarWebhookPayload, isSupportedPolarEventType } from "@/lib/billing/polar";
+import { reportOperationalEvent } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,18 @@ function headersToRecord(headers: Headers): Record<string, string> {
 const IN_FLIGHT_WINDOW_MS = 60_000;
 
 export async function POST(request: Request) {
+  try {
+    return await handlePolarWebhook(request);
+  } catch (error) {
+    await reportOperationalEvent("polar_webhook_failed", {
+      subsystem: "polar_webhook", operation: "ingest_event", outcome: "failed", state: "unprocessed",
+      retryClassification: "provider_retry", errorCode: "webhook_processing_failed",
+    }, { error, level: "error", flush: true });
+    throw error;
+  }
+}
+
+async function handlePolarWebhook(request: Request) {
   const secret = process.env.POLAR_WEBHOOK_SECRET;
   if (!secret) {
     return NextResponse.json({ ok: false, error: "Webhook is not configured." }, { status: 503 });
