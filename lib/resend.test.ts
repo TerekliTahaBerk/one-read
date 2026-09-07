@@ -117,6 +117,30 @@ describe("lib/resend", () => {
     ).rejects.toThrow("validation_error: Invalid `to` field");
   });
 
+  it("classifies a transport exception as ambiguous so callers never auto-resend", async () => {
+    process.env.RESEND_API_KEY = "re_test_key";
+    sendMock.mockRejectedValue(new Error("socket closed after write"));
+
+    const { ResendDeliveryError, sendDailyEmail } = await import("@/lib/resend");
+    const error = await sendDailyEmail({
+      to: "reader@example.com", subject: "Subject", text: "text", html: "<p>html</p>",
+      operation: "send_editorial", productKey: "one-article", idempotencyKey: "delivery-1",
+    }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(ResendDeliveryError);
+    expect(error.kind).toBe("ambiguous_outcome");
+  });
+
+  it("classifies a success-shaped response without a message id as ambiguous", async () => {
+    process.env.RESEND_API_KEY = "re_test_key";
+    sendMock.mockResolvedValue({ data: {}, error: null });
+
+    const { sendDailyEmail } = await import("@/lib/resend");
+    await expect(sendDailyEmail({
+      to: "reader@example.com", subject: "Subject", text: "text", html: "<p>html</p>",
+    })).rejects.toMatchObject({ kind: "ambiguous_outcome" });
+  });
+
   it("sendDailyEmail returns the message id on success", async () => {
     process.env.RESEND_API_KEY = "re_test_key";
     sendMock.mockResolvedValue({ data: { id: "msg_123" }, error: null });

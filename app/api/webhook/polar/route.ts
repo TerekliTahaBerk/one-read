@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { applyPolarWebhookPayload, isSupportedPolarEventType } from "@/lib/billing/polar";
-import { reportOperationalEvent } from "@/lib/observability";
+import { applyPolarWebhookPayload, isSupportedPolarEventType, needsReconciliation } from "@/lib/billing/polar";
+import { reportProviderEvent } from "@/lib/provider-observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,10 +51,10 @@ export async function POST(request: Request) {
   try {
     return await handlePolarWebhook(request);
   } catch (error) {
-    await reportOperationalEvent("polar_webhook_failed", {
-      subsystem: "polar_webhook", operation: "ingest_event", outcome: "failed", state: "unprocessed",
-      retryClassification: "provider_retry", errorCode: "webhook_processing_failed",
-    }, { error, level: "error", flush: true });
+    await reportProviderEvent("polar_webhook_processing_failed", {
+      outcome: "failed", state: "unprocessed", errorCode: "webhook_processing_failed",
+      error, flush: true,
+    });
     throw error;
   }
 }
@@ -62,6 +62,9 @@ export async function POST(request: Request) {
 async function handlePolarWebhook(request: Request) {
   const secret = process.env.POLAR_WEBHOOK_SECRET;
   if (!secret) {
+    await reportProviderEvent("polar_webhook_config_invalid", {
+      outcome: "not_configured", errorCode: "missing_webhook_secret", flush: true,
+    });
     return NextResponse.json({ ok: false, error: "Webhook is not configured." }, { status: 503 });
   }
 
@@ -71,6 +74,10 @@ async function handlePolarWebhook(request: Request) {
     payload = validateEvent(body, headersToRecord(request.headers), secret);
   } catch (err) {
     if (err instanceof WebhookVerificationError) {
+      await reportProviderEvent("polar_webhook_signature_invalid", {
+        outcome: "rejected", errorCode: "invalid_signature",
+        correlationId: request.headers.get("webhook-id"),
+      });
       return NextResponse.json({ ok: false }, { status: 403 });
     }
     throw err;
@@ -113,11 +120,19 @@ async function handlePolarWebhook(request: Request) {
         select: { processedAt: true, createdAt: true, outcome: true },
       });
       if (existing?.processedAt) {
+        await reportProviderEvent("polar_webhook_safe_noop", {
+          outcome: "duplicate", state: existing.outcome ?? "processed",
+          correlationId: providerEventId, errorCode: "duplicate_event",
+        });
         return NextResponse.json({ ok: true, duplicate: true, outcome: existing.outcome });
       }
       if (existing && now.getTime() - existing.createdAt.getTime() < IN_FLIGHT_WINDOW_MS) {
         // Another delivery of this same event is still being applied. Ack it;
         // the in-flight one owns the state change.
+        await reportProviderEvent("polar_webhook_safe_noop", {
+          outcome: "duplicate_in_flight", state: "in_flight",
+          correlationId: providerEventId, errorCode: "duplicate_event",
+        });
         return NextResponse.json({ ok: true, duplicate: true, inFlight: true });
       }
       // The audit row was inserted by a delivery that then failed before
@@ -129,6 +144,10 @@ async function handlePolarWebhook(request: Request) {
   }
 
   if (!supported) {
+    await reportProviderEvent("polar_webhook_safe_noop", {
+      outcome: "ignored_event_type", state: payload.type,
+      correlationId: providerEventId, errorCode: "unsupported_event_type",
+    });
     return NextResponse.json({ ok: true, outcome: "ignored_event_type", ignored: true });
   }
 
@@ -145,6 +164,19 @@ async function handlePolarWebhook(request: Request) {
     where: { providerEventId },
     data: { processedAt: new Date(), outcome: result.outcome },
   });
+
+  if (needsReconciliation(result.outcome)) {
+    await reportProviderEvent("polar_billing_reconciliation_required", {
+      productKey: null, outcome: result.outcome, state: payload.type,
+      correlationId: providerEventId, errorCode: result.outcome,
+      metadata: { provider_product_id: result.providerProductId ? "present" : "absent" },
+    });
+  } else if (result.outcome === "ignored_stale") {
+    await reportProviderEvent("polar_webhook_safe_noop", {
+      outcome: result.outcome, state: payload.type,
+      correlationId: providerEventId, errorCode: "stale_event",
+    });
+  }
 
   return NextResponse.json({ ok: true, outcome: result.outcome });
 }
