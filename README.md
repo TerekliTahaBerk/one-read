@@ -3,9 +3,14 @@
 Production delivery and monitoring behavior is documented in
 [`docs/PRODUCTION_SAFETY.md`](docs/PRODUCTION_SAFETY.md).
 
-OneRead is the subscription and account layer for **OneArticle**: one human-reviewed article briefing delivered every weekday. The launch offer is **$1/month** through Polar.
+**OneRead** is the brand and the subscription layer. It sells two editorial products:
 
-OneArticle is the only production product. Older Film and Lingo database models remain solely to preserve historical data; they have no public pages, checkout APIs, cron jobs, admin operations, or production dispatch path.
+- **OneArticle** — one human-reviewed article briefing, weekday mornings.
+- **OneNews** — one story worth understanding, Monday / Wednesday / Friday.
+
+Each is available on its own, or together as the **OneRead** bundle. What is sold, at what price, granting which products, is defined once in [`lib/products/registry.ts`](lib/products/registry.ts); what those things are *called* on every subscriber-facing surface is defined once in [`lib/products/terminology.ts`](lib/products/terminology.ts). Neither is duplicated in copy — see [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md).
+
+OneArticle and OneNews are the only production products. Older Film and Lingo database models remain solely to preserve historical data; they have no public pages, checkout APIs, cron jobs, admin operations, or production dispatch path.
 
 ## Stack
 
@@ -27,13 +32,13 @@ npm run dev
 ## Reader flow
 
 1. `/subscribe` verifies inbox ownership with an expiring six-digit code.
-2. The reader saves OneArticle interests and languages.
-3. `/api/oneread/checkout` creates the Polar checkout for the configured OneRead product.
+2. The reader saves reading preferences for the products their offer grants.
+3. `/api/billing/checkout` creates the Polar checkout for the selected (offer, interval) pair.
 4. `/api/webhook/polar` verifies, records, and idempotently applies billing events.
 5. An editor prepares and explicitly schedules an edition.
 6. `/api/cron/daily` sends only eligible, subscribed readers and records recipient-level delivery state.
 
-Email consent and paid renewal are separate. Every editorial email includes visible unsubscribe copy and RFC 8058 one-click headers. Resend bounce/complaint events immediately suppress future OneArticle delivery.
+Email consent and paid renewal are separate. Every editorial email includes visible unsubscribe copy and RFC 8058 one-click headers. Resend bounce/complaint events immediately suppress future editorial delivery.
 
 ## Production route boundary
 

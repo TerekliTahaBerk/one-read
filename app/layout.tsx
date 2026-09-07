@@ -27,11 +27,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
   title: "OneRead — One useful email at a time.",
   description:
-    "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
+    "OneRead delivers OneArticle on weekday mornings and OneNews on Monday, Wednesday, and Friday — calm, human-reviewed editorial email with clear sources.",
   openGraph: {
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
+      "OneRead delivers OneArticle on weekday mornings and OneNews on Monday, Wednesday, and Friday — calm, human-reviewed editorial email with clear sources.",
     type: "website",
     siteName: "OneRead",
     url: "/",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "OneRead — One useful email at a time.",
     description:
-      "OneRead delivers OneArticle: one carefully edited article brief every weekday morning.",
+      "OneRead delivers OneArticle on weekday mornings and OneNews on Monday, Wednesday, and Friday — calm, human-reviewed editorial email with clear sources.",
     images: ["/opengraph-image"],
   },
 };
