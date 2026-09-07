@@ -1,8 +1,10 @@
 # OneNews delivery operations
 
 OneNews sends only scheduled, human-approved, currently valid editions. The
-Vercel cron calls `GET /api/cron/news` at 16:00 UTC on Monday, Wednesday and
-Friday. An editor may schedule a different due time, but deployment alone does
+Vercel cron calls `GET /api/cron/news` daily at 16:00 UTC (19:00
+Europe/Istanbul) for an unambiguous 24-hour health cadence. Tuesday, Thursday,
+Saturday and Sunday are healthy no-op polls; delivery remains restricted to
+Monday, Wednesday and Friday. An editor may schedule a different due time, but deployment alone does
 not activate sending: production requires `ONENEWS_DELIVERY_ENABLED=true`.
 
 ## State semantics
@@ -18,6 +20,11 @@ The issue becomes `SENT` when every logical row is resolved,
 unresolved, and `FAILED` when none succeeded. Better Stack receives a healthy
 heartbeat only after the OperationalRun is durably closed without recipients
 requiring attention.
+
+The News heartbeat is independent from Daily and is configured through
+`BETTER_STACK_NEWS_CRON_HEARTBEAT_URL`; see
+[CRON_MONITORING.md](./CRON_MONITORING.md) for its calendar-aware missed-run
+window and production proof.
 
 ## Incident playbook
 

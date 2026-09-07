@@ -86,6 +86,6 @@ export async function getSystemHealth(now = new Date()): Promise<SystemHealth> {
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "unknown",
     resendConfigured: getResendStatus().sendReady,
     sentryConfigured: Boolean(process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN),
-    heartbeatConfigured: Boolean(process.env.BETTER_STACK_CRON_HEARTBEAT_URL),
+    heartbeatConfigured: Boolean(process.env.BETTER_STACK_DAILY_CRON_HEARTBEAT_URL),
   };
 }

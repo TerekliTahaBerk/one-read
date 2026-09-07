@@ -2,7 +2,7 @@
 
 These actions require provider accounts, DNS control, production credentials, or a real mailbox/payment. Code and local tests cannot truthfully complete them.
 
-Status last checked: **2026-09-06**. A checked item has direct evidence; an unchecked item still needs a provider-dashboard, production event, mailbox, payment, or database check.
+Status last checked: **2026-09-07**. A checked item has direct evidence; an unchecked item still needs a provider-dashboard, production event, mailbox, payment, or database check.
 
 ## Verified
 
@@ -53,6 +53,13 @@ Status last checked: **2026-09-06**. A checked item has direct evidence; an unch
   `cron_failure`, verify the healthy-only Better Stack heartbeat, and verify
   rollback permissions with the launch operator. Domain, HTTPS, redirect,
   schedule, and secret-name presence are already verified above.
+- [ ] Cron monitors: Vercel Production had neither
+  `BETTER_STACK_DAILY_CRON_HEARTBEAT_URL` nor
+  `BETTER_STACK_NEWS_CRON_HEARTBEAT_URL` when checked on 2026-09-07. Create the
+  two monitors, add their secret URLs, redeploy, and capture the success plus
+  intentional missed-window notification evidence required by
+  `docs/CRON_MONITORING.md`. Do not close this gate from configuration-name
+  presence alone.
 - [ ] DNS operations: if Cloudflare is introduced, use DNS-only records until proxying has been deliberately tested with Vercel domains, webhooks, and redirects. The domain currently uses third-party nameservers rather than Cloudflare nameservers.
 - [ ] Editorial: prepare, test-send, approve, and schedule at least five launch editions; verify source licenses and image rights.
 - [ ] Operations: assign an on-call owner, support owner, billing-refund policy owner, incident channel, and 72-hour KPI review cadence.

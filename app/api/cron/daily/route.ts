@@ -24,6 +24,7 @@ async function handler(request: Request): Promise<Response> {
     productKey: ONE_ARTICLE_PRODUCT_KEY,
     productName: "OneArticle",
     route: "/api/cron/daily",
+    heartbeatJob: "daily",
     auditAction: "oneArticle.editorial.dispatch",
     sendDays: [1, 2, 3, 4, 5],
     controls: snapshot.controls.oneArticle,

@@ -64,6 +64,7 @@ function config(overrides: Partial<EditorialCronConfig> = {}): EditorialCronConf
     productKey: "one-film",
     productName: "OneFilm",
     route: "/api/cron/one-film",
+    heartbeatJob: "daily",
     auditAction: "oneFilm.editorial.dispatch",
     sendDays: [6],
     controls: { cronEnabled: true, dryRun: false, requireApproval: true },
@@ -88,6 +89,7 @@ describe("runEditorialCron", () => {
     vi.clearAllMocks();
     process.env.ADMIN_EMAIL = "ops@example.com";
     getResendStatus.mockReturnValue({ hasApiKey: true, sendReady: true });
+    heartbeat.emitCronHeartbeat.mockResolvedValue({ configured: true, delivered: true });
     sendDailyEmail.mockResolvedValue({ messageId: "msg_1" });
     healthyDatabase();
   });
@@ -115,7 +117,7 @@ describe("runEditorialCron", () => {
       }),
     );
     expect(reportCronFailure).not.toHaveBeenCalled();
-    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledTimes(1);
+    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledWith("daily");
   });
 
   it("records partial delivery as attention-required without returning an unsafe 500", async () => {
@@ -143,7 +145,7 @@ describe("runEditorialCron", () => {
     expect(prisma.operationalRun.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: "SUCCESS", sentCount: 0, failedCount: 0 }),
     }));
-    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledTimes(1);
+    expect(heartbeat.emitCronHeartbeat).toHaveBeenCalledWith("daily");
   });
 
   it("persists attempted and reconciliation counts in the run", async () => {
@@ -315,6 +317,24 @@ describe("runEditorialCron", () => {
     expect(prisma.operationalRun.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "SUCCESS" }) }),
     );
+    expect(prisma.operationalRun.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "FAILED" }) }),
+    );
+  });
+
+  it("reports heartbeat transport failure without changing a successful run", async () => {
+    heartbeat.emitCronHeartbeat.mockResolvedValue({
+      configured: true, delivered: false, reason: "provider_unavailable",
+    });
+
+    const response = await runEditorialCron(config());
+
+    expect(response.status).toBe(200);
+    expect(reportCronFailure).toHaveBeenCalledWith(expect.objectContaining({
+      code: "heartbeat_provider_unavailable",
+      stage: "finish",
+      runId: "run_1",
+    }));
     expect(prisma.operationalRun.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "FAILED" }) }),
     );

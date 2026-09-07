@@ -17,6 +17,7 @@ describe("C5 launch configuration", () => {
       FROM_EMAIL: "OneRead <hello@oneread.email>", RESEND_REPLY_TO: "hello@oneread.email",
       RESEND_WEBHOOK_SECRET: "whsec_test", EMAIL_VERIFICATION_SECRET: "test", POLAR_SERVER: "production",
       PUBLIC_CHECKOUT_ENABLED: "true", PUBLIC_BASE_URL: "https://oneread.test", ONENEWS_DELIVERY_ENABLED: "false",
+      BETTER_STACK_DAILY_CRON_HEARTBEAT_URL: "https://heartbeat.example.test/daily-secret",
     };
     expect(validatePublicLaunchConfiguration(env)).toEqual({ ready: true, problems: [] });
   });
