@@ -229,6 +229,7 @@ describe("every offer CTA reaches the offer it names", () => {
     "app/article/subscribe/page.tsx",
     "app/samples/news/page.tsx",
     "components/ArticleLanding.tsx",
+    "components/NewsLanding.tsx",
   ];
 
   it("names a registry offer and a registry interval in every hardcoded link", () => {

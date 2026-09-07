@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 
@@ -29,11 +30,46 @@ export function OneArticleMascotArt() {
 }
 
 /**
- * The heading for the line-up on the homepage, and the OneArticle mascot that
- * introduces it. The offer cards that follow are rendered by the homepage
- * itself from the registry; this section only frames them, so its copy names
- * the two products and the bundle rather than gesturing at a product family
- * that P3.1 retired.
+ * OneNews, drawn from the same parts as OneArticle — black blob body, white
+ * eyes, thin stick limbs — but deliberately not the same character. Its body
+ * is a taller, smoother pebble rather than a lumpy blob, and it holds a folded
+ * news sheet on its right rather than a page on its left, so the two read as
+ * siblings across a row instead of one drawing printed twice.
+ */
+export function OneNewsMascotArt() {
+  return (
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 160 160" className="h-full w-full overflow-visible">
+      <g fill="none" stroke="#1A1A1A" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M66 102c-5 12-7 23-6 34M60 137l-9 1" strokeWidth="3" />
+        <path d="M92 102c3 11 4 21 3 31M95 133l8 4" strokeWidth="3" />
+        <path d="M79 37c21 0 37 14 37 33 0 9-2 16-7 22-5 7-14 11-30 11s-25-4-30-11c-5-6-7-13-7-22 0-19 16-33 37-33Z" fill="#1A1A1A" strokeWidth="2.5" />
+        <g className="mascot-eyes">
+          <ellipse cx="68" cy="72" rx="10" ry="12.5" fill="#FFFFFF" strokeWidth="1.5" />
+          <ellipse cx="92" cy="72" rx="10" ry="12.5" fill="#FFFFFF" strokeWidth="1.5" />
+          <circle className="mascot-pupil" cx="69" cy="76" r="3.6" fill="#1A1A1A" stroke="none" />
+          <circle className="mascot-pupil" cx="90" cy="76" r="3.6" fill="#1A1A1A" stroke="none" />
+        </g>
+        <path className="news-arm-left" d="M45 90c-10 3-16 9-19 17" strokeWidth="3" />
+        <path className="news-arm-right" d="M113 90c4 4 5 8 2 13" strokeWidth="3" />
+        <g className="family-object">
+          <g className="news-sheet">
+            <path d="M110 100l30 6-5 30-30-6Z" fill="#EFEAE1" strokeWidth="2.5" />
+            <path d="M125 103l-5 30" strokeWidth="1.5" />
+            <path d="M113 106l22 4.4" strokeWidth="2.2" />
+            <path d="M112 115l8 1.6M111 121l8 1.6M111 127l8 1.6M127 118l8 1.6M126 124l8 1.6M126 130l8 1.6" strokeWidth="1.6" />
+          </g>
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * The heading for the line-up on the homepage, and the two products drawn as
+ * characters underneath it. OneRead is the parent brand and has no character
+ * of its own: it is the row, not a third figure in it. The mascots replaced
+ * the offer cards that used to sit here, so the copy under each one stays to a
+ * few words — the pricing page is where a reader goes to compare.
  */
 export function OneReadLineUp() {
   const { dictionary } = useSiteLanguage();
@@ -44,11 +80,41 @@ export function OneReadLineUp() {
         {dictionary.lineUp.title}
       </h2>
       <p className="mx-auto mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash sm:text-[15px]">{dictionary.lineUp.intro}</p>
-      <Link href="/article" aria-label={`OneArticle — ${dictionary.lineUp.article}`} className="family-mascot focus-ring group mx-auto mt-8 block max-w-[18rem] rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75 sm:mt-10">
-        <div className="family-mascot-figure mx-auto h-[9.25rem] w-[9.25rem]"><OneArticleMascotArt /></div>
-        <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">OneArticle</h3>
-        <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{dictionary.lineUp.article}</p>
-      </Link>
+      <div className="mx-auto mt-8 grid max-w-[36rem] grid-cols-2 items-start gap-2 sm:mt-10 sm:gap-8">
+        <MascotLink
+          href="/article"
+          name="OneArticle"
+          label={dictionary.lineUp.article}
+          className="family-mascot-article"
+          art={<OneArticleMascotArt />}
+        />
+        <MascotLink
+          href="/news"
+          name="OneNews"
+          label={dictionary.lineUp.news}
+          className="family-mascot-news"
+          art={<OneNewsMascotArt />}
+        />
+      </div>
     </section>
+  );
+}
+
+/**
+ * One product as a character. The link wraps the whole figure so the target is
+ * large on a phone, and the name is a real heading so the row is navigable
+ * without seeing the drawings at all.
+ */
+function MascotLink({ href, name, label, className, art }: { href: string; name: string; label: string; className: string; art: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-label={`${name} — ${label}`}
+      className={`family-mascot focus-ring block min-w-0 rounded-2xl py-2 text-center transition-opacity duration-200 hover:opacity-75 ${className}`}
+    >
+      <div className="family-mascot-figure mx-auto h-[5.75rem] w-[5.75rem] sm:h-[9.25rem] sm:w-[9.25rem]">{art}</div>
+      <h3 className="mt-3 font-serif text-[1.05rem] font-medium leading-tight tracking-[-0.01em] text-ink">{name}</h3>
+      <p className="mt-1 font-sans text-[12px] leading-[1.45] text-fog">{label}</p>
+    </Link>
   );
 }

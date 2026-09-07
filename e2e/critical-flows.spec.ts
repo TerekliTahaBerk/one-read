@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("public product surfaces render", async ({ page }) => {
-  for (const path of ["/", "/pricing", "/samples/article", "/samples/news", "/editorial", "/terms", "/privacy"]) {
+  for (const path of ["/", "/pricing", "/article", "/news", "/samples/article", "/samples/news", "/editorial", "/terms", "/privacy"]) {
     await page.goto(path);
     await expect(page.locator("h1").first()).toBeVisible();
   }
@@ -91,7 +91,7 @@ test("admin login screen renders and does not leak configuration", async ({ page
 
 test("primary public surfaces have no horizontal overflow on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  for (const path of ["/", "/pricing", "/subscribe", "/samples/news", "/preferences", "/unsubscribe?preview=1"]) {
+  for (const path of ["/", "/pricing", "/news", "/subscribe", "/samples/news", "/preferences", "/unsubscribe?preview=1"]) {
     await page.goto(path);
     const overflows = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,

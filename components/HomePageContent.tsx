@@ -7,20 +7,8 @@ import { HomeReveal } from "@/components/HomeReveal";
 import { Logo } from "@/components/Logo";
 import { OneReadLineUp } from "@/components/OneReadLineUp";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
-import { OFFERS, OFFER_KEYS, type OfferKey } from "@/lib/products/registry";
-import { entryPriceLine, offerCadenceLabel, offerContentsLine } from "@/lib/products/pricing-copy";
+import { entryPriceLine } from "@/lib/products/pricing-copy";
 import { trackEvent } from "@/lib/analytics";
-
-/**
- * Where each offer's card sends a reader who is not ready to buy. A standalone
- * offer shows its own product; the bundle has nothing to show that its two
- * products do not already, so it goes to the page that compares them.
- */
-const OFFER_EXPLORE_HREF: Record<OfferKey, string> = {
-  "one-article": "/samples/article",
-  "one-news": "/samples/news",
-  "one-read": "/pricing",
-};
 
 export function HomePageContent() {
   const { dictionary } = useSiteLanguage();
@@ -108,17 +96,6 @@ export function HomePageContent() {
 
           <div className="w-full reveal-item reveal-item-4">
             <OneReadLineUp />
-            <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
-              {OFFER_KEYS.map((offer) => (
-                <OfferLink
-                  key={offer}
-                  href={OFFER_EXPLORE_HREF[offer]}
-                  title={OFFERS[offer].displayName}
-                  body={OFFERS[offer].tagline}
-                  detail={offerContentsLine(offer) ?? offerCadenceLabel(offer)}
-                />
-              ))}
-            </div>
             <EditorialTrust />
           </div>
         </section>
@@ -131,14 +108,4 @@ export function HomePageContent() {
       />
     </main>
   );
-}
-
-/**
- * One offer, named and described entirely from the registry. The third line is
- * a cadence for a product and a contents list for the bundle: a bundle spanning
- * two schedules has no single cadence to state, and saying what it contains is
- * the thing a reader actually needs before opening the pricing page.
- */
-function OfferLink({ href, title, body, detail }: { href: string; title: string; body: string; detail: string }) {
-  return <Link href={href} className="focus-ring rounded-2xl border border-black/10 bg-white/70 p-5"><strong className="font-serif text-xl">{title}</strong><span className="mt-2 block font-sans text-sm leading-6 text-ash">{body}</span><span className="mt-2 block font-sans text-xs leading-5 text-fog">{detail}</span></Link>;
 }

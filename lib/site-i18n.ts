@@ -41,14 +41,16 @@ const en = {
       "OneRead brings small, single-purpose notes to your inbox — OneArticle on weekday mornings, OneNews on Monday, Wednesday, and Friday.",
     tagline: "No feed to check. Just something worth opening.",
   },
-  // Heads the offer cards the homepage renders from the registry. Names the
-  // two products and the bundle rather than a "family", which was planning-era
-  // vocabulary for a line-up that was never built.
+  // Heads the two products the homepage draws as characters. Names the two
+  // products and the bundle rather than a "family", which was planning-era
+  // vocabulary for a line-up that was never built. The per-product lines are
+  // labels under a drawing, not marketing copy: keep them to a few words.
   lineUp: {
     title: "Two products. One subscription.",
     intro:
       "OneArticle arrives on weekday mornings, OneNews on Monday, Wednesday, and Friday. Take either on its own, or take both as OneRead.",
     article: "Weekday article brief",
+    news: "News brief, explained",
   },
   article: {
     title: "One article worth reading.",
@@ -63,6 +65,21 @@ const en = {
       ["Distilled, not just forwarded", "We don't just link out — we read the source and write a short, clear summary of the one idea worth knowing."],
       ["Read in your language", "Choose your summary language and your preferred source language independently — English, Turkish, Spanish, French, or German."],
       ["Edit anytime", "Change your interests or languages whenever you like. The next morning's brief reflects it immediately."],
+    ],
+  },
+  news: {
+    title: "One story worth understanding.",
+    titleEmphasis: "Three mornings a week.",
+    intro:
+      "OneNews explains one important story instead of handing you a feed of headlines. Each edition sets out what happened, why it matters, and what to watch next — with the sources it was built from.",
+    maxim: "One story. Enough context to hold it. Nothing else.",
+    tagline: "No feed. No alerts. One story, explained.",
+    details: [
+      ["One important story per edition", "Rather than summarising everything, each edition picks the single story worth your attention and stays with it from beginning to end."],
+      ["Monday, Wednesday, and Friday", "Three editions a week, so the news arrives on a rhythm you can keep up with instead of one that follows you around all day."],
+      ["Context, not just headlines", "Every edition is built around what happened, why it matters, and what to watch — the parts a headline leaves out."],
+      ["Human-reviewed and structured", "An editor is responsible for selection, review, and publication. Developing information is labelled with an as-of time, and contested claims are kept apart from established facts."],
+      ["Clear sources and notes", "Each edition ends with the sources it was built from, marked as primary records, reporting, or analysis, so you can go further whenever you want to."],
     ],
   },
   subscribeSuccess: {
@@ -108,8 +125,9 @@ const tr: SiteDictionary = {
   language: { label: "Dil", menu: "Dil seç" },
   footer: { terms: "Koşullar", privacy: "Gizlilik", pricing: "Fiyatlandırma", navigation: "Alt menü", feedback: "Geri bildirim formunu aç", manifesto: "Daha iyi içerik isteyen ama açacak yeni bir uygulama istemeyenler için.", defaultTagline: "Akış yok. Gürültü yok. Yalnızca iyi bir okuma." },
   home: { title: "Her seferinde tek bir faydalı e-posta.", intro: "OneRead, küçük ve tek amaçlı notları gelen kutuna getirir — hafta içi sabahları OneArticle, pazartesi, çarşamba ve cuma günleri OneNews.", tagline: "Kontrol edilecek bir akış yok. Yalnızca açmaya değer bir şey." },
-  lineUp: { title: "İki ürün. Tek abonelik.", intro: "OneArticle hafta içi sabahları, OneNews pazartesi, çarşamba ve cuma günleri gelir. Birini tek başına al ya da ikisini birden OneRead ile al.", article: "Hafta içi makale özeti" },
+  lineUp: { title: "İki ürün. Tek abonelik.", intro: "OneArticle hafta içi sabahları, OneNews pazartesi, çarşamba ve cuma günleri gelir. Birini tek başına al ya da ikisini birden OneRead ile al.", article: "Hafta içi makale özeti", news: "Açıklamalı haber özeti" },
   article: { title: "Okumaya değer tek bir makale.", titleEmphasis: "Her sabah.", intro: "OneArticle, ilgi alanlarına göre seçilmiş tek bir makale özetini hafta içi her sabah gelen kutuna gönderir; kısa ve açık bir okumaya dönüştürür. Kaydırılacak akış yok. Açılacak uygulama yok.", maxim: "Tek makale. Bilmeye değer tek fikir. Başka hiçbir şey yok.", tagline: "Akış yok. Uygulama yok. Gün gürültüye dönüşmeden tek iyi okuma.", details: [["Hafta içi her sabah tek özet", "Saat 07.00’de özenle seçilmiş tek bir makale gelen kutuna düşer — günün geri kalanı gürültüye dönüşmeden yaklaşık beş dakikada baştan sona okunur."], ["İlgi alanlarına göre seçilir", "Gerçekten önemsediğin birkaç konuyu seç. Her özet gündemde olana değil, bu profile göre eşleşir."], ["Yalnızca iletilmez, damıtılır", "Sadece bağlantı vermeyiz — kaynağı okur, bilmeye değer tek fikrin kısa ve açık bir özetini yazarız."], ["Kendi dilinde oku", "Özet dilini ve tercih ettiğin kaynak dilini birbirinden bağımsız seç — İngilizce, Türkçe, İspanyolca, Fransızca veya Almanca."], ["İstediğin zaman düzenle", "İlgi alanlarını veya dillerini istediğin zaman değiştir. Ertesi sabahın özeti bunu hemen yansıtır."]] },
+  news: { title: "Anlamaya değer tek bir haber.", titleEmphasis: "Haftada üç sabah.", intro: "OneNews sana başlık akışı yerine önemli tek bir haberi anlatır. Her sayı ne olduğunu, neden önemli olduğunu ve bundan sonra neye bakmak gerektiğini — dayandığı kaynaklarla birlikte — ortaya koyar.", maxim: "Tek haber. Onu kavramaya yetecek bağlam. Başka hiçbir şey yok.", tagline: "Akış yok. Bildirim yok. Açıklanmış tek bir haber.", details: [["Her sayıda önemli tek bir haber", "Her şeyi özetlemek yerine her sayı dikkatine değer tek haberi seçer ve baştan sona onunla kalır."], ["Pazartesi, çarşamba ve cuma", "Haftada üç sayı; haber, gün boyu peşinden gelen bir tempoyla değil, takip edebileceğin bir ritimle gelir."], ["Yalnızca başlık değil, bağlam", "Her sayı ne olduğu, neden önemli olduğu ve neye bakılacağı üzerine kurulur — başlığın atladığı kısımlar."], ["İnsan denetiminden geçer ve kurgulanır", "Seçimden, incelemeden ve yayımdan bir editör sorumludur. Gelişen bilgiler tam saatiyle etiketlenir, tartışmalı iddialar yerleşik gerçeklerden ayrı tutulur."], ["Açık kaynaklar ve notlar", "Her sayı, dayandığı kaynaklarla biter; birincil kayıt, haber veya analiz olarak işaretlenir, böylece istediğinde daha ileri gidebilirsin."]] },
   subscribeSuccess: {
     eyebrow: "Ödeme tamamlandı",
     title: "OneRead'i etkinleştiriyoruz.",
@@ -133,8 +151,9 @@ const de: SiteDictionary = {
   language: { label: "Sprache", menu: "Sprache wählen" },
   footer: { terms: "Bedingungen", privacy: "Datenschutz", pricing: "Preise", navigation: "Fußzeile", feedback: "Feedback-Formular öffnen", manifesto: "Für Menschen, die bessere Impulse wollen, ohne noch eine App zu öffnen.", defaultTagline: "Kein Feed. Kein Lärm. Nur ein guter Text." },
   home: { title: "Eine nützliche E-Mail nach der anderen.", intro: "OneRead bringt kleine, fokussierte Notizen in dein Postfach — OneArticle an Werktagmorgen, OneNews montags, mittwochs und freitags.", tagline: "Kein Feed zum Prüfen. Nur etwas, das sich zu öffnen lohnt." },
-  lineUp: { title: "Zwei Produkte. Ein Abo.", intro: "OneArticle kommt an Werktagmorgen, OneNews montags, mittwochs und freitags. Nimm eines einzeln — oder beide zusammen als OneRead.", article: "Artikelbriefing unter der Woche" },
+  lineUp: { title: "Zwei Produkte. Ein Abo.", intro: "OneArticle kommt an Werktagmorgen, OneNews montags, mittwochs und freitags. Nimm eines einzeln — oder beide zusammen als OneRead.", article: "Artikelbriefing unter der Woche", news: "Nachrichten mit Kontext" },
   article: { title: "Ein Artikel, der lesenswert ist.", titleEmphasis: "Jeden Morgen.", intro: "OneArticle schickt dir jeden Werktagmorgen ein sorgfältig ausgewähltes Artikelbriefing — passend zu deinen Interessen und verdichtet zu einer kurzen, klaren Lektüre. Kein Feed. Keine App.", maxim: "Ein Artikel. Eine Idee, die man kennen sollte. Sonst nichts.", tagline: "Kein Feed. Keine App. Eine gute Lektüre, bevor der Tag laut wird.", details: [["Ein Briefing an jedem Werktagmorgen", "Um 7 Uhr landet ein sorgfältig ausgewählter Artikel in deinem Postfach — in etwa fünf Minuten von Anfang bis Ende gelesen, bevor der Tag laut wird."], ["Nach deinen Interessen ausgewählt", "Wähle einige Themen, die dir wirklich wichtig sind. Jedes Briefing folgt diesem Profil, nicht dem aktuellen Trend."], ["Verdichtet, nicht nur weitergeleitet", "Wir verlinken nicht nur — wir lesen die Quelle und schreiben eine kurze, klare Zusammenfassung der einen wichtigen Idee."], ["In deiner Sprache lesen", "Wähle Zusammenfassungs- und Quellsprache unabhängig voneinander — Englisch, Türkisch, Spanisch, Französisch oder Deutsch."], ["Jederzeit ändern", "Ändere Interessen oder Sprachen, wann du möchtest. Das nächste Briefing berücksichtigt es sofort."]] },
+  news: { title: "Eine Geschichte, die man verstehen sollte.", titleEmphasis: "An drei Morgen pro Woche.", intro: "OneNews erklärt eine wichtige Geschichte, statt dir einen Strom von Schlagzeilen zu liefern. Jede Ausgabe legt dar, was geschehen ist, warum es zählt und worauf als Nächstes zu achten ist — samt der Quellen, auf denen sie beruht.", maxim: "Eine Geschichte. Genug Kontext, um sie zu fassen. Sonst nichts.", tagline: "Kein Feed. Keine Alarme. Eine Geschichte, erklärt.", details: [["Eine wichtige Geschichte pro Ausgabe", "Statt alles zusammenzufassen, wählt jede Ausgabe die eine Geschichte aus, die deine Aufmerksamkeit verdient, und bleibt von Anfang bis Ende bei ihr."], ["Montags, mittwochs und freitags", "Drei Ausgaben pro Woche — die Nachrichten kommen in einem Rhythmus, dem du folgen kannst, statt dir den ganzen Tag hinterherzulaufen."], ["Kontext, nicht nur Schlagzeilen", "Jede Ausgabe ist um das gebaut, was geschehen ist, warum es zählt und worauf zu achten ist — genau das, was eine Schlagzeile weglässt."], ["Redaktionell geprüft und strukturiert", "Eine Redaktion verantwortet Auswahl, Prüfung und Veröffentlichung. Sich entwickelnde Informationen werden mit einem genauen Stand-Zeitpunkt gekennzeichnet, strittige Aussagen bleiben von gesicherten Fakten getrennt."], ["Klare Quellen und Anmerkungen", "Jede Ausgabe endet mit ihren Quellen, gekennzeichnet als Primärdokument, Berichterstattung oder Analyse, damit du jederzeit weiterlesen kannst."]] },
   subscribeSuccess: {
     eyebrow: "Bezahlvorgang abgeschlossen",
     title: "Wir aktivieren OneRead.",
@@ -158,8 +177,9 @@ const fr: SiteDictionary = {
   language: { label: "Langue", menu: "Choisir la langue" },
   footer: { terms: "Conditions", privacy: "Confidentialité", pricing: "Tarifs", navigation: "Pied de page", feedback: "Ouvrir le formulaire de retour", manifesto: "Pour celles et ceux qui veulent de meilleures sources sans ouvrir une autre application.", defaultTagline: "Aucun fil. Aucun bruit. Juste une bonne lecture." },
   home: { title: "Un e-mail utile à la fois.", intro: "OneRead dépose dans votre boîte de réception de petites notes à usage unique — OneArticle en semaine au matin, OneNews les lundi, mercredi et vendredi.", tagline: "Aucun fil à consulter. Juste quelque chose qui mérite d’être ouvert." },
-  lineUp: { title: "Deux produits. Un abonnement.", intro: "OneArticle arrive les matins de semaine, OneNews les lundi, mercredi et vendredi. Prenez l’un séparément, ou les deux avec OneRead.", article: "Un article en semaine" },
+  lineUp: { title: "Deux produits. Un abonnement.", intro: "OneArticle arrive les matins de semaine, OneNews les lundi, mercredi et vendredi. Prenez l’un séparément, ou les deux avec OneRead.", article: "Un article en semaine", news: "L’actualité expliquée" },
   article: { title: "Un article qui mérite d’être lu.", titleEmphasis: "Chaque matin.", intro: "OneArticle envoie chaque matin de semaine un article soigneusement choisi dans votre boîte de réception — adapté à vos centres d’intérêt et condensé en une lecture courte et claire. Aucun fil à parcourir. Aucune application à ouvrir.", maxim: "Un article. Une idée qui mérite d’être connue. Rien d’autre.", tagline: "Aucun fil. Aucune application. Une bonne lecture avant que la journée ne s’agite.", details: [["Un article chaque matin en semaine", "À 7 h, un article soigneusement choisi arrive dans votre boîte de réception — environ cinq minutes de lecture avant que la journée ne s’agite."], ["Choisi selon vos centres d’intérêt", "Sélectionnez quelques sujets qui comptent vraiment. Chaque article correspond à ce profil, pas aux tendances du moment."], ["Condensé, pas simplement transmis", "Nous ne nous contentons pas d’un lien — nous lisons la source et rédigeons un résumé court et clair de l’idée à retenir."], ["Lisez dans votre langue", "Choisissez indépendamment la langue du résumé et celle des sources — anglais, turc, espagnol, français ou allemand."], ["Modifiez à tout moment", "Changez vos centres d’intérêt ou vos langues quand vous le souhaitez. L’article du lendemain en tient compte immédiatement."]] },
+  news: { title: "Une actualité qui mérite d’être comprise.", titleEmphasis: "Trois matins par semaine.", intro: "OneNews explique une actualité importante au lieu de vous livrer un flux de titres. Chaque édition expose ce qui s’est passé, pourquoi cela compte et ce qu’il faut surveiller — avec les sources sur lesquelles elle repose.", maxim: "Une actualité. Assez de contexte pour la saisir. Rien d’autre.", tagline: "Aucun fil. Aucune alerte. Une actualité, expliquée.", details: [["Une actualité importante par édition", "Plutôt que de tout résumer, chaque édition choisit la seule actualité qui mérite votre attention et l’accompagne du début à la fin."], ["Les lundi, mercredi et vendredi", "Trois éditions par semaine : l’actualité arrive à un rythme que vous pouvez suivre, et non à un rythme qui vous poursuit toute la journée."], ["Du contexte, pas seulement des titres", "Chaque édition s’articule autour de ce qui s’est passé, de pourquoi cela compte et de ce qu’il faut surveiller — précisément ce qu’un titre laisse de côté."], ["Relu et structuré par une rédaction", "Une rédaction assume la sélection, la relecture et la publication. Les informations en cours d’évolution portent une heure de mise à jour précise, et les affirmations contestées restent distinctes des faits établis."], ["Des sources et des notes claires", "Chaque édition se termine par les sources qui l’ont nourrie, signalées comme document primaire, reportage ou analyse, pour aller plus loin quand vous le souhaitez."]] },
   subscribeSuccess: {
     eyebrow: "Paiement terminé",
     title: "Nous activons OneRead.",
