@@ -44,6 +44,7 @@ export default async function DeliveryFailuresPage() {
       subtitle="What happened, and which recovery path is safe"
     >
       <AdminCard>
+        <p className="p-4 text-xs text-admin-muted"><Link href="/admin/operations/queue" className="underline">Open the unified operator queue</Link> for delivery, billing, and failed cron reconciliation.</p>
         <AdminTable
           head={[
             "When",
