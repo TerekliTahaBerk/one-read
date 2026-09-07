@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { sendDailyEmail } from "@/lib/resend";
+import { reportOperationalEvent } from "@/lib/observability";
 import { resolveProductEntitlement } from "@/lib/products/entitlements";
 import { PRODUCT_ONE_NEWS } from "@/lib/products/registry";
 import {
@@ -178,6 +179,13 @@ export async function dispatchOneNewsIssue(
             : safeError(error),
         },
       });
+      await reportOperationalEvent("editorial_delivery_failed", {
+        subsystem: "delivery", productKey: "one-news", operation: "send_editorial", outcome: "failed",
+        state: providerAccepted ? "provider_accepted_persistence_failed" : "provider_rejected",
+        correlationId: delivery.id,
+        retryClassification: providerAccepted ? "reconciliation_required" : "retryable",
+        errorCode: providerAccepted ? "local_persistence_failed" : "provider_send_failed",
+      }, { error, level: "error" });
       failed++;
     }
   }

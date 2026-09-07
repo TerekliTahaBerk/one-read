@@ -6,6 +6,7 @@ import {
   hashMeta,
   requestVerificationCode,
 } from "@/lib/oneread/verification";
+import { reportOperationalEvent } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,10 @@ export async function POST(req: Request) {
   }
 
   if (!result.emailSent && process.env.NODE_ENV === "production") {
+    await reportOperationalEvent("verification_delivery_failed", {
+      subsystem: "verification", productKey: "one-read", operation: "send_code", outcome: "failed",
+      state: "delivery_failed", retryClassification: "retryable", errorCode: "verification_delivery_failed",
+    }, { level: "error", flush: true });
     return NextResponse.json(
       { ok: false, error: "verification_delivery_failed" },
       { status: 503 },

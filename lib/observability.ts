@@ -1,129 +1,101 @@
-/**
- * Database-independent error signalling.
- *
- * Every other alerting path in this app writes to (or reads from) Postgres:
- * operational runs, the audit log, the missing-edition idempotency lock. That is
- * exactly the wrong dependency during a database outage — the incident silences
- * its own alarm. The helpers here deliberately use only channels that keep
- * working when Prisma cannot connect: the platform's stdout log stream (Vercel
- * runtime logs) and Sentry.
- *
- * Everything is best-effort and never throws: a failing alarm must not mask, or
- * become, the failure it is reporting.
- */
-
+/** Database-independent, PII-safe structured runtime observability. */
 import * as Sentry from "@sentry/nextjs";
+import { createHash } from "node:crypto";
+import { scrubTelemetry } from "@/lib/sentry-privacy";
+
+export const OBSERVABILITY_SUBSYSTEMS = ["billing", "verification", "polar_webhook", "resend_webhook", "cron", "delivery", "reconciliation"] as const;
+export type ObservabilitySubsystem = (typeof OBSERVABILITY_SUBSYSTEMS)[number];
+export type RetryClassification = "not_retryable" | "retryable" | "provider_retry" | "reconciliation_required";
+
+export interface OperationalContext {
+  subsystem: ObservabilitySubsystem;
+  operation: string;
+  outcome: string;
+  productKey?: string | null;
+  state?: string | null;
+  correlationId?: string | null;
+  retryClassification?: RetryClassification;
+  errorCode?: string | null;
+  runId?: string | null;
+  attempts?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/** Hash identifiers before telemetry unless their provider contract explicitly declares them public. */
+export function telemetryId(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+export async function reportOperationalEvent(event: string, context: OperationalContext, options: { error?: unknown; level?: "info" | "warning" | "error"; flush?: boolean } = {}): Promise<void> {
+  const level = options.level ?? (options.error ? "error" : "info");
+  const canonical = scrubTelemetry({
+    subsystem: context.subsystem,
+    product_key: context.productKey ?? null,
+    operation: context.operation,
+    outcome: context.outcome,
+    state: context.state ?? null,
+    environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "unknown",
+    release_sha: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? null,
+    correlation_id: telemetryId(context.correlationId),
+    retry_classification: context.retryClassification ?? "not_retryable",
+    error_code: context.errorCode ?? null,
+    run_id: telemetryId(context.runId),
+    attempts: context.attempts,
+    ...context.metadata,
+  }) as Record<string, unknown>;
+
+  logStructured(level, event, canonical);
+  if (!process.env.SENTRY_DSN) return;
+  try {
+    const tags = Object.fromEntries(Object.entries(canonical)
+      .filter(([, value]) => typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+      .map(([key, value]) => [key, String(value)]));
+    const captureContext = { level, tags, extra: canonical };
+    if (options.error !== undefined) Sentry.captureException(options.error instanceof Error ? options.error : new Error(safeErrorText(options.error)), captureContext);
+    else Sentry.captureMessage(event, captureContext);
+    if (options.flush) await Sentry.flush(2000);
+  } catch {
+    // Telemetry is best-effort and must never replace the original outcome.
+  }
+}
 
 export interface CronFailureSignal {
   productKey: string;
   productName: string;
   route: string;
-  /** Where in the handler we died — `start` means we never reached the work. */
   stage: "start" | "dispatch" | "finish";
-  /** Prisma error code (`P1001`, …) or a stable slug when there is none. */
   code: string;
-  /** True when the cause looks like a retryable infrastructure blip. */
   transient: boolean;
   message: string;
-  /** Null when the run row itself could not be created. */
   runId?: string | null;
-  /** How many attempts the DB-bound step made before giving up. */
   attempts?: number;
   error?: unknown;
 }
 
-/**
- * Emits a cron failure on channels that survive a dead database.
- *
- * A `stage: "start"` signal is the important one: it means `startRun()` never
- * landed, so there is no `OperationalRun` row and the admin panel will show
- * nothing at all for this invocation. The log line and the Sentry event are the
- * only evidence that the cron fired.
- */
 export async function reportCronFailure(signal: CronFailureSignal): Promise<void> {
-  logStructured("cron_failure", {
-    productKey: signal.productKey,
-    route: signal.route,
-    stage: signal.stage,
-    code: signal.code,
-    transient: signal.transient,
-    runId: signal.runId ?? null,
-    attempts: signal.attempts ?? 1,
-    message: signal.message,
-  });
-  await captureToSentry(signal.error ?? new Error(signal.message), "error", {
-    tags: {
-      cron_product: signal.productKey,
-      cron_route: signal.route,
-      cron_stage: signal.stage,
-      cron_error_code: signal.code,
-      cron_transient: String(signal.transient),
-    },
-    extra: {
-      runId: signal.runId ?? null,
-      attempts: signal.attempts ?? 1,
-      message: signal.message,
-    },
-  });
+  await reportOperationalEvent("cron_failure", {
+    subsystem: "cron", productKey: signal.productKey, operation: "editorial_dispatch", outcome: "failed", state: signal.stage,
+    correlationId: signal.runId, runId: signal.runId, retryClassification: signal.transient ? "retryable" : "not_retryable",
+    errorCode: signal.code, attempts: signal.attempts ?? 1, metadata: { route: signal.route, message: safeErrorText(signal.message) },
+  }, { error: signal.error ?? new Error(signal.message), level: "error", flush: true });
 }
 
-/**
- * Reports that runtime controls fell back to environment defaults because the
- * `Setting` table was unreadable. Not fatal — the fallback is intentional — but
- * it is the earliest observable symptom of a database outage during cron, and
- * it must not stay silent.
- */
 export async function reportSettingsFallback(error: unknown): Promise<void> {
-  logStructured("settings_read_degraded", {
-    message: errorText(error),
-  });
-  await captureToSentry(error, "warning", {
-    tags: { subsystem: "settings-store" },
-    extra: { note: "Falling back to environment defaults for runtime controls." },
-  });
+  await reportOperationalEvent("settings_read_degraded", {
+    subsystem: "cron", operation: "read_runtime_controls", outcome: "degraded", state: "env_fallback",
+    retryClassification: "retryable", metadata: { message: safeErrorText(error) },
+  }, { error, level: "warning", flush: true });
 }
 
-/** One JSON line per event, so Vercel log search can filter on `event`. */
-function logStructured(event: string, fields: Record<string, unknown>): void {
+function logStructured(level: "info" | "warning" | "error", event: string, fields: Record<string, unknown>): void {
   try {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        event,
-        at: new Date().toISOString(),
-        ...fields,
-      }),
-    );
-  } catch {
-    console.error(`[observability] ${event}`, fields);
-  }
+    const line = JSON.stringify({ level, event, at: new Date().toISOString(), ...fields });
+    if (level === "error") console.error(line); else if (level === "warning") console.warn(line); else console.info(line);
+  } catch { console.error(`[observability] ${event}`); }
 }
 
-/**
- * Sends to Sentry and waits briefly for the transport. Serverless functions are
- * frozen the moment the response is returned, so an unflushed event is a lost
- * event — this is the whole reason the cron handler awaits its own alerting.
- */
-async function captureToSentry(
-  error: unknown,
-  level: "error" | "warning",
-  context: { tags: Record<string, string>; extra: Record<string, unknown> },
-): Promise<void> {
-  if (!process.env.SENTRY_DSN) return;
-  try {
-    Sentry.captureException(error instanceof Error ? error : new Error(errorText(error)), {
-      level,
-      tags: context.tags,
-      extra: context.extra,
-    });
-    await Sentry.flush(2000);
-  } catch {
-    // Alerting is best-effort; never let it surface as a new failure.
-  }
-}
-
-function errorText(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "unknown_error";
+function safeErrorText(error: unknown): string {
+  const text = error instanceof Error ? error.message : typeof error === "string" ? error : "unknown_error";
+  return String(scrubTelemetry(text)).slice(0, 500);
 }
