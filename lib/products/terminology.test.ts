@@ -176,6 +176,7 @@ const ACQUISITION_SURFACES: readonly string[] = [
   "app/pricing/page.tsx",
   "app/subscribe/page.tsx",
   "components/HomePageContent.tsx",
+  "components/OfferSummary.tsx",
   "components/OneReadLineUp.tsx",
   "components/PricingPageContent.tsx",
   "components/OneReadSignup.tsx",

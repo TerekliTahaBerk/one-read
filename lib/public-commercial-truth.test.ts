@@ -12,6 +12,7 @@ import {
 
 const publicFiles = [
   "components/HomePageContent.tsx", "components/PricingPageContent.tsx",
+  "components/OfferSummary.tsx",
   "components/OneReadSignup.tsx", "components/EditorialStandardsContent.tsx",
 ].map((path) => readFileSync(path, "utf8")).join("\n");
 

@@ -1,31 +1,23 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
-import { OneArticleMascotArt, OneNewsMascotArt } from "@/components/OneReadLineUp";
+import {
+  OFFER_ROW_CLASS,
+  OfferSummary,
+  offerColumnClass,
+} from "@/components/OfferSummary";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import {
   OFFERS,
   OFFER_KEYS,
-  PRODUCT_ONE_ARTICLE,
-  PRODUCT_ONE_NEWS,
   type BillingIntervalKey,
   type OfferKey,
-  type ProductKey,
 } from "@/lib/products/registry";
-import {
-  annualDiscountLabel,
-  annualEquivalenceSentence,
-  annualSavingClaim,
-  intervalNoun,
-  offerCadenceLabel,
-  offerContentsLine,
-  offerAmountLabel,
-} from "@/lib/products/pricing-copy";
+import { annualDiscountLabel, annualSavingClaim } from "@/lib/products/pricing-copy";
 import { BUNDLE_OFFER_KEY } from "@/lib/products/terminology";
 import { trackEvent } from "@/lib/analytics";
 
@@ -45,7 +37,8 @@ import { trackEvent } from "@/lib/analytics";
  * serif hierarchy, and the two product characters that introduce OneArticle
  * and OneNews everywhere else. The three offers are a comparison table drawn
  * in whitespace and hairlines — not cards — so the eye moves across one row of
- * prices instead of down three boxes.
+ * prices instead of down three boxes. The columns themselves come from
+ * `OfferSummary`, which the signup flow renders too.
  */
 export function PricingPageContent() {
   const [interval, setInterval] = useState<BillingIntervalKey>("annual");
@@ -116,11 +109,8 @@ export function PricingPageContent() {
           </div>
         </fieldset>
 
-        {/* One row of offers on desktop, one stack on a phone. The separators
-            are hairlines rather than card edges, so the three read as columns
-            of the same table and their prices sit on one line. */}
         <div className="mt-9 w-full animate-rise-delayed-3 sm:mt-11">
-          <div className="grid grid-cols-1 divide-y divide-line border-y border-line md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className={OFFER_ROW_CLASS}>
             {OFFER_KEYS.map((offer) => (
               <PricingOfferColumn
                 key={offer}
@@ -145,13 +135,10 @@ export function PricingPageContent() {
 }
 
 /**
- * One offer as a column of the comparison.
+ * One offer as a column of the comparison, with the link that buys it.
  *
- * Every offer uses the same slots in the same order — character, name,
- * tagline, price, how annual is charged, what arrives and when, CTA — so a
- * buyer comparing three columns is comparing like with like. The bundle is
- * marked by a quiet tint and its contents line rather than a badge; we have no
- * data that would let us call it popular.
+ * The bundle is marked by a quiet tint and its contents line rather than a
+ * badge; we have no data that would let us call it popular.
  */
 function PricingOfferColumn({
   offer,
@@ -167,68 +154,22 @@ function PricingOfferColumn({
   chooseLabel: string;
 }) {
   const isBundle = offer === BUNDLE_OFFER_KEY;
-  const contents = offerContentsLine(offer);
 
   return (
-    <article
-      className={`flex h-full flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-9 ${
-        isBundle ? "bg-cream/50" : ""
-      }`}
-    >
-      <OfferMascots offer={offer} />
-
-      <h2
-        className={`mt-4 font-serif text-[1.3rem] leading-tight tracking-[-0.015em] text-ink sm:text-[1.4rem] ${
-          isBundle ? "font-medium" : "font-normal"
-        }`}
-      >
-        {OFFERS[offer].displayName}
-      </h2>
-
-      <p className="mt-1.5 min-h-[2.75rem] max-w-[26ch] font-sans text-[13px] leading-[1.6] text-ash sm:text-[13.5px]">
-        {OFFERS[offer].tagline}
-      </p>
-
-      {/* The amount and the interval it is charged at, together. The annual
-          column then states the charge before its monthly equivalent, so a
-          yearly price can never read as a monthly one. */}
-      <p className="mt-5 font-serif text-[2.4rem] font-medium leading-none tracking-[-0.02em] text-ink sm:text-[2.6rem]">
-        {offerAmountLabel(offer, interval)}
-        <span className="font-sans text-[13px] font-normal tracking-normal text-ash">
-          {" "}
-          / {intervalNoun(interval)}
-        </span>
-      </p>
-
-      <p className="mt-2 min-h-[2.5rem] max-w-[26ch] font-sans text-[12px] leading-[1.55] text-fog">
-        {interval === "annual" ? annualEquivalenceSentence(offer) : null}
-      </p>
-
-      {/* What the offer contains, then when it arrives. The bundle spans two
-          schedules, so its cadence names each product beside its own. */}
-      <dl className="mt-4 mb-auto w-full max-w-[26ch] border-t border-line/80 pt-4 text-left">
-        {contents && (
-          <div className="mb-3">
-            <dt className="font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
-              {includedLabel}
-            </dt>
-            <dd className="mt-1 font-sans text-[13px] leading-[1.55] text-ink">{contents}</dd>
-          </div>
-        )}
-        <div>
-          <dt className="font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
-            {cadenceLabel}
-          </dt>
-          <dd className="mt-1 font-sans text-[13px] leading-[1.55] text-ink">
-            {offerCadenceLabel(offer)}
-          </dd>
-        </div>
-      </dl>
+    <article className={offerColumnClass(isBundle)}>
+      <OfferSummary
+        offer={offer}
+        interval={interval}
+        nameAs="h2"
+        includedLabel={includedLabel}
+        cadenceLabel={cadenceLabel}
+        emphasised={isBundle}
+      />
 
       <Link
         href={`/subscribe?offer=${offer}&interval=${interval}`}
         onClick={() => trackEvent("offer_selected", { offer, interval })}
-        className={`focus-ring mt-6 inline-flex h-12 shrink-0 w-full items-center justify-center rounded-full px-5 font-sans text-[14px] font-medium transition-colors duration-200 ${
+        className={`focus-ring mt-6 inline-flex h-12 w-full shrink-0 items-center justify-center rounded-full px-5 font-sans text-[14px] font-medium transition-colors duration-200 ${
           isBundle
             ? "bg-ink text-paper hover:bg-ink/90"
             : "border border-line-strong text-ink hover:border-ink"
@@ -237,70 +178,5 @@ function PricingOfferColumn({
         {chooseLabel}
       </Link>
     </article>
-  );
-}
-
-/**
- * The characters that introduce an offer.
- *
- * Reuses the two drawings the homepage and the product pages already use.
- * OneRead has no character of its own — it is the bundle, so it is drawn as
- * the two products standing together rather than as a third figure. The art is
- * decorative here: each SVG already carries `aria-hidden`, and the offer is
- * named by the heading below it.
- */
-function OfferMascots({ offer }: { offer: OfferKey }) {
-  // Which characters an offer shows is not a decision this page makes: it is
-  // whatever the offer grants. The bundle therefore draws two figures because
-  // it grants two products, and would follow the registry if that changed.
-  const granted = OFFERS[offer].grants;
-  const size = granted.length > 1 ? "pair" : "solo";
-  return (
-    <div className="flex h-[4.5rem] items-end justify-center -space-x-4">
-      {granted.map((product) => (
-        <Mascot key={product} product={product} size={size}>
-          {MASCOT_ART[product]}
-        </Mascot>
-      ))}
-    </div>
-  );
-}
-
-/** The canonical drawing for each product, reused rather than redrawn. */
-const MASCOT_ART: Record<ProductKey, ReactNode> = {
-  [PRODUCT_ONE_ARTICLE]: <OneArticleMascotArt />,
-  [PRODUCT_ONE_NEWS]: <OneNewsMascotArt />,
-};
-
-/** The animation class each product's drawing is staged with. */
-const MASCOT_THEME: Record<ProductKey, string> = {
-  [PRODUCT_ONE_ARTICLE]: "product-mascot-article",
-  [PRODUCT_ONE_NEWS]: "product-mascot-news",
-};
-
-/**
- * One drawing at the restrained size this page uses: large enough to identify
- * the product, small enough that the prices stay the loudest thing in the row.
- * The `product-mascot` classes carry the same idle gestures as the product
- * pages, and the same reduced-motion opt-out.
- */
-function Mascot({
-  product,
-  size,
-  children,
-}: {
-  product: ProductKey;
-  size: "solo" | "pair";
-  children: ReactNode;
-}) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`product-mascot ${MASCOT_THEME[product]} ${
-        size === "pair" ? "h-[3.75rem] w-[3.75rem]" : "h-[4.5rem] w-[4.5rem]"
-      }`}
-    >
-      <div className="product-mascot-art h-full w-full">{children}</div>
-    </div>
   );
 }

@@ -4,6 +4,12 @@ import { useState, type FormEvent } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Logo";
+import {
+  OFFER_ROW_CLASS,
+  OfferSummary,
+  offerColumnClass,
+} from "@/components/OfferSummary";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { SUMMARY_LANGUAGES, isLikelyEmail } from "@/lib/options";
 import { OFFERS, OFFER_KEYS, type BillingIntervalKey, type OfferKey } from "@/lib/products/registry";
 import { isBundleOffer, offerIncludesLabel } from "@/lib/products/terminology";
@@ -13,7 +19,6 @@ import {
   annualSavingClaim,
   offerCadenceLabel,
   offerContentsLine,
-  offerPriceLabel,
   offerPriceSentence,
 } from "@/lib/products/pricing-copy";
 import { trackEvent } from "@/lib/analytics";
@@ -51,6 +56,9 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
   const [transitionMessage, setTransitionMessage] = useState<string | null>(null);
   const [grandfathered, setGrandfathered] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  // Only the two column labels are read from the dictionary here: this flow is
+  // not localised yet, and they have to match the pricing page word for word.
+  const copy = useSiteLanguage().dictionary.pricing;
 
   async function requestCode(event: FormEvent) {
     event.preventDefault(); setError(null);
@@ -124,26 +132,140 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     window.location.assign("/preferences");
   }
 
-  return <main className="min-h-svh bg-[#f6f5f1] px-5 py-6 text-ink sm:px-6">
-    <header className="relative flex justify-center"><BackButton href="/" label="Back to OneRead" /><Logo href="/" /></header>
-    <section className="mx-auto flex min-h-[78vh] w-full max-w-3xl flex-col items-center justify-center py-10">
-      {step === "plan" && <Step title="Choose what deserves your time" support={`Annual billing ${annualSavingClaim()} and is selected by default; it is charged once a year. You can switch to monthly.`}>
-        <div role="radiogroup" aria-label="Choose a OneRead plan" className="grid w-full gap-3 md:grid-cols-3">
-          {OFFER_KEYS.map((key) => <button key={key} type="button" role="radio" aria-checked={offer === key} onClick={() => { setOffer(key); trackEvent("offer_selected", { offer: key }); }} className={`focus-ring rounded-2xl border p-5 text-left ${offer === key ? "border-ink bg-white ring-2 ring-ink" : "border-black/15 bg-white/60"}`}><strong className="font-serif text-xl">{OFFERS[key].displayName}</strong><span className="mt-2 block text-sm text-ash">{OFFERS[key].tagline}</span>{offerContentsLine(key) && <span className="mt-3 block text-sm text-ink">{offerContentsLine(key)}</span>}<span className="mt-2 block text-xs font-medium tracking-wide text-fog">{offerCadenceLabel(key)}</span><span className="mt-3 block text-lg font-semibold">{offerPriceLabel(key, interval)}</span>{interval === "annual" && <span className="mt-1 block text-xs leading-5 text-ash">{annualEquivalenceSentence(key)}</span>}</button>)}
-        </div>
-        <Interval value={interval} onChange={(value) => { setInterval(value); trackEvent("billing_interval_selected", { interval: value, offer }); }} />
-        <button className={primary} onClick={() => setStep("email")}>Continue with {OFFERS[offer].displayName}</button>
-      </Step>}
-      {step === "email" && <Step title={`Start ${OFFERS[offer].displayName}`} support={`${offerContentsLine(offer) ?? ""} ${offerCadenceLabel(offer)}. ${offerPriceSentence(offer, interval)}. No trial; see a full sample before subscribing.`}><form onSubmit={requestCode} className="flex w-full max-w-sm flex-col gap-3"><label htmlFor="signup-email" className="text-sm">Email address</label><input id="signup-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required className={input} /><button disabled={busy} className={primary}>Email me a code</button></form></Step>}
-      {step === "verify" && <Step title="Check your inbox" support={`We sent a six-digit code to ${email}. It confirms ${planSummary(offer, interval)} — change the plan and you will need a new code.`}><form onSubmit={verify} className="flex flex-col items-center gap-3"><label htmlFor="signup-code" className="sr-only">Verification code</label><input id="signup-code" value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className={`${input} max-w-48 text-center tracking-[.3em]`} /><button disabled={busy} className={primary}>Verify email</button></form></Step>}
-      {step === "language" && <Step title="Choose your reading language" support={isBundleOffer(offer) ? `One choice applies to ${offerIncludesLabel(offer, " and ")}.` : `One choice for ${OFFERS[offer].displayName}.`}><form onSubmit={saveLanguage} className="flex flex-col items-center gap-5"><div className="flex flex-wrap justify-center gap-2">{SUMMARY_LANGUAGES.map((item) => <button type="button" key={item} aria-pressed={language === item} onClick={() => setLanguage(item)} className={`focus-ring min-h-11 rounded-full border px-4 ${language === item ? "border-ink bg-ink text-white" : "bg-white"}`}>{item}</button>)}</div><button disabled={busy} className={primary}>Continue</button></form></Step>}
-      {step === "review" && <Step title="Review your subscription" support="Email delivery preferences can be changed later without cancelling billing."><div className="w-full max-w-md rounded-2xl border bg-white p-5 text-sm"><b>{OFFERS[offer].displayName}</b>{offerContentsLine(offer) && <p>{offerContentsLine(offer)}</p>}<p className="text-ash">{offerCadenceLabel(offer)}</p><p className="mt-3">{language}</p><p className="mt-3 text-lg font-semibold">{offerPriceSentence(offer, interval)}</p>{interval === "annual" && <p className="mt-1 text-ash">{annualEquivalenceSentence(offer)}</p>}<p className="mt-1 text-ash">Cancel anytime through the secure billing portal.</p></div><button disabled={busy} onClick={checkout} className={primary}>Continue to secure checkout</button></Step>}
-      {step === "transition" && <Step title="Confirm your plan change" support={transitionMessage ?? "Review this change before continuing."}>{grandfathered && <label className="flex max-w-lg items-start gap-3 rounded-xl border border-amber-500 bg-amber-50 p-4 text-sm"><input type="checkbox" className="mt-1 size-5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />I understand that switching plans gives up my grandfathered $1 price and it may not be restored.</label>}<button disabled={busy || (grandfathered && !acknowledged)} onClick={confirmTransition} className={primary}>Confirm plan change</button></Step>}
-      {error && <p role="alert" aria-live="assertive" className="mt-5 text-sm text-red-700">{error}</p>}
-    </section><Footer showBackHome /></main>;
+  return (
+    <main
+      className="
+        relative min-h-svh w-full
+        flex flex-col items-center
+        px-5 sm:px-6
+        pt-5 sm:pt-6
+        pb-4 sm:pb-5
+      "
+    >
+      <header className="relative w-full flex justify-center animate-rise">
+        <BackButton href="/" label="Back to OneRead" />
+        <Logo href="/" />
+      </header>
+
+      <section className="mx-auto flex w-full max-w-[62rem] flex-1 flex-col items-center justify-center py-8 sm:py-10">
+        {step === "plan" && (
+          <Step
+            title="Choose what deserves your time"
+            support={`Annual billing ${annualSavingClaim()} and is selected by default; it is charged once a year. You can switch to monthly.`}
+          >
+            <Interval
+              value={interval}
+              onChange={(value) => {
+                setInterval(value);
+                trackEvent("billing_interval_selected", { interval: value, offer });
+              }}
+            />
+            {/* The same three columns the pricing page shows, in the same
+                order and the same hierarchy — this is the screen a buyer
+                reaches by clicking through from there, so it must not look
+                like a different site. Here each column is the control that
+                selects the plan rather than a link to it. */}
+            <div role="radiogroup" aria-label="Choose a OneRead plan" className={`mt-7 w-full ${OFFER_ROW_CLASS}`}>
+              {OFFER_KEYS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={offer === key}
+                  onClick={() => { setOffer(key); trackEvent("offer_selected", { offer: key }); }}
+                  className={`focus-ring transition-colors duration-200 ${offerColumnClass(offer === key)} ${offer === key ? "ring-1 ring-inset ring-ink/70" : "hover:bg-cream/40"}`}
+                >
+                  <OfferSummary
+                    offer={key}
+                    interval={interval}
+                    includedLabel={copy.includedLabel}
+                    cadenceLabel={copy.cadenceLabel}
+                    emphasised={offer === key}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`mt-6 inline-flex h-12 w-full shrink-0 items-center justify-center rounded-full px-5 font-sans text-[14px] font-medium ${offer === key ? "bg-ink text-paper" : "border border-line-strong text-ash"}`}
+                  >
+                    {offer === key ? "Selected" : `Choose ${OFFERS[key].displayName}`}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button className={primary} onClick={() => setStep("email")}>Continue with {OFFERS[offer].displayName}</button>
+          </Step>
+        )}
+        {step === "email" && <Step title={`Start ${OFFERS[offer].displayName}`} support={`${offerContentsLine(offer) ?? ""} ${offerCadenceLabel(offer)}. ${offerPriceSentence(offer, interval)}. No trial; see a full sample before subscribing.`}><form onSubmit={requestCode} className="flex w-full max-w-sm flex-col gap-3"><label htmlFor="signup-email" className="font-sans text-[13px] text-ash">Email address</label><input id="signup-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required className={input} /><button disabled={busy} className={primary}>Email me a code</button></form></Step>}
+        {step === "verify" && <Step title="Check your inbox" support={`We sent a six-digit code to ${email}. It confirms ${planSummary(offer, interval)} — change the plan and you will need a new code.`}><form onSubmit={verify} className="flex flex-col items-center gap-3"><label htmlFor="signup-code" className="sr-only">Verification code</label><input id="signup-code" value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className={`${input} max-w-48 text-center tracking-[.3em]`} /><button disabled={busy} className={primary}>Verify email</button></form></Step>}
+        {step === "language" && <Step title="Choose your reading language" support={isBundleOffer(offer) ? `One choice applies to ${offerIncludesLabel(offer, " and ")}.` : `One choice for ${OFFERS[offer].displayName}.`}><form onSubmit={saveLanguage} className="flex flex-col items-center gap-5"><div className="flex flex-wrap justify-center gap-2">{SUMMARY_LANGUAGES.map((item) => <button type="button" key={item} aria-pressed={language === item} onClick={() => setLanguage(item)} className={`focus-ring min-h-11 rounded-full border px-4 font-sans text-[13.5px] transition-colors duration-200 ${language === item ? "border-ink bg-ink text-paper" : "border-line text-ash hover:border-ink hover:text-ink"}`}>{item}</button>)}</div><button disabled={busy} className={primary}>Continue</button></form></Step>}
+        {step === "review" && (
+          <Step title="Review your subscription" support="Email delivery preferences can be changed later without cancelling billing.">
+            <div className="w-full max-w-[26rem] border-y border-line py-6 text-center">
+              <OfferSummary
+                offer={offer}
+                interval={interval}
+                includedLabel={copy.includedLabel}
+                cadenceLabel={copy.cadenceLabel}
+                emphasised
+                showPrice={false}
+              />
+              <p className="mt-5 font-sans text-[13px] leading-[1.6] text-ash">{language}</p>
+              {/* The charge, stated once and in full, immediately above the
+                  button that starts it. */}
+              <p className="mt-3 font-serif text-[1.5rem] font-medium leading-none tracking-[-0.02em] text-ink">{offerPriceSentence(offer, interval)}</p>
+              {interval === "annual" && <p className="mt-2 font-sans text-[12px] leading-[1.6] text-fog">{annualEquivalenceSentence(offer)}</p>}
+              <p className="mt-2 font-sans text-[12px] leading-[1.6] text-fog">Cancel anytime through the secure billing portal.</p>
+            </div>
+            <button disabled={busy} onClick={checkout} className={primary}>Continue to secure checkout</button>
+          </Step>
+        )}
+        {step === "transition" && <Step title="Confirm your plan change" support={transitionMessage ?? "Review this change before continuing."}>{grandfathered && <label className="flex max-w-lg items-start gap-3 rounded-xl border border-amber-500 bg-amber-50 p-4 font-sans text-[13px] leading-[1.6]"><input type="checkbox" className="mt-1 size-5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />I understand that switching plans gives up my grandfathered $1 price and it may not be restored.</label>}<button disabled={busy || (grandfathered && !acknowledged)} onClick={confirmTransition} className={primary}>Confirm plan change</button></Step>}
+        {error && <p role="alert" aria-live="assertive" className="mt-5 font-sans text-[13px] text-dawn">{error}</p>}
+      </section>
+
+      <Footer showBackHome />
+    </main>
+  );
 }
 
-function Step({ title, support, children }: { title: string; support: string; children: React.ReactNode }) { return <div className="flex w-full flex-col items-center gap-6"><div className="text-center"><h1 className="font-serif text-3xl font-medium sm:text-4xl">{title}</h1><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-ash">{support}</p></div>{children}</div>; }
-function Interval({ value, onChange }: { value: BillingIntervalKey; onChange: (value: BillingIntervalKey) => void }) { return <fieldset className="my-5 flex gap-2 rounded-full bg-white p-1"><legend className="sr-only">Billing interval</legend>{(["annual", "monthly"] as const).map((item) => <button type="button" key={item} aria-pressed={value === item} onClick={() => onChange(item)} className={`focus-ring min-h-11 rounded-full px-5 text-sm ${value === item ? "bg-ink text-white" : "text-ash"}`}>{item === "annual" ? `Annual · ${annualDiscountLabel()}` : "Monthly"}</button>)}</fieldset>; }
-const input = "focus-ring h-12 w-full rounded-full border border-black/20 bg-white px-5";
-const primary = "focus-ring mt-4 inline-flex min-h-12 items-center justify-center rounded-full bg-ink px-6 text-sm font-medium text-white disabled:opacity-50";
+/** One step of the flow: a serif question, a line of support copy, a control. */
+function Step({ title, support, children }: { title: string; support: string; children: React.ReactNode }) {
+  return (
+    <div className="flex w-full flex-col items-center">
+      <h1 className="max-w-[20ch] text-center font-serif text-[2rem] font-medium leading-[1.06] tracking-[-0.026em] text-ink text-balance sm:text-[2.6rem] animate-rise-delayed">
+        {title}
+      </h1>
+      <p className="mx-auto mt-4 max-w-[52ch] text-center font-sans text-[14px] leading-[1.65] text-ash text-pretty sm:text-[15px] animate-rise-delayed-2">
+        {support}
+      </p>
+      <div className="mt-7 flex w-full flex-col items-center animate-rise-delayed-3 sm:mt-8">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * The billing interval, drawn exactly as the pricing page draws it. The
+ * discount beside "Annual" is derived, never typed.
+ */
+function Interval({ value, onChange }: { value: BillingIntervalKey; onChange: (value: BillingIntervalKey) => void }) {
+  return (
+    <fieldset className="flex flex-col items-center">
+      <legend className="sr-only">Billing interval</legend>
+      <div className="flex rounded-full border border-line p-1">
+        {(["annual", "monthly"] as const).map((item) => (
+          <button
+            type="button"
+            key={item}
+            aria-pressed={value === item}
+            onClick={() => onChange(item)}
+            className={`focus-ring min-h-11 rounded-full px-5 font-sans text-[13.5px] transition-colors duration-200 sm:px-6 ${value === item ? "bg-ink text-paper" : "text-ash hover:text-ink"}`}
+          >
+            {item === "annual" ? `Annual · ${annualDiscountLabel()}` : "Monthly"}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+const input = "focus-ring h-12 w-full rounded-full border border-line-strong bg-paper px-5 font-sans text-[14px] text-ink";
+const primary = "focus-ring mt-7 inline-flex h-12 min-w-[13rem] items-center justify-center rounded-full bg-ink px-6 font-sans text-[14px] font-medium text-paper transition-colors duration-200 hover:bg-ink/90 disabled:opacity-50";
