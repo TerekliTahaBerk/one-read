@@ -1,3 +1,4 @@
+import { selectArticleEdition } from "./selection";
 import { Prisma, type OneArticleIssue } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
@@ -108,6 +109,7 @@ export async function scheduleEditorialIssue(args: {
     where: { id: args.id },
     data: {
       status: "SCHEDULED",
+      publicationKey: `${args.scheduledFor.toISOString()}-${issue.readingLanguage}`,
       scheduledFor: args.scheduledFor,
       scheduledAt: new Date(),
       readyAt: issue.readyAt ?? new Date(),
@@ -205,6 +207,7 @@ export async function duplicateEditorialIssue(id: string, actor: string): Promis
   const source = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id } });
   return prisma.oneArticleIssue.create({
     data: {
+      topics: source.topics,
       readingLanguage: source.readingLanguage,
       subject: source.subject,
       previewText: source.previewText,
@@ -326,6 +329,10 @@ export async function dispatchIssue(
   const now = options.now ?? new Date();
   const send = options.send ?? sendDailyEmail;
   const issue = await prisma.oneArticleIssue.findUniqueOrThrow({ where: { id: issueId } });
+  const candidates = issue.publicationKey ? await prisma.oneArticleIssue.findMany({
+    where: { publicationKey: issue.publicationKey, readingLanguage: issue.readingLanguage, readyAt: { not: null }, status: { in: ["SCHEDULED", "SENDING", "SENT", "PARTIALLY_FAILED", "FAILED"] } },
+  }) : [issue];
+  const deliveryScope = issue.publicationKey ? { publicationKey: issue.publicationKey } : { issueId };
   const recipients = await eligibleRecipients(issue.readingLanguage);
   const eligibleContactIds = recipients.map((recipient) => recipient.contact.id);
   let sent = 0;
@@ -339,7 +346,7 @@ export async function dispatchIssue(
   // edition permanently failed or attempting an unauthorized delivery.
   const noLongerEligible = await prisma.oneArticleDelivery.updateMany({
     where: {
-      issueId,
+      ...deliveryScope,
       status: { in: ["QUEUED", "SENDING", "FAILED"] },
       ...(eligibleContactIds.length > 0
         ? { contactId: { notIn: eligibleContactIds } }
@@ -354,10 +361,12 @@ export async function dispatchIssue(
   skipped += noLongerEligible.count;
 
   for (const recipient of recipients) {
+    const selected = issue.publicationKey ? selectArticleEdition(candidates, recipient.preferences) : issue;
     const delivery = await findOrCreateDelivery(
-      issueId,
+      selected.id,
       recipient.contact.id,
       recipient.id,
+      issue.publicationKey,
     );
     if (delivery.status === "SENT") {
       skipped++;
@@ -427,7 +436,9 @@ export async function dispatchIssue(
     let providerAccepted = false;
     try {
       const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
-      const rendered = renderEditorialEmail(issue, {
+      const persisted = candidates.find((candidate) => candidate.id === delivery.issueId);
+      if (!persisted) throw new Error("persisted_candidate_unavailable");
+      const rendered = renderEditorialEmail(persisted, {
         unsubscribe: `${base}/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`,
       });
       const oneClickUnsubscribe = `${base}/api/unsubscribe?subscription=${encodeURIComponent(recipient.unsubscribeToken)}`;
@@ -437,7 +448,7 @@ export async function dispatchIssue(
         text: rendered.text,
         html: rendered.html,
         idempotencyKey: editorialDeliveryIdempotencyKey(
-          issue.id,
+          issue.publicationKey ?? issue.id,
           recipient.contact.id,
         ),
         unsubscribeUrl: oneClickUnsubscribe,
@@ -504,10 +515,10 @@ export async function dispatchIssue(
   }
 
   const [sentTotal, unresolvedTotal] = await Promise.all([
-    prisma.oneArticleDelivery.count({ where: { issueId, status: "SENT" } }),
+    prisma.oneArticleDelivery.count({ where: { ...deliveryScope, status: "SENT" } }),
     prisma.oneArticleDelivery.count({
       where: {
-        issueId,
+        ...deliveryScope,
         status: { in: ["QUEUED", "SENDING", "FAILED", "RECONCILIATION_REQUIRED"] },
       },
     }),
@@ -520,7 +531,7 @@ export async function dispatchIssue(
     },
   });
   reconciliationRequired = await prisma.oneArticleDelivery.count({
-    where: { issueId, status: "RECONCILIATION_REQUIRED" },
+    where: { ...deliveryScope, status: "RECONCILIATION_REQUIRED" },
   });
   return {
     recipients: recipients.length,
@@ -536,16 +547,17 @@ async function findOrCreateDelivery(
   issueId: string,
   contactId: string,
   productSubscriptionId: string,
+  publicationKey?: string | null,
 ) {
   // Prisma upsert can surface P2002 when two first inserts race. Postgres
   // ON CONFLICT via skipDuplicates makes that expected loser silent; both
   // workers then join the unique row and the compare-and-set chooses one.
   await prisma.oneArticleDelivery.createMany({
-    data: [{ issueId, contactId, productSubscriptionId, status: "QUEUED" }],
+    data: [{ issueId, contactId, productSubscriptionId, publicationKey, status: "QUEUED" }],
     skipDuplicates: true,
   });
   return prisma.oneArticleDelivery.findUniqueOrThrow({
-    where: { issueId_contactId: { issueId, contactId } },
+    where: publicationKey ? { publicationKey_contactId: { publicationKey, contactId } } : { issueId_contactId: { issueId, contactId } },
   });
 }
 
@@ -593,6 +605,7 @@ function normalizedIssueData(
   actor: string,
 ): Prisma.OneArticleIssueUncheckedCreateInput {
   return {
+    ...(input.topics === undefined ? {} : { topics: input.topics }),
     readingLanguage: input.readingLanguage,
     subject: input.subject.trim(),
     previewText: nullable(input.previewText),

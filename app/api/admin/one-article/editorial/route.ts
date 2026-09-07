@@ -116,6 +116,7 @@ export async function POST(request: Request): Promise<Response> {
 
 function inputFrom(body: Record<string, unknown>): EditorialIssueInput {
   return {
+    topics: body.topics === undefined ? undefined : strings(body.topics),
     readingLanguage: str(body.readingLanguage),
     subject: str(body.subject),
     previewText: str(body.previewText),

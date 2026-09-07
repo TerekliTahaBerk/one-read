@@ -160,6 +160,7 @@ model ProductSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  newsPreferences      OneNewsPreferences?
   preferences          ArticlePreferences?
   lingoPreferences     LingoPreferences?
   filmPreferences      FilmPreferences?
@@ -215,6 +216,29 @@ model ArticlePreferences {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// OneNews editorial choices. Empty topics retain broad editorial delivery for legacy readers.
+model OneNewsPreferences {
+  id                    String @id @default(cuid())
+  productSubscriptionId String @unique
+  subscription          ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
+  topics                String[]
+  summaryLanguage       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+/// Candidates sharing an exact publication instant and reading language.
+/// Candidate rank zero is the editorial lead; ranks are unique within a slot.
+model OneNewsPublicationSlot {
+  sealedAt        DateTime?
+  id              String @id @default(cuid())
+  publicationAt   DateTime
+  readingLanguage String
+  issues          OneNewsIssue[]
+  deliveries      OneNewsDelivery[]
+  @@unique([publicationAt, readingLanguage])
 }
 
 /// Append-only log of billing-provider webhook events. The unique
@@ -528,6 +552,11 @@ model DailySend {
 
 /// A manually authored, language-specific OneArticle edition.
 model OneArticleIssue {
+  /// Canonical editorial topics from lib/topics.ts, independent of mobile navigation tags.
+  topics String[] @default([])
+  /// Immutable publication identity, preserved when retrying a slot.
+  publicationKey String?
+
   id              String @id @default(cuid())
   readingLanguage String
 
@@ -582,6 +611,7 @@ model OneArticleIssue {
   deliveries    OneArticleDelivery[]
   readingStates ReadingState[]
 
+  @@index([publicationKey])
   @@index([status, scheduledFor])
   @@index([readingLanguage, status])
   @@index([mobileEnabled, mobileExploreEnabled, mobilePriority])
@@ -590,6 +620,8 @@ model OneArticleIssue {
 
 /// Idempotent per-recipient delivery record for a OneArticle edition.
 model OneArticleDelivery {
+  publicationKey String?
+
   id                    String @id @default(cuid())
   issueId               String
   contactId             String
@@ -623,6 +655,7 @@ model OneArticleDelivery {
   contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
   productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
 
+  @@unique([publicationKey, contactId])
   @@unique([issueId, contactId])
   @@index([issueId, status])
   @@index([productSubscriptionId, status])
@@ -1123,6 +1156,12 @@ model WaitlistEntry {
 /// human. Deliberately separate from `OneArticleIssue` — the two products
 /// share an inbox, not an editorial model.
 model OneNewsIssue {
+  slotId        String?
+  slot          OneNewsPublicationSlot? @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  editorialRank Int @default(0)
+  topic         String?
+  subtopics     String[] @default([])
+
   id              String @id @default(cuid())
   readingLanguage String
 
@@ -1174,11 +1213,15 @@ model OneNewsIssue {
   @@index([status, scheduledFor])
   @@index([readingLanguage, status])
   @@index([createdAt])
+  @@unique([slotId, editorialRank])
 }
 
 /// Idempotent per-recipient delivery record for a OneNews edition. Logical
 /// send state and later provider/mailbox state intentionally remain separate.
 model OneNewsDelivery {
+  slotId String?
+  slot   OneNewsPublicationSlot? @relation(fields: [slotId], references: [id], onDelete: Restrict)
+
   id                    String @id @default(cuid())
   issueId               String
   contactId             String
@@ -1193,6 +1236,7 @@ model OneNewsDelivery {
   providerStatus           String?
   providerStatusAt         DateTime?
   attemptCount             Int       @default(0)
+  firstAttemptAt           DateTime?
   lastAttemptAt            DateTime?
   providerAcceptedAt       DateTime?
   reconciliationRequiredAt DateTime?
@@ -1210,6 +1254,7 @@ model OneNewsDelivery {
   contact             Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
   productSubscription ProductSubscription @relation(fields: [productSubscriptionId], references: [id], onDelete: Cascade)
 
+  @@unique([slotId, contactId])
   @@unique([issueId, contactId])
   @@index([issueId, status])
   @@index([productSubscriptionId, status])

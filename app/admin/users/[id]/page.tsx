@@ -1,3 +1,6 @@
+import { PreferencesEditor } from "@/components/admin/PreferencesEditor";
+import { SUMMARY_LANGUAGES } from "@/lib/options";
+import { articleTopics } from "@/lib/product-preferences";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { EmailVerificationCode } from "@prisma/client";
@@ -36,8 +39,8 @@ export default async function AdminUserDetailPage(
     where: { id: params.id },
     include: {
       subscriptions: {
-        where: { productKey: { in: ["one-read", "one-article"] } },
-        include: { preferences: true },
+        where: { productKey: { in: ["one-read", "one-article", "one-news"] } },
+        include: { preferences: true, newsPreferences: true },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -54,8 +57,8 @@ export default async function AdminUserDetailPage(
         where: { id: subscription.contactId },
         include: {
           subscriptions: {
-            where: { productKey: { in: ["one-read", "one-article"] } },
-            include: { preferences: true },
+            where: { productKey: { in: ["one-read", "one-article", "one-news"] } },
+            include: { preferences: true, newsPreferences: true },
             orderBy: { createdAt: "asc" },
           },
         },
@@ -73,8 +76,8 @@ export default async function AdminUserDetailPage(
       where: { email: verificationLead.email },
       include: {
         subscriptions: {
-          where: { productKey: { in: ["one-read", "one-article"] } },
-          include: { preferences: true },
+          where: { productKey: { in: ["one-read", "one-article", "one-news"] } },
+          include: { preferences: true, newsPreferences: true },
           orderBy: { createdAt: "asc" },
         },
       },
@@ -100,6 +103,8 @@ export default async function AdminUserDetailPage(
   const article = contact.subscriptions.find((sub) => sub.productKey === "one-article");
   const actionSubscription = umbrella ?? article;
   const articlePrefs = article?.preferences;
+  const news = contact.subscriptions.find((sub) => sub.productKey === "one-news");
+  const newsPrefs = news?.newsPreferences;
 
   const [
     verificationEvents,
@@ -281,8 +286,16 @@ export default async function AdminUserDetailPage(
             ["Updated", fmtDateTime(articlePrefs.updatedAt)],
           ]} />
         ) : <EmptyPreferences product="OneArticle" />}
+        {article && <PreferencesEditor subId={article.id} summaryLanguages={SUMMARY_LANGUAGES} current={{ summaryLanguage: articlePrefs?.summaryLanguage ?? null, topics: articleTopics(articlePrefs) }} />}
       </AdminCard>
 
+      <AdminCard title="OneNews preferences">
+        {newsPrefs ? <DefList rows={[
+          ["Topics", newsPrefs.topics.join(", ") || "Editorial fallback (all topics)"],
+          ["Reading language", newsPrefs.summaryLanguage ?? "English"],
+        ]} /> : <EmptyPreferences product="OneNews" />}
+        {news && <PreferencesEditor subId={news.id} summaryLanguages={SUMMARY_LANGUAGES} current={{ summaryLanguage: newsPrefs?.summaryLanguage ?? null, topics: newsPrefs?.topics ?? [] }} />}
+      </AdminCard>
       <AdminCard title="Recent OneArticle deliveries">
         <AdminTable
           head={["Updated", "Edition", "Language", "Status", "Attempts", "Sent at", "Note"]}

@@ -1,6 +1,8 @@
+import { topicBySlug } from "@/lib/topics";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
 
 export interface EditorialContentInput {
+  topics?: string[];
   readingLanguage: string;
   subject: string;
   previewText?: string | null;
@@ -96,6 +98,7 @@ export function validateEditorialDraft(
   if ((input.mobileDeck ?? "").trim().length > 320) {
     return { ok: false, error: "mobile_deck_too_long" };
   }
+  if (input.topics?.some((topic) => !topicBySlug(topic))) return { ok: false, error: "invalid_editorial_topic" };
   if (input.mobileTopics?.some((topic) => !(MOBILE_TOPICS as readonly string[]).includes(topic))) {
     return { ok: false, error: "invalid_mobile_topic" };
   }

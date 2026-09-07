@@ -90,7 +90,7 @@ describe("database-backed OneNews reliability", () => {
     } });
     const row = await prisma.oneNewsDelivery.findFirstOrThrow({ where: { issueId: issue.id } });
     await prisma.oneNewsIssue.update({ where: { id: issue.id }, data: { status: "SENDING" } });
-    await dispatchOneNewsIssue(issue.id, { now: new Date(row.lastAttemptAt!.getTime() + 1_000), send });
+    await dispatchOneNewsIssue(issue.id, { now: new Date(row.lastAttemptAt!.getTime() + 16 * 60 * 1_000), send });
     const targetKeys = keys.filter((key) => key.includes(row.contactId));
     expect(targetKeys).toHaveLength(2);
     expect(new Set(targetKeys).size).toBe(1);

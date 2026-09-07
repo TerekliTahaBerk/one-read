@@ -78,6 +78,7 @@ export default async function EditorialIssueDetailPage(
           id: issue.id,
           version: issue.version,
           status: issue.status,
+          topics: issue.topics,
           readingLanguage: issue.readingLanguage,
           subject: issue.subject,
           previewText: issue.previewText,

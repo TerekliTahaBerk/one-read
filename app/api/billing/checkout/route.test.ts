@@ -7,6 +7,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const offerPreferencesComplete = vi.fn();
+vi.mock("@/lib/oneread/product-preferences", () => ({ offerPreferencesComplete: (...args: unknown[]) => offerPreferencesComplete(...args) }));
 const startOfferCheckout = vi.fn();
 vi.mock("@/lib/billing/offer-checkout", () => ({
   startOfferCheckout: (...args: unknown[]) => startOfferCheckout(...args),
@@ -27,6 +29,7 @@ function post(body: unknown, raw = false) {
 }
 
 beforeEach(() => {
+  offerPreferencesComplete.mockReset().mockResolvedValue(true);
   startOfferCheckout.mockReset();
   hasVerifiedEmail.mockReset().mockReturnValue(true);
   startOfferCheckout.mockResolvedValue({ kind: "redirect", url: "https://polar.test/c1" });
@@ -60,6 +63,12 @@ describe("accepted requests", () => {
 });
 
 describe("rejected requests", () => {
+  it("refuses checkout until all product preferences are stored", async () => {
+    offerPreferencesComplete.mockResolvedValue(false);
+    const response = await POST(post({ email: "a@b.test", offer: "one-read", interval: "annual" }));
+    expect(response.status).toBe(409);
+    expect(startOfferCheckout).not.toHaveBeenCalled();
+  });
   it("rejects malformed JSON", async () => {
     const response = await POST(post("{not json", true));
     expect(response.status).toBe(400);

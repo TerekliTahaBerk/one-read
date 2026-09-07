@@ -18,6 +18,7 @@ export function normalizeSiteLocale(value?: string | null): SiteLocale {
 }
 
 const en = {
+  productPreferences: {"setupTitle": "Set up {product}", "question": "What do you want to read about?", "topics": "Topics", "language": "Reading language", "limits": "Choose 1–5 topics. The first is your primary topic.", "count": "{count} of 5 selected", "step": "Step {step} of 2", "copied": "We copied your OneArticle choices. Change anything for OneNews.", "edit": "Edit topics & language", "save": "Save preferences", "invalid": "Please choose 1–5 topics and a reading language.", "failed": "Your preferences could not be saved. Please try again.", "broad": "Editorial selection — choose your topics", "cancel": "Cancel", "saved": "Preferences saved."},
   common: {
     backToOneRead: "Back to OneRead",
     oneReadHome: "OneRead home",
@@ -242,6 +243,7 @@ const en = {
 export type SiteDictionary = typeof en;
 
 const tr: SiteDictionary = {
+  productPreferences: {"setupTitle": "{product} tercihlerini ayarla", "question": "Ne hakkında okumak istersiniz?", "topics": "Konular", "language": "Okuma dili", "limits": "1–5 konu seçin. İlk seçiminiz ana konunuzdur.", "count": "5 konudan {count} seçildi", "step": "2 adımdan {step}. adım", "copied": "OneArticle seçimlerinizi kopyaladık. OneNews için istediğinizi değiştirebilirsiniz.", "edit": "Konuları ve dili düzenle", "save": "Tercihleri kaydet", "invalid": "Lütfen 1–5 konu ve bir okuma dili seçin.", "failed": "Tercihleriniz kaydedilemedi. Lütfen tekrar deneyin.", "broad": "Editör seçimi — konularınızı seçin", "cancel": "Vazgeç", "saved": "Tercihler kaydedildi."},
   common: { backToOneRead: "OneRead’e dön", oneReadHome: "OneRead ana sayfası", startOneRead: "OneRead’i başlat", includedIn: "Şuna dahil:", subscriptionCovers: "tek abonelik OneArticle ve OneNews’i kapsar." },
   language: { label: "Dil", menu: "Dil seç" },
   footer: { terms: "Koşullar", privacy: "Gizlilik", pricing: "Fiyatlandırma", navigation: "Alt menü", feedback: "Geri bildirim formunu aç", manifesto: "Daha iyi içerik isteyen ama açacak yeni bir uygulama istemeyenler için.", defaultTagline: "Akış yok. Gürültü yok. Yalnızca iyi bir okuma." },
@@ -271,6 +273,7 @@ const tr: SiteDictionary = {
 };
 
 const de: SiteDictionary = {
+  productPreferences: {"setupTitle": "{product} einrichten", "question": "Worüber möchten Sie lesen?", "topics": "Themen", "language": "Lesesprache", "limits": "Wählen Sie 1–5 Themen. Das erste ist Ihr Hauptthema.", "count": "{count} von 5 ausgewählt", "step": "Schritt {step} von 2", "copied": "Wir haben Ihre OneArticle-Auswahl übernommen. Sie können alles für OneNews ändern.", "edit": "Themen und Sprache bearbeiten", "save": "Einstellungen speichern", "invalid": "Bitte wählen Sie 1–5 Themen und eine Lesesprache.", "failed": "Ihre Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.", "broad": "Redaktionelle Auswahl — wählen Sie Ihre Themen", "cancel": "Abbrechen", "saved": "Einstellungen gespeichert."},
   common: { backToOneRead: "Zurück zu OneRead", oneReadHome: "OneRead-Startseite", startOneRead: "OneRead starten", includedIn: "Enthalten in", subscriptionCovers: "ein Abo umfasst OneArticle und OneNews." },
   language: { label: "Sprache", menu: "Sprache wählen" },
   footer: { terms: "Bedingungen", privacy: "Datenschutz", pricing: "Preise", navigation: "Fußzeile", feedback: "Feedback-Formular öffnen", manifesto: "Für Menschen, die bessere Impulse wollen, ohne noch eine App zu öffnen.", defaultTagline: "Kein Feed. Kein Lärm. Nur ein guter Text." },
@@ -300,6 +303,7 @@ const de: SiteDictionary = {
 };
 
 const fr: SiteDictionary = {
+  productPreferences: {"setupTitle": "Configurer {product}", "question": "Quels sujets souhaitez-vous lire ?", "topics": "Sujets", "language": "Langue de lecture", "limits": "Choisissez 1 à 5 sujets. Le premier est votre sujet principal.", "count": "{count} sur 5 sélectionnés", "step": "Étape {step} sur 2", "copied": "Nous avons repris vos choix OneArticle. Modifiez-les librement pour OneNews.", "edit": "Modifier les sujets et la langue", "save": "Enregistrer les préférences", "invalid": "Choisissez 1 à 5 sujets et une langue de lecture.", "failed": "Impossible d’enregistrer vos préférences. Veuillez réessayer.", "broad": "Sélection éditoriale — choisissez vos sujets", "cancel": "Annuler", "saved": "Préférences enregistrées."},
   common: { backToOneRead: "Retour à OneRead", oneReadHome: "Accueil OneRead", startOneRead: "Commencer OneRead", includedIn: "Inclus dans", subscriptionCovers: "un abonnement couvre OneArticle et OneNews." },
   language: { label: "Langue", menu: "Choisir la langue" },
   footer: { terms: "Conditions", privacy: "Confidentialité", pricing: "Tarifs", navigation: "Pied de page", feedback: "Ouvrir le formulaire de retour", manifesto: "Pour celles et ceux qui veulent de meilleures sources sans ouvrir une autre application.", defaultTagline: "Aucun fil. Aucun bruit. Juste une bonne lecture." },
@@ -334,3 +338,80 @@ export const SITE_DICTIONARIES: Record<SiteLocale, SiteDictionary> = {
   de,
   fr,
 };
+
+export const LOCALIZED_TOPIC_LABELS: Partial<Record<SiteLocale, Record<string, string>>> = {
+  "tr": {
+    "artificial-intelligence": "Yapay Zekâ",
+    "startups": "Girişimler",
+    "business": "İş Dünyası",
+    "technology": "Teknoloji",
+    "software-engineering": "Yazılım Mühendisliği",
+    "science": "Bilim",
+    "psychology": "Psikoloji",
+    "health": "Sağlık",
+    "finance": "Finans",
+    "economics": "Ekonomi",
+    "design": "Tasarım",
+    "productivity": "Verimlilik",
+    "education": "Eğitim",
+    "culture": "Kültür",
+    "history": "Tarih",
+    "philosophy": "Felsefe",
+    "climate": "İklim",
+    "future-of-work": "İşin Geleceği",
+    "marketing": "Pazarlama",
+    "media": "Medya",
+    "creativity": "Yaratıcılık",
+    "personal-growth": "Kişisel Gelişim"
+  },
+  "de": {
+    "artificial-intelligence": "Künstliche Intelligenz",
+    "startups": "Start-ups",
+    "business": "Wirtschaft",
+    "technology": "Technologie",
+    "software-engineering": "Softwareentwicklung",
+    "science": "Wissenschaft",
+    "psychology": "Psychologie",
+    "health": "Gesundheit",
+    "finance": "Finanzen",
+    "economics": "Ökonomie",
+    "design": "Design",
+    "productivity": "Produktivität",
+    "education": "Bildung",
+    "culture": "Kultur",
+    "history": "Geschichte",
+    "philosophy": "Philosophie",
+    "climate": "Klima",
+    "future-of-work": "Zukunft der Arbeit",
+    "marketing": "Marketing",
+    "media": "Medien",
+    "creativity": "Kreativität",
+    "personal-growth": "Persönliche Entwicklung"
+  },
+  "fr": {
+    "artificial-intelligence": "Intelligence artificielle",
+    "startups": "Startups",
+    "business": "Entreprises",
+    "technology": "Technologie",
+    "software-engineering": "Génie logiciel",
+    "science": "Sciences",
+    "psychology": "Psychologie",
+    "health": "Santé",
+    "finance": "Finance",
+    "economics": "Économie",
+    "design": "Design",
+    "productivity": "Productivité",
+    "education": "Éducation",
+    "culture": "Culture",
+    "history": "Histoire",
+    "philosophy": "Philosophie",
+    "climate": "Climat",
+    "future-of-work": "Avenir du travail",
+    "marketing": "Marketing",
+    "media": "Médias",
+    "creativity": "Créativité",
+    "personal-growth": "Développement personnel"
+  }
+};
+
+export const READING_LANGUAGE_LABELS: Record<string, string> = { English: "English", Turkish: "Türkçe", German: "Deutsch", French: "Français", Spanish: "Español" };

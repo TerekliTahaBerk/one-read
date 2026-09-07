@@ -1,3 +1,4 @@
+import { articleTopics } from "@/lib/product-preferences";
 import { NextResponse } from "next/server";
 import {
   parseEmail,
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
             ],
           },
         },
-        include: { preferences: true },
+        include: { preferences: true, newsPreferences: true },
       },
     },
   });
@@ -92,12 +93,14 @@ export async function POST(request: Request) {
         active: entitlements.byProduct[PRODUCT_ONE_ARTICLE].granted,
         cadence: PRODUCTS[PRODUCT_ONE_ARTICLE].cadence,
         language,
+        topics: articleTopics(articleHolder?.preferences),
         emailStatus: articleHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
       },
       [PRODUCT_ONE_NEWS]: {
         active: entitlements.byProduct[PRODUCT_ONE_NEWS].granted,
         cadence: PRODUCTS[PRODUCT_ONE_NEWS].cadence,
-        language,
+        language: newsHolder?.newsPreferences?.summaryLanguage ?? "English",
+        topics: newsHolder?.newsPreferences?.topics ?? [],
         emailStatus: newsHolder?.emailDeliveryStatus ?? "UNSUBSCRIBED",
       },
     },

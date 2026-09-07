@@ -1,5 +1,6 @@
 "use client";
 
+import { TOPIC_CATALOG } from "@/lib/topics";
 import {
   useCallback,
   useEffect,
@@ -28,6 +29,7 @@ import {
 } from "@/components/admin/MobileEditorialTools";
 
 type EditorIssue = {
+  topics?: string[];
   id: string;
   version: number;
   status: string;
@@ -58,6 +60,7 @@ type EditorIssue = {
 };
 
 type EditorialForm = MobileEditorialValue & {
+  topics: string[];
   readingLanguage: string;
   subject: string;
   previewText: string;
@@ -81,6 +84,7 @@ type ApiResult = {
 };
 
 const empty: EditorialForm = {
+  topics: [],
   readingLanguage: "English",
   subject: "",
   previewText: "",
@@ -118,6 +122,7 @@ export function EditorialIssueEditor({
       ...empty,
       ...(issue
         ? {
+            topics: issue.topics ?? [],
             readingLanguage: issue.readingLanguage,
             subject: issue.subject,
             previewText: issue.previewText ?? "",
@@ -373,6 +378,11 @@ export function EditorialIssueEditor({
             title="Delivery"
             description="Choose who receives this language-specific edition."
           />
+          <fieldset className="mb-4 flex flex-wrap gap-2" disabled={!editable}>
+            <legend className="mb-2 text-sm">Editorial topics</legend>
+            {TOPIC_CATALOG.map((topic) => <label key={topic.slug} className="text-sm"><input type="checkbox" checked={form.topics.includes(topic.slug)} onChange={(event) => set("topics", event.target.checked ? [...form.topics, topic.slug] : form.topics.filter((slug) => slug !== topic.slug))} /> {topic.label}</label>)}
+            <p className="w-full text-xs text-admin-muted">Schedule approved candidates at the same instant and in the same language. Each reader receives the best topic match; the earliest authored candidate is the fallback.</p>
+          </fieldset>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Reading language">
               <select

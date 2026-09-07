@@ -72,6 +72,7 @@ export async function POST(req: Request): Promise<Response> {
     case "update-preferences":
       result = await updatePreferences(subId, {
         summaryLanguage: body.summaryLanguage,
+        topics: body.topics,
       });
       auditMeta = { readingLanguage: body.summaryLanguage };
       break;

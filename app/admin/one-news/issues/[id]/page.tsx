@@ -64,6 +64,9 @@ export default async function OneNewsIssuePage(props: {
         <OneNewsIssueEditor
           issue={{
             id: issue.id,
+            topic: issue.topic,
+            editorialRank: issue.editorialRank,
+            slotId: issue.slotId,
             version: issue.version,
             status: issue.status,
             readingLanguage: issue.readingLanguage,

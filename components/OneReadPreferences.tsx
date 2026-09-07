@@ -1,5 +1,8 @@
 "use client";
 
+import { ProductPreferencesForm, topicLabel } from "./ProductPreferencesForm";
+import { parseProductPreferences } from "@/lib/product-preferences";
+import { READING_LANGUAGE_LABELS } from "@/lib/site-i18n";
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ProductMascot, productThemeKey, themeStyle } from "@/components/ProductIdentity";
@@ -21,7 +24,7 @@ import { isLikelyEmail } from "@/lib/options";
 import { PRODUCTS, PRODUCT_KEYS, type ProductKey } from "@/lib/products/registry";
 import { trackEvent } from "@/lib/analytics";
 
-type ProductState = { active: boolean; cadence: string; language: string | null; emailStatus: string };
+type ProductState = { topics?: string[]; active: boolean; cadence: string; language: string | null; emailStatus: string };
 type LookupResult = {
   state: string;
   billingManageable?: boolean;
@@ -137,10 +140,12 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
             <ProductSection
               key={product}
               product={product}
-              value={result.products[product]}
+              value={result.products?.[product] ?? { active: false, cadence: PRODUCTS[product].cadence, language: null, emailStatus: "UNSUBSCRIBED" }}
               busy={busy}
               copy={copy}
               onChange={setEmailPreference}
+              email={email}
+              onSaved={load}
             />
           ))}
 
@@ -210,13 +215,40 @@ function ProductSection({
   busy,
   copy,
   onChange,
+  email,
+  onSaved,
 }: {
+  email: string;
+  onSaved: () => Promise<void>;
   product: ProductKey;
   value: ProductState;
   busy: boolean;
   copy: PreferencesCopy;
   onChange: (product: "one-article" | "one-news", enabled: boolean) => void;
 }) {
+  const { dictionary, locale } = useSiteLanguage();
+  const setupCopy = dictionary.productPreferences;
+  const [editing, setEditing] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [language, setLanguage] = useState("English");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  async function save(event: FormEvent) {
+    event.preventDefault(); setSaveError(""); setMessage("");
+    if (!parseProductPreferences({ topics, summaryLanguage: language })) return setSaveError(setupCopy.invalid);
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/oneread/${product === "one-article" ? "article" : "news"}-preferences`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, topics, summaryLanguage: language, context: "account" }),
+      });
+      if (!response.ok) return setSaveError(setupCopy.failed);
+      trackEvent("product_preferences_saved", { product, topicCount: String(topics.length), language, context: "account" });
+      setEditing(false); setMessage(setupCopy.saved); await onSaved();
+    } catch { setSaveError(setupCopy.failed); }
+    finally { setSaving(false); }
+  }
   const on = value.emailStatus === "SUBSCRIBED";
   const suppressed = value.emailStatus === "SUPPRESSED";
   const emailLabel = suppressed ? copy.emailSuppressed : on ? copy.emailOn : copy.emailOff;
@@ -234,7 +266,8 @@ function ProductSection({
             </p>
             <dl className="mt-3 grid gap-3 font-sans text-[13px] leading-[1.55]">
               <Fact label={copy.cadenceLabel} value={value.cadence} />
-              <Fact label={copy.languageLabel} value={value.language ?? copy.languageUnset} />
+              <Fact label={setupCopy.topics} value={value.topics?.length ? value.topics.map((slug) => topicLabel(slug, locale)).join(" · ") : setupCopy.broad} />
+              <Fact label={copy.languageLabel} value={value.language ? READING_LANGUAGE_LABELS[value.language] ?? value.language : copy.languageUnset} />
               <Fact label={copy.emailStatusLabel} value={emailLabel} />
             </dl>
           </div>
@@ -250,6 +283,18 @@ function ProductSection({
           </button>
         )}
       </div>
+      {value.active && !editing && <button type="button" className={`${secondaryAction} mt-4`} disabled={busy} onClick={() => {
+        setTopics([...(value.topics ?? [])]); setLanguage(value.language ?? "English"); setEditing(true); setMessage(""); setSaveError("");
+      }}>{setupCopy.edit}</button>}
+      {editing && <form onSubmit={save} className="mt-6 space-y-5">
+        <ProductPreferencesForm product={product} selectedTopics={topics} language={language} onTopicsChange={setTopics} onLanguageChange={setLanguage} disabled={saving} />
+        <div className="flex flex-wrap gap-2">
+          <button disabled={saving} className={primaryAction}>{setupCopy.save}</button>
+          <button type="button" disabled={saving} className={secondaryAction} onClick={() => { setEditing(false); setSaveError(""); }}>{setupCopy.cancel}</button>
+        </div>
+      </form>}
+      <FlowError>{saveError}</FlowError>
+      <p role="status" className="mt-2 text-sm">{message}</p>
     </section>
   );
 }

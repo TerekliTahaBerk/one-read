@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { TOPIC_CATALOG } from "@/lib/topics";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
 import { EmailPreviewPanel } from "@/components/admin/EditorialComposerTools";
 import { buildOneNewsRenderModel } from "@/lib/one-news/render-model";
@@ -25,6 +26,9 @@ import { allowedTransitions } from "@/lib/one-news/lifecycle";
  */
 
 export type OneNewsEditorIssue = {
+  topic?: string | null;
+  editorialRank?: number;
+  slotId?: string | null;
   id: string;
   version: number;
   status: string;
@@ -70,6 +74,7 @@ export type OneNewsEditorCorrection = {
 };
 
 type Form = {
+  topic: string;
   readingLanguage: string;
   subject: string;
   previewText: string;
@@ -101,6 +106,8 @@ export function OneNewsIssueEditor({ issue }: { issue?: OneNewsEditorIssue }) {
   const [sources, setSources] = useState<OneNewsEditorSource[]>(
     () => issue?.sources.map((source, index) => ({ ...source, sortOrder: index })) ?? [],
   );
+  const [publicationTime, setPublicationTime] = useState("");
+  const [editorialRank, setEditorialRank] = useState(issue?.editorialRank ?? 0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -213,6 +220,12 @@ export function OneNewsIssueEditor({ issue }: { issue?: OneNewsEditorIssue }) {
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <form onSubmit={save} className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Topic">
+            <select value={form.topic} onChange={(event) => setForm({ ...form, topic: event.target.value })} className={controlClass}>
+              <option value="">General / editorial fallback</option>
+              {TOPIC_CATALOG.map((topic) => <option key={topic.slug} value={topic.slug}>{topic.label}</option>)}
+            </select>
+          </Field>
           <Field label="Reading language">
             <select
               value={form.readingLanguage}
@@ -360,6 +373,14 @@ export function OneNewsIssueEditor({ issue }: { issue?: OneNewsEditorIssue }) {
               Return to draft
             </button>
           )}
+          {issue && transitions.includes("SCHEDULED") && <fieldset className="w-full space-y-3 rounded-lg border p-3">
+            <legend>Publication slot</legend>
+            <p className="text-xs">Use the same publication instant and language for all candidates. Schedule rank 0 (the editorial lead) first; ranks 1–99 break topic-match ties. Each reader receives one story.</p>
+            <label className="block text-sm">Publication time (your local timezone)<input type="datetime-local" value={publicationTime} onChange={(event) => setPublicationTime(event.target.value)} className={controlClass} /></label>
+            <label className="block text-sm">Editorial rank (0 = lead)<input type="number" min={0} max={99} value={editorialRank} onChange={(event) => setEditorialRank(Number(event.target.value))} className={controlClass} /></label>
+            <button type="button" disabled={busy || !publicationTime} className={controlClass} onClick={() => call({ action: "schedule", issueId: issue.id, scheduledFor: new Date(publicationTime).toISOString(), editorialRank })}>Schedule candidate</button>
+          </fieldset>}
+          {issue?.slotId && <p className="w-full text-xs">Slot: {issue.slotId} · rank {issue.editorialRank} · {issue.scheduledFor}</p>}
           {message && <span className="text-[12px] text-emerald-700">{message}</span>}
           {error && <span className="text-[12px] text-red-700">{error}</span>}
         </div>
@@ -589,6 +610,7 @@ const controlClass =
 
 function initialForm(issue?: OneNewsEditorIssue): Form {
   return {
+    topic: issue?.topic ?? "",
     readingLanguage: issue?.readingLanguage ?? "English",
     subject: issue?.subject ?? "",
     previewText: issue?.previewText ?? "",

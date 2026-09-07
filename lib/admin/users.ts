@@ -1,8 +1,7 @@
+import { articlePreferenceFields, parseProductTopics } from "@/lib/product-preferences";
 import { prisma } from "@/lib/prisma";
 import {
-  upsertArticlePreferences,
   ensureOneArticleSubscription,
-  type ArticlePreferencesInput,
 } from "@/lib/subscriptions";
 import {
   parseEmail,
@@ -136,6 +135,7 @@ export async function updatePreferences(
   subId: string,
   raw: {
     summaryLanguage?: unknown;
+    topics?: unknown;
   },
 ): Promise<ActionResult> {
   const sub = await loadSub(subId);
@@ -144,14 +144,17 @@ export async function updatePreferences(
   const summaryLanguage = parseSummaryLanguage(raw.summaryLanguage);
   if (!summaryLanguage) return { ok: false, error: "invalid_summary_language" };
 
-  const prefs: ArticlePreferencesInput = {
-    interests: [],
-    primaryInterest: null,
-    secondaryInterests: [],
-    sourceLanguage: "Any",
-    summaryLanguage,
-  };
-  await upsertArticlePreferences(subId, prefs);
+  const topics = raw.topics === undefined ? undefined : parseProductTopics(raw.topics);
+  if (topics === null) return { ok: false, error: "invalid_topics" };
+  if (sub.productKey === "one-news") {
+    await prisma.oneNewsPreferences.upsert({ where: { productSubscriptionId: subId },
+      update: { summaryLanguage, ...(topics ? { topics } : {}) },
+      create: { productSubscriptionId: subId, summaryLanguage, topics: topics ?? [] } });
+  } else if (sub.productKey === "one-article") {
+    const fields = topics ? articlePreferenceFields({ topics, summaryLanguage }) : { summaryLanguage };
+    await prisma.articlePreferences.upsert({ where: { productSubscriptionId: subId }, update: fields,
+      create: { productSubscriptionId: subId, interests: [], secondaryInterests: [], sourceLanguage: "Any", ...fields } });
+  } else return { ok: false, error: "unsupported_product" };
   return { ok: true };
 }
 

@@ -10,11 +10,11 @@ describe("operator queue delivery retry contract", () => {
   it("allows only a confirmed pre-acceptance hard failure", () => {
     expect(isSafeDeliveryRetry(base)).toBe(true);
   });
-  it.each([
+  it.each<[Record<string, unknown>, string]>([
     [{ ...base, status: "RECONCILIATION_REQUIRED" }, "ambiguous"],
     [{ ...base, providerAcceptedAt: new Date() }, "provider accepted"],
     [{ ...base, providerStatus: "DELAYED" }, "provider unresolved"],
     [{ ...base, emailDeliveryStatus: "SUPPRESSED" }, "suppressed"],
     [{ ...base, subscriptionStatus: "CANCELED" }, "canceled"],
-  ])("refuses %s (%s)", (row) => expect(isSafeDeliveryRetry(row)).toBe(false));
+  ])("refuses %s (%s)", (row) => expect(isSafeDeliveryRetry(row as any)).toBe(false));
 });

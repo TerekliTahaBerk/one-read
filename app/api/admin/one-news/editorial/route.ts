@@ -90,6 +90,7 @@ export async function POST(request: Request): Promise<Response> {
         const issue = await scheduleOneNewsIssue({
           id: issueId,
           scheduledFor: new Date(str(body.scheduledFor)),
+          editorialRank: body.editorialRank === undefined ? 0 : Number(body.editorialRank),
           actor,
         });
         return await audited(actor, action, issue);
@@ -168,6 +169,8 @@ async function audited(
 
 function inputFrom(body: Record<string, unknown>): OneNewsIssueInput {
   return {
+    topic: body.topic === undefined ? undefined : str(body.topic),
+    subtopics: Array.isArray(body.subtopics) ? body.subtopics.filter((v): v is string => typeof v === "string") : undefined,
     readingLanguage: str(body.readingLanguage),
     subject: str(body.subject),
     previewText: str(body.previewText),

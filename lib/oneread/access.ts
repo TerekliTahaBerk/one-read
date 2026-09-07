@@ -1,4 +1,4 @@
-import type { ProductSubscription, ArticlePreferences } from "@prisma/client";
+import type { Prisma, ProductSubscription, ArticlePreferences } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   ONE_READ_PRODUCT_KEY,
@@ -54,19 +54,14 @@ export async function ensureOneReadSubscription(
 }
 
 /** Ensures the OneArticle preferences-holder row exists for a contact. */
-export async function ensureArticlePreferencesHolder(contactId: string): Promise<ArticleHolder> {
-  const existing = await prisma.productSubscription.findUnique({
-    where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
-    include: { preferences: true },
+export async function ensureArticlePreferencesHolder(contactId: string, db: Prisma.TransactionClient = prisma): Promise<ArticleHolder> {
+  const bundle = await db.productSubscription.findUnique({
+    where: { contactId_productKey: { contactId, productKey: ONE_READ_PRODUCT_KEY } },
   });
-  if (existing) return existing;
-
-  return prisma.productSubscription.create({
-    data: {
-      contactId,
-      productKey: ONE_ARTICLE_PRODUCT_KEY,
-      status: "PENDING_PREFERENCES",
-    },
+  return db.productSubscription.upsert({
+    where: { contactId_productKey: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY } },
+    update: {},
+    create: { contactId, productKey: ONE_ARTICLE_PRODUCT_KEY, status: "PENDING_PREFERENCES", emailDeliveryStatus: bundle?.emailDeliveryStatus ?? "SUBSCRIBED" },
     include: { preferences: true },
   });
 }

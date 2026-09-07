@@ -1,3 +1,4 @@
+import { topicBySlug } from "@/lib/topics";
 import type { OneNewsIssue } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertTransition, isEditable, type OneNewsStatus } from "./lifecycle";
@@ -50,6 +51,8 @@ export function assertHumanEditor(actor: string): string {
 export interface OneNewsIssueInput extends OneNewsContentInput {
   scheduledFor?: Date | null;
   timezone?: string;
+  topic?: string | null;
+  subtopics?: string[];
 }
 
 export async function createOneNewsIssue(
@@ -75,6 +78,7 @@ export async function updateOneNewsIssue(args: {
   if (!validation.valid) throw new Error(validation.errors[0].code);
   const current = await prisma.oneNewsIssue.findUnique({ where: { id: args.id } });
   if (!current) throw new Error("issue_not_found");
+  await assertSlotEditable(current.slotId);
   if (!isEditable(current.status)) throw new Error("issue_not_editable");
   const updated = await prisma.oneNewsIssue.updateMany({
     where: { id: args.id, version: args.version },
@@ -99,6 +103,7 @@ export async function replaceOneNewsSources(args: {
 }): Promise<void> {
   const editor = assertHumanEditor(args.actor);
   const issue = await prisma.oneNewsIssue.findUniqueOrThrow({ where: { id: args.issueId } });
+  await assertSlotEditable(issue.slotId);
   if (!isEditable(issue.status)) throw new Error("issue_not_editable");
   const validation = validateOneNewsDraft(
     issueToContentInput(issue),
@@ -158,12 +163,15 @@ export async function returnOneNewsIssueToDraft(
 ): Promise<OneNewsIssue> {
   const editor = assertHumanEditor(actor);
   const issue = await prisma.oneNewsIssue.findUniqueOrThrow({ where: { id } });
+  await assertSlotEditable(issue.slotId);
+  if (issue.slotId && issue.editorialRank === 0 && await prisma.oneNewsIssue.count({ where: { slotId: issue.slotId, id: { not: issue.id }, status: "SCHEDULED" } })) throw new Error("remove_slot_candidates_before_lead");
   if (issue.claimedAt) throw new Error("issue_already_dispatching");
   assertTransition(issue.status, "DRAFT");
   return prisma.oneNewsIssue.update({
     where: { id },
     data: {
       status: "DRAFT",
+      slotId: null,
       readyAt: null,
       scheduledAt: null,
       canceledAt: null,
@@ -180,6 +188,7 @@ export async function returnOneNewsIssueToDraft(
 export async function scheduleOneNewsIssue(args: {
   id: string;
   scheduledFor: Date;
+  editorialRank?: number;
   actor: string;
 }): Promise<OneNewsIssue> {
   const editor = assertHumanEditor(args.actor);
@@ -188,29 +197,42 @@ export async function scheduleOneNewsIssue(args: {
   const { issue, validation } = await validateStoredOneNewsIssue(args.id);
   if (!validation.valid) throw new Error(validation.errors[0].code);
   assertTransition(issue.status, "SCHEDULED");
-  return prisma.oneNewsIssue.update({
-    where: { id: args.id },
-    data: {
-      status: "SCHEDULED",
-      scheduledFor: args.scheduledFor,
-      scheduledAt: new Date(),
-      readyAt: issue.readyAt ?? new Date(),
-      canceledAt: null,
-      updatedBy: editor,
-      version: { increment: 1 },
-    },
+  const rank = args.editorialRank ?? 0;
+  if (!Number.isInteger(rank) || rank < 0 || rank > 99) throw new Error("invalid_editorial_rank");
+  return prisma.$transaction(async (tx) => {
+    const slot = await tx.oneNewsPublicationSlot.upsert({
+      where: { publicationAt_readingLanguage: { publicationAt: args.scheduledFor, readingLanguage: issue.readingLanguage } },
+      create: { publicationAt: args.scheduledFor, readingLanguage: issue.readingLanguage }, update: {},
+    });
+    // Serialize candidate changes against the dispatch seal.
+    await tx.$queryRaw`SELECT "id" FROM "OneNewsPublicationSlot" WHERE "id" = ${slot.id} FOR UPDATE`;
+    const locked = await tx.oneNewsPublicationSlot.findUniqueOrThrow({ where: { id: slot.id } });
+    if (locked.sealedAt) throw new Error("slot_already_dispatching");
+    if (rank > 0 && !await tx.oneNewsIssue.findFirst({ where: { slotId: slot.id, editorialRank: 0, status: "SCHEDULED" } })) throw new Error("schedule_editorial_lead_first");
+    return tx.oneNewsIssue.update({
+      where: { id: args.id },
+      data: {
+        slotId: slot.id, editorialRank: rank, status: "SCHEDULED",
+        scheduledFor: args.scheduledFor, scheduledAt: new Date(),
+        readyAt: issue.readyAt ?? new Date(), canceledAt: null,
+        updatedBy: editor, version: { increment: 1 },
+      },
+    });
   });
 }
 
 export async function cancelOneNewsIssue(id: string, actor: string): Promise<OneNewsIssue> {
   const editor = assertHumanEditor(actor);
   const issue = await prisma.oneNewsIssue.findUniqueOrThrow({ where: { id } });
+  await assertSlotEditable(issue.slotId);
+  if (issue.slotId && issue.editorialRank === 0 && await prisma.oneNewsIssue.count({ where: { slotId: issue.slotId, id: { not: issue.id }, status: "SCHEDULED" } })) throw new Error("remove_slot_candidates_before_lead");
   if (issue.claimedAt) throw new Error("issue_already_dispatching");
   assertTransition(issue.status, "CANCELED");
   return prisma.oneNewsIssue.update({
     where: { id },
     data: {
       status: "CANCELED",
+      slotId: null,
       canceledAt: new Date(),
       updatedBy: editor,
       version: { increment: 1 },
@@ -361,7 +383,11 @@ export const ONE_NEWS_EDITOR_ACTIONS: readonly OneNewsStatus[] = [
 ];
 
 function normalizedIssueData(input: OneNewsIssueInput) {
+  if (input.topic && !topicBySlug(input.topic)) throw new Error("invalid_topic");
+  if (input.subtopics && input.subtopics.some((slug) => !topicBySlug(slug) && !topicBySlug(input.topic ?? "")?.subtopics.some((sub) => sub === slug))) throw new Error("invalid_subtopic");
   return {
+    ...(input.topic === undefined ? {} : { topic: input.topic || null }),
+    ...(input.subtopics === undefined ? {} : { subtopics: input.subtopics }),
     readingLanguage: input.readingLanguage,
     subject: input.subject.trim(),
     previewText: nullable(input.previewText),
@@ -383,4 +409,10 @@ function normalizedIssueData(input: OneNewsIssueInput) {
 function nullable(value: string | null | undefined): string | null {
   const clean = value?.trim();
   return clean ? clean : null;
+}
+
+async function assertSlotEditable(slotId: string | null) {
+  if (!slotId) return;
+  const slot = await prisma.oneNewsPublicationSlot.findUniqueOrThrow({ where: { id: slotId } });
+  if (slot.sealedAt) throw new Error("slot_already_dispatching");
 }

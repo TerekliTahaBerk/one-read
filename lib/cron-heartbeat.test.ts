@@ -4,7 +4,7 @@ import { emitCronHeartbeat, validateCronHeartbeatUrl } from "./cron-heartbeat";
 describe("cron heartbeat", () => {
   it("is safe when unconfigured", async () => {
     const request = vi.fn();
-    await expect(emitCronHeartbeat("daily", request, {})).resolves.toEqual({
+    await expect(emitCronHeartbeat("daily", request, {} as NodeJS.ProcessEnv)).resolves.toEqual({
       configured: false, delivered: false, reason: "missing",
     });
     expect(request).not.toHaveBeenCalled();
@@ -13,15 +13,15 @@ describe("cron heartbeat", () => {
   it("emits a configured healthy heartbeat without exposing it", async () => {
     const request = vi.fn(async () => new Response(null, { status: 200 }));
     const env = { BETTER_STACK_NEWS_CRON_HEARTBEAT_URL: "https://heartbeat.example.test/news-secret" };
-    await expect(emitCronHeartbeat("news", request, env)).resolves.toEqual({ configured: true, delivered: true });
+    await expect(emitCronHeartbeat("news", request, env as unknown as NodeJS.ProcessEnv)).resolves.toEqual({ configured: true, delivered: true });
     expect(request).toHaveBeenCalledWith(env.BETTER_STACK_NEWS_CRON_HEARTBEAT_URL, { method: "GET", cache: "no-store" });
   });
 
   it("reports provider failure without throwing", async () => {
     const env = { BETTER_STACK_DAILY_CRON_HEARTBEAT_URL: "https://heartbeat.example.test/secret" };
-    await expect(emitCronHeartbeat("daily", vi.fn(async () => new Response(null, { status: 503 })), env))
+    await expect(emitCronHeartbeat("daily", vi.fn(async () => new Response(null, { status: 503 })), env as unknown as NodeJS.ProcessEnv))
       .resolves.toMatchObject({ delivered: false, reason: "provider_rejected" });
-    await expect(emitCronHeartbeat("daily", vi.fn(async () => { throw new Error("offline"); }), env))
+    await expect(emitCronHeartbeat("daily", vi.fn(async () => { throw new Error("offline"); }), env as unknown as NodeJS.ProcessEnv))
       .resolves.toMatchObject({ delivered: false, reason: "provider_unavailable" });
   });
 

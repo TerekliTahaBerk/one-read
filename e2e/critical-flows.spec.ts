@@ -12,7 +12,8 @@ for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${of
   await page.route("**/api/oneread/verification/request", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
   let confirmBody: Record<string, unknown> | null = null;
   await page.route("**/api/oneread/verification/confirm", (route) => { confirmBody = route.request().postDataJSON(); return route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"articlePreferencesComplete":false}' }); });
-  await page.route("**/api/oneread/article-preferences", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }));
+  const saves: Record<string, unknown>[] = [];
+  await page.route(/\/api\/oneread\/(article|news)-preferences$/, (route) => { saves.push({ product: route.request().url().includes("news-preferences") ? "one-news" : "one-article", ...route.request().postDataJSON() }); return route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' }); });
   let checkoutBody: Record<string, unknown> | null = null;
   await page.route("**/api/billing/checkout", async (route) => { checkoutBody = route.request().postDataJSON(); await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"action":"already_active"}' }); });
   await page.goto(`/subscribe?offer=${offer}`);
@@ -25,9 +26,18 @@ for (const offer of ["one-article", "one-news", "one-read"] as const) test(`${of
   // to the plan the customer was actually looking at.
   await expect.poll(() => confirmBody).toEqual({ email: "reader@example.com", code: "123456", offer, interval: "annual" });
   await expect(page.getByText(/reading language/i)).toBeVisible();
-  await expect(page.getByText(/interest/i)).toHaveCount(0);
+  await page.getByRole("button", { name: "Science", exact: true }).click();
   await expect(page.getByText(/source language/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
+  if (offer === "one-read") {
+    await expect(page.getByRole("heading", { name: "Step 2 of 2" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "✓ Science", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "✓ Science", exact: true }).click();
+    await page.getByRole("button", { name: "Design", exact: true }).click();
+    await page.getByRole("button", { name: "Türkçe", exact: true }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    expect(saves.map((save) => [save.product, save.topics, save.summaryLanguage])).toEqual([["one-article", ["science"], "English"], ["one-news", ["design"], "Turkish"]]);
+  } else expect(saves[0]).toMatchObject({ product: offer, topics: ["science"], summaryLanguage: "English" });
   await expect(page.getByText(`$${annualPrice} USD / year`)).toBeVisible();
   await page.getByRole("button", { name: "Continue to secure checkout" }).click();
   await expect.poll(() => checkoutBody).toEqual({ email: "reader@example.com", offer, interval: "annual" });

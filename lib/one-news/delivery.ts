@@ -1,3 +1,4 @@
+import { selectOneNewsCandidate } from "./selection";
 import { prisma } from "@/lib/prisma";
 import { ResendDeliveryError, sendDailyEmail } from "@/lib/resend";
 import { reportProviderEvent } from "@/lib/provider-observability";
@@ -47,7 +48,7 @@ export async function dispatchDueOneNewsIssues(
     data: { status: "SCHEDULED", claimedAt: null },
   });
   const due = await prisma.oneNewsIssue.findMany({
-    where: { status: "SCHEDULED", scheduledFor: { lte: now }, readyAt: { not: null } },
+    where: { status: "SCHEDULED", scheduledFor: { lte: now }, readyAt: { not: null }, OR: [{ slotId: null }, { editorialRank: 0 }] },
     orderBy: { scheduledFor: "asc" },
     take: 10,
   });
@@ -81,10 +82,23 @@ export async function dispatchOneNewsIssue(
   if (issue.status !== "SENDING" || !issue.readyAt || !issue.scheduledFor || issue.scheduledFor > now) {
     throw new Error("issue_not_dispatchable");
   }
+  if (issue.slotId && issue.editorialRank !== 0) throw new Error("dispatch_slot_lead_only");
+  if (issue.slotId) {
+    await prisma.oneNewsPublicationSlot.update({ where: { id: issue.slotId }, data: { sealedAt: now } });
+  }
+  const candidates = issue.slotId ? await prisma.oneNewsIssue.findMany({
+    where: { slotId: issue.slotId, readyAt: { not: null }, status: { in: ["SCHEDULED", "SENDING", "SENT", "PARTIALLY_FAILED", "FAILED"] } },
+    include: { sources: true, corrections: true }, orderBy: { editorialRank: "asc" },
+  }) : [issue];
+  for (const candidate of candidates) {
+    const checked = validateOneNewsIssue(candidate, candidate.sources, now);
+    if (!checked.valid) throw new Error(`issue_invalid:${checked.errors[0]?.code ?? "unknown"}`);
+  }
+  const deliveryScope = issue.slotId ? { slotId: issue.slotId } : { issueId };
   const validation = validateOneNewsIssue(issue, issue.sources, now);
   if (!validation.valid) throw new Error(`issue_invalid:${validation.errors[0]?.code ?? "unknown"}`);
   // Rendering is a precondition, not something first attempted after a provider call.
-  const model = buildOneNewsRenderModel(issue, issue.sources, issue.corrections);
+  const models = new Map(candidates.map((candidate) => [candidate.id, buildOneNewsRenderModel(candidate, candidate.sources, candidate.corrections)]));
   const recipients = await eligibleOneNewsRecipients(issue.readingLanguage, now);
   const eligibleIds = recipients.map((recipient) => recipient.contact.id);
   let sent = 0;
@@ -93,7 +107,7 @@ export async function dispatchOneNewsIssue(
 
   const noLongerEligible = await prisma.oneNewsDelivery.updateMany({
     where: {
-      issueId,
+      ...deliveryScope,
       status: { in: ["QUEUED", "SENDING", "FAILED"] },
       ...(eligibleIds.length ? { contactId: { notIn: eligibleIds } } : {}),
     },
@@ -102,19 +116,19 @@ export async function dispatchOneNewsIssue(
   skipped += noLongerEligible.count;
 
   for (const recipient of recipients) {
-    const delivery = await prisma.oneNewsDelivery.upsert({
-      where: { issueId_contactId: { issueId, contactId: recipient.contact.id } },
-      create: {
-        issueId,
-        contactId: recipient.contact.id,
-        productSubscriptionId: recipient.preference.id,
-      },
-      update: {},
+    const selected = issue.slotId ? selectOneNewsCandidate(candidates, recipient.topics, issue.readingLanguage) : issue;
+    const uniqueDelivery = issue.slotId
+      ? { slotId_contactId: { slotId: issue.slotId, contactId: recipient.contact.id } }
+      : { issueId_contactId: { issueId, contactId: recipient.contact.id } };
+    await prisma.oneNewsDelivery.createMany({
+      data: [{ issueId: selected.id, slotId: issue.slotId, contactId: recipient.contact.id, productSubscriptionId: recipient.preference.id }],
+      skipDuplicates: true,
     });
+    const delivery = await prisma.oneNewsDelivery.findUniqueOrThrow({ where: uniqueDelivery });
     if (delivery.status === "SENT" || delivery.status === "SKIPPED") { skipped++; continue; }
     if (delivery.status === "RECONCILIATION_REQUIRED") { failed++; continue; }
     if (delivery.status === "SENDING" && delivery.lastAttemptAt &&
-        now.getTime() - delivery.lastAttemptAt.getTime() >= PROVIDER_IDEMPOTENCY_TTL_MS) {
+        now.getTime() - (delivery.firstAttemptAt ?? delivery.lastAttemptAt).getTime() >= PROVIDER_IDEMPOTENCY_TTL_MS) {
       await prisma.oneNewsDelivery.update({
         where: { id: delivery.id },
         data: {
@@ -140,21 +154,26 @@ export async function dispatchOneNewsIssue(
       continue;
     }
 
-    await prisma.oneNewsDelivery.update({
-      where: { id: delivery.id },
-      data: { status: "SENDING", attemptCount: { increment: 1 }, lastAttemptAt: now, failedReason: null },
+    if (delivery.status === "SENDING" && delivery.lastAttemptAt && now.getTime() - delivery.lastAttemptAt.getTime() < 15 * 60 * 1000) { skipped++; continue; }
+    const claimedDelivery = await prisma.oneNewsDelivery.updateMany({
+      where: { id: delivery.id, status: delivery.status, attemptCount: delivery.attemptCount },
+      data: { status: "SENDING", attemptCount: { increment: 1 }, firstAttemptAt: delivery.firstAttemptAt ?? delivery.lastAttemptAt ?? now, lastAttemptAt: now, failedReason: null },
     });
+    if (claimedDelivery.count !== 1) { skipped++; continue; }
     let providerAccepted = false;
     try {
       const base = (process.env.PUBLIC_BASE_URL || "https://oneread.email").replace(/\/$/, "");
       const unsubscribe = `${base}/unsubscribe?subscription=${encodeURIComponent(recipient.preference.unsubscribeToken)}`;
+      // Reuse the persisted choice on retries even if the reader edited topics.
+      const model = models.get(delivery.issueId);
+      if (!model) throw new Error("persisted_candidate_unavailable");
       const rendered = renderOneNewsEmail(model, { unsubscribe });
       const response = await send({
         to: recipient.contact.email,
         subject: rendered.subject,
         text: rendered.text,
         html: rendered.html,
-        idempotencyKey: oneNewsDeliveryIdempotencyKey(issue.id, recipient.contact.id),
+        idempotencyKey: oneNewsDeliveryIdempotencyKey(issue.slotId ?? issue.id, recipient.contact.id),
         unsubscribeUrl: `${base}/api/unsubscribe?subscription=${encodeURIComponent(recipient.preference.unsubscribeToken)}`,
         operation: "send_editorial",
         productKey: "one-news",
@@ -164,7 +183,7 @@ export async function dispatchOneNewsIssue(
       await prisma.oneNewsDelivery.update({
         where: { id: delivery.id },
         data: {
-          providerAcceptedAt: now,
+          providerAcceptedAt: delivery.providerAcceptedAt ?? now,
           providerMessageId: response.messageId ?? null,
           providerStatus: "ACCEPTED",
           providerStatusAt: now,
@@ -182,7 +201,7 @@ export async function dispatchOneNewsIssue(
         data: {
           status: providerAccepted ? "SENDING" : ambiguousProviderOutcome ? "RECONCILIATION_REQUIRED" : "FAILED",
           reconciliationRequiredAt: ambiguousProviderOutcome ? now : null,
-          providerAcceptedAt: providerAccepted ? now : undefined,
+          providerAcceptedAt: providerAccepted ? delivery.providerAcceptedAt ?? now : undefined,
           failedReason: providerAccepted
             ? "provider_accepted_local_persistence_failed"
             : ambiguousProviderOutcome
@@ -208,13 +227,13 @@ export async function dispatchOneNewsIssue(
   }
 
   const [sentTotal, unresolved] = await Promise.all([
-    prisma.oneNewsDelivery.count({ where: { issueId, status: "SENT" } }),
+    prisma.oneNewsDelivery.count({ where: { ...deliveryScope, status: "SENT" } }),
     prisma.oneNewsDelivery.count({
-      where: { issueId, status: { in: ["QUEUED", "SENDING", "FAILED", "RECONCILIATION_REQUIRED"] } },
+      where: { ...deliveryScope, status: { in: ["QUEUED", "SENDING", "FAILED", "RECONCILIATION_REQUIRED"] } },
     }),
   ]);
-  await prisma.oneNewsIssue.update({
-    where: { id: issueId },
+  await prisma.oneNewsIssue.updateMany({
+    where: issue.slotId ? { slotId: issue.slotId, id: { in: candidates.map((candidate) => candidate.id) } } : { id: issueId },
     data: {
       status: resolveOneNewsIssueDeliveryStatus(sentTotal, unresolved),
       sentAt: unresolved === 0 ? now : null,
@@ -233,7 +252,7 @@ export async function eligibleOneNewsRecipients(readingLanguage: string, now = n
         some: { productKey: { in: ["one-news", "one-read"] }, emailDeliveryStatus: "SUBSCRIBED" },
       },
     },
-    include: { subscriptions: { include: { preferences: true } } },
+    include: { subscriptions: { include: { newsPreferences: true } } },
   });
   return contacts.flatMap((contact) => {
     if (!resolveProductEntitlement(contact.subscriptions, PRODUCT_ONE_NEWS, now).granted) return [];
@@ -242,24 +261,29 @@ export async function eligibleOneNewsRecipients(readingLanguage: string, now = n
       (row) => row.productKey === "one-read" && row.emailDeliveryStatus === "SUBSCRIBED",
     );
     if (!preference || preference.emailDeliveryStatus !== "SUBSCRIBED") return [];
-    const languageMatches = contact.subscriptions.some(
-      (row) => row.preferences?.summaryLanguage === readingLanguage,
-    );
-    if (!languageMatches) return [];
-    return [{ contact: { id: contact.id, email: contact.email }, preference }];
+    // The migration snapshots historical language into the news holder once.
+    // Never consult OneArticle at dispatch time. Missing rows receive English
+    // editorial fallback until the reader completes setup.
+    const language = explicit?.newsPreferences?.summaryLanguage ?? "English";
+    if (language !== readingLanguage) return [];
+    return [{ contact: { id: contact.id, email: contact.email }, preference,
+      topics: explicit?.newsPreferences?.topics ?? [] }];
   });
 }
 
 export async function retryFailedOneNewsIssue(issueId: string, actor: string): Promise<void> {
   const now = new Date();
+  const issue = await prisma.oneNewsIssue.findUniqueOrThrow({ where: { id: issueId } });
+  const scope = issue.slotId ? { slotId: issue.slotId } : { issueId };
+  const lead = issue.slotId ? await prisma.oneNewsIssue.findFirstOrThrow({ where: { slotId: issue.slotId, editorialRank: 0 } }) : issue;
   await prisma.$transaction(async (tx) => {
     const reset = await tx.oneNewsDelivery.updateMany({
-      where: { issueId, status: "FAILED" },
+      where: { ...scope, status: "FAILED" },
       data: { status: "QUEUED", manualRecoveryAt: now, manualRecoveryBy: actor, failedReason: null },
     });
     if (!reset.count) throw new Error("no_failed_deliveries");
     await tx.oneNewsIssue.update({
-      where: { id: issueId },
+      where: { id: lead.id },
       data: { status: "SCHEDULED", scheduledFor: now, claimedAt: null, updatedBy: actor },
     });
   });
@@ -267,9 +291,12 @@ export async function retryFailedOneNewsIssue(issueId: string, actor: string): P
 
 export async function recoverAmbiguousOneNewsIssue(issueId: string, actor: string): Promise<void> {
   const now = new Date();
+  const issue = await prisma.oneNewsIssue.findUniqueOrThrow({ where: { id: issueId } });
+  const scope = issue.slotId ? { slotId: issue.slotId } : { issueId };
+  const lead = issue.slotId ? await prisma.oneNewsIssue.findFirstOrThrow({ where: { slotId: issue.slotId, editorialRank: 0 } }) : issue;
   await prisma.$transaction(async (tx) => {
     const reset = await tx.oneNewsDelivery.updateMany({
-      where: { issueId, status: "RECONCILIATION_REQUIRED" },
+      where: { ...scope, status: "RECONCILIATION_REQUIRED" },
       data: {
         status: "QUEUED", reconciliationRequiredAt: null,
         manualRecoveryAt: now, manualRecoveryBy: actor, failedReason: null,
@@ -277,7 +304,7 @@ export async function recoverAmbiguousOneNewsIssue(issueId: string, actor: strin
     });
     if (!reset.count) throw new Error("no_ambiguous_deliveries");
     await tx.oneNewsIssue.update({
-      where: { id: issueId },
+      where: { id: lead.id },
       data: { status: "SCHEDULED", scheduledFor: now, claimedAt: null, updatedBy: actor },
     });
   });

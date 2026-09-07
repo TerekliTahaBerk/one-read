@@ -46,10 +46,12 @@ function storedIssue(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockReset(prisma);
+  prisma.oneNewsPublicationSlot.upsert.mockResolvedValue({ id: "slot", sealedAt: null } as never);
+  prisma.oneNewsPublicationSlot.findUniqueOrThrow.mockResolvedValue({ id: "slot", sealedAt: null } as never);
   // The transaction helper runs the array form used throughout this module.
   (prisma.$transaction as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     async (operations: unknown) =>
-      Array.isArray(operations) ? Promise.all(operations) : operations,
+      Array.isArray(operations) ? Promise.all(operations) : typeof operations === "function" ? operations(prisma) : operations,
   );
 });
 

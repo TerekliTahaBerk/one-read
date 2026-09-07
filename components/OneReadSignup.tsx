@@ -1,4 +1,7 @@
 "use client";
+import { ProductPreferencesForm, topicLabel } from "./ProductPreferencesForm";
+import { parseProductPreferences, requiredPreferenceProducts, type EditorialPreferences } from "@/lib/product-preferences";
+import { READING_LANGUAGE_LABELS } from "@/lib/site-i18n";
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -12,27 +15,25 @@ import {
   FlowStep,
   FlowWarning,
   SignupShell,
-  choicePill,
   codeInput,
   fieldInput,
   fieldLabel,
   primaryAction,
 } from "@/components/SignupShell";
 import { useSiteLanguage } from "@/components/SiteLanguageProvider";
-import { SUMMARY_LANGUAGES, isLikelyEmail } from "@/lib/options";
+import { isLikelyEmail } from "@/lib/options";
 import { OFFERS, OFFER_KEYS, type BillingIntervalKey, type OfferKey } from "@/lib/products/registry";
-import { isBundleOffer, offerIncludesLabel } from "@/lib/products/terminology";
+import { isBundleOffer } from "@/lib/products/terminology";
 import {
   annualDiscountLabel,
   annualEquivalenceSentence,
   annualSavingClaim,
   offerCadenceLabel,
-  offerContentsLine,
   offerPriceSentence,
 } from "@/lib/products/pricing-copy";
 import { trackEvent } from "@/lib/analytics";
 
-type Step = "plan" | "email" | "verify" | "language" | "review" | "transition";
+type Step = "plan" | "email" | "verify" | "articlePreferences" | "newsPreferences" | "review" | "transition";
 
 /**
  * The OneRead signup flow.
@@ -48,10 +49,6 @@ type Step = "plan" | "email" | "verify" | "language" | "review" | "transition";
  * button states the plan it is acting on. A buyer who cannot see which plan
  * they are confirming cannot notice that it changed.
  *
- * The flow does not collect article interests. The OneArticle product stopped
- * personalising around them and the preferences endpoint stores the historical
- * columns empty; adding the step back here would be a product change wearing a
- * redesign's clothes.
  */
 
 /** Fills `{token}` placeholders in a dictionary string. */
@@ -71,7 +68,7 @@ function planSummary(offer: OfferKey, interval: BillingIntervalKey): string {
 }
 
 async function postJson(url: string, body: unknown) {
-  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => Response.error());
   return { response, data: await response.json().catch(() => ({})) as Record<string, unknown> };
 }
 
@@ -82,13 +79,15 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
   const [interval, setInterval] = useState<BillingIntervalKey>(props.initialInterval === "monthly" ? "monthly" : "annual");
   const [email, setEmail] = useState(props.initialEmail ?? "");
   const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("English");
+  const [article, setArticle] = useState<EditorialPreferences>({ topics: [], summaryLanguage: "English" });
+  const [news, setNews] = useState<EditorialPreferences>({ topics: [], summaryLanguage: "English" });
+  const [newsPrefilled, setNewsPrefilled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transitionMessage, setTransitionMessage] = useState<string | null>(null);
   const [grandfathered, setGrandfathered] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
-  const { dictionary } = useSiteLanguage();
+  const { dictionary, locale } = useSiteLanguage();
   const copy = dictionary.signup;
   // The two column labels have to match the pricing page word for word: the
   // columns themselves are the same component on both surfaces.
@@ -115,20 +114,33 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim(), offer, interval });
     setBusy(false);
     if (!response.ok) return setError(data.error === "incorrect" ? copy.verifyIncorrect : copy.verifyFailed);
-    setStep("language");
+    setStep(offer === "one-news" ? "newsPreferences" : "articlePreferences");
   }
 
-  async function saveLanguage(event: FormEvent) {
-    event.preventDefault(); setError(null); setBusy(true);
-    const { response } = await postJson("/api/oneread/article-preferences", { email, offer, summaryLanguage: language });
-    setBusy(false);
-    if (!response.ok) return setError(copy.languageFailed);
-    setStep("review");
+  async function savePreferences(event: FormEvent) {
+    event.preventDefault(); setError(null);
+    const product = step === "articlePreferences" ? "one-article" : "one-news";
+    const value = product === "one-article" ? article : news;
+    if (!parseProductPreferences(value)) return setError(dictionary.productPreferences.invalid);
+    setBusy(true);
+    try {
+      const { response, data } = await postJson(`/api/oneread/${product === "one-article" ? "article" : "news"}-preferences`, { email, offer, interval, context: "signup", ...value });
+      if (!response.ok) {
+        if (data.error === "verification_intent_mismatch" || data.error === "email_not_verified") { setStep("verify"); setCode(""); }
+        return setError(dictionary.productPreferences.failed);
+      }
+      trackEvent("product_preferences_saved", { product, topicCount: String(value.topics.length), language: value.summaryLanguage, context: "signup" });
+      if (product === "one-article" && isBundleOffer(offer)) {
+        if (!newsPrefilled) { setNews({ topics: [...article.topics], summaryLanguage: article.summaryLanguage }); setNewsPrefilled(true); }
+        setStep("newsPreferences");
+      } else setStep("review");
+    } catch { setError(dictionary.productPreferences.failed); }
+    finally { setBusy(false); }
   }
 
   async function checkout() {
     setBusy(true); setError(null);
-    trackEvent("checkout_started", { offer, interval, language });
+    trackEvent("checkout_started", { offer, interval });
     const { response, data } = await postJson("/api/billing/checkout", { email, offer, interval });
     setBusy(false);
     if (!response.ok) {
@@ -291,27 +303,15 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
         </FlowStep>
       )}
 
-      {step === "language" && (
-        <FlowStep
-          identity={<OfferMascots offer={offer} />}
-          title={copy.languageTitle}
-          support={
-            isBundleOffer(offer)
-              ? fill(copy.languageIntroBundle, { products: offerIncludesLabel(offer, " and ") })
-              : fill(copy.languageIntroSingle, { name: offerName })
-          }
-        >
-          <form onSubmit={saveLanguage} className="flex flex-col items-center gap-6">
-            {/* Named by `aria-label` rather than a visually-hidden legend: the
-                heading above already says this out loud, and a second copy of
-                it in the accessibility tree is noise, not help. */}
-            <fieldset aria-label={copy.languageLegend} className="flex flex-wrap justify-center gap-2">
-              {SUMMARY_LANGUAGES.map((item) => (
-                <button type="button" key={item} aria-pressed={language === item} onClick={() => setLanguage(item)} className={choicePill(language === item)}>
-                  {item}
-                </button>
-              ))}
-            </fieldset>
+      {(step === "articlePreferences" || step === "newsPreferences") && (
+        <FlowStep title={isBundleOffer(offer) ? dictionary.productPreferences.step.replace("{step}", step === "articlePreferences" ? "1" : "2") : offerName}
+          support={step === "newsPreferences" && newsPrefilled ? dictionary.productPreferences.copied : undefined}>
+          <form onSubmit={savePreferences} className="w-full max-w-xl space-y-6">
+            <ProductPreferencesForm product={step === "articlePreferences" ? "one-article" : "one-news"}
+              selectedTopics={step === "articlePreferences" ? article.topics : news.topics}
+              language={step === "articlePreferences" ? article.summaryLanguage : news.summaryLanguage}
+              onTopicsChange={(topics) => step === "articlePreferences" ? setArticle({ ...article, topics }) : setNews({ ...news, topics })}
+              onLanguageChange={(summaryLanguage) => step === "articlePreferences" ? setArticle({ ...article, summaryLanguage }) : setNews({ ...news, summaryLanguage })} disabled={busy} />
             <button disabled={busy} className={primaryAction}>{copy.continue}</button>
           </form>
         </FlowStep>
@@ -336,12 +336,15 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
               emphasised
               showPrice={false}
             />
-            <span className="mt-4 mx-auto block w-full max-w-[26ch] border-t border-line/80 pt-4 text-left font-sans">
-              <span className="block text-[10.5px] uppercase tracking-eyebrow text-fog">
-                {copy.reviewLanguageLabel}
-              </span>
-              <span className="mt-1 block text-[13px] leading-[1.55] text-ink">{language}</span>
-            </span>
+            {requiredPreferenceProducts(offer).map((product) => {
+              const value = product === "one-article" ? article : news;
+              return <section key={product} className="mt-4 border-t border-line pt-4 text-left font-sans text-sm">
+                <h2 className="font-medium">{OFFERS[product].displayName}</h2>
+                <p className="mt-2">{dictionary.productPreferences.topics}: {value.topics.map((slug) => topicLabel(slug, locale)).join(" · ")}</p>
+                <p>{dictionary.productPreferences.language}: {READING_LANGUAGE_LABELS[value.summaryLanguage]}</p>
+                <button type="button" className="focus-ring mt-2 underline" onClick={() => setStep(product === "one-article" ? "articlePreferences" : "newsPreferences")}>{dictionary.productPreferences.edit}</button>
+              </section>;
+            })}
             <p className="mt-6 font-serif text-[1.5rem] font-medium leading-none tracking-[-0.02em] text-ink">
               {offerPriceSentence(offer, interval)}
             </p>

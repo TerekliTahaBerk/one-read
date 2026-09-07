@@ -1,3 +1,4 @@
+import { offerPreferencesComplete } from "@/lib/oneread/product-preferences";
 import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import { hasVerifiedEmail } from "@/lib/oneread/verification";
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (!await offerPreferencesComplete(email, selection.offer)) {
+      return NextResponse.json({ ok: false, error: "product_preferences_required" }, { status: 409 });
+    }
     const result = await startOfferCheckout({
       email,
       offer: selection.offer,

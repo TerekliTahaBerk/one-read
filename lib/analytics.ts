@@ -13,6 +13,7 @@ export type AnalyticsEvent =
   | "subscribe_cta_clicked"
   | "verification_requested"
   | "email_verified"
+  | "product_preferences_saved"
   | "preferences_completed"
   | "checkout_started"
   | "checkout_failed"
@@ -42,6 +43,8 @@ export interface AnalyticsProperties {
   language?: string;
   /** Explicit, intentionally supported campaign identifier. */
   campaign?: string;
+  topicCount?: string;
+  context?: string;
 }
 
 const ALLOWED_KEYS: readonly (keyof AnalyticsProperties)[] = [
@@ -51,6 +54,8 @@ const ALLOWED_KEYS: readonly (keyof AnalyticsProperties)[] = [
   "readingLanguage",
   "language",
   "campaign",
+  "topicCount",
+  "context",
 ];
 
 /** Anything resembling an address, token, or long opaque ID is dropped. */
