@@ -16,24 +16,27 @@ import { productThemes } from "@/lib/product-themes";
 /**
  * The brand wordmark always reads `One` + a changing suffix. Only the suffix
  * is ever typed or deleted — `One` stays fixed. The public site currently
- * introduces OneRead and its sole launch product, OneArticle.
+ * introduces OneRead and its two editorial products, OneArticle and OneNews.
  */
-type ColorKey = "read" | "article";
+type ColorKey = "read" | "article" | "news";
 
 const SEQUENCE: { suffix: string; color: ColorKey }[] = [
   { suffix: "Read", color: "read" },
   { suffix: "Article", color: "article" },
+  { suffix: "News", color: "news" },
 ];
 
 const SUFFIX_COLORS: Record<ColorKey, string> = {
   read: "#1A1A1A",
   article: productThemes.article.accent,
+  news: productThemes.news.accent,
 };
 
 /** Only these public, top-of-funnel pages get the opening animation. */
 const PUBLIC_PATHS = new Set([
   "/",
   "/article",
+  "/news",
   "/article/pricing",
   "/article/subscribe",
   "/pricing",
