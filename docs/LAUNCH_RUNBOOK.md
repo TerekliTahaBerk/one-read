@@ -78,3 +78,12 @@ Public checkout does not enable delivery. Review an approved issue, exact test r
 ## Rollback
 
 Set `PUBLIC_CHECKOUT_ENABLED=false` to stop new purchases and `ONENEWS_DELIVERY_ENABLED=false` to stop News cron delivery. Leave OneArticle and all Polar subscriptions untouched. Roll back code only to a schema-compatible release; do not reverse migrations destructively or delete delivery/idempotency rows.
+
+## Phase 2 final incident gate
+
+Complete all nine controlled scenarios in
+[INCIDENT_FAILURE_DRILLS.md](./INCIDENT_FAILURE_DRILLS.md) before launch. The
+gate requires both the repository invariant suite (`npm run drill:incidents`)
+and timestamped operator evidence from the safe production surfaces. A passing
+test suite alone is not an operator drill, and a provider dashboard screenshot
+alone does not prove local recovery or duplicate safety.
