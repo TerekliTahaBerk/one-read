@@ -1,14 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { OneArticleMascotArt, OneNewsMascotArt } from "@/components/OneReadLineUp";
+import { OfferMascots } from "@/components/ProductIdentity";
 import {
   OFFERS,
-  PRODUCT_ONE_ARTICLE,
-  PRODUCT_ONE_NEWS,
   type BillingIntervalKey,
   type OfferKey,
-  type ProductKey,
 } from "@/lib/products/registry";
 import {
   annualEquivalenceSentence,
@@ -101,7 +97,7 @@ export function OfferSummary({
 
       {/* What the offer contains, then when it arrives. The bundle spans two
           schedules, so its cadence names each product beside its own. */}
-      <span className="mt-4 mb-auto block w-full max-w-[26ch] border-t border-line/80 pt-4 text-left">
+      <span className="mt-4 mb-auto mx-auto block w-full max-w-[26ch] border-t border-line/80 pt-4 text-left">
         {contents && (
           <span className="mb-3 block">
             <span className="block font-sans text-[10.5px] uppercase tracking-eyebrow text-fog">
@@ -122,71 +118,6 @@ export function OfferSummary({
         </span>
       </span>
     </>
-  );
-}
-
-/**
- * The characters that introduce an offer.
- *
- * Reuses the two drawings the homepage and the product pages already use.
- * OneRead has no character of its own — it is the bundle, so it is drawn as
- * the two products standing together rather than as a third figure. Which
- * characters appear is not a decision this component makes: it is whatever the
- * offer grants, so the drawing follows the registry if the grants change.
- *
- * The art is decorative: each SVG already carries `aria-hidden`, and the offer
- * is named in the text beside it.
- */
-export function OfferMascots({ offer }: { offer: OfferKey }) {
-  const granted = OFFERS[offer].grants;
-  const size = granted.length > 1 ? "pair" : "solo";
-  return (
-    <span className="flex h-[4.5rem] items-end justify-center -space-x-4">
-      {granted.map((product) => (
-        <Mascot key={product} product={product} size={size}>
-          {MASCOT_ART[product]}
-        </Mascot>
-      ))}
-    </span>
-  );
-}
-
-/** The canonical drawing for each product, reused rather than redrawn. */
-const MASCOT_ART: Record<ProductKey, ReactNode> = {
-  [PRODUCT_ONE_ARTICLE]: <OneArticleMascotArt />,
-  [PRODUCT_ONE_NEWS]: <OneNewsMascotArt />,
-};
-
-/** The animation class each product's drawing is staged with. */
-const MASCOT_THEME: Record<ProductKey, string> = {
-  [PRODUCT_ONE_ARTICLE]: "product-mascot-article",
-  [PRODUCT_ONE_NEWS]: "product-mascot-news",
-};
-
-/**
- * One drawing at the restrained size these screens use: large enough to
- * identify the product, small enough that the prices stay the loudest thing in
- * the row. The `product-mascot` classes carry the same idle gestures as the
- * product pages, and the same reduced-motion opt-out.
- */
-function Mascot({
-  product,
-  size,
-  children,
-}: {
-  product: ProductKey;
-  size: "solo" | "pair";
-  children: ReactNode;
-}) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`product-mascot block ${MASCOT_THEME[product]} ${
-        size === "pair" ? "h-[3.75rem] w-[3.75rem]" : "h-[4.5rem] w-[4.5rem]"
-      }`}
-    >
-      <span className="product-mascot-art block h-full w-full">{children}</span>
-    </span>
   );
 }
 

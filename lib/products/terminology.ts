@@ -297,7 +297,9 @@ export const PUBLIC_COMMERCIAL_SURFACES: readonly string[] = [
   "components/OneReadPreferences.tsx",
   "components/OneReadSignup.tsx",
   "components/PricingPageContent.tsx",
+  "components/ProductIdentity.tsx",
   "components/SamplePageContent.tsx",
+  "components/SignupShell.tsx",
   "lib/legal-i18n.ts",
   "lib/site-i18n.ts",
 ];

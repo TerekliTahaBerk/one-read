@@ -180,6 +180,10 @@ const ACQUISITION_SURFACES: readonly string[] = [
   "components/OneReadLineUp.tsx",
   "components/PricingPageContent.tsx",
   "components/OneReadSignup.tsx",
+  // Split out of the signup flow, and still part of what a buyer reads on the
+  // way to checkout: the shell they read it in, and the identities on it.
+  "components/ProductIdentity.tsx",
+  "components/SignupShell.tsx",
 ];
 
 /**

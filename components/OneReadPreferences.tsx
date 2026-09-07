@@ -1,11 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { BackButton } from "@/components/BackButton";
-import { Footer } from "@/components/Footer";
-import { Logo } from "@/components/Logo";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { ProductMascot, productThemeKey, themeStyle } from "@/components/ProductIdentity";
+import {
+  FlowError,
+  FlowStep,
+  FlowWarning,
+  SignupShell,
+  codeInput,
+  fieldInput,
+  fieldLabel,
+  primaryAction,
+  secondaryAction,
+  factLabel,
+  sectionHeading,
+} from "@/components/SignupShell";
+import { useSiteLanguage } from "@/components/SiteLanguageProvider";
 import { isLikelyEmail } from "@/lib/options";
+import { PRODUCTS, PRODUCT_KEYS, type ProductKey } from "@/lib/products/registry";
 import { trackEvent } from "@/lib/analytics";
 
 type ProductState = { active: boolean; cadence: string; language: string | null; emailStatus: string };
@@ -16,6 +29,18 @@ type LookupResult = {
   billing?: { plans: { plan: string; includes: string; billing: string; state: string; grandfathered: boolean; pendingChange?: { toOffer: string; toInterval: string } | null }[]; grandfathered: boolean; grandfatherWarning: string | null } | null;
 };
 
+/**
+ * My OneRead — the account surface, drawn in the same system as signup.
+ *
+ * It shares the shell, the form language and the product identities with
+ * `OneReadSignup`, so arriving here after checkout does not feel like landing
+ * in a settings panel bolted onto the side of the site. What it must keep
+ * saying plainly is the one distinction subscribers get wrong: editorial email
+ * and billing are separate, and turning email off cancels nothing.
+ *
+ * Everything a product section states — its name, its cadence — is named by
+ * the registry or returned by the lookup, never typed here.
+ */
 export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: string }) {
   const [step, setStep] = useState<"email" | "verify" | "status">("email");
   const [email, setEmail] = useState(initialEmail);
@@ -23,14 +48,16 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LookupResult | null>(null);
+  const { dictionary } = useSiteLanguage();
+  const copy = dictionary.preferences;
 
   async function requestCode(event: FormEvent) {
     event.preventDefault(); setError(null);
-    if (!isLikelyEmail(email)) return setError("Enter a valid email address.");
+    if (!isLikelyEmail(email)) return setError(copy.emailInvalid);
     setBusy(true);
     const response = await fetch("/api/oneread/verification/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
     setBusy(false);
-    if (!response.ok) return setError("We could not send a code.");
+    if (!response.ok) return setError(copy.emailFailed);
     setStep("verify");
   }
 
@@ -38,7 +65,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     event.preventDefault(); setError(null); setBusy(true);
     const response = await fetch("/api/oneread/verification/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, code }) });
     setBusy(false);
-    if (!response.ok) return setError("That code could not be verified.");
+    if (!response.ok) return setError(copy.codeFailed);
     await load();
   }
 
@@ -47,7 +74,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     const response = await fetch("/api/oneread/lookup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
     const data = await response.json().catch(() => ({})) as LookupResult & { ok?: boolean };
     setBusy(false);
-    if (!response.ok || !data.ok) return setError("We could not load your account.");
+    if (!response.ok || !data.ok) return setError(copy.lookupFailed);
     setResult(data); setStep("status");
   }
 
@@ -56,7 +83,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     const response = await fetch("/api/oneread/email-preferences", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, product, enabled }) });
     const data = await response.json().catch(() => ({})) as { error?: string };
     setBusy(false);
-    if (!response.ok) return setError(data.error === "email_suppressed" ? "This address is suppressed after a provider safety event. Contact support to review it." : "We could not update email delivery.");
+    if (!response.ok) return setError(data.error === "email_suppressed" ? copy.suppressed : copy.updateFailed);
     trackEvent(enabled ? "product_email_resubscribed" : "product_email_unsubscribed", { product });
     await load();
   }
@@ -67,26 +94,174 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
     const data = await response.json().catch(() => ({})) as { action?: string; url?: string };
     setBusy(false);
     if (response.ok && data.action === "redirect" && data.url) window.location.assign(data.url);
-    else setError("The billing portal is unavailable right now.");
+    else setError(copy.portalUnavailable);
   }
 
-  return <main className="min-h-svh bg-[#f6f5f1] px-5 py-7 text-ink sm:px-6"><header className="relative flex justify-center"><BackButton href="/" label="Back to OneRead" /><Logo href="/" /></header><section className="mx-auto flex min-h-[78vh] w-full max-w-2xl flex-col items-center justify-center py-10"><h1 className="font-serif text-4xl font-medium">My OneRead</h1><p className="mt-3 text-center text-sm text-ash">Billing access and email delivery are separate. Turning off email never cancels a paid plan.</p>
-    {step === "email" && <form onSubmit={requestCode} className="mt-7 flex w-full max-w-sm flex-col gap-3"><label htmlFor="account-email">Email address</label><input id="account-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} /><button disabled={busy} className={primary}>Email me a code</button></form>}
-    {step === "verify" && <form onSubmit={confirmCode} className="mt-7 flex flex-col items-center gap-3"><label htmlFor="account-code">Six-digit code</label><input id="account-code" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className={`${input} max-w-48 text-center tracking-[.3em]`} /><button disabled={busy} className={primary}>Verify</button></form>}
-    {step === "status" && result && <div className="mt-8 w-full space-y-4">
-      <ProductCard name="OneArticle" product="one-article" value={result.products["one-article"]} busy={busy} onChange={setEmailPreference} />
-      <ProductCard name="OneNews" product="one-news" value={result.products["one-news"]} busy={busy} onChange={setEmailPreference} />
-      {result.billing?.plans.map((plan, index) => <div key={`${plan.plan}-${index}`} className="rounded-2xl border bg-white p-5 text-sm"><b>{plan.plan}</b><p>{plan.includes} · {plan.billing}</p><p className="mt-1 text-ash">{plan.state}{plan.pendingChange ? ` · changing to ${plan.pendingChange.toOffer} ${plan.pendingChange.toInterval}` : ""}</p>{plan.grandfathered && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-amber-900">Grandfathered $1 plan. OneArticle remains included; OneNews is not silently added.</p>}</div>)}
-      <div className="flex flex-col gap-2 sm:flex-row"><button disabled={busy} onClick={() => setEmailPreference("all", false)} className={outline}>Turn off all editorial email</button>{result.billingManageable && <button disabled={busy} onClick={manageBilling} className={outline}>Manage billing</button>}<Link href="/pricing" className={outline}>View plans</Link></div>
-    </div>}
-    {error && <p role="alert" aria-live="assertive" className="mt-4 text-sm text-red-700">{error}</p>}
-  </section><Footer showBackHome /></main>;
+  return (
+    <SignupShell themeKey="read" logoLabel="OneRead" backLabel={dictionary.common.backToOneRead}>
+      {step === "email" && (
+        <FlowStep title={copy.title} support={copy.lookupIntro} footnote={copy.separation}>
+          <form onSubmit={requestCode} className="flex w-full max-w-sm flex-col gap-2">
+            <label htmlFor="account-email" className={fieldLabel}>{copy.emailLabel}</label>
+            <input id="account-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInput} />
+            <button disabled={busy} className={`${primaryAction} mt-4`}>{copy.emailCta}</button>
+          </form>
+        </FlowStep>
+      )}
+
+      {step === "verify" && (
+        <FlowStep title={copy.verifyTitle} support={copy.verifyIntro.replace("{email}", email)}>
+          {/* The same single field signup verifies with, so the two flows do
+              not teach two different ways to type the same code. */}
+          <form onSubmit={confirmCode} className="flex flex-col items-center gap-3">
+            <label htmlFor="account-code" className="sr-only">{copy.codeLabel}</label>
+            <input id="account-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className={codeInput} />
+            <button disabled={busy} className={`${primaryAction} mt-3`}>{copy.codeCta}</button>
+          </form>
+        </FlowStep>
+      )}
+
+      {step === "status" && result && (
+        <div className="w-full max-w-[40rem]">
+          <h1 className="font-serif text-[2rem] font-medium leading-[1.06] tracking-[-0.026em] text-ink sm:text-[2.4rem]">
+            {copy.title}
+          </h1>
+          <p className="mt-3 max-w-[46ch] font-sans text-[14px] leading-[1.65] text-ash">
+            {copy.separation}
+          </p>
+
+          {/* One section per product, in its own accent. Nothing here is a
+              dashboard: it is a short statement of what arrives, in which
+              language, and whether email is on. */}
+          {PRODUCT_KEYS.map((product) => (
+            <ProductSection
+              key={product}
+              product={product}
+              value={result.products[product]}
+              busy={busy}
+              copy={copy}
+              onChange={setEmailPreference}
+            />
+          ))}
+
+          <section className="mt-10">
+            <h2 className={sectionHeading}>{copy.billingHeading}</h2>
+            {result.billing?.plans.map((plan, index) => (
+              <div key={`${plan.plan}-${index}`} className="mt-5">
+                <p className="font-sans text-[15px] font-medium text-ink">{plan.plan}</p>
+                <dl className="mt-3 grid gap-3 font-sans text-[13px] leading-[1.55] sm:grid-cols-2">
+                  <Fact label={dictionary.pricing.includedLabel} value={plan.includes} />
+                  <Fact label={copy.intervalLabel} value={plan.billing} />
+                  <Fact
+                    label={copy.stateLabel}
+                    value={
+                      <>
+                        {plan.state}
+                        {plan.pendingChange && (
+                          <span className="mt-0.5 block text-ash">
+                            {copy.pendingChange
+                              .replace("{offer}", plan.pendingChange.toOffer)
+                              .replace("{interval}", plan.pendingChange.toInterval)}
+                          </span>
+                        )}
+                      </>
+                    }
+                  />
+                </dl>
+                {/* A disclosure, not a promotion: amber, and never recoloured
+                    by a product accent. */}
+                {plan.grandfathered && (
+                  <div className="mt-4">
+                    <FlowWarning>{copy.grandfathered}</FlowWarning>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button disabled={busy} onClick={() => setEmailPreference("all", false)} className={secondaryAction}>
+                {copy.turnOffAll}
+              </button>
+              {result.billingManageable && (
+                <button disabled={busy} onClick={manageBilling} className={secondaryAction}>
+                  {copy.manageBilling}
+                </button>
+              )}
+              <Link href="/pricing" className={secondaryAction}>{copy.viewPlans}</Link>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <FlowError>{error}</FlowError>
+    </SignupShell>
+  );
 }
 
-function ProductCard({ name, product, value, busy, onChange }: { name: string; product: "one-article" | "one-news"; value: ProductState; busy: boolean; onChange: (product: "one-article" | "one-news", enabled: boolean) => void }) {
+/**
+ * One product's standing: is it active, when does it arrive, in which
+ * language, and is email on. The accent is the product's own, applied to the
+ * hairline and the mascot's surroundings rather than to the whole block —
+ * subtle enough that the two sections still read as one page.
+ */
+function ProductSection({
+  product,
+  value,
+  busy,
+  copy,
+  onChange,
+}: {
+  product: ProductKey;
+  value: ProductState;
+  busy: boolean;
+  copy: PreferencesCopy;
+  onChange: (product: "one-article" | "one-news", enabled: boolean) => void;
+}) {
   const on = value.emailStatus === "SUBSCRIBED";
-  return <section className="rounded-2xl border bg-white p-5"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h2 className="font-serif text-2xl">{name}</h2><p className="mt-1 text-sm">{value.active ? "Active" : "Inactive"} · {value.cadence}</p><p className="text-sm text-ash">Language: {value.language ?? "Not set"} · Email: {value.emailStatus === "SUPPRESSED" ? "Suppressed" : on ? "On" : "Off"}</p></div>{value.active && <button disabled={busy || value.emailStatus === "SUPPRESSED"} onClick={() => onChange(product, !on)} className={outline}>{on ? "Turn email off" : "Resume email"}</button>}</div></section>;
+  const suppressed = value.emailStatus === "SUPPRESSED";
+  const emailLabel = suppressed ? copy.emailSuppressed : on ? copy.emailOn : copy.emailOff;
+
+  return (
+    <section className="mt-10" style={themeStyle(productThemeKey(product))}>
+      <h2 className={sectionHeading}>{PRODUCTS[product].displayName}</h2>
+
+      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
+          <ProductMascot product={product} size="sm" />
+          <div>
+            <p className="font-sans text-[15px] font-medium text-ink">
+              {value.active ? copy.active : copy.inactive}
+            </p>
+            <dl className="mt-3 grid gap-3 font-sans text-[13px] leading-[1.55]">
+              <Fact label={copy.cadenceLabel} value={value.cadence} />
+              <Fact label={copy.languageLabel} value={value.language ?? copy.languageUnset} />
+              <Fact label={copy.emailStatusLabel} value={emailLabel} />
+            </dl>
+          </div>
+        </div>
+
+        {value.active && (
+          <button
+            disabled={busy || suppressed}
+            onClick={() => onChange(product, !on)}
+            className={`${secondaryAction} shrink-0`}
+          >
+            {on ? copy.turnEmailOff : copy.resumeEmail}
+          </button>
+        )}
+      </div>
+    </section>
+  );
 }
-const input = "focus-ring h-12 w-full rounded-full border border-black/20 bg-white px-5";
-const primary = "focus-ring min-h-12 rounded-full bg-ink px-6 text-sm font-medium text-white disabled:opacity-50";
-const outline = "focus-ring inline-flex min-h-11 items-center justify-center rounded-full border border-black/20 bg-white px-4 text-sm disabled:opacity-50";
+
+/** One labelled fact. Label above value, the same as every field in signup. */
+function Fact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div>
+      <dt className={factLabel}>{label}</dt>
+      <dd className="mt-0.5 text-ink">{value}</dd>
+    </div>
+  );
+}
+
+type PreferencesCopy = ReturnType<typeof useSiteLanguage>["dictionary"]["preferences"];

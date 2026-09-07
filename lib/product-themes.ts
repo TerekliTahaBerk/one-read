@@ -1,10 +1,20 @@
 export const productThemes = {
+  /**
+   * The parent brand, and the theme the OneRead bundle is dressed in. It is
+   * deliberately not a third colour: OneRead is the two products together, so
+   * its accent is ink and its surfaces are the neutral greys the rest of the
+   * public site already uses. `background` is the canonical page colour every
+   * public surface paints itself with.
+   */
   read: {
     name: "OneRead",
     background: "#FFFFFF",
     accent: "#111111",
     border: "#EAEAEA",
-    surface: "#FFFFFF",
+    /** Quiet hover/hairline fill. Faint enough to stay white-adjacent. */
+    surface: "#F7F7F8",
+    /** The fill a chosen control carries, one step stronger than `surface`. */
+    selectedSurface: "#EDEDEE",
     mutedText: "#6B6B6B",
   },
   article: {
