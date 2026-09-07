@@ -53,6 +53,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Delivery",
     items: [
+      { href: "/admin/operations/queue", label: "Operator queue", matchPrefix: "/admin/operations/queue", icon: "list" },
       { href: "/admin/delivery/today", label: "Today", matchPrefix: "/admin/delivery/today", icon: "doc" },
       { href: "/admin/delivery/upcoming", label: "Upcoming", matchPrefix: "/admin/delivery/upcoming", icon: "list" },
       { href: "/admin/one-article/sends", label: "History", icon: "list" },
