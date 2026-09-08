@@ -42,7 +42,9 @@ describe("real database product preferences and candidate delivery", () => {
     await saveProductPreferences(contact.id, "one-article", { topics: ["science"], summaryLanguage: "German" });
     const before = await prisma.articlePreferences.findFirstOrThrow({ where: { subscription: { contactId: contact.id } } });
     const sql = readFileSync("prisma/migrations/20260908120000_product_editorial_preferences/migration.sql", "utf8");
-    const backfill = sql.slice(sql.indexOf('-- Snapshot historical'), sql.indexOf('ALTER TABLE "OneNewsIssue" ADD CONSTRAINT "OneNewsIssue_editorialRank_check"'));
+    const backfill = sql
+      .slice(sql.indexOf('-- Snapshot historical'), sql.indexOf('ALTER TABLE "OneNewsIssue" ADD CONSTRAINT "OneNewsIssue_editorialRank_check"'))
+      .replace(/^\s*--.*$/gm, "");
     for (const statement of backfill.split(";").filter((part) => part.trim())) await prisma.$executeRawUnsafe(statement);
     const news = await prisma.productSubscription.findUniqueOrThrow({ where: { contactId_productKey: { contactId: contact.id, productKey: "one-news" } }, include: { newsPreferences: true } });
     expect(news).toMatchObject({ emailDeliveryStatus: "UNSUBSCRIBED", newsPreferences: { topics: [], summaryLanguage: "German" } });
