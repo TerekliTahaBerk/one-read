@@ -5,7 +5,7 @@ import { hasVerifiedEmail } from "@/lib/oneread/verification";
 import { parseOfferSelection } from "@/lib/products/registry";
 import { checkoutIntent } from "@/lib/billing/checkout-intent";
 import { startOfferCheckout } from "@/lib/billing/offer-checkout";
-import { validatePublicLaunchConfiguration } from "@/lib/launch-config";
+import { validatePublicCheckoutConfiguration } from "@/lib/launch-config";
 import { reportProviderEvent } from "@/lib/provider-observability";
 
 export const runtime = "nodejs";
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "New checkout is not available yet." }, { status: 503 });
   }
   if (process.env.NODE_ENV === "production") {
-    const launch = validatePublicLaunchConfiguration();
+    const launch = validatePublicCheckoutConfiguration();
     if (!launch.ready) {
       await reportProviderEvent("polar_checkout_config_invalid", {
         outcome: "not_configured", errorCode: "launch_config_invalid",
