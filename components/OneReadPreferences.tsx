@@ -4,7 +4,7 @@ import { ProductPreferencesForm, topicLabel } from "./ProductPreferencesForm";
 import { parseProductPreferences } from "@/lib/product-preferences";
 import { READING_LANGUAGE_LABELS } from "@/lib/site-i18n";
 import Link from "next/link";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ProductMascot, productThemeKey, themeStyle } from "@/components/ProductIdentity";
 import {
   FlowError,
@@ -45,7 +45,7 @@ type LookupResult = {
  * the registry or returned by the lookup, never typed here.
  */
 export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: string }) {
-  const [step, setStep] = useState<"email" | "verify" | "status">("email");
+  const [step, setStep] = useState<"email" | "verify" | "status" | "loading">(initialEmail ? "loading" : "email");
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,6 +53,24 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
   const [result, setResult] = useState<LookupResult | null>(null);
   const { dictionary, locale } = useSiteLanguage();
   const copy = dictionary.preferences;
+
+  useEffect(() => {
+    if (!initialEmail) return;
+    const controller = new AbortController();
+    setBusy(true);
+    fetch("/api/oneread/lookup", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: initialEmail }), signal: controller.signal,
+    }).then(async (response) => {
+      const data = await response.json();
+      if (controller.signal.aborted) return;
+      if (response.ok && data.ok) { setResult(data); setStep("status"); }
+      else { setStep("email"); if (response.status !== 401) setError(copy.lookupFailed); }
+    }).catch(() => {
+      if (!controller.signal.aborted) { setStep("email"); setError(copy.lookupFailed); }
+    }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
+    return () => controller.abort();
+  }, [initialEmail, copy.lookupFailed]);
 
   async function requestCode(event: FormEvent) {
     event.preventDefault(); setError(null);
@@ -102,6 +120,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
 
   return (
     <SignupShell themeKey="read" logoLabel="OneRead" backLabel={dictionary.common.backToOneRead}>
+      {step === "loading" && <FlowStep title={copy.title}><p role="status" aria-busy="true">…</p></FlowStep>}
       {step === "email" && (
         <FlowStep title={copy.title} support={copy.lookupIntro} footnote={copy.separation}>
           <form onSubmit={requestCode} className="flex w-full max-w-sm flex-col gap-2">
@@ -192,7 +211,7 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
                   {copy.manageBilling}
                 </button>
               )}
-              <Link href="/pricing" className={secondaryAction}>{copy.viewPlans}</Link>
+              <Link href={`/subscribe?intent=plan-change&email=${encodeURIComponent(email)}`} className={secondaryAction}>{copy.viewPlans}</Link>
             </div>
           </section>
         </div>

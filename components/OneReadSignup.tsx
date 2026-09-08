@@ -1,4 +1,6 @@
 "use client";
+import { OneReadPreferences } from "./OneReadPreferences";
+import { shouldManageAccount } from "@/lib/oneread/signup-routing";
 import { ProductPreferencesForm, topicLabel } from "./ProductPreferencesForm";
 import { parseProductPreferences, requiredPreferenceProducts, type EditorialPreferences } from "@/lib/product-preferences";
 import { READING_LANGUAGE_LABELS } from "@/lib/site-i18n";
@@ -33,7 +35,7 @@ import {
 } from "@/lib/products/pricing-copy";
 import { trackEvent } from "@/lib/analytics";
 
-type Step = "plan" | "email" | "verify" | "articlePreferences" | "newsPreferences" | "review" | "transition";
+type Step = "plan" | "email" | "verify" | "articlePreferences" | "newsPreferences" | "review" | "transition" | "account";
 
 /**
  * The OneRead signup flow.
@@ -72,12 +74,13 @@ async function postJson(url: string, body: unknown) {
   return { response, data: await response.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function OneReadSignup(props: { initialEmail?: string; initialOffer?: string; initialInterval?: string }) {
+export function OneReadSignup(props: { initialEmail?: string; initialOffer?: string; initialInterval?: string; planChange?: boolean }) {
   const initialOffer = (OFFER_KEYS as readonly string[]).includes(props.initialOffer ?? "") ? props.initialOffer as OfferKey : null;
-  const [step, setStep] = useState<Step>(initialOffer ? "email" : "plan");
+  const [step, setStep] = useState<Step>(props.planChange ? "plan" : initialOffer ? "email" : "plan");
   const [offer, setOffer] = useState<OfferKey>(initialOffer ?? "one-read");
   const [interval, setInterval] = useState<BillingIntervalKey>(props.initialInterval === "monthly" ? "monthly" : "annual");
   const [email, setEmail] = useState(props.initialEmail ?? "");
+  const [verified, setVerified] = useState(false);
   const [code, setCode] = useState("");
   const [article, setArticle] = useState<EditorialPreferences>({ topics: [], summaryLanguage: "English" });
   const [news, setNews] = useState<EditorialPreferences>({ topics: [], summaryLanguage: "English" });
@@ -85,6 +88,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transitionMessage, setTransitionMessage] = useState<string | null>(null);
+  const [transitionReady, setTransitionReady] = useState(false);
   const [grandfathered, setGrandfathered] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const { dictionary, locale } = useSiteLanguage();
@@ -101,7 +105,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     const { response } = await postJson("/api/oneread/verification/request", { email, offer, interval, locale });
     setBusy(false);
     if (!response.ok) return setError(copy.emailFailed);
-    setStep("verify");
+    setVerified(false); setCode(""); setStep("verify");
   }
 
   async function verify(event: FormEvent) {
@@ -111,10 +115,39 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     // The plan on screen is verified together with the email: the session the
     // server issues is bound to exactly this offer and interval, and checkout
     // refuses anything else.
-    const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim(), offer, interval });
+    if (!verified) {
+      const { response, data } = await postJson("/api/oneread/verification/confirm", { email, code: code.trim(), offer, interval });
+      if (!response.ok) { setBusy(false); return setError(data.error === "incorrect" ? copy.verifyIncorrect : copy.verifyFailed); }
+      setVerified(true);
+    }
+    await routeVerifiedAccount();
+  }
+
+  async function routeVerifiedAccount() {
+    const { response, data } = await postJson("/api/oneread/lookup", { email });
     setBusy(false);
-    if (!response.ok) return setError(data.error === "incorrect" ? copy.verifyIncorrect : copy.verifyFailed);
+    if (!response.ok || !data.ok) {
+      if (response.status === 401) { setVerified(false); setStep("email"); }
+      return setError(dictionary.preferences.lookupFailed);
+    }
+    if (shouldManageAccount(data)) {
+      if (props.planChange) return previewTransition();
+      return setStep("account");
+    }
     setStep(offer === "one-news" ? "newsPreferences" : "articlePreferences");
+  }
+
+  async function choosePlan() {
+    if (!props.planChange || !isLikelyEmail(email)) return setStep("email");
+    setError(null); setBusy(true);
+    // Lookup verifies the existing cookie; a URL parameter never proves identity.
+    const { response, data } = await postJson("/api/oneread/lookup", { email });
+    setBusy(false);
+    if (response.status === 401) return setStep("email");
+    if (!response.ok || !data.ok) return setError(dictionary.preferences.lookupFailed);
+    if (shouldManageAccount(data)) return previewTransition();
+    // A new purchase still needs an offer-bound verification intent.
+    setStep("email");
   }
 
   async function savePreferences(event: FormEvent) {
@@ -126,7 +159,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     try {
       const { response, data } = await postJson(`/api/oneread/${product === "one-article" ? "article" : "news"}-preferences`, { email, offer, interval, context: "signup", ...value });
       if (!response.ok) {
-        if (data.error === "verification_intent_mismatch" || data.error === "email_not_verified") { setStep("verify"); setCode(""); }
+        if (data.error === "verification_intent_mismatch" || data.error === "email_not_verified") { setVerified(false); setStep("verify"); setCode(""); }
         return setError(dictionary.productPreferences.failed);
       }
       trackEvent("product_preferences_saved", { product, topicCount: String(value.topics.length), language: value.summaryLanguage, context: "signup" });
@@ -146,26 +179,28 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     if (!response.ok) {
       trackEvent("checkout_failed", { offer, interval });
       if (data.error === "verification_intent_mismatch" || data.error === "email_not_verified") {
-        setStep("verify"); setCode("");
+        setVerified(false); setStep("verify"); setCode("");
         return setError(copy.planChanged);
       }
       return setError(String(data.error ?? copy.checkoutUnavailable));
     }
     if (data.action === "redirect" && typeof data.url === "string") return window.location.assign(data.url);
-    if (data.action === "already_active") return window.location.assign("/preferences");
+    if (data.action === "already_active") return window.location.assign(`/preferences?email=${encodeURIComponent(email)}`);
     if (data.action === "transition_required") await previewTransition();
   }
 
   async function previewTransition() {
-    setBusy(true);
+    setBusy(true); setError(null); setGrandfathered(false); setAcknowledged(false); setTransitionReady(false);
     const { response, data } = await postJson("/api/billing/plan-change", { email, offer, interval });
     setBusy(false); setStep("transition");
     if (data.refusal === "grandfather_acknowledgement_required") {
+      setTransitionReady(true);
       setGrandfathered(true);
       setTransitionMessage(copy.grandfatherNotice);
       return;
     }
     if (!response.ok) return setError(String(data.error ?? copy.transitionUnavailable));
+    setTransitionReady(true);
     const plan = data.plan as { effective?: string } | undefined;
     setTransitionMessage(plan?.effective === "period_end" ? copy.transitionPeriodEnd : copy.transitionProvider);
   }
@@ -176,7 +211,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     const { response, data } = await postJson("/api/billing/plan-change", { email, offer, interval, confirm: true, acknowledgeGrandfatherLoss: acknowledged });
     setBusy(false);
     if (!response.ok) return setError(String(data.error ?? copy.transitionFailed));
-    window.location.assign("/preferences");
+    window.location.assign(`/preferences?email=${encodeURIComponent(email)}`);
   }
 
   /** The plan line every step after the columns repeats, under the control. */
@@ -186,6 +221,8 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
       <span className="mt-1 block">{offerCadenceLabel(offer)}</span>
     </>
   );
+
+  if (step === "account") return <OneReadPreferences initialEmail={email} />;
 
   return (
     <SignupShell
@@ -257,7 +294,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
             })}
           </div>
 
-          <button className={`${primaryAction} mt-8`} onClick={() => setStep("email")}>
+          <button className={`${primaryAction} mt-8`} disabled={busy} onClick={choosePlan}>
             {fill(copy.continueWith, { name: offerName })}
           </button>
         </FlowStep>
@@ -362,6 +399,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
         <FlowStep
           identity={<OfferMascots offer={offer} />}
           title={copy.transitionTitle}
+          footnote={planFootnote}
           support={grandfathered ? copy.transitionIntro : transitionMessage ?? copy.transitionIntro}
         >
           {/* A real warning, in warning colours. The product accent never gets
@@ -375,9 +413,10 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
               </label>
             </FlowWarning>
           )}
-          <button disabled={busy || (grandfathered && !acknowledged)} onClick={confirmTransition} className={`${primaryAction} mt-7`}>
+          <button disabled={busy || !transitionReady || (grandfathered && !acknowledged)} onClick={confirmTransition} className={`${primaryAction} mt-7`}>
             {copy.transitionCta}
           </button>
+          <button type="button" disabled={busy} className="focus-ring mt-4 underline" onClick={() => { setError(null); setStep("plan"); }}>{dictionary.preferences.viewPlans}</button>
         </FlowStep>
       )}
 
