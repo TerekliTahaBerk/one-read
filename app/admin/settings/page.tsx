@@ -1,4 +1,4 @@
-import { guardAdminPage, adminLoginConfigured } from "@/lib/admin/auth";
+import { guardAdminPage, adminLoginConfigured, listAdminAccounts } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import { AdminCard, DefList, MetricCard, MetricGrid } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
@@ -13,6 +13,7 @@ import { emailVerificationSecretConfigured, verificationEmailConfigured } from "
 import { prisma } from "@/lib/prisma";
 import { fmtDateTime } from "@/lib/admin/format";
 import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
+import { AdminAccountsManager } from "@/components/admin/AdminAccountsManager";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,9 +68,10 @@ export default async function SettingsPage(props: { searchParams: Promise<Record
   const guard = await guardAdminPage("/admin/settings", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [{ settings, rows, degraded }, latestArticleRun, latestNewsRun, scheduled, failed, newsScheduled] =
+  const [{ settings, rows, degraded }, adminAccounts, latestArticleRun, latestNewsRun, scheduled, failed, newsScheduled] =
     await Promise.all([
       describeSettings(),
+      listAdminAccounts(),
       prisma.operationalRun.findFirst({ where: { productKey: "one-article" }, orderBy: { startedAt: "desc" } }),
       prisma.operationalRun.findFirst({ where: { productKey: "one-news" }, orderBy: { startedAt: "desc" } }),
       prisma.oneArticleIssue.count({ where: { status: "SCHEDULED" } }),
@@ -233,6 +235,23 @@ export default async function SettingsPage(props: { searchParams: Promise<Record
     </AdminCard>
 
     <AdminCard title="Launch readiness" subtitle="Secret values are never displayed"><DefList rows={checks.map(([label, ok, detail]) => [label, <span key={label} className="flex items-center justify-end gap-2"><span className="text-[12px] text-admin-muted">{detail}</span><StatusBadge value={ok ? "Ready" : "Needs setup"} tone={ok ? "good" : "wait"} /></span>])} /></AdminCard>
+    <AdminCard
+      title="Panel administrators"
+      subtitle="Everyone who can sign in. An invitation grants access without anyone setting — or seeing — another administrator's password."
+      bodyClassName="p-5 sm:p-6"
+    >
+      <AdminAccountsManager
+        accounts={adminAccounts.map((account) => ({
+          email: account.email,
+          origin: account.origin,
+          active: account.active,
+          invitePending: account.invitePending,
+          inviteExpiresAt: account.inviteExpiresAt?.toISOString() ?? null,
+          createdBy: account.createdBy,
+          removable: account.removable,
+        }))}
+      />
+    </AdminCard>
     <AdminCard title="Account security" subtitle="Change your own admin password without exposing it to another administrator" bodyClassName="p-5 sm:p-6"><ChangePasswordForm email={guard.session.email} /></AdminCard>
     <AdminCard title="Safety guarantees" bodyClassName="p-5 sm:p-6"><ul className="grid gap-3 text-[12.5px] leading-5 text-admin-body md:grid-cols-2"><li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Draft and ready editions are never sent until a delivery time is scheduled.</span></li><li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Every recipient delivery has a stable provider idempotency key.</span></li><li className="flex gap-2"><span className="text-emerald-700">✓</span><span>Unsubscribed, suppressed, unpaid, or language-incomplete contacts are excluded.</span></li><li className="flex gap-2"><span className="text-emerald-700">✓</span><span>A publication-day change here takes effect on the next cron check — no redeploy.</span></li></ul></AdminCard>
   </AdminShell>;

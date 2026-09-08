@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { guardAdminPage, configuredAdminEmails } from "@/lib/admin/auth";
+import { guardAdminPage, allAdminEmails } from "@/lib/admin/auth";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import {
   AdminCard,
@@ -58,7 +58,9 @@ export default async function AdminUsersPage(
   if (!guard.ok) return <AdminNotConfigured />;
 
   const q = searchParams.q?.trim() ?? "";
-  const adminEmailList = configuredAdminEmails();
+  // Both identity sources, so an administrator added from the panel is
+  // labelled ADMIN here too.
+  const adminEmailList = await allAdminEmails();
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
 
   // Email search and raw access status are pushed into SQL. The journey /

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { configuredAdminEmails, requireAdmin } from "@/lib/admin/auth";
+import { allAdminEmails, requireAdmin } from "@/lib/admin/auth";
 import { csvRow } from "@/lib/admin/csv";
 import { prisma } from "@/lib/prisma";
 import { analyzeUserJourney, userRole } from "@/lib/admin/user-lifecycle";
@@ -26,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
       orderBy: { createdAt: "desc" },
     }),
   ]);
-  const adminEmails = configuredAdminEmails();
+  const adminEmails = await allAdminEmails();
   const verificationByEmail = new Map<string, {
     requestedAt: Date;
     verifiedAt: Date | null;

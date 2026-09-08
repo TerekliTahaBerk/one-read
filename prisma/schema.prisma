@@ -1129,13 +1129,35 @@ model Setting {
 /// The environment remains the account allow-list and bootstrap credential;
 /// changing a password in the panel stores only the new salted hash here.
 /// Incrementing sessionVersion invalidates every previously issued session.
+/// A panel administrator's credential.
+///
+/// Two kinds of row live here. For an admin configured in the deployment
+/// environment this is only a password *override* — identity still comes from
+/// `ADMIN_EMAIL` / `ADMIN_ADDITIONAL_ACCOUNTS`. For an admin added from the
+/// panel the row IS the account.
+///
+/// `passwordHash` is null while an invitation is outstanding: the invitee sets
+/// their own password by redeeming `inviteTokenHash`, so no administrator ever
+/// learns another administrator's password.
 model AdminCredential {
   email          String   @id
-  passwordHash   String
+  passwordHash   String?
   sessionVersion Int      @default(1)
   changedBy      String?
+
+  /// Set when the account was created from the panel; null for deployment
+  /// accounts whose row exists only to override the environment password.
+  createdBy String?
+
+  /// SHA-256 of the one-time invitation token. The token itself is shown once,
+  /// at creation, and is never stored or recoverable.
+  inviteTokenHash String?
+  inviteExpiresAt DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([inviteTokenHash])
 }
 
 /// Consent-scoped interest registration for products that are not live yet.

@@ -4,7 +4,7 @@ import { articleTopics } from "@/lib/product-preferences";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { EmailVerificationCode } from "@prisma/client";
-import { configuredAdminEmails, guardAdminPage } from "@/lib/admin/auth";
+import { allAdminEmails, guardAdminPage } from "@/lib/admin/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminShell, AdminNotConfigured } from "@/components/admin/AdminShell";
 import {
@@ -35,6 +35,9 @@ export default async function AdminUserDetailPage(
   const params = await props.params;
   const guard = await guardAdminPage(`/admin/users/${params.id}`, searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
+
+  // Resolved once: both branches below label the role from it.
+  const adminEmails = await allAdminEmails();
 
   let contact = await prisma.contact.findUnique({
     where: { id: params.id },
@@ -94,7 +97,7 @@ export default async function AdminUserDetailPage(
         <VerificationLeadDetail
           email={verificationLead.email}
           events={events}
-          isAdmin={userRole(verificationLead.email, configuredAdminEmails()) === "ADMIN"}
+          isAdmin={userRole(verificationLead.email, adminEmails) === "ADMIN"}
         />
       );
     }
@@ -126,7 +129,7 @@ export default async function AdminUserDetailPage(
   ]);
   const lastVerificationRequest = verificationEvents[0];
   const lastVerified = verificationEvents.find((event) => event.consumedAt);
-  const role = userRole(contact.email, configuredAdminEmails());
+  const role = userRole(contact.email, adminEmails);
   const journey = analyzeUserJourney({
     subscriptions: contact.subscriptions,
     verificationRequested: verificationEvents.length > 0,
