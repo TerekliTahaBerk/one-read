@@ -1,3 +1,4 @@
+import { verificationLocale } from "@/lib/verification/email-copy";
 import { NextResponse } from "next/server";
 import { parseEmail } from "@/lib/options";
 import {
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { email?: unknown; offer?: unknown; interval?: unknown };
+  let body: { email?: unknown; offer?: unknown; interval?: unknown; locale?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
 
   const result = await requestVerificationCode({
     email,
+    language: verificationLocale(body.locale, req.headers.get("accept-language")),
     purpose: VERIFICATION_PURPOSES.signup,
     ipHash: hashMeta(ipRaw),
     userAgentHash: hashMeta(uaRaw),

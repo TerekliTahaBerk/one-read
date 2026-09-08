@@ -1,3 +1,5 @@
+import { renderVerificationHtml, renderVerificationText } from "./email";
+import { verificationCopy } from "./email-copy";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import type { NextResponse } from "next/server";
@@ -25,19 +27,12 @@ export interface VerificationDescriptor {
   purposes: { signup: string; preferences: string };
   /** httpOnly cookie name holding the verified-email session. */
   cookieName: string;
-  /** Verification email copy. */
+  /** Brand identity. Localized copy lives in email-copy.ts. */
   email: {
-    subject: string;
     /** Uppercase brand line, e.g. "OneRead · OneArticle". */
     brandLine: string;
     /** Product display name, e.g. "OneArticle". */
     productName: string;
-    /** Lead sentence, e.g. "Your OneArticle verification code is:". */
-    intro: string;
-    /** Plain-text first line, e.g. "Your OneArticle code is:". */
-    textIntro: string;
-    /** Short product-specific support line. */
-    support: string;
     /** Theme colors for the verification email. */
     theme: {
       background: string;
@@ -172,16 +167,17 @@ export function createVerification(product: VerificationDescriptor) {
     to: string,
     code: string,
     ttlMinutes: number,
+    language?: string,
   ): Promise<boolean> {
     if (!verificationEmailConfigured()) return false;
 
-    const text = renderVerificationText(product, code, ttlMinutes);
-    const html = renderVerificationHtml(product, code, ttlMinutes);
+    const text = renderVerificationText(product, code, ttlMinutes, language);
+    const html = renderVerificationHtml(product, code, ttlMinutes, language);
 
     try {
       const { messageId } = await sendDailyEmail({
         to,
-        subject: product.email.subject,
+        subject: verificationCopy(language, product.email.productName, ttlMinutes).subject,
         text,
         html,
         operation: "send_verification",
@@ -198,6 +194,7 @@ export function createVerification(product: VerificationDescriptor) {
     email: string;
     purpose: Purpose;
     intent?: string | null;
+    language?: string;
     ipHash?: string | null;
     userAgentHash?: string | null;
   }): Promise<RequestCodeResult> {
@@ -251,7 +248,7 @@ export function createVerification(product: VerificationDescriptor) {
       },
     });
 
-    const emailSent = await sendVerificationEmail(email, code, cfg.ttlMinutes);
+    const emailSent = await sendVerificationEmail(email, code, cfg.ttlMinutes, args.language);
 
     const isDev = process.env.NODE_ENV !== "production";
     if (!emailSent && isDev) {
@@ -415,132 +412,4 @@ export function createVerification(product: VerificationDescriptor) {
     getVerifiedEmailSession,
     hasVerifiedEmail,
   };
-}
-
-function renderVerificationText(
-  product: VerificationDescriptor,
-  code: string,
-  ttlMinutes: number,
-): string {
-  return [
-    product.email.brandLine,
-    "",
-    product.email.textIntro,
-    "",
-    groupedCode(code),
-    "",
-    product.email.support,
-    "",
-    `This code expires in ${ttlMinutes} minutes.`,
-    "If you did not request this, you can ignore this email.",
-    "",
-    "OneRead",
-    "Quiet daily emails, without another app to open.",
-  ].join("\n");
-}
-
-function renderVerificationHtml(
-  product: VerificationDescriptor,
-  code: string,
-  ttlMinutes: number,
-): string {
-  const p = product.email;
-  const codeDigits = code
-    .split("")
-    .map(
-      (digit) => `
-        <td align="center" style="width:42px;height:48px;border:1px solid ${p.theme.border};border-radius:10px;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:48px;font-weight:600;color:#1B1612;">
-          ${digit}
-        </td>`,
-    )
-    .join('<td style="width:7px;"></td>');
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(p.subject)}</title>
-</head>
-<body style="margin:0;padding:0;background:${p.theme.background};">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-    Your ${escapeHtml(p.productName)} code is ${groupedCode(code)}. It expires in ${ttlMinutes} minutes.
-  </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${p.theme.background};">
-    <tr>
-      <td align="center" style="padding:34px 18px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-          <tr>
-            <td align="center" style="padding:0 0 22px 0;font-family:Georgia,Cambria,'Times New Roman',serif;font-size:12px;line-height:1;letter-spacing:0.22em;text-transform:uppercase;font-style:italic;color:#6B5F50;">
-              OneRead
-            </td>
-          </tr>
-          <tr>
-            <td style="border:1px solid ${p.theme.border};border-radius:18px;background:${p.theme.surface};padding:30px 24px 26px 24px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;letter-spacing:0.14em;text-transform:uppercase;color:${p.theme.accent};font-weight:600;">
-                    ${escapeHtml(p.brandLine)}
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top:18px;font-family:Georgia,Cambria,'Times New Roman',serif;font-size:30px;line-height:1.15;font-weight:500;color:#1B1612;">
-                    Verify your email.
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding:12px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B5F50;">
-                    ${escapeHtml(p.intro)}
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding:22px 0 18px 0;">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>${codeDigits}</tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.65;color:#6B5F50;">
-                    ${escapeHtml(p.support)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding-top:22px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${p.theme.border};">
-                      <tr>
-                        <td align="center" style="padding-top:18px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.65;color:#8A7D6B;">
-                          This code expires in ${ttlMinutes} minutes. If you did not request this, you can ignore this email.
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding:18px 10px 0 10px;font-family:Georgia,Cambria,'Times New Roman',serif;font-style:italic;font-size:13px;line-height:1.5;color:#8A7D6B;">
-              Quiet daily emails, without another app to open.
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
-
-function groupedCode(code: string): string {
-  return `${code.slice(0, 3)} ${code.slice(3)}`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }

@@ -98,7 +98,7 @@ export function OneReadSignup(props: { initialEmail?: string; initialOffer?: str
     event.preventDefault(); setError(null);
     if (!isLikelyEmail(email)) return setError(copy.emailInvalid);
     setBusy(true);
-    const { response } = await postJson("/api/oneread/verification/request", { email, offer, interval });
+    const { response } = await postJson("/api/oneread/verification/request", { email, offer, interval, locale });
     setBusy(false);
     if (!response.ok) return setError(copy.emailFailed);
     setStep("verify");

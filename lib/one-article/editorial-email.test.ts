@@ -43,6 +43,7 @@ describe("renderEditorialEmail", () => {
         { unsubscribe: "https://oneread.app/unsubscribe?subscription=abc" },
       );
       expect(rendered.html).toContain(unsubscribeLabel);
+      expect(rendered.html).not.toContain("Curated by OneRead");
       expect(rendered.text).toContain(unsubscribeLabel);
     }
   });
@@ -63,6 +64,8 @@ describe("renderEditorialEmail", () => {
     expect(rendered.html).toContain("A small system drawn as connected circles");
     expect(rendered.html).toContain("Illustration: Example Journal");
     expect(rendered.html).toContain("Article");
+    expect(rendered.html).toContain("#3F6FA8");
+    expect(rendered.html).not.toContain("#FFE144");
     expect(rendered.html).toContain("1 min read");
   });
 });

@@ -1,11 +1,12 @@
+import { productThemes } from "@/lib/product-themes";
 import { createVerification, type VerificationDescriptor } from "@/lib/verification/core";
 
 /**
  * Email verification for the public OneArticle signup / preferences flow.
  *
  * This is now a thin product binding over the shared verification core
- * (`lib/verification/core.ts`). Behavior, purposes, cookie name, and email copy
- * are identical to before — only the implementation moved. Verification proves
+ * (`lib/verification/core.ts`). Purposes and cookie names remain product-specific; localized email copy
+ * and rendering are shared. Verification proves
  * email ownership only; Polar remains the sole source of truth for trial/paid
  * access.
  */
@@ -24,19 +25,9 @@ const descriptor: VerificationDescriptor = {
   purposes: VERIFICATION_PURPOSES,
   cookieName: VERIFIED_EMAIL_COOKIE,
   email: {
-    subject: "Your OneArticle verification code",
     brandLine: "OneRead · OneArticle",
     productName: "OneArticle",
-    intro: "Your OneArticle verification code is:",
-    textIntro: "Your OneArticle code is:",
-    support:
-      "Use this code to finish setting up your morning article brief. Preferences are saved only after this email is verified.",
-    theme: {
-      background: "#F3F8FF",
-      surface: "#FFFFFF",
-      accent: "#3F6FA8",
-      border: "#D8E7F8",
-    },
+    theme: { ...productThemes.article, surface: "#FFFFFF" },
   },
 };
 

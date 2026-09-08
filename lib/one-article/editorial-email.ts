@@ -1,9 +1,13 @@
+import { productThemes } from "@/lib/product-themes";
+
 import type { OneArticleIssue } from "@prisma/client";
 import { getEmailStrings, htmlLangFor, localeFor } from "@/lib/i18n";
 import {
   editorialTextToHtml,
   editorialTextToPlainText,
 } from "@/lib/editorial/formatting";
+
+const theme = productThemes.article;
 
 export interface EditorialEmailLinks {
   unsubscribe: string;
@@ -91,7 +95,7 @@ export function renderEditorialEmail(
       </tr>
       ${
         issue.heroImageCredit
-          ? `<tr><td style="padding:8px 18px 0;font:11px/1.4 Arial,Helvetica,sans-serif;color:#8A8A86;">${escapeHtml(issue.heroImageCredit)}</td></tr>`
+          ? `<tr><td style="padding:8px 18px 0;font:12px/1.4 Arial,Helvetica,sans-serif;color:#616161;">${escapeHtml(issue.heroImageCredit)}</td></tr>`
           : ""
       }`
     : "";
@@ -99,13 +103,13 @@ export function renderEditorialEmail(
     ? `<p style="margin:0 0 20px;font:16px/1.55 Arial,Helvetica,sans-serif;color:#565653;">${escapeHtml(issue.previewText)}</p>`
     : "";
   const source = sourceLine
-    ? `<p style="margin:22px 0 0;font:11.5px/1.55 Arial,Helvetica,sans-serif;color:#8A8A86;text-transform:uppercase;letter-spacing:.06em;">${escapeHtml(labels.source)} · ${escapeHtml(sourceLine)}</p>`
+    ? `<p style="margin:22px 0 0;font:11.5px/1.55 Arial,Helvetica,sans-serif;color:#616161;text-transform:uppercase;letter-spacing:.06em;">${escapeHtml(labels.source)} · ${escapeHtml(sourceLine)}</p>`
     : "";
   const cta = issue.sourceUrl
     ? `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top:26px;">
         <tr>
-          <td bgcolor="#FFE144" style="border-radius:999px;">
-            <a href="${escapeAttr(issue.sourceUrl)}" style="display:inline-block;padding:12px 18px;font:bold 13px/1.2 Arial,Helvetica,sans-serif;color:#090909;text-decoration:none;">${escapeHtml(readLabel)} ↗</a>
+          <td bgcolor="${theme.accent}" style="border-radius:999px;">
+            <a href="${escapeAttr(issue.sourceUrl)}" style="display:inline-block;padding:12px 18px;font:bold 13px/1.2 Arial,Helvetica,sans-serif;color:#FFFFFF;text-decoration:none;">${escapeHtml(readLabel)} ↗</a>
           </td>
         </tr>
       </table>`
@@ -132,21 +136,21 @@ export function renderEditorialEmail(
     }
   </style>
 </head>
-<body style="width:100%!important;margin:0!important;padding:0!important;background:#EFEEE9;color:#171714;">
+<body style="width:100%!important;margin:0!important;padding:0!important;background:${theme.background};color:#171714;">
 ${preview}
-<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#EFEEE9">
+<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="${theme.background}">
   <tr>
     <td align="center" class="page-pad" style="padding:28px 20px 44px;">
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" class="email-shell" bgcolor="#FFFFFF" style="width:100%;max-width:680px;border:1px solid #D8D6CF;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" class="email-shell" bgcolor="#FFFFFF" style="width:100%;max-width:680px;border:1px solid ${theme.border};border-radius:18px;overflow:hidden;">
         <tr>
-          <td class="masthead" bgcolor="#171714" style="padding:28px 32px 26px;color:#FFFFFF;">
+          <td class="masthead" bgcolor="${theme.accent}" style="padding:28px 32px 26px;color:#FFFFFF;">
             <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font:700 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#FFFFFF;">OneRead<span style="color:#FFE144;">.</span></td>
-                <td align="right" style="font:700 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#B9B8B2;">OneArticle</td>
+                <td style="font:700 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#FFFFFF;">OneRead<span style="color:#FFFFFF;">.</span></td>
+                <td align="right" style="font:700 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#FFFFFF;">OneArticle</td>
               </tr>
             </table>
-            <p style="margin:18px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#B9B8B2;">${escapeHtml(dateLabel)} · ${escapeHtml(readingLabel)}</p>
+            <p style="margin:18px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#FFFFFF;">${escapeHtml(dateLabel)} · ${escapeHtml(readingLabel)}</p>
           </td>
         </tr>
         <tr>
@@ -156,11 +160,11 @@ ${preview}
         </tr>
         <tr>
           <td style="padding:0 16px 16px;">
-            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FBFBF8" style="width:100%;border:1px solid #DEDDD7;border-radius:14px;overflow:hidden;">
+            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="${theme.background}" style="width:100%;border:1px solid ${theme.border};border-radius:14px;overflow:hidden;">
               <tr>
                 <td style="padding:20px 18px 15px;">
-                  <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:#FFE144;color:#171714;font:bold 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;">${escapeHtml(labels.article)}</span>
-                  <span style="float:right;padding-top:6px;font:10px/1.2 Arial,Helvetica,sans-serif;color:#77766F;letter-spacing:.08em;text-transform:uppercase;">Curated by OneRead</span>
+                  <span style="display:inline-block;padding:7px 11px;border-radius:999px;background:${theme.accent};color:#FFFFFF;font:bold 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;">${escapeHtml(labels.article)}</span>
+                  <span style="display:block;padding-top:12px;font:11px/1.5 Arial,Helvetica,sans-serif;color:#616161;letter-spacing:.08em;text-transform:uppercase;">${escapeHtml(labels.curated)}</span>
                 </td>
               </tr>
               ${image}
@@ -168,7 +172,7 @@ ${preview}
                 <td class="card-copy" style="padding:28px 38px 38px;">
                   <h1 class="headline" style="margin:0 0 16px;font:700 40px/1.04 Georgia,'Times New Roman',serif;letter-spacing:-.035em;color:#171714;">${escapeHtml(issue.headline)}</h1>
                   ${deck}
-                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;"><tr><td width="52" height="4" bgcolor="#FFE144" style="width:52px;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;"><tr><td width="52" height="4" bgcolor="${theme.accent}" style="width:52px;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
                   <div style="font:16px/1.76 Arial,Helvetica,sans-serif;color:#2D2C28;">${safeBody}</div>
                   ${source}
                   ${cta}
@@ -178,11 +182,11 @@ ${preview}
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:24px 28px 30px;border-top:1px solid #E5E3DD;">
+          <td align="center" style="padding:24px 28px 30px;border-top:1px solid ${theme.border};">
             <p style="margin:0 0 8px;font:italic 13px/1.55 Georgia,'Times New Roman',serif;color:#66645D;">${escapeHtml(t.tagline)}</p>
-            <p style="margin:0;font:10.5px/1.65 Arial,Helvetica,sans-serif;color:#96948D;letter-spacing:.02em;">
+            <p style="margin:0;font:12px/1.65 Arial,Helvetica,sans-serif;color:#616161;letter-spacing:.02em;">
               <strong style="color:#626159;">OneRead</strong> · ${escapeHtml(labels.footer)}
-              <br><a href="${escapeAttr(links.unsubscribe)}" style="color:#77766F;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
+              <br><a href="${escapeAttr(links.unsubscribe)}" style="color:#616161;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
             </p>
           </td>
         </tr>
@@ -200,6 +204,7 @@ function formatLabels(language: string) {
   switch (language) {
     case "Turkish":
       return {
+        curated: "OneRead tarafından seçildi",
         article: "Makale",
         source: "Kaynak",
         opening: "Günaydın — tüm dikkatinizi hak eden tek bir fikir.",
@@ -208,6 +213,7 @@ function formatLabels(language: string) {
       };
     case "Spanish":
       return {
+        curated: "Seleccionado por OneRead",
         article: "Artículo",
         source: "Fuente",
         opening: "Buenos días — una idea que merece toda tu atención.",
@@ -216,6 +222,7 @@ function formatLabels(language: string) {
       };
     case "French":
       return {
+        curated: "Sélectionné par OneRead",
         article: "Article",
         source: "Source",
         opening: "Bonjour — une idée qui mérite toute votre attention.",
@@ -224,6 +231,7 @@ function formatLabels(language: string) {
       };
     case "German":
       return {
+        curated: "Ausgewählt von OneRead",
         article: "Artikel",
         source: "Quelle",
         opening: "Guten Morgen — eine Idee, die Ihre volle Aufmerksamkeit verdient.",
@@ -232,6 +240,7 @@ function formatLabels(language: string) {
       };
     default:
       return {
+        curated: "Curated by OneRead",
         article: "Article",
         source: "Source",
         opening: "Good morning — one idea worth your full attention.",

@@ -1,3 +1,4 @@
+import { verificationLocale } from "@/lib/verification/email-copy";
 import { parseEmail } from "@/lib/options";
 import {
   VERIFICATION_PURPOSES,
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
 
   const result = await requestVerificationCode({
     email,
+    language: verificationLocale((value as { locale?: unknown } | null)?.locale, request.headers.get("accept-language")),
     purpose: VERIFICATION_PURPOSES.signup,
     ipHash: hashMeta((request.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim()),
     userAgentHash: hashMeta(request.headers.get("user-agent")),

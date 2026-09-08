@@ -22,11 +22,12 @@ vi.mock("next/headers", () => ({
 }));
 
 vi.mock("@/lib/resend", () => ({
-  getResendStatus: () => ({ sendReady: false }),
+  getResendStatus: vi.fn(() => ({ sendReady: false })),
   sendDailyEmail: vi.fn(),
 }));
 
 import { createVerification, type VerificationDescriptor } from "@/lib/verification/core";
+import { getResendStatus, sendDailyEmail } from "@/lib/resend";
 import { prisma as prismaImport } from "@/lib/prisma";
 
 const prisma = prismaImport as unknown as DeepMockProxy<PrismaClient>;
@@ -36,8 +37,7 @@ const descriptor: VerificationDescriptor = {
   purposes: { signup: "test-signup", preferences: "test-preferences" },
   cookieName: "test_verified_email",
   email: {
-    subject: "s", brandLine: "b", productName: "p",
-    intro: "i", textIntro: "t", support: "u",
+    brandLine: "b", productName: "p",
     theme: { background: "#000", surface: "#fff", accent: "#111", border: "#222" },
   },
 };
@@ -252,5 +252,23 @@ describe("the verified session and its intent", () => {
 
     expect(verification.getVerifiedEmailSession()).toBeNull();
     expect(verification.hasVerifiedEmail(EMAIL, "checkout:one-read:annual")).toBe(false);
+  });
+});
+
+describe("localized verification delivery", () => {
+  it("sends the localized subject, HTML and text through the production sender", async () => {
+    vi.mocked(getResendStatus).mockReturnValue({ sendReady: true } as ReturnType<typeof getResendStatus>);
+    vi.mocked(sendDailyEmail).mockResolvedValue({ messageId: "test-message" });
+    try {
+      const result = await verification.requestVerificationCode({ email: EMAIL, purpose: PURPOSE, language: "tr" });
+      expect(result).toMatchObject({ ok: true, emailSent: true });
+      expect(sendDailyEmail).toHaveBeenCalledWith(expect.objectContaining({
+        subject: "p doğrulama kodunuz",
+        html: expect.stringContaining('<html lang="tr">'),
+        text: expect.stringContaining("Bu kod 10 dakika geçerlidir."),
+      }));
+    } finally {
+      vi.mocked(getResendStatus).mockReturnValue({ sendReady: false } as ReturnType<typeof getResendStatus>);
+    }
   });
 });

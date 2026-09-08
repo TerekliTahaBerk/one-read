@@ -1,7 +1,11 @@
+import { productThemes } from "@/lib/product-themes";
+
 import { escapeAttr, escapeHtml } from "@/lib/editorial/html";
 import { getEmailStrings } from "@/lib/i18n";
 import { isSafeHttpUrl } from "@/lib/editorial/url-safety";
 import type { OneNewsRenderModel } from "./render-model";
+
+const theme = productThemes.news;
 
 /**
  * OneNews email rendering.
@@ -131,7 +135,7 @@ export function renderOneNewsHtml(
     .map(
       (section) => `<tr>
           <td class="body-pad" style="padding:0 32px 26px;">
-            <h2 style="margin:0 0 10px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8A8880;">${escapeHtml(section.label)}</h2>
+            <h2 style="margin:0 0 10px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:${theme.accent};">${escapeHtml(section.label)}</h2>
             <div style="font:16px/1.74 Arial,Helvetica,sans-serif;color:#2D2C28;">${section.html}</div>
           </td>
         </tr>`,
@@ -141,13 +145,13 @@ export function renderOneNewsHtml(
   const sources = model.sources.length
     ? `<tr>
           <td class="body-pad" style="padding:6px 32px 26px;">
-            <h2 style="margin:0 0 12px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8A8880;">${escapeHtml(model.labels.sources)}</h2>
+            <h2 style="margin:0 0 12px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:${theme.accent};">${escapeHtml(model.labels.sources)}</h2>
             <ol style="margin:0;padding-left:20px;font:14px/1.65 Arial,Helvetica,sans-serif;color:#3A3934;">
               ${model.sources
                 .map(
                   (source) => `<li style="margin:0 0 14px;">
                     <a href="${escapeAttr(source.url)}" style="color:#171714;text-decoration:underline;">${escapeHtml(source.publication)} — ${escapeHtml(source.title)}</a>
-                    <span style="display:block;margin-top:3px;font-size:12px;color:#77766F;">${escapeHtml(source.typeLabel)}${source.dateLabel ? ` · ${escapeHtml(source.dateLabel)}` : ""}</span>
+                    <span style="display:block;margin-top:3px;font-size:12px;color:#616161;">${escapeHtml(source.typeLabel)}${source.dateLabel ? ` · ${escapeHtml(source.dateLabel)}` : ""}</span>
                     ${source.note ? `<span style="display:block;margin-top:3px;font-size:12.5px;color:#5C5B55;">${escapeHtml(source.note)}</span>` : ""}
                   </li>`,
                 )
@@ -160,7 +164,7 @@ export function renderOneNewsHtml(
   const corrections = model.corrections.length
     ? `<tr>
           <td class="body-pad" style="padding:0 32px 26px;">
-            <h2 style="margin:0 0 10px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8A8880;">${escapeHtml(model.labels.corrections)}</h2>
+            <h2 style="margin:0 0 10px;font:700 12px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:${theme.accent};">${escapeHtml(model.labels.corrections)}</h2>
             ${model.corrections
               .map(
                 (correction) => `<p style="margin:0 0 10px;font:13.5px/1.65 Arial,Helvetica,sans-serif;color:#3A3934;">
@@ -192,28 +196,28 @@ export function renderOneNewsHtml(
     }
   </style>
 </head>
-<body style="width:100%!important;margin:0!important;padding:0!important;background:#EFEEE9;color:#171714;">
+<body style="width:100%!important;margin:0!important;padding:0!important;background:${theme.background};color:#171714;">
 ${preheader}
-<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#EFEEE9">
+<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="${theme.background}">
   <tr>
     <td align="center" class="page-pad" style="padding:28px 20px 44px;">
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" class="email-shell" bgcolor="#FFFFFF" style="width:100%;max-width:680px;border:1px solid #D8D6CF;border-radius:18px;overflow:hidden;">
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" class="email-shell" bgcolor="#FFFFFF" style="width:100%;max-width:680px;border:1px solid ${theme.border};border-radius:18px;overflow:hidden;">
         <tr>
-          <td class="masthead" bgcolor="#171714" style="padding:28px 32px 26px;color:#FFFFFF;">
+          <td class="masthead" bgcolor="${theme.accent}" style="padding:28px 32px 26px;color:#FFFFFF;">
             <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font:700 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#FFFFFF;">OneRead<span style="color:#FFE144;">.</span></td>
-                <td align="right" style="font:700 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#B9B8B2;">${escapeHtml(model.labels.product)}</td>
+                <td style="font:700 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.02em;color:#FFFFFF;">OneRead<span style="color:#FFFFFF;">.</span></td>
+                <td align="right" style="font:700 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#FFFFFF;">${escapeHtml(model.labels.product)}</td>
               </tr>
             </table>
-            <p style="margin:18px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#B9B8B2;">${escapeHtml(model.dateLabel)} · ${escapeHtml(model.readingLabel)}</p>
+            <p style="margin:18px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#FFFFFF;">${escapeHtml(model.dateLabel)} · ${escapeHtml(model.readingLabel)}</p>
           </td>
         </tr>
         <tr>
           <td class="body-pad" style="padding:32px 32px 8px;">
             <h1 class="headline" style="margin:0 0 14px;font:700 38px/1.08 Georgia,'Times New Roman',serif;letter-spacing:-.03em;color:#171714;">${escapeHtml(model.headline)}</h1>
             <p style="margin:0 0 22px;font:17px/1.6 Georgia,'Times New Roman',serif;color:#4E4D47;">${escapeHtml(model.dek)}</p>
-            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;"><tr><td width="52" height="4" bgcolor="#FFE144" style="width:52px;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 26px;"><tr><td width="52" height="4" bgcolor="${theme.accent}" style="width:52px;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
           </td>
         </tr>
         ${developing}
@@ -226,10 +230,10 @@ ${preheader}
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding:22px 28px 30px;border-top:1px solid #E5E3DD;">
-            <p style="margin:0;font:10.5px/1.65 Arial,Helvetica,sans-serif;color:#96948D;letter-spacing:.02em;">
+          <td align="center" style="padding:22px 28px 30px;border-top:1px solid ${theme.border};">
+            <p style="margin:0;font:12px/1.65 Arial,Helvetica,sans-serif;color:#616161;letter-spacing:.02em;">
               <strong style="color:#626159;">OneRead</strong> · ${escapeHtml(model.labels.footer)}
-              <br><a href="${escapeAttr(unsubscribe)}" style="color:#77766F;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
+              <br><a href="${escapeAttr(unsubscribe)}" style="color:#616161;text-decoration:underline;">${escapeHtml(t.unsubscribeLabel)}</a>
             </p>
           </td>
         </tr>

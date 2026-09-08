@@ -341,7 +341,7 @@ export async function notifyRunFailure(input: {
     `Open the admin panel to review and re-run.`,
   ].join("\n");
   try {
-    await sendDailyEmail({ to, subject, text, html: `<pre>${escapeHtml(text)}</pre>` });
+    await sendDailyEmail({ to, subject, text, html: renderOperationalEmail(text) });
   } catch {
     // Swallow — alerting is best-effort.
   }
@@ -354,7 +354,7 @@ export async function notifyZeroDelivery(input: { productName: string; route: st
   if (!to) return;
   const text = `${input.productName} completed with ${input.eligible} eligible subscriber(s), but delivered 0 emails.\n\nRoute: ${input.route}\nTime: ${new Date().toISOString()}\n\nReview approvals, generated content, provider errors, and send logs.`;
   try {
-    await sendDailyEmail({ to, subject: `⚠️ ${input.productName}: zero deliveries`, text, html: `<pre>${escapeHtml(text)}</pre>` });
+    await sendDailyEmail({ to, subject: `⚠️ ${input.productName}: zero deliveries`, text, html: renderOperationalEmail(text) });
   } catch { /* best effort */ }
 }
 
@@ -409,7 +409,7 @@ export async function notifyMissingScheduledEdition(input: {
       to,
       subject: `⚠️ ${input.productName}: no edition scheduled`,
       text,
-      html: `<pre>${escapeHtml(text)}</pre>`,
+      html: renderOperationalEmail(text),
     });
   } catch {
     // Best effort; the idempotency row still records that the condition occurred.
@@ -421,4 +421,14 @@ function escapeHtml(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function renderOperationalEmail(text: string): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F7F7F8;color:#111111;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;table-layout:fixed;background:#FFFFFF;border:1px solid #EAEAEA;">
+<tr><td style="padding:24px;font:700 24px/1.3 Georgia,serif;border-bottom:1px solid #EAEAEA;">OneRead <span style="font:12px/1.5 Arial,sans-serif;color:#616161;">Operations</span></td></tr>
+<tr><td style="padding:24px;"><pre style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-wrap:break-word;font:14px/1.7 Consolas,monospace;color:#333333;">${escapeHtml(text)}</pre></td></tr>
+</table></td></tr></table></body></html>`;
 }

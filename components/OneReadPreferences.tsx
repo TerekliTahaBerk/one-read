@@ -51,14 +51,14 @@ export function OneReadPreferences({ initialEmail = "" }: { initialEmail?: strin
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LookupResult | null>(null);
-  const { dictionary } = useSiteLanguage();
+  const { dictionary, locale } = useSiteLanguage();
   const copy = dictionary.preferences;
 
   async function requestCode(event: FormEvent) {
     event.preventDefault(); setError(null);
     if (!isLikelyEmail(email)) return setError(copy.emailInvalid);
     setBusy(true);
-    const response = await fetch("/api/oneread/verification/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
+    const response = await fetch("/api/oneread/verification/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, locale }) });
     setBusy(false);
     if (!response.ok) return setError(copy.emailFailed);
     setStep("verify");
