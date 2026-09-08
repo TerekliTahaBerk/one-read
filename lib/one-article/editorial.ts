@@ -1,4 +1,5 @@
 import { selectArticleEdition } from "./selection";
+import { isSendDay, ONE_ARTICLE_DEFAULT_SEND_DAYS, type DayCode } from "@/lib/schedule";
 import { Prisma, type OneArticleIssue } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SUMMARY_LANGUAGES } from "@/lib/options";
@@ -33,6 +34,9 @@ export type EditorialIssueInput = EditorialContentInput;
 export const PROVIDER_IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 export const DELIVERY_CLAIM_STALE_MS = 15 * 60 * 1000;
 export const MAX_AUTOMATIC_DELIVERY_ATTEMPTS = 3;
+
+/** Historical Mon–Fri policy, used when no panel value is supplied. */
+const WEEKDAY_SEND_DAYS = ONE_ARTICLE_DEFAULT_SEND_DAYS;
 const AUTOMATICALLY_DISPATCHABLE_STATUSES = [
   "SCHEDULED",
   "FAILED",
@@ -44,6 +48,11 @@ export interface EditorialDispatchOptions {
   send?: typeof sendDailyEmail;
   /** Integration-test fault injection at the provider/database boundary. */
   afterProviderAccepted?: () => Promise<void> | void;
+  /**
+   * Publication days, resolved by the caller from the panel settings store.
+   * Omitted means the historical Mon–Fri policy.
+   */
+  sendDays?: readonly DayCode[];
 }
 
 export async function createEditorialIssue(
@@ -301,7 +310,7 @@ export async function dispatchDueEditorialIssues(
     // `scheduledFor` is an absolute UTC instant. The weekday policy is applied
     // in the edition's IANA timezone so polling never sends a Friday edition
     // on Saturday after an outage. Europe/Istanbul is UTC+3 year-round.
-    if (!isWeekdayInTimezone(now, issue.timezone)) continue;
+    if (!isSendDayInTimezone(now, issue.timezone, options.sendDays)) continue;
     const claimed = await prisma.oneArticleIssue.updateMany({
       where: {
         id: issue.id,
@@ -562,16 +571,26 @@ async function findOrCreateDelivery(
 }
 
 export function isWeekdayInTimezone(now: Date, timezone: string): boolean {
+  return isSendDayInTimezone(now, timezone, WEEKDAY_SEND_DAYS);
+}
+
+/**
+ * Publication-day gate. `sendDays` comes from the panel settings store, so an
+ * operator changing the schedule actually changes what dispatch does.
+ */
+export function isSendDayInTimezone(
+  now: Date,
+  timezone: string,
+  sendDays: readonly DayCode[] = WEEKDAY_SEND_DAYS,
+): boolean {
   try {
-    const weekday = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      weekday: "short",
-    }).format(now);
-    return weekday !== "Sat" && weekday !== "Sun";
+    // Probe the zone first: an invalid persisted timezone must fail closed,
+    // never trigger a send.
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(now);
   } catch {
-    // Invalid persisted timezone data must fail closed, never trigger a send.
     return false;
   }
+  return isSendDay(now, timezone, sendDays);
 }
 
 /**

@@ -18,7 +18,12 @@ import {
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
-const ACTIVE_PRODUCTS = ["one-article"];
+/** Every product with a dispatch route. A run this list omits is invisible. */
+const ACTIVE_PRODUCTS = ["one-article", "one-news"];
+const PRODUCT_LABEL: Record<string, string> = {
+  "one-article": "OneArticle",
+  "one-news": "OneNews",
+};
 const RUN_STATUSES = ["RUNNING", "SUCCESS", "PARTIAL", "SKIPPED", "FAILED"];
 
 /** Long provider/stack errors are truncated; full text stays on hover. */
@@ -78,7 +83,11 @@ export default async function RunsPage(props: {
         <AdminFilterField label="Product">
           <select name="product" defaultValue={selectedProduct ?? ""} className={adminControlClass}>
             <option value="">All products</option>
-            <option value="one-article">OneArticle</option>
+            {ACTIVE_PRODUCTS.map((value) => (
+              <option key={value} value={value}>
+                {PRODUCT_LABEL[value] ?? value}
+              </option>
+            ))}
           </select>
         </AdminFilterField>
         <AdminFilterField label="Result">
@@ -99,6 +108,7 @@ export default async function RunsPage(props: {
         <AdminTable
           head={[
             "Started",
+            "Product",
             "Route",
             "Result",
             "Mode",
@@ -112,6 +122,7 @@ export default async function RunsPage(props: {
           empty="No operational runs recorded yet."
           rows={runs.map((run) => [
             fmtDateTime(run.startedAt),
+            PRODUCT_LABEL[run.productKey] ?? run.productKey,
             <span key="route" className="font-mono text-[11px]">
               {run.route}
             </span>,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   editorialDeliveryIdempotencyKey,
+  isSendDayInTimezone,
   isWeekdayInTimezone,
   resolveEditorialIssueDeliveryStatus,
 } from "./editorial";
@@ -127,5 +128,24 @@ describe("validateEditorialIssue", () => {
     expect(isWeekdayInTimezone(new Date("2026-09-04T21:30:00.000Z"), "Europe/Istanbul")).toBe(false);
     expect(isWeekdayInTimezone(new Date("2026-09-06T21:30:00.000Z"), "Europe/Istanbul")).toBe(true);
     expect(isWeekdayInTimezone(new Date("2026-09-06T21:30:00.000Z"), "invalid/timezone")).toBe(false);
+  });
+
+  it("honours panel-configured publication days instead of the Mon-Fri default", () => {
+    // 2026-09-05T21:30Z is Sunday 00:30 in Istanbul.
+    const sunday = new Date("2026-09-05T21:30:00.000Z");
+    // 2026-09-06T21:30Z is Monday 00:30 in Istanbul.
+    const monday = new Date("2026-09-06T21:30:00.000Z");
+
+    expect(isSendDayInTimezone(sunday, "Europe/Istanbul", ["SUN"])).toBe(true);
+    expect(isSendDayInTimezone(monday, "Europe/Istanbul", ["SUN"])).toBe(false);
+    expect(isSendDayInTimezone(monday, "Europe/Istanbul", ["MON", "THU"])).toBe(true);
+  });
+
+  it("fails closed on an unusable timezone whatever the configured days", () => {
+    expect(
+      isSendDayInTimezone(new Date("2026-09-06T21:30:00.000Z"), "invalid/timezone", [
+        "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN",
+      ]),
+    ).toBe(false);
   });
 });

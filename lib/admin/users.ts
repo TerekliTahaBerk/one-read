@@ -7,6 +7,7 @@ import {
   parseEmail,
   parseSummaryLanguage,
 } from "@/lib/options";
+import { createPolarCustomerPortalUrl } from "@/lib/billing/polar";
 
 /**
  * Mutating admin actions on a OneArticle subscription. Each is intentionally
@@ -21,6 +22,8 @@ import {
 export interface ActionResult {
   ok: boolean;
   error?: string;
+  /** Set by actions that hand the operator somewhere to go, not a mutation. */
+  url?: string;
 }
 
 async function loadSub(subId: string) {
@@ -193,4 +196,29 @@ export async function hardDeleteTestUser(
   // Cascades to subscriptions, preferences, sends, feedback for this contact.
   await prisma.contact.delete({ where: { id: sub.contactId } });
   return { ok: true };
+}
+
+/**
+ * A Polar customer-portal session for one subscription.
+ *
+ * This is support access to a real person's billing account, so it is
+ * deliberately narrow: it resolves the portal for the *given* subscription
+ * rather than searching the contact for any Polar row, it never emails the
+ * link anywhere, and the caller audits it. The portal itself can cancel a
+ * subscription, which is why the panel confirms before opening one.
+ */
+export async function openBillingPortal(subId: string): Promise<ActionResult> {
+  const sub = await loadSub(subId);
+  if (!sub) return { ok: false, error: "subscription_not_found" };
+  if (sub.paymentProvider !== "polar") return { ok: false, error: "not_a_polar_subscription" };
+  if (!sub.providerCustomerId && !sub.providerSubscriptionId) {
+    return { ok: false, error: "no_billing_account" };
+  }
+  try {
+    const url = await createPolarCustomerPortalUrl(sub, sub.productKey);
+    return { ok: true, url };
+  } catch (error) {
+    console.error("[admin/users] billing portal failed:", error);
+    return { ok: false, error: "billing_portal_unavailable" };
+  }
 }

@@ -38,6 +38,9 @@ function adminThemeVars(pathname: string): CSSProperties {
 const CRUMB_LABELS: Record<string, string> = {
   admin: "Admin",
   "one-article": "OneArticle",
+  "one-news": "OneNews",
+  sources: "Article sources",
+  feedback: "Reader reactions",
   users: "Users",
   settings: "Settings",
   audit: "Audit log",

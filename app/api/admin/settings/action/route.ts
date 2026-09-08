@@ -38,13 +38,16 @@ export async function POST(req: Request): Promise<Response> {
   if (!["boolean", "number", "string"].includes(typeof body.value)) {
     return NextResponse.json({ ok: false, error: "invalid_value_type" }, { status: 400 });
   }
+  let stored: string;
   try {
-    await setSetting(key, body.value as boolean | number | string, await adminActorLabel(req, body));
+    stored = await setSetting(key, body.value as boolean | number | string, await adminActorLabel(req, body));
   } catch (error) {
     if (error instanceof Error && error.message === "invalid_setting_value") {
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
     throw error;
   }
-  return NextResponse.json({ ok: true, result: { key, value: body.value } });
+  // Echo what was stored, not what was submitted: "tue,thu,tue" becomes
+  // "TUE,THU", and reporting the input would misstate the new state.
+  return NextResponse.json({ ok: true, result: { key, value: stored } });
 }

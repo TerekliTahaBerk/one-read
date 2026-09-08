@@ -12,6 +12,7 @@ import {
   updatePreferences,
   createUser,
   hardDeleteTestUser,
+  openBillingPortal,
   type ActionResult,
 } from "@/lib/admin/users";
 
@@ -79,6 +80,9 @@ export async function POST(req: Request): Promise<Response> {
     case "create-user":
       result = await createUser(body.email);
       auditMeta = { email: body.email };
+      break;
+    case "open-billing-portal":
+      result = await openBillingPortal(subId);
       break;
     case "hard-delete":
       result = await hardDeleteTestUser(subId, typeof body.email === "string" ? body.email : "");

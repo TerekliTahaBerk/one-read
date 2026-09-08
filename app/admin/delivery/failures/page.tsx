@@ -10,6 +10,14 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+/** The rows that need a human decision, in both products' delivery tables. */
+const NEEDS_ATTENTION = {
+  OR: [
+    { status: { in: ["FAILED", "RECONCILIATION_REQUIRED"] } },
+    { providerStatus: { in: ["DELAYED", "FAILED", "BOUNCED", "COMPLAINED"] } },
+  ],
+};
+
 /**
  * /admin/delivery/failures — the recovery workbench.
  *
@@ -22,21 +30,37 @@ export default async function DeliveryFailuresPage() {
   const guard = await guardAdminPage("/admin/delivery/failures");
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const rows = await prisma.oneArticleDelivery.findMany({
-    where: {
-      OR: [
-        { status: { in: ["FAILED", "RECONCILIATION_REQUIRED"] } },
-        { providerStatus: { in: ["DELAYED", "FAILED", "BOUNCED", "COMPLAINED"] } },
-      ],
-    },
-    include: {
-      contact: { select: { email: true } },
-      issue: { select: { id: true, headline: true } },
-      productSubscription: { select: { emailDeliveryStatus: true, status: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 100,
-  });
+  const [articleRows, newsRows] = await Promise.all([
+    prisma.oneArticleDelivery.findMany({
+      where: NEEDS_ATTENTION,
+      include: {
+        contact: { select: { email: true } },
+        issue: { select: { id: true, headline: true } },
+        productSubscription: { select: { emailDeliveryStatus: true, status: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    }),
+    prisma.oneNewsDelivery.findMany({
+      where: NEEDS_ATTENTION,
+      include: {
+        contact: { select: { email: true } },
+        issue: { select: { id: true, headline: true } },
+        productSubscription: { select: { emailDeliveryStatus: true, status: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    }),
+  ]);
+
+  // One list, newest first: an operator triages by urgency, not by product.
+  const rows = [
+    ...articleRows.map((row) => ({ ...row, product: "OneArticle", href: `/admin/one-article/issues/${row.issue.id}` })),
+    ...newsRows.map((row) => ({ ...row, product: "OneNews", href: `/admin/one-news/issues/${row.issue.id}` })),
+  ].sort(
+    (a, b) =>
+      (b.providerStatusAt ?? b.updatedAt).getTime() - (a.providerStatusAt ?? a.updatedAt).getTime(),
+  );
 
   return (
     <AdminShell
@@ -48,6 +72,7 @@ export default async function DeliveryFailuresPage() {
         <AdminTable
           head={[
             "When",
+            "Product",
             "Recipient",
             "Edition",
             "OneRead state",
@@ -62,10 +87,11 @@ export default async function DeliveryFailuresPage() {
             const verdict = describeDeliveryFailure(row);
             return [
               fmtDateTime(row.providerStatusAt ?? row.updatedAt),
+              row.product,
               maskEmail(row.contact.email),
               <Link
                 key="issue"
-                href={`/admin/one-article/issues/${row.issue.id}`}
+                href={row.href}
                 className="text-admin-ink underline underline-offset-2"
               >
                 {row.issue.headline}

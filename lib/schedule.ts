@@ -36,3 +36,13 @@ export const ONE_ARTICLE_DEFAULT_SEND_DAYS: readonly DayCode[] = ["MON", "TUE", 
 export function oneArticleSendDays(override?: string): DayCode[] {
   return parseSendDays(override ?? process.env.ONE_ARTICLE_SEND_DAYS, ONE_ARTICLE_DEFAULT_SEND_DAYS);
 }
+
+export const ONE_NEWS_DEFAULT_SEND_DAYS: readonly DayCode[] = ["MON", "WED", "FRI"];
+
+/**
+ * Day codes as JS weekday numbers (0 = Sunday), the shape
+ * `notifyMissingScheduledEdition` and the cron config expect.
+ */
+export function sendDayNumbers(days: readonly DayCode[]): number[] {
+  return days.map((d) => DAY_CODES.indexOf(d)).filter((n) => n >= 0);
+}

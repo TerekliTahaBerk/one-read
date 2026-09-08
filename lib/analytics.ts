@@ -8,22 +8,25 @@ import { track } from "@vercel/analytics";
  * authoritative for anything billing- or delivery-related; these events exist
  * only to show where people drop out of the public funnel.
  */
-export type AnalyticsEvent =
-  | "public_sample_viewed"
-  | "subscribe_cta_clicked"
-  | "verification_requested"
-  | "email_verified"
-  | "product_preferences_saved"
-  | "preferences_completed"
-  | "checkout_started"
-  | "checkout_failed"
-  | "offer_selected"
-  | "billing_interval_selected"
-  | "product_email_unsubscribed"
-  | "product_email_resubscribed"
-  | "one_news_sample_viewed"
-  | "email_unsubscribed"
-  | "email_resubscribed";
+export const ANALYTICS_EVENTS = [
+  "public_sample_viewed",
+  "subscribe_cta_clicked",
+  "verification_requested",
+  "email_verified",
+  "product_preferences_saved",
+  "preferences_completed",
+  "checkout_started",
+  "checkout_failed",
+  "offer_selected",
+  "billing_interval_selected",
+  "product_email_unsubscribed",
+  "product_email_resubscribed",
+  "one_news_sample_viewed",
+  "email_unsubscribed",
+  "email_resubscribed",
+] as const;
+
+export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
 /**
  * The only properties allowed to leave the browser.

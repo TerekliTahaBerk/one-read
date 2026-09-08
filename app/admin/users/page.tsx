@@ -7,6 +7,7 @@ import {
   MetricGrid,
 } from "@/components/admin/AdminCard";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { fmtDateTime } from "@/lib/admin/format";
 import { CreateUserButton } from "@/components/admin/CreateUserButton";
@@ -31,7 +32,23 @@ type Filters = {
   preferences?: string;
   verification?: string;
   status?: string;
+  page?: string;
 };
+
+const PAGE_SIZE = 50;
+
+/**
+ * Hard ceiling on rows pulled into memory for the derived filters.
+ *
+ * Journey / payment / preference / verification state is computed across
+ * `Contact`, `ProductSubscription`, its preferences and `EmailVerificationCode`
+ * at once, so it has no SQL predicate to page on. Rather than let that grow
+ * without bound, the scan is capped and the truncation is stated on screen —
+ * an operator who hits it is told, instead of silently seeing a partial list.
+ * Removing the cap properly means materialising the journey stage on `Contact`,
+ * which is a schema change, not a screen change.
+ */
+const MAX_IDENTITY_SCAN = 5000;
 
 export default async function AdminUsersPage(
   props: { searchParams: Promise<Filters> },
@@ -40,8 +57,23 @@ export default async function AdminUsersPage(
   const guard = await guardAdminPage("/admin/users", searchParams);
   if (!guard.ok) return <AdminNotConfigured />;
 
-  const [contacts, verificationEvents] = await Promise.all([
+  const q = searchParams.q?.trim() ?? "";
+  const adminEmailList = configuredAdminEmails();
+  const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
+
+  // Email search and raw access status are pushed into SQL. The journey /
+  // payment / preference / verification filters are derived from several
+  // tables at once and stay in memory, applied to the rows below.
+  const contactWhere = {
+    ...(q ? { email: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(searchParams.status
+      ? { subscriptions: { some: { status: searchParams.status } } }
+      : {}),
+  };
+
+  const [contacts, verificationGroups, contactTotal, statusGroups, verifiedEmails] = await Promise.all([
     prisma.contact.findMany({
+      where: contactWhere,
       include: {
         subscriptions: {
           where: { productKey: { in: ["one-read", "one-article"] } },
@@ -49,48 +81,71 @@ export default async function AdminUsersPage(
         },
       },
       orderBy: { createdAt: "desc" },
+      // One over the cap, so truncation is detected rather than assumed.
+      take: MAX_IDENTITY_SCAN + 1,
     }),
-    prisma.emailVerificationCode.findMany({
-      select: {
-        id: true,
-        email: true,
-        purpose: true,
-        createdAt: true,
-        consumedAt: true,
-      },
-      orderBy: { createdAt: "desc" },
+    // Collapsed in the database: a single identity can have dozens of
+    // verification codes, and the old per-code fetch grew with attempts
+    // rather than with people.
+    prisma.emailVerificationCode.groupBy({
+      by: ["email"],
+      where: q ? { email: { contains: q, mode: "insensitive" as const } } : undefined,
+      _count: { _all: true },
+      _max: { createdAt: true, consumedAt: true },
+    }),
+    // Headline figures come from database aggregates, so the tiles stay true
+    // even when the row scan above is truncated.
+    prisma.contact.count(),
+    prisma.productSubscription.groupBy({
+      by: ["status"],
+      where: { productKey: { in: ["one-read", "one-article"] } },
+      _count: { _all: true },
+    }),
+    prisma.emailVerificationCode.groupBy({
+      by: ["email"],
+      where: { consumedAt: { not: null } },
+      _count: { _all: true },
     }),
   ]);
 
-  const adminEmails = configuredAdminEmails();
+  const truncated = contacts.length > MAX_IDENTITY_SCAN;
+  if (truncated) contacts.length = MAX_IDENTITY_SCAN;
+
+  // An identity is one person, not one row: most verification emails also have
+  // a contact, and an admin may have both. Counting the three sources naively
+  // would inflate the total, so the overlaps are resolved in the database.
+  const verificationEmails = verificationGroups.map((group) => group.email);
+  const [contactsWithVerification, contactsWhoAreAdmins] = await Promise.all([
+    verificationEmails.length
+      ? prisma.contact.count({ where: { email: { in: verificationEmails } } })
+      : Promise.resolve(0),
+    adminEmailList.length
+      ? prisma.contact.count({ where: { email: { in: adminEmailList } } })
+      : Promise.resolve(0),
+  ]);
+
+  const adminEmails = adminEmailList;
   const verificationByEmail = new Map<string, {
-    latestId: string;
+    latestId: string | null;
     requestedAt: Date;
     verifiedAt: Date | null;
     requestCount: number;
   }>();
-  for (const event of verificationEvents) {
-    const email = event.email.trim().toLowerCase();
-    const current = verificationByEmail.get(email);
-    if (!current) {
-      verificationByEmail.set(email, {
-        latestId: event.id,
-        requestedAt: event.createdAt,
-        verifiedAt: event.consumedAt,
-        requestCount: 1,
-      });
-    } else {
-      current.requestCount += 1;
-      if (event.consumedAt && (!current.verifiedAt || event.consumedAt > current.verifiedAt)) {
-        current.verifiedAt = event.consumedAt;
-      }
-    }
+  for (const group of verificationGroups) {
+    const email = group.email.trim().toLowerCase();
+    verificationByEmail.set(email, {
+      // Resolved lazily for the rows that actually reach the rendered page.
+      latestId: null,
+      requestedAt: group._max.createdAt ?? new Date(0),
+      verifiedAt: group._max.consumedAt,
+      requestCount: group._count._all,
+    });
   }
 
   const contactEmails = new Set(contacts.map((contact) => contact.email.toLowerCase()));
   type ContactRecord = (typeof contacts)[number];
   type VerificationSummary = {
-    latestId: string;
+    latestId: string | null;
     requestedAt: Date;
     verifiedAt: Date | null;
     requestCount: number;
@@ -98,6 +153,8 @@ export default async function AdminUsersPage(
   type UserRow = {
     key: string;
     detailId: string | null;
+    /** Set on signup-lead rows; the detail id is resolved for the page only. */
+    verificationEmail?: string;
     email: string;
     contact: ContactRecord | null;
     verification: VerificationSummary | undefined;
@@ -134,8 +191,9 @@ export default async function AdminUsersPage(
   for (const [email, verification] of verificationByEmail) {
     if (contactEmails.has(email)) continue;
     rows.push({
-      key: `verification-${verification.latestId}`,
-      detailId: verification.latestId,
+      key: `verification-${email}`,
+      detailId: null,
+      verificationEmail: email,
       email,
       contact: null,
       verification,
@@ -174,16 +232,22 @@ export default async function AdminUsersPage(
     (b.lastActivityAt?.getTime() ?? 0) - (a.lastActivityAt?.getTime() ?? 0),
   );
 
+  // Derived from database aggregates, not from `rows`, so the tiles remain
+  // accurate when the scan is truncated. `paying` counts subscriptions in the
+  // paid state, which is exactly the predicate `analyzeUserJourney` uses.
+  const statusCount = (status: string) =>
+    statusGroups.find((group) => group.status === status)?._count._all ?? 0;
+  const verifiedEmailCount = verifiedEmails.length;
   const totals = {
-    identities: rows.length,
-    admins: rows.filter((row) => row.role === "ADMIN").length,
-    paying: rows.filter((row) => row.journey.payment === "PAYING").length,
-    neverPaid: rows.filter((row) => row.journey.payment === "NEVER_PAID").length,
-    choicesMissing: rows.filter((row) =>
-      row.journey.preferences === "NOT_STARTED"
-      || row.journey.preferences === "PARTIAL",
-    ).length,
-    unverified: rows.filter((row) => row.journey.verification !== "VERIFIED").length,
+    identities:
+      contactTotal
+      + (verificationByEmail.size - contactsWithVerification)
+      + (adminEmails.length - contactsWhoAreAdmins),
+    admins: adminEmails.length,
+    paying: statusCount("ACTIVE_PAID"),
+    overdue: statusCount("PAST_DUE"),
+    trialing: statusCount("TRIALING"),
+    verified: verifiedEmailCount,
   };
 
   let filteredRows = rows;
@@ -210,16 +274,51 @@ export default async function AdminUsersPage(
       (row) => row.journey.verification === searchParams.verification,
     );
   }
+  // `status` was applied in SQL for contacts; admin-only and signup-lead rows
+  // have no subscription and are excluded by the same rule.
   if (searchParams.status) {
     filteredRows = filteredRows.filter((row) =>
       row.contact?.subscriptions.some((sub) => sub.status === searchParams.status),
     );
   }
 
+  const total = filteredRows.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.min(page, pages);
+  const pageRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Detail ids for signup leads are fetched only for the rows on screen, so a
+  // large verification table costs nothing until an operator pages into it.
+  const leadEmails = pageRows
+    .map((row) => row.verificationEmail)
+    .filter((email): email is string => Boolean(email));
+  if (leadEmails.length > 0) {
+    const latest = await prisma.emailVerificationCode.findMany({
+      where: { email: { in: leadEmails } },
+      select: { id: true, email: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const latestByEmail = new Map<string, string>();
+    for (const code of latest) {
+      const key = code.email.trim().toLowerCase();
+      if (!latestByEmail.has(key)) latestByEmail.set(key, code.id);
+    }
+    for (const row of pageRows) {
+      if (row.verificationEmail) {
+        row.detailId = latestByEmail.get(row.verificationEmail) ?? null;
+      }
+    }
+  }
+
+  const filterParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key !== "page" && typeof value === "string" && value) filterParams.set(key, value);
+  }
+
   return (
     <AdminShell
       title="Users"
-      subtitle={`${filteredRows.length} of ${rows.length} known identities · contacts, signup leads, and admins`}
+      subtitle={`${total} of ${rows.length} known identities · page ${currentPage} of ${pages} · contacts, signup leads, and admins`}
       actions={
         <>
           <a
@@ -232,13 +331,24 @@ export default async function AdminUsersPage(
         </>
       }
     >
+      {truncated && (
+        <div className="mb-6 rounded-[18px] border border-admin-line-strong bg-admin-surface p-4 font-sans text-[13px] leading-5 text-admin-body sm:p-5">
+          <strong className="font-medium text-admin-ink">
+            Showing the {MAX_IDENTITY_SCAN.toLocaleString()} most recent contacts.
+          </strong>{" "}
+          There are more than that. The figures below are database totals and stay
+          correct, but the table and its journey filters only cover this slice — narrow
+          the search to reach older records.
+        </div>
+      )}
+
       <MetricGrid>
         <MetricCard label="Known identities" value={totals.identities} hint="Contacts + signup leads + admins" />
         <MetricCard label="Admins" value={totals.admins} hint="Can sign in to this panel" tone="good" />
-        <MetricCard label="Paying now" value={totals.paying} hint="Active paid subscriptions" tone="good" />
-        <MetricCard label="Never paid" value={totals.neverPaid} hint="No completed payment detected" />
-        <MetricCard label="Selections missing" value={totals.choicesMissing} hint="No or partial preferences" tone={totals.choicesMissing ? "warn" : "default"} />
-        <MetricCard label="Not verified" value={totals.unverified} hint="Includes email-only signup leads" tone={totals.unverified ? "warn" : "default"} />
+        <MetricCard label="Paying now" value={totals.paying} hint="Subscriptions in the paid state" tone="good" />
+        <MetricCard label="On trial" value={totals.trialing} hint="Trial subscriptions" />
+        <MetricCard label="Payment overdue" value={totals.overdue} hint="Subscriptions past due" tone={totals.overdue ? "warn" : "default"} />
+        <MetricCard label="Verified emails" value={totals.verified} hint="Completed at least one verification" tone="good" />
       </MetricGrid>
 
       <AdminCard
@@ -286,7 +396,7 @@ export default async function AdminUsersPage(
             "",
           ]}
           empty="No identities match these filters."
-          rows={filteredRows.map((row) => {
+          rows={pageRows.map((row) => {
             const subscriptions = row.contact?.subscriptions ?? [];
             const article = subscriptions.find((sub) => sub.productKey === "one-article");
             return [
@@ -340,6 +450,13 @@ export default async function AdminUsersPage(
           })}
         />
       </AdminCard>
+
+      <AdminPagination
+        page={currentPage}
+        pages={pages}
+        basePath="/admin/users"
+        params={Object.fromEntries(filterParams)}
+      />
 
       <AdminCard title="Configured panel admins" subtitle="These accounts have the same panel permissions">
         <AdminTable

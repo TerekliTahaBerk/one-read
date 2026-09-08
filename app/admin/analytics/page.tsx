@@ -5,11 +5,36 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { guardAdminPage } from "@/lib/admin/auth";
 import { fmtDateTime } from "@/lib/admin/format";
 import { getLaunchHealth, LAUNCH_HEALTH_OFFERS, type LaunchHealthOffer } from "@/lib/admin/launch-health";
+import { ANALYTICS_EVENTS, type AnalyticsEvent } from "@/lib/analytics";
+import { AdminTable } from "@/components/admin/AdminTable";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const LABELS: Record<LaunchHealthOffer, string> = { all: "All offers", "one-article": "OneArticle", "one-news": "OneNews", "one-read": "Bundle" };
+
+/**
+ * What each browser event means, and whether this panel can answer it from its
+ * own database. Every event in the taxonomy must appear here — the Record type
+ * makes adding one to `ANALYTICS_EVENTS` a compile error until it is described.
+ */
+const BROWSER_EVENTS: Record<AnalyticsEvent, { meaning: string; firstParty: string | null }> = {
+  public_sample_viewed: { meaning: "A sample edition was opened on the public site.", firstParty: null },
+  one_news_sample_viewed: { meaning: "A OneNews sample was opened.", firstParty: null },
+  subscribe_cta_clicked: { meaning: "A subscribe call to action was clicked.", firstParty: null },
+  offer_selected: { meaning: "An offer was chosen on the pricing page.", firstParty: null },
+  billing_interval_selected: { meaning: "Monthly or annual was chosen.", firstParty: null },
+  verification_requested: { meaning: "A verification code was requested.", firstParty: "Users — verification requests" },
+  email_verified: { meaning: "A verification code was completed.", firstParty: "Users — verified emails" },
+  product_preferences_saved: { meaning: "Preferences were saved for a product.", firstParty: "Users — selections" },
+  preferences_completed: { meaning: "All required preferences were completed.", firstParty: "Users — selections" },
+  checkout_started: { meaning: "Checkout was opened.", firstParty: "Launch health — checkout stage" },
+  checkout_failed: { meaning: "Checkout returned an error.", firstParty: "Operator queue — billing" },
+  product_email_unsubscribed: { meaning: "A product email was switched off.", firstParty: "Users — email delivery" },
+  product_email_resubscribed: { meaning: "A product email was switched back on.", firstParty: "Users — email delivery" },
+  email_unsubscribed: { meaning: "All email was switched off.", firstParty: "Users — email delivery" },
+  email_resubscribed: { meaning: "All email was switched back on.", firstParty: "Users — email delivery" },
+};
 
 export default async function LaunchHealthPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const searchParams = await props.searchParams;
@@ -36,6 +61,28 @@ export default async function LaunchHealthPage(props: { searchParams: Promise<Re
       </MetricGrid>
       <p className={`mt-4 text-[13px] ${hasFailure ? "text-dawn" : "text-emerald-700"}`}>{hasFailure ? "Launch chain needs operator attention." : "No recorded failure signal in the selected scope."}</p>
     </AdminCard>
+    <AdminCard
+      title="Browser funnel"
+      subtitle="Anonymous page and click events are recorded by Vercel Analytics, not by this database — so the panel can tell you what is measured and where to read it, but not the counts."
+    >
+      <AdminTable
+        head={["Event", "What it means", "Answerable from this panel"]}
+        empty="No browser events are defined."
+        rows={ANALYTICS_EVENTS.map((event) => {
+          const row = BROWSER_EVENTS[event];
+          return [
+            <span key="e" className="font-medium text-admin-ink">{event.replace(/_/g, " ")}</span>,
+            row.meaning,
+            row.firstParty ?? (
+              <span key="ext" className="text-admin-muted">
+                No — anonymous, pre-signup. Vercel Analytics only.
+              </span>
+            ),
+          ];
+        })}
+      />
+    </AdminCard>
+
     <AdminCard title="Freshness and interpretation"><DefList rows={[
       ["Snapshot generated", fmtDateTime(snapshot.generatedAt)],
       ["Latest operational run", snapshot.latestRun ? <span key="run"><StatusBadge value={snapshot.latestRun.status} /> · {snapshot.latestRun.productKey} · {fmtDateTime(snapshot.latestRun.finishedAt ?? snapshot.latestRun.startedAt)}</span> : "No run recorded"],

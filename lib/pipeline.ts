@@ -39,6 +39,7 @@ import { renderDailyEmail } from "./email-template";
 import { ingestCandidates, type IngestionSource } from "./ingest";
 import { rssSource } from "./rss-source";
 import { extractAndScorePendingArticles } from "./scorer";
+import { readRuntimeSettings, type RuntimeSettings } from "@/lib/admin/settings-store";
 import { getOneArticleEligibilityByEmail } from "./subscriptions";
 import { isApprovalRequired, SENDABLE_APPROVAL_STATUSES } from "./admin/issues-config";
 import {
@@ -46,6 +47,7 @@ import {
   MIN_DELIVERY_SCORE,
   MIN_SUMMARY_CONFIDENCE,
   getEffectiveThresholds,
+  type EffectiveThresholds,
   isDemoModeEnabled,
 } from "./thresholds";
 import type {
@@ -146,6 +148,49 @@ export interface PipelineResult {
 }
 
 /**
+ * The quality bars a run should use, and where each came from. Precedence,
+ * strongest first:
+ *
+ *   demo mode (development only) > explicit `opts.thresholds` > panel settings
+ *   > the env constants in `lib/thresholds`.
+ *
+ * Demo mode short-circuits everything because its whole purpose is to relax
+ * the bars; letting a panel value override it would make a preview run behave
+ * unpredictably. Exported for testing — this precedence is the thing that
+ * decides whether an operator's quality bar means anything.
+ */
+export function resolveThresholds(
+  opts: Pick<DailyPipelineOptions, "demo" | "thresholds">,
+  panel: Pick<RuntimeSettings, "minArticleScore" | "minDeliveryScore" | "minSummaryConfidence"> | null,
+): EffectiveThresholds {
+  const thresholds = getEffectiveThresholds(opts.demo);
+  if (thresholds.demo) return thresholds;
+  if (panel) {
+    thresholds.minArticleScore = panel.minArticleScore;
+    thresholds.minDeliveryScore = panel.minDeliveryScore;
+    thresholds.minSummaryConfidence = panel.minSummaryConfidence;
+  }
+  if (opts.thresholds) Object.assign(thresholds, opts.thresholds);
+  return thresholds;
+}
+
+/**
+ * Panel-editable runtime configuration, or `null` when it cannot be read.
+ *
+ * Deliberately non-fatal and uncached: the pipeline also runs from plain Node
+ * scripts, where React's request cache has no scope, and a settings table that
+ * is unreachable must degrade to the env constants rather than abort a run.
+ */
+async function loadPanelRuntimeSettings(): Promise<RuntimeSettings | null> {
+  try {
+    const settings = await readRuntimeSettings();
+    return settings.degraded ? null : settings;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * End-to-end orchestration. Safe to call multiple times for the same date.
  */
 export async function runDailyPipeline(
@@ -155,9 +200,8 @@ export async function runDailyPipeline(
   const date = atUtcMidnight(opts.date ?? new Date());
   const ingestionSources = opts.ingestionSources ?? [rssSource];
 
-  // Resolve effective thresholds. Demo mode is hard-disabled in production.
-  const thresholds = getEffectiveThresholds(opts.demo);
-  if (!thresholds.demo && opts.thresholds) Object.assign(thresholds, opts.thresholds);
+  const panel = await loadPanelRuntimeSettings();
+  const thresholds = resolveThresholds(opts, panel);
 
   console.log(
     `[pipeline] ▶ start  date=${toIsoDate(date)}  dryRun=${opts.dryRun ?? false}  skipIngest=${opts.skipIngest ?? false}  demo=${thresholds.demo}`,
@@ -197,7 +241,10 @@ export async function runDailyPipeline(
     dryRun: opts.dryRun ?? false,
     minDeliveryScore: thresholds.minDeliveryScore,
     send: opts.send,
-    requireApproval: opts.requireApproval ?? isApprovalRequired(),
+    requireApproval:
+      opts.requireApproval
+      ?? panel?.controls.oneArticle.requireApproval
+      ?? isApprovalRequired(),
     pickId: opts.pickId,
   });
 

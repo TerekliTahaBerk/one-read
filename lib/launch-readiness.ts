@@ -277,20 +277,24 @@ export function getLaunchReadiness(): ReadinessCheck[] {
       : "Missing or partial — some production errors may not reach Sentry.",
   });
 
+  // These read the deployment constants, which the panel settings store can
+  // override at runtime — so they are the *fallback*, not necessarily what is
+  // running. Anything claiming to be the effective value belongs on
+  // /admin/settings, which resolves the override.
   checks.push({
     key: "MIN_ARTICLE_SCORE",
     status: "pass",
-    explanation: `Effective value ${MIN_ARTICLE_SCORE} (quality bar to become a pick).`,
+    explanation: `Deployment default ${MIN_ARTICLE_SCORE} (quality bar to become a pick); the panel can override it.`,
   });
   checks.push({
     key: "MIN_DELIVERY_SCORE",
     status: "pass",
-    explanation: `Effective value ${MIN_DELIVERY_SCORE} (personalized score needed to send).`,
+    explanation: `Deployment default ${MIN_DELIVERY_SCORE} (personalized score needed to send); the panel can override it.`,
   });
   checks.push({
     key: "MIN_SUMMARY_CONFIDENCE",
     status: "pass",
-    explanation: `Effective value ${MIN_SUMMARY_CONFIDENCE} (LLM confidence needed to mark READY).`,
+    explanation: `Deployment default ${MIN_SUMMARY_CONFIDENCE} (LLM confidence needed to mark READY); the panel can override it.`,
   });
 
   return checks;

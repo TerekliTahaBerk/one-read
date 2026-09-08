@@ -18,6 +18,7 @@ import { AdminTable, MonoShort } from "@/components/admin/AdminTable";
 import { StatusBadge, EligibilityBadge } from "@/components/admin/StatusBadge";
 import { fmtDateTime, yesNo } from "@/lib/admin/format";
 import { UserActionsBar } from "@/components/admin/UserActionsBar";
+import { BillingPortalButton } from "@/components/admin/BillingPortalButton";
 import { resolveOneArticleEligibilityForContact } from "@/lib/oneread/access";
 import { analyzeUserJourney, userRole } from "@/lib/admin/user-lifecycle";
 
@@ -196,6 +197,16 @@ export default async function AdminUserDetailPage(
             emailDeliveryStatus={actionSubscription.emailDeliveryStatus}
             adminOverride={actionSubscription.adminOverride}
           />
+        </AdminCard>
+      )}
+
+      {actionSubscription?.paymentProvider === "polar" && (
+        <AdminCard
+          title="Billing"
+          subtitle="Payment method, invoices and cancellation live in the subscriber's own Polar portal — the panel does not mirror them"
+          bodyClassName="p-4"
+        >
+          <BillingPortalButton subId={actionSubscription.id} email={contact.email} />
         </AdminCard>
       )}
 

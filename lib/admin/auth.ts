@@ -59,7 +59,6 @@ export function configuredAdminEmails(): string[] {
 
 export function adminFeatureFlags() {
   return {
-    approvalRequired: process.env.ONE_ARTICLE_REQUIRE_APPROVAL !== "false",
     mutationsEnabled: process.env.ADMIN_MUTATIONS_ENABLED !== "false",
     sendActionsEnabled: process.env.ADMIN_SEND_ACTIONS_ENABLED !== "false",
   };

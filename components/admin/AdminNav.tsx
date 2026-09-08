@@ -43,12 +43,19 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         matchPrefix: "/admin/one-news",
         icon: "doc",
       },
+      {
+        href: "/admin/sources",
+        label: "Article sources",
+        matchPrefix: "/admin/sources",
+        icon: "box",
+      },
     ],
   },
   {
     label: "Audience",
     items: [
       { href: "/admin/users", label: "Subscribers", matchPrefix: "/admin/users", icon: "users" },
+      { href: "/admin/feedback", label: "Reader reactions", matchPrefix: "/admin/feedback", icon: "chat" },
     ],
   },
   {
@@ -57,7 +64,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/admin/operations/queue", label: "Operator queue", matchPrefix: "/admin/operations/queue", icon: "list" },
       { href: "/admin/delivery/today", label: "Today", matchPrefix: "/admin/delivery/today", icon: "doc" },
       { href: "/admin/delivery/upcoming", label: "Upcoming", matchPrefix: "/admin/delivery/upcoming", icon: "list" },
-      { href: "/admin/one-article/sends", label: "History", icon: "list" },
+      { href: "/admin/one-article/sends", label: "OneArticle history", icon: "list" },
+      { href: "/admin/one-news/sends", label: "OneNews history", matchPrefix: "/admin/one-news/sends", icon: "list" },
       { href: "/admin/delivery/failures", label: "Failures", matchPrefix: "/admin/delivery/failures", icon: "list" },
       { href: "/admin/delivery/suppressions", label: "Suppressions", matchPrefix: "/admin/delivery/suppressions", icon: "users" },
     ],
@@ -87,6 +95,11 @@ const SUB_NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/admin/one-article", label: "Today" },
     { href: "/admin/one-article/issues", label: "Editions" },
     { href: "/admin/one-article/new", label: "New" },
+  ],
+  "/admin/one-news": [
+    { href: "/admin/one-news", label: "Editions" },
+    { href: "/admin/one-news/new", label: "New" },
+    { href: "/admin/one-news/sends", label: "Deliveries" },
   ],
 };
 

@@ -33,7 +33,7 @@ const MAX_FEED_BYTES = 5_000_000;
 const MAX_AGE_DAYS = 7;
 // Known edge-blocked feeds are excluded even if an older seeded DB row is
 // still active. Keep this narrow so normal admin source toggles still work.
-const BLOCKED_SOURCE_SLUGS = new Set(["sarkac"]);
+export const BLOCKED_SOURCE_SLUGS = new Set(["sarkac"]);
 
 const USER_AGENT =
   "OneReadBot/1.0 (+https://oneread.email/editorial; contact: hello@oneread.email)";

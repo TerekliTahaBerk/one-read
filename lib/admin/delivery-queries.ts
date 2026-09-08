@@ -41,20 +41,34 @@ export async function countDeliveryStates(
   where: Prisma.OneArticleDeliveryWhereInput | null,
 ): Promise<DeliveryStateCounts> {
   if (!where) return EMPTY;
-
   const [byStatus, byProviderStatus] = await Promise.all([
-    prisma.oneArticleDelivery.groupBy({
-      by: ["status"],
-      where,
-      _count: { _all: true },
-    }),
-    prisma.oneArticleDelivery.groupBy({
-      by: ["providerStatus"],
-      where,
-      _count: { _all: true },
-    }),
+    prisma.oneArticleDelivery.groupBy({ by: ["status"], where, _count: { _all: true } }),
+    prisma.oneArticleDelivery.groupBy({ by: ["providerStatus"], where, _count: { _all: true } }),
   ]);
+  return summarize(byStatus, byProviderStatus);
+}
 
+/**
+ * The OneNews equivalent. Kept as a sibling rather than a generic over the
+ * Prisma delegates: the two delivery tables are separate models with separate
+ * where-types, and a loosely typed wrapper would give up exactly the
+ * compile-time safety that keeps these counts honest.
+ */
+export async function countOneNewsDeliveryStates(
+  where: Prisma.OneNewsDeliveryWhereInput | null,
+): Promise<DeliveryStateCounts> {
+  if (!where) return EMPTY;
+  const [byStatus, byProviderStatus] = await Promise.all([
+    prisma.oneNewsDelivery.groupBy({ by: ["status"], where, _count: { _all: true } }),
+    prisma.oneNewsDelivery.groupBy({ by: ["providerStatus"], where, _count: { _all: true } }),
+  ]);
+  return summarize(byStatus, byProviderStatus);
+}
+
+function summarize(
+  byStatus: { status: string; _count: { _all: number } }[],
+  byProviderStatus: { providerStatus: string | null; _count: { _all: number } }[],
+): DeliveryStateCounts {
   const logical: Record<string, number> = {};
   let total = 0;
   for (const row of byStatus) {
